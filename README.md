@@ -11,12 +11,4 @@ Eine Fitness Web-App die Nutzer auf spielerische Weise dazu motiviert mehr Beweg
 
 ## Projektstruktur
 
-    /src – Quellcode
-
-    /docs – Dokumentation, Pflichtenheft
-
-    /db – Datenbank
-
-    /design – Mockups/UI
-
-    /tests – Tests
+- not done yet -
