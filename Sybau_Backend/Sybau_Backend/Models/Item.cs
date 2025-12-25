@@ -1,0 +1,32 @@
+﻿using Sybau_Backend.Models.Enums;
+
+namespace Sybau_Backend.Models;
+
+public class Item : BaseEntity<int>
+{
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+    protected Item() { }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+
+
+    public Item(string name, string description, ItemType type, double price, int xpBoostPercent)
+    {
+        if(string.IsNullOrWhiteSpace(name)) throw new ArgumentNullException(nameof(name));
+        if(string.IsNullOrWhiteSpace(description)) throw new ArgumentNullException(nameof(description));
+        if(price  <= 0) throw new ArgumentOutOfRangeException(nameof(price));
+        if(xpBoostPercent <= 0) throw new ArgumentOutOfRangeException(nameof(xpBoostPercent));
+        
+        Name = name;
+        Description = description;
+        Type = type;
+        Price = price;
+        XpBoostPercent = xpBoostPercent;
+    }
+    
+    public string Name { get; set; }
+    public string Description { get; set; }
+    
+    public ItemType Type { get; set; }
+    public double Price { get; set; }
+    public int XpBoostPercent { get; set; }
+}
