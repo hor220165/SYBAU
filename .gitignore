@@ -1,7 +1,15 @@
 bin/
 obj/
+out/
 node_modules/
 .vs/
 *.log
 *.tmp
 *.db
+*.nupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+secrets.json
+.idea/
