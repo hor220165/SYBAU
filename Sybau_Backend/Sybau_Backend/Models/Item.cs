@@ -29,4 +29,5 @@ public class Item : BaseEntity<int>
     public ItemType Type { get; set; }
     public double Price { get; set; }
     public int XpBoostPercent { get; set; }
+    public ICollection<UserItem> UserItems { get; set; } = new List<UserItem>();
 }
