@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Sybau_Backend.Data;
+using Sybau_Backend.Models;
 
 namespace Sybau_Backend.Controllers
 {
@@ -7,36 +10,65 @@ namespace Sybau_Backend.Controllers
     [ApiController]
     public class UsersController : ControllerBase
     {
+        private readonly FitnessDbContext _context;
+        
+        public UsersController(FitnessDbContext context)
+        {
+            _context = context;
+        }
         // GET: api/<UsersController>
         [HttpGet]
-        public IEnumerable<string> Get()
+        public async Task<ActionResult<IEnumerable<User>>> Get()
         {
-            return new string[] { "value1", "value2" };
+            var users = await _context.Users.ToListAsync();
+            return Ok(users);
         }
+
 
         // GET api/<UsersController>/5
         [HttpGet("{id}")]
-        public string Get(int id)
+        public async Task<ActionResult<User>> Get(int id)
         {
-            return "value";
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound();
+            return Ok(user);
         }
+
 
         // POST api/<UsersController>
         [HttpPost]
-        public void Post([FromBody] string value)
+        public async Task<ActionResult<User>> Post([FromBody] User user)
         {
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+            return CreatedAtAction(nameof(Get), new { id = user.Id }, user);
         }
 
         // PUT api/<UsersController>/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        public async Task<IActionResult> Put(int id, [FromBody] User user)
         {
+            if (id != user.Id) return BadRequest();
+
+            _context.Entry(user).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
 
         // DELETE api/<UsersController>/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound();
+
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
+
     }
 }
+
