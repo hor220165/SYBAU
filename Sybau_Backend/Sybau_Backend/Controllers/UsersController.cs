@@ -35,9 +35,9 @@ namespace Sybau_Backend.Controllers
         }
 
 
-        // POST api/<UsersController>
-        [HttpPost]
-        public async Task<ActionResult<User>> Post([FromBody] User user)
+        // POST api/<UsersController>/create
+        [HttpPost("create")]
+        public async Task<ActionResult<User>> Create([FromBody] User user)
         {
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
@@ -46,7 +46,7 @@ namespace Sybau_Backend.Controllers
 
         // PUT api/<UsersController>/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] User user)
+        public async Task<IActionResult> Update(int id, [FromBody] User user)
         {
             if (id != user.Id) return BadRequest();
 

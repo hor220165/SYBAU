@@ -168,6 +168,9 @@ namespace Sybau_Backend.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("isAdmin")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.ToTable("Users");
@@ -307,8 +310,7 @@ namespace Sybau_Backend.Migrations
 
             modelBuilder.Entity("Sybau_Backend.Models.User", b =>
                 {
-                    b.Navigation("Avatar")
-                        .IsRequired();
+                    b.Navigation("Avatar");
 
                     b.Navigation("UserChallenges");
 

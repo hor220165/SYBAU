@@ -12,28 +12,33 @@ public class User: BaseEntity<int>
     }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
-    public User(string firstName, string lastName, string email, string password, Avatar? avatar)
+    public User(string userName,string? firstName, string? lastName, string email, string passwordHash, Avatar? avatar)
     {
+        if(string.IsNullOrWhiteSpace(userName)) throw new ArgumentNullException(nameof(userName));
         if (string.IsNullOrWhiteSpace(firstName)) throw new ArgumentNullException(nameof(firstName));
         if (string.IsNullOrWhiteSpace(lastName)) throw new ArgumentNullException(nameof(lastName));
         if (string.IsNullOrWhiteSpace(email)) throw new ArgumentNullException(nameof(email));
-        if(string.IsNullOrWhiteSpace(password)) throw new ArgumentNullException(nameof(password));
+        if(string.IsNullOrWhiteSpace(passwordHash)) throw new ArgumentNullException(nameof(passwordHash));
         
+        UserName = userName;
         FirstName = firstName;
         LastName = lastName;
         Email = email;
-        Password = password;
+        PasswordHash = passwordHash;
         Avatar = avatar;
+        IsAdmin = false;
     }
     
-    [Required] public required string FirstName { get; set; }
-    [Required] public required string LastName { get; set; }
+    [Required] public string UserName { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
     [Required] [EmailAddress] public string Email { get; set; }
+    [Required] public bool IsAdmin { get; set; }
     public Avatar? Avatar { get; set; }
 
     [Required]
     [DataType(DataType.Password)]
-    public string Password { get; set; }
+    public string PasswordHash { get; set; }
     
     public ICollection<UserItem> UserItems { get; set; } = new List<UserItem>();
     public ICollection<UserChallenge> UserChallenges { get; set; } = new List<UserChallenge>();
