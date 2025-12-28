@@ -1,11 +1,7 @@
-<script >
-
-</script>
-
 <template>
-  
+  <LoginView />
 </template>
 
-<style scoped>
-
-</style>
+<script setup lang="ts">
+import LoginView from "./views/AuthView.vue";
+</script>
