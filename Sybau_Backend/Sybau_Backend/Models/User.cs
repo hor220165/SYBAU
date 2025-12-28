@@ -15,8 +15,6 @@ public class User: BaseEntity<int>
     public User(string userName,string? firstName, string? lastName, string email, string passwordHash, Avatar? avatar)
     {
         if(string.IsNullOrWhiteSpace(userName)) throw new ArgumentNullException(nameof(userName));
-        if (string.IsNullOrWhiteSpace(firstName)) throw new ArgumentNullException(nameof(firstName));
-        if (string.IsNullOrWhiteSpace(lastName)) throw new ArgumentNullException(nameof(lastName));
         if (string.IsNullOrWhiteSpace(email)) throw new ArgumentNullException(nameof(email));
         if(string.IsNullOrWhiteSpace(passwordHash)) throw new ArgumentNullException(nameof(passwordHash));
         

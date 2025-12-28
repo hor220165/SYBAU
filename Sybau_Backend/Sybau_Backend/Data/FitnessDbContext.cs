@@ -21,8 +21,8 @@ public class FitnessDbContext:DbContext
         modelBuilder.Entity<User>(builder =>
         {
             builder.HasOne(p => p.Avatar)
-                .WithOne()
-                .HasForeignKey<Avatar>("UserId");
+                .WithOne(p => p.User)
+                .HasForeignKey<Avatar>(p => p.UserId);
         });
         
         //Many to Many: User m-n Item
