@@ -46,11 +46,13 @@ namespace Sybau_Backend.Controllers
             if (emailExists) return BadRequest("Email is already in use");
 
             // Dummy-User für Hash (wird nicht gespeichert!)
-            var tempUser = new User(dto.UserName, null,null,dto.Email,"tempHash",null);
+            var tempUser = new User(dto.UserName, null,null,dto.Email,"tempHash");
+            
             // Passwort hashen
             var passwordHash = _passwordHasher.HashPassword(tempUser, dto.Password);
-            // Richtigen User erstellen
-            var user = new User(dto.UserName,null,null,dto.Email,passwordHash,null);
+            
+            // Richtigen User erstellen und direkt auch Avatar erstellen
+            var user = new User(dto.UserName,null,null,dto.Email,passwordHash);
             
             _context.Users.Add(user);
             await _context.SaveChangesAsync();

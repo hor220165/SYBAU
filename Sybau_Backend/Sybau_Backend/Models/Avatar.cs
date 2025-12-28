@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Runtime.CompilerServices;
 
 namespace Sybau_Backend.Models;
 
@@ -7,29 +8,33 @@ public class Avatar:BaseEntity<int>
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     protected Avatar() { }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
-    
-    public Avatar(AvatarTemplate template, int userId)
+
+    public static Avatar CreateDefault()
     {
-        Name = template.Name;
-        Level = template.LevelRequired;
-        Experience = 0;
-        UserId = userId;
-        TemplateId = template.Id;
+        return new Avatar
+        {
+            Level = 1,
+            Experience = 0,
+            Boost1 = null,
+            Boost2 = null,
+            Boost3 = null,
+            Boost4 = null
+        };
     }
     
-    [Required]
-    public string Name { get; set; }
+    public int UserId { get; set; }
+    public User User { get; set; }
     
+    //Basis-Attribute
     public int Level { get; set; }
     
     public int Experience { get; set; }
-    public int UserId { get; set; }
-    [Required]
-    public User User { get; set; }
-    
-    public int TemplateId { get; set; }
-    [Required]
-    public AvatarTemplate Template { get; set; }
-    // AnimationKey kann über Template im Frontend geladen werden
-    public string GetAnimationKey() => Template.AnimationKey;
+            
+    //Booster
+    public string? Boost1 { get; private set; }
+    public string? Boost2 { get; private set; }
+    public string? Boost3 { get; private set; }
+    public string? Boost4 { get; private set; }
+
+
 }

@@ -22,7 +22,7 @@ public class FitnessDbContext:DbContext
         {
             builder.HasOne(p => p.Avatar)
                 .WithOne(p => p.User)
-                .HasForeignKey<Avatar>(p => p.UserId);
+                .HasForeignKey<Avatar>(p => p.UserId).IsRequired();
         });
         
         //Many to Many: User m-n Item

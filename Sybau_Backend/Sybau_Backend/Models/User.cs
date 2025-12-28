@@ -12,7 +12,7 @@ public class User: BaseEntity<int>
     }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
-    public User(string userName,string? firstName, string? lastName, string email, string passwordHash, Avatar? avatar)
+    public User(string userName,string? firstName, string? lastName, string email, string passwordHash)
     {
         if(string.IsNullOrWhiteSpace(userName)) throw new ArgumentNullException(nameof(userName));
         if (string.IsNullOrWhiteSpace(email)) throw new ArgumentNullException(nameof(email));
@@ -23,7 +23,9 @@ public class User: BaseEntity<int>
         LastName = lastName;
         Email = email;
         PasswordHash = passwordHash;
-        Avatar = avatar;
+        
+        Avatar = Avatar.CreateDefault();
+        
         IsAdmin = false;
     }
     
