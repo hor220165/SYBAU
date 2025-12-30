@@ -39,8 +39,8 @@
         <!-- Formular -->
         <transition name="fade" mode="out-in">
           <form v-if="isLogin" key="login" class="form">
-            <label>Benutzername</label>
-            <input placeholder="Dein Username" />
+            <label>E-Mail</label>
+            <input type="email" placeholder="Deine Email" />
 
             <label>Passwort</label>
             <input type="password" placeholder="••••••••" />
@@ -77,32 +77,42 @@ const isLogin = ref(true);
 <style>
 /* === Reset === */
 * {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
-html, body {
-  margin: 0;
-  padding: 0;
-  background: #050714;
-  font-family: system-ui, sans-serif;
+html {
+  height: 100%;
+  overflow-x: hidden;
 }
 
-/* === Vollbild-Hintergrund === */
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: system-ui, sans-serif;
+  background: #050714;
+  background:
+    radial-gradient(circle at top left, #1a237e, transparent 45%),
+    radial-gradient(circle at bottom right, #311b92, transparent 45%),
+    #050714;
+  background-attachment: fixed;
+}
+
+/* === Vollbild-Container === */
 .auth-page {
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-
-  background:
-    radial-gradient(circle at top left, #1a237e, transparent 45%),
-    radial-gradient(circle at bottom right, #311b92, transparent 45%);
 }
 
 /* === Zentrale Spalte === */
 .auth-layout {
   width: 100%;
-  max-width: 420px; /* WICHTIG */
+  max-width: 600px;
   padding: 24px;
 }
 
@@ -128,7 +138,9 @@ html, body {
   background: rgba(30, 34, 55, 0.7);
   backdrop-filter: blur(20px);
   border-radius: 24px;
-  padding: 32px;
+  width: 600px;
+  max-width: 100%;
+  padding: 30px;
   box-shadow: 0 25px 60px rgba(0,0,0,0.5);
 }
 
@@ -190,6 +202,10 @@ html, body {
   color: white;
 }
 
+.form input::placeholder {
+  color: #6b7280;
+}
+
 /* === Button === */
 .primary-btn {
   margin-top: 24px;
@@ -199,7 +215,14 @@ html, body {
   background: linear-gradient(90deg, #ff2d75, #ff5e9a);
   color: white;
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.primary-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(255, 45, 117, 0.3);
 }
 
 /* === Animation === */
