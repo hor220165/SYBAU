@@ -1,9 +1,13 @@
 using Microsoft.EntityFrameworkCore;
+using Sybau_Backend._Services;
 using Sybau_Backend.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<ChallengeService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

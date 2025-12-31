@@ -34,7 +34,7 @@ public class User: BaseEntity<int>
     public string? LastName { get; set; }
     [EmailAddress] public string Email { get; set; }
     public bool IsAdmin { get; set; }
-    public Avatar? Avatar { get; set; }
+    public Avatar Avatar { get; set; }
     
     [DataType(DataType.Password)]
     public string PasswordHash { get; set; }

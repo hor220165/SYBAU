@@ -29,7 +29,7 @@ namespace Sybau_Backend.Controllers
             return Ok(new
             {
                 user.Id,
-                user.FirstName,
+                user.UserName,
                 user.Email
             });
         }

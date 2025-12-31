@@ -35,6 +35,27 @@ public class Avatar:BaseEntity<int>
     public string? Boost2 { get; private set; }
     public string? Boost3 { get; private set; }
     public string? Boost4 { get; private set; }
+    
+    public void AddExperience(int xp)
+    {
+        if (xp <= 0) return;
 
+        Experience += xp;
+
+        // Einfaches Level-Up: XP für nächstes Level steigt linear
+        while (Experience >= XpForNextLevel())
+        {
+            Experience -= XpForNextLevel();
+            Level++;
+        }
+
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+// Berechnung XP für nächstes Level (anpassbar)
+    private int XpForNextLevel()
+    {
+        return 100 + (Level - 1) * 50;
+    }
 
 }
