@@ -9,7 +9,7 @@ public class FitnessDbContext:DbContext
     public DbSet<Avatar> Avatars => Set<Avatar>();
     public DbSet<Item> Items => Set<Item>();
     public DbSet<UserItem> UserItems => Set<UserItem>();
-    public DbSet<Reward> Rewards => Set<Reward>();
+    public DbSet<UserCoin> UserCoins => Set<UserCoin>();
     public DbSet<Challenge> Challenges => Set<Challenge>();
     public DbSet<UserChallenge> UserChallenges => Set<UserChallenge>();
     public FitnessDbContext(DbContextOptions<FitnessDbContext> options) : base(options){}
@@ -23,6 +23,15 @@ public class FitnessDbContext:DbContext
             builder.HasOne(p => p.Avatar)
                 .WithOne(p => p.User)
                 .HasForeignKey<Avatar>(p => p.UserId).IsRequired();
+        });
+        
+        //One to Many: User 1-m UserCoin
+        modelBuilder.Entity<UserCoin>(builder =>
+        {
+            builder.HasOne(c => c.User)
+                .WithMany(u => u.UserCoins)
+                .HasForeignKey(c => c.UserId)
+                .IsRequired();
         });
         
         //Many to Many: User m-n Item

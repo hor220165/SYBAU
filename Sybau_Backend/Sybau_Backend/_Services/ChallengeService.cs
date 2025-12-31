@@ -19,7 +19,7 @@ public class ChallengeService
         if(dto == null) throw new ArgumentNullException(nameof(dto));
 
         // DTO in ein Challenge-Objekt umwandeln
-        var challenge = new Challenge(dto.Name, dto.Description, dto.XpReward,dto.RequiredLevel);
+        var challenge = new Challenge(dto.Name, dto.Description, dto.XpReward,dto.CoinReward,dto.RequiredLevel);
 
         _context.Challenges.Add(challenge);
         await _context.SaveChangesAsync();

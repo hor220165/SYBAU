@@ -38,7 +38,10 @@ public class User: BaseEntity<int>
     
     [DataType(DataType.Password)]
     public string PasswordHash { get; set; }
+
+    public int Coins { get; set; } = 0;
     
     public ICollection<UserItem> UserItems { get; set; } = new List<UserItem>();
     public ICollection<UserChallenge> UserChallenges { get; set; } = new List<UserChallenge>();
+    public ICollection<UserCoin> UserCoins { get; set; } = new List<UserCoin>();
 }
