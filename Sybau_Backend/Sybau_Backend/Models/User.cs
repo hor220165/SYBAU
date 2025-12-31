@@ -29,14 +29,13 @@ public class User: BaseEntity<int>
         IsAdmin = false;
     }
     
-    [Required] public string UserName { get; set; }
+    public string UserName { get; set; }
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
-    [Required] [EmailAddress] public string Email { get; set; }
-    [Required] public bool IsAdmin { get; set; }
+    [EmailAddress] public string Email { get; set; }
+    public bool IsAdmin { get; set; }
     public Avatar? Avatar { get; set; }
-
-    [Required]
+    
     [DataType(DataType.Password)]
     public string PasswordHash { get; set; }
     

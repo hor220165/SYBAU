@@ -19,11 +19,9 @@ public class Challenge : BaseEntity<int>
         XpReward = xpReward;
     }
     
-    [Required]
+
     public string Name { get; set; }
-    [Required]
     public string Description { get; set; }
-    [Required]
     public int XpReward { get; set; }
     
     public ICollection<UserChallenge> UserChallenges { get; set; } = new List<UserChallenge>();
