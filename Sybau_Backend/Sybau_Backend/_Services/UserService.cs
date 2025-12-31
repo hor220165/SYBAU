@@ -108,7 +108,7 @@ public class UserService
             // Coins gutschreiben
             if (userChallenge.Challenge.CoinReward > 0)
             {
-                AddCoinsAsync(user, userChallenge.Challenge.CoinReward, "Challenge completed");
+                await AddCoinsAsync(user, userChallenge.Challenge.CoinReward, "Challenge completed");
             }
         }
 
@@ -123,6 +123,4 @@ public class UserService
             Boost4 = user.Avatar.Boost4
         };
     }
-
-
 }

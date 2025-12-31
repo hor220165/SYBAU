@@ -37,13 +37,14 @@ namespace Sybau_Backend.Controllers
             if (user == null)
                 return NotFound();
             
-            var avatarDto = new AvatarDto{Level = user.Avatar.Level,Experience = user.Avatar.Experience, Boost1 = user.Avatar.Boost1,Boost2 = user.Avatar.Boost2,Boost3 = user.Avatar.Boost3,Boost4 = user.Avatar.Boost4,};
+            var avatarDto = new AvatarDto{Id = user.Avatar.Id,Level = user.Avatar.Level,Experience = user.Avatar.Experience, Boost1 = user.Avatar.Boost1,Boost2 = user.Avatar.Boost2,Boost3 = user.Avatar.Boost3,Boost4 = user.Avatar.Boost4,};
 
             return Ok(new UserDto
             {
                 Id = user.Id,
                 UserName = user.UserName,
                 Email = user.Email,
+                Coins = user.Coins,
                 Avatar = avatarDto
             });
         }

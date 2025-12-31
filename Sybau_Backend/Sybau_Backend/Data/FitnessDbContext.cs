@@ -47,6 +47,12 @@ public class FitnessDbContext:DbContext
             entity.HasOne(p => p.User).WithMany(u=>u.UserChallenges).HasForeignKey("UserId").IsRequired();
             entity.HasOne(p => p.Challenge).WithMany(c => c.UserChallenges).HasForeignKey("ChallengeId").IsRequired();
         });
+        
+        //Item Enum Conversion
+        modelBuilder.Entity<Item>(entity =>
+        {
+            entity.Property(e => e.Type).HasConversion<string>();
+        });
 
     }
 }
