@@ -16,13 +16,6 @@ public class ChallengeController : ControllerBase
         _challengeService = challengeService;
     }
 
-    [HttpPost("{id}/complete")]
-    public async Task<IActionResult> CompleteChallenge(int id, [FromQuery] int userId)
-    {
-        await _challengeService.CompleteChallengeAsync(userId, id);
-        return Ok("Challenge completed and XP added!");
-    }
-
     [HttpGet("user/{userId}")]
     public async Task<IActionResult> GetUserChallenges(int userId)
     {

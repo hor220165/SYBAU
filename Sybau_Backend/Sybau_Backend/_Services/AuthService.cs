@@ -9,11 +9,13 @@ public class AuthService
 {
     private readonly FitnessDbContext _context;
     private readonly PasswordHasher<User> _passwordHasher;
+    private readonly UserService _userService;
     
-    public AuthService(FitnessDbContext context)
+    public AuthService(FitnessDbContext context, UserService userService)
     {
         _context = context;
         _passwordHasher = new PasswordHasher<User>();
+        _userService = userService;
     }
 
     public async Task<User?> LoginAsync(string email, string password)
@@ -40,6 +42,8 @@ public class AuthService
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
+        
+        await _userService.AssignStartingChallengesAsync(user);
 
         return user;
     }

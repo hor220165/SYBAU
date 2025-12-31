@@ -36,14 +36,28 @@ namespace Sybau_Backend.Controllers
 
             if (user == null)
                 return NotFound();
+            
+            var avatarDto = new AvatarDto{Level = user.Avatar.Level,Experience = user.Avatar.Experience, Boost1 = user.Avatar.Boost1,Boost2 = user.Avatar.Boost2,Boost3 = user.Avatar.Boost3,Boost4 = user.Avatar.Boost4,};
 
             return Ok(new UserDto
             {
                 Id = user.Id,
                 UserName = user.UserName,
                 Email = user.Email,
-                Level = user.Avatar.Level
+                Avatar = avatarDto
             });
+        }
+        
+        // POST: api/users/{userId}/challenge/{challengeId}/complete
+        [HttpPost("{userId}/challenge/{challengeId}/complete")]
+        public async Task<IActionResult> CompleteChallenge(int userId, int challengeId)
+        {
+            var updatedAvatar = await _userService.CompleteChallengeAsync(userId, challengeId);
+
+            if (updatedAvatar == null)
+                return BadRequest("User oder Challenge nicht gefunden");
+
+            return Ok(updatedAvatar);
         }
     }
 }

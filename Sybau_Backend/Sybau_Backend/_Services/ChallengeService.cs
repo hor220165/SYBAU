@@ -27,31 +27,6 @@ public class ChallengeService
         return challenge;
     }
 
-
-    // Challenge für User abschließen
-    public async Task CompleteChallengeAsync(int userId, int challengeId)
-    {
-        var userChallenge = await _context.UserChallenges
-            .Include(uc => uc.Challenge)
-            .Include(uc => uc.User)
-            .ThenInclude(u => u.Avatar)
-            .FirstOrDefaultAsync(uc => uc.User.Id == userId && uc.Challenge.Id == challengeId);
-
-        if (userChallenge == null)
-            throw new Exception("Challenge not found for this user");
-
-        if (userChallenge.Completed)
-            throw new Exception("Challenge already completed");
-
-        // Challenge abschließen
-        userChallenge.Complete();
-
-        // XP vergeben
-        userChallenge.User.Avatar.AddExperience(userChallenge.Challenge.XpReward);
-
-        await _context.SaveChangesAsync();
-    }
-
     // Optional: Alle Challenges eines Users abrufen
     public async Task<List<UserChallenge>> GetUserChallengesAsync(int userId)
     {
@@ -59,5 +34,25 @@ public class ChallengeService
             .Include(uc => uc.Challenge)
             .Where(uc => uc.User.Id == userId)
             .ToListAsync();
+    }
+    
+    public async Task AssignChallengesForLevelUpAsync(User user, int oldLevel)
+    {
+        var newLevel = user.Avatar.Level;
+
+        // Alle Challenges, die jetzt freigeschaltet werden
+        var newChallenges = await _context.Challenges
+            .Where(c => c.RequiredLevel > oldLevel && c.RequiredLevel <= newLevel)
+            .ToListAsync();
+
+        foreach (var challenge in newChallenges)
+        {
+            if (!user.UserChallenges.Any(uc => uc.Challenge.Id == challenge.Id))
+            {
+                _context.UserChallenges.Add(new UserChallenge(user, challenge));
+            }
+        }
+
+        await _context.SaveChangesAsync();
     }
 }

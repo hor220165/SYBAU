@@ -42,20 +42,18 @@ public class Avatar:BaseEntity<int>
 
         Experience += xp;
 
-        // Einfaches Level-Up: XP für nächstes Level steigt linear
-        while (Experience >= XpForNextLevel())
+        int xpForNext;
+        while ((xpForNext = XpForNextLevel()) <= Experience)
         {
-            Experience -= XpForNextLevel();
+            Experience -= xpForNext;
             Level++;
         }
-
-        UpdatedAt = DateTime.UtcNow;
     }
+
 
 // Berechnung XP für nächstes Level (anpassbar)
     private int XpForNextLevel()
     {
         return 100 + (Level - 1) * 50;
     }
-
 }
