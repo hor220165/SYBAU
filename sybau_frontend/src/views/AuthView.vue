@@ -31,7 +31,7 @@
           <button
             :class="{ active: !isLogin }"
             @click="isLogin = false"
-          >
+          > 
             Register
           </button>
         </div>
@@ -46,17 +46,21 @@
             <input type="password" placeholder="••••••••" />
 
             <button class="primary-btn">Login</button>
+            <div class="switch-text">
+              <label>Noch kein Account?</label>
+              <label class="switch-link" @click="isLogin = false">jetzt registrieren</label>
+            </div>
           </form>
 
           <form v-else key="register" class="form">
             <label>Benutzername</label>
-            <input />
+            <input placeholder="Dein Benutzername"/>
 
             <label>E-Mail</label>
-            <input type="email" />
+            <input placeholder="Deine Email" type="email" />
 
             <label>Passwort</label>
-            <input type="password" />
+            <input type="password" placeholder="••••••••"/>
 
             <button class="primary-btn">Account erstellen</button>
           </form>
@@ -234,5 +238,29 @@ body {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* === Switch Text === */
+.switch-text {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.switch-text label {
+  display: inline; 
+  color: #8b9bb4;
+  font-size: 0.9rem;
+}
+
+.switch-link {
+  color: #ff2d75;
+  cursor: pointer;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.switch-link:hover {
+  color: #ff5e9a;
+  text-decoration: underline;
 }
 </style>
