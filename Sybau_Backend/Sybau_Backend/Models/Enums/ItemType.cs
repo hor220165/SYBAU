@@ -3,6 +3,5 @@
 public enum ItemType
 {
     Cosmetic,
-    Boost,
-    Consumable
+    Booster
 }

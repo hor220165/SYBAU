@@ -9,7 +9,7 @@ public class FitnessDbContext:DbContext
     public DbSet<Avatar> Avatars => Set<Avatar>();
     public DbSet<Item> Items => Set<Item>();
     public DbSet<UserItem> UserItems => Set<UserItem>();
-    public DbSet<Reward> Rewards => Set<Reward>();
+    public DbSet<UserCoin> UserCoins => Set<UserCoin>();
     public DbSet<Challenge> Challenges => Set<Challenge>();
     public DbSet<UserChallenge> UserChallenges => Set<UserChallenge>();
     public FitnessDbContext(DbContextOptions<FitnessDbContext> options) : base(options){}
@@ -25,6 +25,15 @@ public class FitnessDbContext:DbContext
                 .HasForeignKey<Avatar>(p => p.UserId).IsRequired();
         });
         
+        //One to Many: User 1-m UserCoin
+        modelBuilder.Entity<UserCoin>(builder =>
+        {
+            builder.HasOne(c => c.User)
+                .WithMany(u => u.UserCoins)
+                .HasForeignKey(c => c.UserId)
+                .IsRequired();
+        });
+        
         //Many to Many: User m-n Item
         modelBuilder.Entity<UserItem>(builder =>
         {
@@ -37,6 +46,12 @@ public class FitnessDbContext:DbContext
         {
             entity.HasOne(p => p.User).WithMany(u=>u.UserChallenges).HasForeignKey("UserId").IsRequired();
             entity.HasOne(p => p.Challenge).WithMany(c => c.UserChallenges).HasForeignKey("ChallengeId").IsRequired();
+        });
+        
+        //Item Enum Conversion
+        modelBuilder.Entity<Item>(entity =>
+        {
+            entity.Property(e => e.Type).HasConversion<string>();
         });
 
     }

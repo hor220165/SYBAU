@@ -24,4 +24,11 @@ public class UserChallenge: BaseEntity<int>
 
     public DateTime? CompletedAt { get; set; }
     
+    public void Complete()
+    {
+        if (Completed) return; // schon abgeschlossen
+
+        Progress = 100;
+        CompletedAt = DateTime.UtcNow;
+    }
 }

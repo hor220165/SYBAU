@@ -6,12 +6,11 @@ public class UserItem:BaseEntity<int>
     protected UserItem() { }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
-    public UserItem(int quantity, User user, Item item)
+    public UserItem(User user, Item item)
     {
-        if(quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));
         User = user;
         Item = item;
-        Quantity = quantity;
+        Quantity = 1;
         AcquiredAt=DateTime.UtcNow;
     }
     

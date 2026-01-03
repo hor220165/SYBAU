@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Sybau_Backend.Data;
 
@@ -10,9 +11,11 @@ using Sybau_Backend.Data;
 namespace Sybau_Backend.Migrations
 {
     [DbContext(typeof(FitnessDbContext))]
-    partial class FitnessDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251231201109_RequiredLevelAddedToChallenge")]
+    partial class RequiredLevelAddedToChallenge
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.11");
@@ -62,9 +65,6 @@ namespace Sybau_Backend.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("CoinReward")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("CreatedAt")
@@ -126,13 +126,38 @@ namespace Sybau_Backend.Migrations
                     b.ToTable("Items");
                 });
 
-            modelBuilder.Entity("Sybau_Backend.Models.User", b =>
+            modelBuilder.Entity("Sybau_Backend.Models.Reward", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("Coins")
+                    b.Property<int>("Amount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Rewards");
+                });
+
+            modelBuilder.Entity("Sybau_Backend.Models.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("CreatedAt")
@@ -200,35 +225,6 @@ namespace Sybau_Backend.Migrations
                     b.ToTable("UserChallenges");
                 });
 
-            modelBuilder.Entity("Sybau_Backend.Models.UserCoin", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Amount")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("UserCoins");
-                });
-
             modelBuilder.Entity("Sybau_Backend.Models.UserItem", b =>
                 {
                     b.Property<int>("Id")
@@ -273,6 +269,17 @@ namespace Sybau_Backend.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Sybau_Backend.Models.Reward", b =>
+                {
+                    b.HasOne("Sybau_Backend.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Sybau_Backend.Models.UserChallenge", b =>
                 {
                     b.HasOne("Sybau_Backend.Models.Challenge", "Challenge")
@@ -288,17 +295,6 @@ namespace Sybau_Backend.Migrations
                         .IsRequired();
 
                     b.Navigation("Challenge");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Sybau_Backend.Models.UserCoin", b =>
-                {
-                    b.HasOne("Sybau_Backend.Models.User", "User")
-                        .WithMany("UserCoins")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -338,8 +334,6 @@ namespace Sybau_Backend.Migrations
                         .IsRequired();
 
                     b.Navigation("UserChallenges");
-
-                    b.Navigation("UserCoins");
 
                     b.Navigation("UserItems");
                 });

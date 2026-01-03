@@ -29,17 +29,19 @@ public class User: BaseEntity<int>
         IsAdmin = false;
     }
     
-    [Required] public string UserName { get; set; }
+    public string UserName { get; set; }
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
-    [Required] [EmailAddress] public string Email { get; set; }
-    [Required] public bool IsAdmin { get; set; }
-    public Avatar? Avatar { get; set; }
-
-    [Required]
+    [EmailAddress] public string Email { get; set; }
+    public bool IsAdmin { get; set; }
+    public Avatar Avatar { get; set; }
+    
     [DataType(DataType.Password)]
     public string PasswordHash { get; set; }
+
+    public int Coins { get; set; } = 0;
     
     public ICollection<UserItem> UserItems { get; set; } = new List<UserItem>();
     public ICollection<UserChallenge> UserChallenges { get; set; } = new List<UserChallenge>();
+    public ICollection<UserCoin> UserCoins { get; set; } = new List<UserCoin>();
 }
