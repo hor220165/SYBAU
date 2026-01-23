@@ -45,7 +45,7 @@
             <label>Passwort</label>
             <input type="password" placeholder="••••••••" />
 
-            <button class="primary-btn">Login</button>
+            <button class="primary-btn" @click="handleLogin">Login</button>
             <div class="switch-text">
               <label>Noch kein Account?</label>
               <label class="switch-link" @click="isLogin = false">jetzt registrieren</label>
@@ -65,7 +65,6 @@
             <button class="primary-btn">Account erstellen</button>
           </form>
         </transition>
-
       </div>
     </div>
   </div>
@@ -74,6 +73,13 @@
 
 <script setup>
 import { ref } from 'vue';
+import {useRouter} from "vue-router";
+
+const router = useRouter();
+
+const handleLogin = async () =>{
+  router.push('/home');
+}
 
 const isLogin = ref(true);
 </script>
