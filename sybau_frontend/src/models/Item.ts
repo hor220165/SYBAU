@@ -1,9 +1,11 @@
+import type {ItemType} from "@/models/ItemType.ts";
+
 export interface item{
     id: number,
     name: string,
     description: string,
     price: number,
-    //itemType:Type,
+    type: ItemType,
     xpBoostPercentage: number
 }
 

@@ -101,7 +101,6 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
-  overflow: hidden;
   font-family: system-ui, sans-serif;
   background: #050714;
   background:

@@ -74,25 +74,13 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.sprite-container {
-  display: inline-block;
-  padding: 16px;
-  background: linear-gradient(145deg, #1a1a2e, #16213e);
-  border-radius: 12px;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
+
 
 canvas {
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
-  border: 3px solid #0f3460;
   border-radius: 8px;
-  box-shadow: 
-    0 0 20px rgba(0, 102, 255, 0.3),
-    inset 0 0 10px rgba(0, 0, 0, 0.5);
   display: block;
   width: calc(v-bind(frameWidth) * v-bind(scale) * 1px);
   height: calc(v-bind(frameHeight) * v-bind(scale) * 1px);
