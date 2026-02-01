@@ -1,31 +1,45 @@
 <template>
   <!-- Navigation -->
   <nav class="navbar">
-    <button class="nav-item active">
+    <button class="nav-item"
+            :class="{ active: isActiveRoute('/home') }"
+            @click="navigateTo('/home')">
       <span class="nav-icon">🎯</span>
       <span>Dashboard</span>
     </button>
-    <button class="nav-item">
+    <button class="nav-item"
+            :class="{ active: isActiveRoute('/workouts') }"
+            @click="navigateTo('/workouts')">
       <span class="nav-icon">🏋️</span>
       <span>Workouts</span>
     </button>
-    <button class="nav-item">
+    <button class="nav-item"
+            :class="{ active: isActiveRoute('/quests') }"
+            @click="navigateTo('/quests')">
       <span class="nav-icon">🏆</span>
       <span>Quests</span>
     </button>
-    <button class="nav-item">
+    <button class="nav-item"
+            :class="{ active: isActiveRoute('/avatar') }"
+            @click="navigateTo('/avatar')">
       <span class="nav-icon">👤</span>
       <span>Avatar</span>
     </button>
-    <button class="nav-item">
+    <button class="nav-item"
+            :class="{ active: isActiveRoute('/shop') }"
+            @click="navigateTo('/shop')">
       <span class="nav-icon">🛒</span>
       <span>Shop</span>
     </button>
-    <button class="nav-item">
+    <button class="nav-item"
+            :class="{ active: isActiveRoute('/leaderboard') }"
+            @click="navigateTo('/leaderboard')">
       <span class="nav-icon">👥</span>
       <span>Leaderboard</span>
     </button>
-    <button class="nav-item">
+    <button class="nav-item"
+            :class="{ active: isActiveRoute('/profile') }"
+            @click="navigateTo('/profile')">
       <span class="nav-icon">⚡</span>
       <span>Profile</span>
     </button>
@@ -33,8 +47,10 @@
 </template>
 
 <script setup lang="ts">
-</script>
+import {useNavigation} from "@/composables/useNavigation.ts";
 
+const {navigateTo, isActiveRoute} = useNavigation()
+</script>
 <style scoped>
 /* Navigation */
 .navbar {
@@ -106,6 +122,4 @@
 .nav-item:focus:not(:focus-visible) {
   outline: none;
 }
-
-
 </style>
