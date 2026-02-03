@@ -37,6 +37,7 @@ public class UserService
         var leaderboard = users
             .Select((u, index) => new LeaderBoardDto
             {
+                Id = u.Id,
                 Rank = index + 1,
                 UserName = u.UserName,
                 Experience = u.Avatar.Experience,
