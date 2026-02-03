@@ -22,6 +22,24 @@ public class UserService
         return await _context.Users.ToListAsync();
     }
     
+    //Leaderboard Top10
+    public async Task<IEnumerable<LeaderBoardDto>> GetLeaderboard()
+    {
+        return await _context.Users
+            .Include(u => u.Avatar)
+            .OrderByDescending(u => u.Avatar.Experience) // sortiere nach XP
+            .Take(10) // z. B. Top 10
+            .Select((u, index) => new LeaderBoardDto()
+            {
+                Rank = index + 1,
+                UserName = u.UserName,
+                Experience = u.Avatar.Experience,
+                Level = u.Avatar.Level
+            })
+            .ToListAsync();
+
+    }
+    
     //Einen genauen User ausgeben
     public async Task<User?> GetUserById(int id)
     {

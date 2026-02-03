@@ -26,6 +26,14 @@ namespace Sybau_Backend.Controllers
             var users = await _userService.GetUsers();
             return Ok(users);
         }
+        
+        [HttpGet("leaderboard")]
+        public async Task<IActionResult> GetLeaderboard()
+        {
+            var topUsers = await _userService.GetLeaderboard();
+            return Ok(topUsers);
+        }
+
 
 
         // GET api/<UsersController>/5
