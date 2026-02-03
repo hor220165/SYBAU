@@ -25,20 +25,28 @@ public class UserService
     //Leaderboard Top10
     public async Task<IEnumerable<LeaderBoardDto>> GetLeaderboard()
     {
-        return await _context.Users
+        // Schritt 1: Daten aus der DB holen
+        var users = await _context.Users
             .Include(u => u.Avatar)
-            .OrderByDescending(u => u.Avatar.Experience) // sortiere nach XP
-            .Take(10) // z. B. Top 10
-            .Select((u, index) => new LeaderBoardDto()
+            .Where(u => u.Avatar != null)
+            .OrderByDescending(u => u.Avatar.Experience)
+            .Take(10)
+            .ToListAsync(); // Daten kommen jetzt in den Speicher
+
+        // Schritt 2: Clientseitig den Rank berechnen
+        var leaderboard = users
+            .Select((u, index) => new LeaderBoardDto
             {
                 Rank = index + 1,
                 UserName = u.UserName,
                 Experience = u.Avatar.Experience,
                 Level = u.Avatar.Level
             })
-            .ToListAsync();
+            .ToList();
 
+        return leaderboard;
     }
+
     
     //Einen genauen User ausgeben
     public async Task<User?> GetUserById(int id)
