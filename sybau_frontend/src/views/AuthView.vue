@@ -71,47 +71,17 @@
 </template>
 
 
-<script setup lang="ts">
+<script setup>
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { authService } from '@/services/api';
+import {useRouter} from "vue-router";
 
 const router = useRouter();
 
+const handleLogin = async () =>{
+  router.push('/home');
+}
+
 const isLogin = ref(true);
-const email = ref('');
-const password = ref('');
-const username = ref('');
-
-const handleLogin = async () => {
-  try {
-    const res = await authService.login(email.value, password.value);
-    const token = res.data?.token;
-    const user = res.data?.user;
-    if (token) localStorage.setItem('token', token);
-    if (user) localStorage.setItem('user', JSON.stringify(user));
-    router.push('/home');
-  } catch (err) {
-    console.error(err);
-    alert('Login fehlgeschlagen');
-  }
-}
-
-const handleRegister = async () => {
-  try {
-    await authService.register(username.value, email.value, password.value);
-    // optional: auto-login after register
-    const res = await authService.login(email.value, password.value);
-    const token = res.data?.token;
-    const user = res.data?.user;
-    if (token) localStorage.setItem('token', token);
-    if (user) localStorage.setItem('user', JSON.stringify(user));
-    router.push('/home');
-  } catch (err) {
-    console.error(err);
-    alert('Registration fehlgeschlagen');
-  }
-}
 </script>
 
 <style>
