@@ -1,88 +1,108 @@
 <template>
   <!-- Vollbild-Hintergrund -->
   <div class="auth-page">
-
     <!-- Zentrale Layout-Spalte -->
     <div class="auth-layout">
-
       <!-- Logo / Headline -->
       <header class="auth-header">
         <h1 class="brand-name">SYBAU</h1>
         <p class="brand-slogan">Shape Your Body And Unleash</p>
       </header>
-
       <!-- Login / Register Card -->
       <div class="auth-card">
-
         <!-- Toggle -->
         <div class="toggle">
-          <div
-            class="toggle-indicator"
-            :class="{ right: !isLogin }"
-          ></div>
-
-          <button
-            :class="{ active: isLogin }"
-            @click="isLogin = true"
-          >
+          <div class="toggle-indicator" :class="{ right: !isLogin }"></div>
+          <button :class="{ active: isLogin }" @click="isLogin = true">
             Login
           </button>
-
-          <button
-            :class="{ active: !isLogin }"
-            @click="isLogin = false"
-          > 
+          <button :class="{ active: !isLogin }" @click="isLogin = false">
             Register
           </button>
         </div>
-
         <!-- Formular -->
         <transition name="fade" mode="out-in">
-          <form v-if="isLogin" key="login" class="form" @submit.prevent="handleLogin">
-              <label>E-Mail</label>
-              <input type="email" placeholder="Deine Email" v-model="email" />
-
-              <label>Passwort</label>
-              <input type="password" placeholder="••••••••" v-model="password" />
-
-              <button type="submit" class="primary-btn">Login</button>
-              <div class="switch-text">
-                <label>Noch kein Account?</label>
-                <label class="switch-link" @click="isLogin = false">jetzt registrieren</label>
-              </div>
-            </form>
-
-            <form v-else key="register" class="form" @submit.prevent="handleRegister">
-              <label>Benutzername</label>
-              <input placeholder="Dein Benutzername" v-model="username" />
-
-              <label>E-Mail</label>
-              <input placeholder="Deine Email" type="email" v-model="email" />
-
-              <label>Passwort</label>
-              <input type="password" placeholder="••••••••" v-model="password" />
-
-              <button type="submit" class="primary-btn">Account erstellen</button>
-            </form>
+          <form
+            v-if="isLogin"
+            key="login"
+            class="form"
+            @submit.prevent="handleLogin"
+          >
+            <label>E-Mail</label>
+            <input type="email" placeholder="Deine Email" v-model="email" />
+            <label>Passwort</label>
+            <input type="password" placeholder="••••••••" v-model="password" />
+            <button type="submit" class="primary-btn">Login</button>
+            <div class="switch-text">
+              <label>Noch kein Account?</label>
+              <label class="switch-link" @click="isLogin = false"
+                >jetzt registrieren</label
+              >
+            </div>
+          </form>
+          <form
+            v-else
+            key="register"
+            class="form"
+            @submit.prevent="handleRegister"
+          >
+            <label>Benutzername</label>
+            <input placeholder="Dein Benutzername" v-model="username" />
+            <label>E-Mail</label>
+            <input placeholder="Deine Email" type="email" v-model="email" />
+            <label>Passwort</label>
+            <input type="password" placeholder="••••••••" v-model="password" />
+            <button type="submit" class="primary-btn">Account erstellen</button>
+          </form>
         </transition>
       </div>
     </div>
   </div>
 </template>
+<script setup lang="ts">
+import { ref } from 'vue'; 
+import { useRouter } from 'vue-router'; 
+import { authService } from '@/services/api'; 
+const router = useRouter(); 
 
+const isLogin = ref(true); 
+const email = ref(''); 
+const password = ref(''); 
+const username = ref(''); 
+const handleLogin = async () => {
+  try { 
+    const res = await authService.login(email.value, password.value); 
+    const token = res.data?.token; 
+    const user = res.data?.user; 
+    if (token) localStorage.setItem('token', token); 
+    if (user) localStorage.setItem('user', JSON.stringify(user)); 
+    router.push('/home'); 
+    } 
+    catch (err) 
+    { 
+      console.error(err); 
+      alert('Login fehlgeschlagen'); 
+  } };
 
-<script setup>
-import { ref } from 'vue';
-import {useRouter} from "vue-router";
-
-const router = useRouter();
-
-const handleLogin = async () =>{
-  router.push('/home');
-}
-
-const isLogin = ref(true);
+const handleRegister = async () => 
+{ 
+  try 
+{ 
+  await authService.register(username.value, email.value, password.value); 
+  // optional: auto-login after register 
+  const res = await authService.login(email.value, password.value); 
+  const token = res.data?.token; 
+  const user = res.data?.user; 
+  if (token) localStorage.setItem('token', token); 
+  if (user) localStorage.setItem('user', JSON.stringify(user)); 
+  router.push('/home'); 
+  } catch (err) 
+  { 
+    console.error(err); 
+    alert('Registration fehlgeschlagen'); 
+  } }
 </script>
+
 
 <style>
 /* === Reset === */
@@ -105,8 +125,7 @@ body {
   background: #050714;
   background:
     radial-gradient(circle at top left, #1a237e, transparent 45%),
-    radial-gradient(circle at bottom right, #311b92, transparent 45%),
-    #050714;
+    radial-gradient(circle at bottom right, #311b92, transparent 45%), #050714;
   background-attachment: fixed;
 }
 
@@ -150,14 +169,14 @@ body {
   width: 600px;
   max-width: 100%;
   padding: 30px;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
 }
 
 /* === Toggle === */
 .toggle {
   position: relative;
   display: flex;
-  background: rgba(0,0,0,0.3);
+  background: rgba(0, 0, 0, 0.3);
   border-radius: 14px;
   margin-bottom: 24px;
 }
@@ -207,7 +226,7 @@ body {
   padding: 14px;
   border-radius: 12px;
   border: none;
-  background: rgba(18,22,40,0.7);
+  background: rgba(18, 22, 40, 0.7);
   color: white;
 }
 
@@ -226,7 +245,9 @@ body {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .primary-btn:hover {
@@ -252,7 +273,7 @@ body {
 }
 
 .switch-text label {
-  display: inline; 
+  display: inline;
   color: #8b9bb4;
   font-size: 0.9rem;
 }
