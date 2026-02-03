@@ -2,9 +2,14 @@
 
 public class AvatarDto
 {
-    public int Id { get; set; }
+    public int Id { get; set; }           
+    public int UserId { get; set; }   
+
+    // Basis-Attribute
     public int Level { get; set; }
     public int Experience { get; set; }
+
+    // Booster
     public string? Boost1 { get; set; }
     public string? Boost2 { get; set; }
     public string? Boost3 { get; set; }

@@ -1,15 +1,10 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Sybau_Backend._Services;
-using Sybau_Backend.Data;
 using Sybau_Backend.DTOs;
-using Sybau_Backend.Models;
 
 namespace Sybau_Backend.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     public class AuthController : ControllerBase
     {

@@ -5,7 +5,7 @@ using Sybau_Backend.Models;
 
 namespace Sybau_Backend.Controllers;
 
-[Route("api/[controller]")]
+[Route("[controller]")]
 [ApiController]
 public class ChallengeController : ControllerBase
 {
@@ -32,7 +32,7 @@ public class ChallengeController : ControllerBase
     [HttpPost("add")]
     public async Task<IActionResult> Add([FromBody] ChallengeDto dto)
     {
-        var challenge = _challengeService.CreateChallenge(dto);
+        var challenge = await _challengeService.CreateChallenge(dto);
         return Ok(challenge);
     }
 

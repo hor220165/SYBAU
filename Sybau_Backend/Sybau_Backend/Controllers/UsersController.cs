@@ -8,7 +8,7 @@ using Sybau_Backend.Models;
 
 namespace Sybau_Backend.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     public class UsersController : ControllerBase
     {
