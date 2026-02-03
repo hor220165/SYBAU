@@ -38,32 +38,32 @@
 
         <!-- Formular -->
         <transition name="fade" mode="out-in">
-          <form v-if="isLogin" key="login" class="form">
-            <label>E-Mail</label>
-            <input type="email" placeholder="Deine Email" />
+          <form v-if="isLogin" key="login" class="form" @submit.prevent="handleLogin">
+              <label>E-Mail</label>
+              <input type="email" placeholder="Deine Email" v-model="email" />
 
-            <label>Passwort</label>
-            <input type="password" placeholder="••••••••" />
+              <label>Passwort</label>
+              <input type="password" placeholder="••••••••" v-model="password" />
 
-            <button class="primary-btn" @click="handleLogin">Login</button>
-            <div class="switch-text">
-              <label>Noch kein Account?</label>
-              <label class="switch-link" @click="isLogin = false">jetzt registrieren</label>
-            </div>
-          </form>
+              <button type="submit" class="primary-btn">Login</button>
+              <div class="switch-text">
+                <label>Noch kein Account?</label>
+                <label class="switch-link" @click="isLogin = false">jetzt registrieren</label>
+              </div>
+            </form>
 
-          <form v-else key="register" class="form">
-            <label>Benutzername</label>
-            <input placeholder="Dein Benutzername"/>
+            <form v-else key="register" class="form" @submit.prevent="handleRegister">
+              <label>Benutzername</label>
+              <input placeholder="Dein Benutzername" v-model="username" />
 
-            <label>E-Mail</label>
-            <input placeholder="Deine Email" type="email" />
+              <label>E-Mail</label>
+              <input placeholder="Deine Email" type="email" v-model="email" />
 
-            <label>Passwort</label>
-            <input type="password" placeholder="••••••••"/>
+              <label>Passwort</label>
+              <input type="password" placeholder="••••••••" v-model="password" />
 
-            <button class="primary-btn">Account erstellen</button>
-          </form>
+              <button type="submit" class="primary-btn">Account erstellen</button>
+            </form>
         </transition>
       </div>
     </div>
@@ -71,17 +71,47 @@
 </template>
 
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
-import {useRouter} from "vue-router";
+import { useRouter } from 'vue-router';
+import { authService } from '@/services/api';
 
 const router = useRouter();
 
-const handleLogin = async () =>{
-  router.push('/home');
+const isLogin = ref(true);
+const email = ref('');
+const password = ref('');
+const username = ref('');
+
+const handleLogin = async () => {
+  try {
+    const res = await authService.login(email.value, password.value);
+    const token = res.data?.token;
+    const user = res.data?.user;
+    if (token) localStorage.setItem('token', token);
+    if (user) localStorage.setItem('user', JSON.stringify(user));
+    router.push('/home');
+  } catch (err) {
+    console.error(err);
+    alert('Login fehlgeschlagen');
+  }
 }
 
-const isLogin = ref(true);
+const handleRegister = async () => {
+  try {
+    await authService.register(username.value, email.value, password.value);
+    // optional: auto-login after register
+    const res = await authService.login(email.value, password.value);
+    const token = res.data?.token;
+    const user = res.data?.user;
+    if (token) localStorage.setItem('token', token);
+    if (user) localStorage.setItem('user', JSON.stringify(user));
+    router.push('/home');
+  } catch (err) {
+    console.error(err);
+    alert('Registration fehlgeschlagen');
+  }
+}
 </script>
 
 <style>
