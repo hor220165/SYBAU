@@ -13,6 +13,8 @@ export function useNavigation() {
     };
 
     const logout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
         router.push('/auth');
     }
 
