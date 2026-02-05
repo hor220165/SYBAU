@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useRouter } from 'vue-router';
 
 const API = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -19,7 +20,18 @@ API.interceptors.request.use((config) => {
 API.interceptors.response.use(
     (res) => res,
     (err) => {
-        // optional: handle global auth errors (401) here
+        // Handle 401 Unauthorized - Token expired oder ungültig
+        if (err.response?.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            // Redirect to auth (wenn Vue Router verfügbar)
+            try {
+                const router = useRouter();
+                router.push('/auth');
+            } catch (e) {
+                window.location.href = '/auth';
+            }
+        }
         return Promise.reject(err);
     }
 );
@@ -32,8 +44,43 @@ export const authService = {
 };
 
 export const userService = {
-    getProfile: () => API.get('/users/profile'),
-    getLeaderboard: () => API.get('/users/leaderboard')
+    // Hole User aus localStorage statt API (falls bereits vorhanden)
+    getProfile: () => {
+        const user = localStorage.getItem('user');
+        if (user) {
+            return Promise.resolve({ data: JSON.parse(user) });
+        }
+        return API.get('/users/profile');
+    },
+    getLeaderboard: () => API.get('/users/leaderboard'),
+        //Update Profile bzw Username ändern geht noch NICHT!!!!
+        updateProfile: (data: { username?: string}) => {
+            // Aktualisiere in localStorage UND Backend
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const updated = { ...user, ...data };
+            localStorage.setItem('user', JSON.stringify(updated));
+            return API.put('/users/profile', data);
+        },
+    changePassword: (oldPassword: string, newPassword: string) =>
+        API.post("/users/profile/change-password", {
+        OldPassword: oldPassword,
+        NewPassword: newPassword
+}),
+    deleteAccount: () =>
+        API.delete('/users/account'),
+    updateBoostSlots: (slots: Array<number | null>) =>
+        API.put('/users/boosts/slots', { slots })
+};
+
+export const itemService = {
+    getItems: () => API.get('/items'),
+    getUserItems: () => API.get('/users/items'),
+    getBoosts: () => API.get('/boosts')
+};
+
+export const boostService = {
+    getBoosts: () => API.get('/boosts'),
+    getUserBoosts: () => API.get('/users/boosts')
 };
 
 export default API;
