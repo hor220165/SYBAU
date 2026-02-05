@@ -150,4 +150,32 @@ public class UserService
             Boost4 = user.Avatar.Boost4
         };
     }
+    
+    
+    public async Task UpdateUserAsync(User user)
+    {
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteUserAsync(int userId)
+    {
+        var user = await _context.Users
+            .Include(u => u.Avatar)
+            .Include(u => u.UserChallenges)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user == null) return;
+
+        // Optional: Alles löschen, was zum User gehört
+        if (user.Avatar != null)
+            _context.Avatars.Remove(user.Avatar);
+
+        if (user.UserChallenges != null)
+            _context.UserChallenges.RemoveRange(user.UserChallenges);
+
+        _context.Users.Remove(user);
+        await _context.SaveChangesAsync();
+    }
+
 }
