@@ -9,25 +9,28 @@ namespace Sybau_Backend.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AuthService _authService;
+        private readonly IConfiguration _config;
 
-        public AuthController(AuthService authService)
+        public AuthController(AuthService authService,IConfiguration config)
         {
             _authService = authService;
+            _config = config;
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
-            var user = await _authService.LoginAsync(dto.Email, dto.Password);
-            if (user == null) return Unauthorized("Invalid email or password");
-
-            return Ok(new
+            try
             {
-                user.Id,
-                user.UserName,
-                user.Email
-            });
+                var result = await _authService.LoginWithTokenAsync(dto.Email, dto.Password, _config);
+                return Ok(result);
+            }
+            catch (Exception e)
+            {
+                return Unauthorized(e.Message);
+            }
         }
+
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)

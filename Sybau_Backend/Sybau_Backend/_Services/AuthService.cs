@@ -1,5 +1,9 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Sybau_Backend.Data;
 using Sybau_Backend.Models;
 
@@ -17,6 +21,26 @@ public class AuthService
         _passwordHasher = new PasswordHasher<User>();
         _userService = userService;
     }
+    
+    public async Task<object> LoginWithTokenAsync(string email, string password, IConfiguration config)
+    {
+        var user = await LoginAsync(email, password); // existierender Login-Flow
+
+        var token = GenerateJwtToken(user, config);
+
+        return new
+        {
+            token,
+            user = new
+            {
+                user.Id,
+                user.UserName,
+                user.Email
+            }
+        };
+    }
+
+    
 
     public async Task<User?> LoginAsync(string email, string password)
     {
@@ -46,5 +70,28 @@ public class AuthService
         await _userService.AssignStartingChallengesAsync(user);
 
         return user;
+    }
+    
+    
+    //JWT erzeugen
+    public string GenerateJwtToken(User user, IConfiguration config)
+    {
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Name, user.UserName)
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            claims: claims,
+            expires: DateTime.UtcNow.AddDays(7),
+            signingCredentials: creds
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
