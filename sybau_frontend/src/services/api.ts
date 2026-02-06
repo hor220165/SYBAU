@@ -45,22 +45,25 @@ export const authService = {
 
 export const userService = {
     // Hole User aus localStorage statt API (falls bereits vorhanden)
-    getProfile: () => {
-        const user = localStorage.getItem('user');
-        if (user) {
-            return Promise.resolve({ data: JSON.parse(user) });
-        }
-        return API.get('/users/profile');
+   getProfile: async () => {
+    const { data } = await API.get('/users/profile');  // holt alles vom Backend
+    // Nur Basis-Userinfos in LocalStorage speichern
+    localStorage.setItem('user', JSON.stringify({ 
+        id: data.id, 
+        userName: data.userName, 
+        email: data.email 
+    }));
+    return { data };
     },
     getLeaderboard: () => API.get('/users/leaderboard'),
         //Update Profile bzw Username ändern geht noch NICHT!!!!
-        updateProfile: (data: { username?: string}) => {
-            // Aktualisiere in localStorage UND Backend
-            const user = JSON.parse(localStorage.getItem('user') || '{}');
-            const updated = { ...user, ...data };
-            localStorage.setItem('user', JSON.stringify(updated));
-            return API.put('/users/profile', data);
-        },
+    updateProfile: (data: { UserName?: string}) => {
+        // Aktualisiere in localStorage UND Backend
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const updated = { ...user, ...data };
+        localStorage.setItem('user', JSON.stringify(updated));
+       return API.put('/users/profile', data);
+    },
     changePassword: (oldPassword: string, newPassword: string) =>
         API.post("/users/profile/change-password", {
         OldPassword: oldPassword,
