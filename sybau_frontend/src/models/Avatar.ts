@@ -2,6 +2,7 @@ export interface Avatar {
     id:number,
     level:number,
     experience:number,
+    xpForNextLevel:number,
     boost1:string,
     boost2:string,
     boost3:string,
