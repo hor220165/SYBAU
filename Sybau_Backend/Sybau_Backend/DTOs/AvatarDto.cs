@@ -8,6 +8,7 @@ public class AvatarDto
     // Basis-Attribute
     public int Level { get; set; }
     public int Experience { get; set; }
+    public int XpForNextLevel { get; set; }
 
     // Booster
     public string? Boost1 { get; set; }

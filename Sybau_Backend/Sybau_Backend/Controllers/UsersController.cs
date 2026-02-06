@@ -41,6 +41,7 @@ namespace Sybau_Backend.Controllers
                 Id = user.Avatar.Id,
                 Level = user.Avatar.Level,
                 Experience = user.Avatar.Experience,
+                XpForNextLevel = user.Avatar.XpForNextLevel(),
                 Boost1 = user.Avatar.Boost1,
                 Boost2 = user.Avatar.Boost2,
                 Boost3 = user.Avatar.Boost3,
