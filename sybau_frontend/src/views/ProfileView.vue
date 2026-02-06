@@ -18,7 +18,7 @@ const savingProfile = ref(false);
 async function saveProfile() {
   savingProfile.value = true;
   try {
-    await userService.updateProfile({ username: editingUsername.value });
+    await userService.updateProfile({ UserName: editingUsername.value });
     // Update local user object
     const u = { ...user.value };
     if ('username' in u) u.username = editingUsername.value;
@@ -53,9 +53,6 @@ const leaderboardPosition = computed(() => {
   return '—';
 });
 
-onMounted(() => {
-  loadLeaderboard();
-});
 
 // Security actions
 const oldPassword = ref('');
@@ -95,6 +92,20 @@ async function deleteAccount() {
     alert('Fehler beim Löschen: ' + (err.response?.data?.message || err.message));
   }
 }
+
+onMounted(async () => {
+  try {
+    // Profile vom Backend laden
+    const profileRes = await userService.getProfile();
+    user.value = profileRes.data;
+    editingUsername.value = user.value.userName;
+
+    // Leaderboard laden
+    await loadLeaderboard();
+  } catch (err) {
+    console.error('Fehler beim Laden von Profile oder Leaderboard', err);
+  }
+});
 </script>
 
 <template>
