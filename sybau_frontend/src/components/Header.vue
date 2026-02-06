@@ -1,7 +1,24 @@
 <script setup lang="ts">
-import {useNavigation} from "@/composables/useNavigation.ts";
+import { computed, onMounted } from 'vue';
+import { useNavigation } from "@/composables/useNavigation.ts";
+import { useAuth } from "@/composables/useAuth";
+import { userService } from '@/services/api';
 
-const {logout} = useNavigation();
+const { logout } = useNavigation();
+const { user } = useAuth();
+
+onMounted(async () => {
+  if (!user.value?.avatar) {
+    const res = await userService.getProfile();
+    user.value = res.data;
+    localStorage.setItem('user', JSON.stringify(res.data));
+  }
+});
+
+// Computed properties mit allen möglichen Varianten
+const userLevel = computed(() => user.value?.avatar?.level ?? user.value?.Avatar?.level ?? 0);
+const userXP = computed(() => user.value?.avatar?.experience ?? user.value?.Avatar?.experience ?? 0);
+const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 </script>
 
 <template>
@@ -19,14 +36,17 @@ const {logout} = useNavigation();
     <div class="stats-header">
       <div class="stat-badge level">
         <span>Lvl</span>
+        <span>{{ userLevel }}</span>
       </div>
       <div class="stat-badge xp">
         <span class="icon">XP</span>
+        <span>{{ userXP }}</span>
       </div>
       <div class="stat-badge coins">
         <span>Coins</span>
+        <span>{{ userCoins }}</span>
       </div>
-      <button class="menu-btn" @click = "logout">
+      <button class="menu-btn" @click="logout">
         <span>logout</span>
       </button>
     </div>
