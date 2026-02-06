@@ -25,13 +25,13 @@
         <!-- XP Progress -->
         <div class="xp-progress">
           <div class="progress-header">
-            <span>Level 12 Progress</span>
-            <span>650 / 1000 XP</span>
+            <span>Level {{ level }} Progress</span>
+            <span>{{ currentXp }} / {{ xpForNextLevel }} XP</span>
           </div>
           <div class="progress-bar">
-            <div class="progress-fill" style="width: 65%"></div>
+            <div class="progress-fill" :style="`width: ${progressPercent}%`"></div>
           </div>
-          <p class="progress-text">350 XP bis Level 13</p>
+          <p class="progress-text">{{ xpForNextLevel - currentXp }} XP bis Level {{ level + 1 }}</p>
         </div>
       </div>
 
@@ -75,6 +75,43 @@ import SpriteAnimator from "../components/spriteAnimator.vue";
 import StatCard from "../components/StatCard.vue";
 import Navbar from "@/components/Navbar.vue";
 import Header from "@/components/Header.vue";
+import { onMounted, ref, computed } from 'vue';
+import { userService } from '@/services/api';
+
+const progressPercent = computed(() => {
+  const denom = xpForNextLevel.value || 1;
+  return Math.min(100, Math.floor((currentXp.value / denom) * 100));
+});
+
+const userName = ref('');
+const email = ref('');
+const coins = ref(0);
+
+const level = ref(1);
+const currentXp = ref(0);
+const xpForNextLevel = ref(1000);
+
+async function loadProfile() {
+  try {
+    const res = await userService.getProfile();
+    const data = res.data ?? {};
+
+    userName.value = data.userName ?? '';
+    email.value = data.email ?? '';
+    coins.value = data.coins ?? 0;
+
+    const avatar = data.avatar ?? {};
+    level.value = avatar.level ?? 0;
+    currentXp.value = avatar.experience ?? 0;
+    // xpForNext könnte vom Backend kommen oder statisch initialisiert werden
+    xpForNextLevel.value = avatar.xpForNextLevel ?? 1000;
+
+  } catch (e) {
+    console.error('Fehler beim Laden des Profils', e);
+  }
+}
+
+onMounted(() => loadProfile());
 
 </script>
 
