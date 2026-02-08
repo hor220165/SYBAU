@@ -74,9 +74,13 @@ const handleLogin = async () => {
     const res = await authService.login(email.value, password.value); 
     const token = res.data?.token; 
     const user = res.data?.user; 
-    if (token) localStorage.setItem('token', token); 
-    if (user) localStorage.setItem('user', JSON.stringify(user)); 
-    router.push('/home'); 
+    if (token) localStorage.setItem('token', token);
+    if (user) localStorage.setItem('user', JSON.stringify(user));
+    if (token) {
+      router.push('/home');
+    } else {
+      alert('Kein Token erhalten — Login fehlgeschlagen.');
+    }
     } 
     catch (err) 
     { 
@@ -93,9 +97,13 @@ const handleRegister = async () =>
   const res = await authService.login(email.value, password.value); 
   const token = res.data?.token; 
   const user = res.data?.user; 
-  if (token) localStorage.setItem('token', token); 
-  if (user) localStorage.setItem('user', JSON.stringify(user)); 
-  router.push('/home'); 
+  if (token) localStorage.setItem('token', token);
+  if (user) localStorage.setItem('user', JSON.stringify(user));
+  if (token) {
+    router.push('/home');
+  } else {
+    alert('Kein Token erhalten — Anmeldung fehlgeschlagen.');
+  }
   } catch (err) 
   { 
     console.error(err); 
