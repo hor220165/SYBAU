@@ -25,9 +25,9 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   <!-- Header -->
   <header class="header">
     <div class="logo-section">
-      <div class="logo-icon">💪</div>
+      <img src="../assets/Sybau_Logo_White.png" alt="Sybau_Logo" class="logo-img" />
       <div class="logo-text">
-        <h1>SBYAU</h1>
+        <h1>SYBAU</h1>
         <p>Shape Your Body And Unleash</p>
       </div>
     </div>
@@ -47,7 +47,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
         <span>{{ userCoins }}</span>
       </div>
       <button class="menu-btn" @click="logout">
-        <span>logout</span>
+        <span><img src="../assets/logout_Icon.png" alt="logout" width="25px" class="logout-icon"></span>
       </button>
     </div>
   </header>
@@ -61,11 +61,15 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   align-items: center;
   padding: 20px 40px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(
-      180deg,
-      #0f173d 0%,
-      #0a112d 100%
-  );
+  background: transparent;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.logout-icon {
+  width: 20px;
+  height: 20px;
+  filter: invert(68%) sepia(47%) saturate(3445%) hue-rotate(318deg) brightness(101%) contrast(92%);
 }
 
 .logo-section {
@@ -74,15 +78,10 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   gap: 16px;
 }
 
-.logo-icon {
-  width: 64px;
-  height: 64px;
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
+.logo-img {
+  height: 35px;
+  width: auto;
+  object-fit: contain;
 }
 
 .logo-text h1 {

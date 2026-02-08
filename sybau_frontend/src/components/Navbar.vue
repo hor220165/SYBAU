@@ -55,7 +55,7 @@ const {navigateTo, isActiveRoute} = useNavigation()
 /* Navigation */
 .navbar {
   display: flex;
-  justify-content: center ;
+  justify-content: center;
   gap: 8px;
   padding: 0px 40px;
   height: 60px;
@@ -63,11 +63,9 @@ const {navigateTo, isActiveRoute} = useNavigation()
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: linear-gradient(
-      180deg,
-      #0f173d 0%,
-      #0a112d 100%
-  );
+  background: transparent;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .nav-item {
@@ -112,11 +110,6 @@ const {navigateTo, isActiveRoute} = useNavigation()
 
 .nav-icon {
   font-size: 20px;
-}
-.header-navbar{
-  position: fixed;
-  top: 0;
-  z-index: 1030; /* to prevent the navbar getting covered up by other content */
 }
 
 .nav-item:focus:not(:focus-visible) {

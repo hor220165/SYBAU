@@ -36,7 +36,6 @@ export default defineComponent({
 
       sprite.onload = () => {
         console.log('Sprite geladen:', sprite.width, 'x', sprite.height);
-        console.log('Grid:', props.columns, 'x', props.rows, '=', props.frameCount, 'Frames');
         
         function draw() {
           if (!ctx || !canvas.value) return;
@@ -54,7 +53,6 @@ export default defineComponent({
             0, 0, props.frameWidth, props.frameHeight
           );
 
-          console.log('Frame:', frame, '→ Spalte:', col, 'Reihe:', row);
           frame = (frame + 1) % props.frameCount;
         }
 

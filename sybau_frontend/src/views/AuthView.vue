@@ -111,7 +111,6 @@ const handleRegister = async () =>
   } }
 </script>
 
-
 <style>
 /* === Reset === */
 * {
