@@ -62,8 +62,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'; 
 import { useRouter } from 'vue-router'; 
-import { authService } from '@/services/api'; 
+import { useAuth } from '@/composables/useAuth';
+import { userService } from '@/services/api';
 const router = useRouter(); 
+const { login } = useAuth();
 
 const isLogin = ref(true); 
 const email = ref(''); 
@@ -71,44 +73,35 @@ const password = ref('');
 const username = ref(''); 
 const handleLogin = async () => {
   try { 
-    const res = await authService.login(email.value, password.value); 
+    const res = await login(email.value, password.value); 
     const token = res.data?.token; 
-    const user = res.data?.user; 
-    if (token) localStorage.setItem('token', token);
-    if (user) localStorage.setItem('user', JSON.stringify(user));
     if (token) {
+      // Profildaten laden vor Navigation
+      await userService.getProfile();
       router.push('/home');
     } else {
       alert('Kein Token erhalten — Login fehlgeschlagen.');
     }
-    } 
-    catch (err) 
-    { 
-      console.error(err); 
-      alert('Login fehlgeschlagen'); 
-  } };
-
-const handleRegister = async () => 
-{ 
-  try 
-{ 
-  await authService.register(username.value, email.value, password.value); 
-  // optional: auto-login after register 
-  const res = await authService.login(email.value, password.value); 
-  const token = res.data?.token; 
-  const user = res.data?.user; 
-  if (token) localStorage.setItem('token', token);
-  if (user) localStorage.setItem('user', JSON.stringify(user));
-  if (token) {
-    router.push('/home');
-  } else {
-    alert('Kein Token erhalten — Anmeldung fehlgeschlagen.');
-  }
-  } catch (err) 
-  { 
+  } catch (err) { 
     console.error(err); 
-    alert('Registration fehlgeschlagen'); 
-  } }
+    alert('Login fehlgeschlagen'); 
+  }
+};
+
+const handleRegister = async () => { 
+  try { 
+    const { register } = useAuth();
+    await register(username.value, email.value, password.value); 
+    // optional: auto-login after register 
+    await login(email.value, password.value); 
+    // Profildaten laden vor Navigation
+    await userService.getProfile();
+    router.push('/home');
+  } catch (err) { 
+    console.error(err); 
+    alert('Registration fehlgeschlagen');
+  }
+}; 
 </script>
 
 <style>
