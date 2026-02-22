@@ -2,12 +2,14 @@
 import { ref, onMounted } from 'vue';
 import Navbar from "@/components/Navbar.vue";
 import Header from "@/components/Header.vue";
-import { itemService } from '@/services/api';
+import { itemService, userService } from '@/services/api';
 import type { item } from '@/models/Item';
 
 const items = ref<item[]>([]);
 const loading = ref(false);
 const error = ref('');
+const buyingItemId = ref<number | null>(null);
+const successMessage = ref('');
 
 const loadShopItems = async () => {
   loading.value = true;
@@ -24,9 +26,37 @@ const loadShopItems = async () => {
 };
 
 const buyItem = async (item: item) => {
-  // TODO: Buy logic - sende request zum Backend
-  console.log('Kaufe Item:', item);
-  alert(`${item.name} gekauft! (Spielfunktion noch nicht implementiert)`);
+  buyingItemId.value = item.id;
+  successMessage.value = '';
+  try {
+    // Kauflogi zum Backend
+    await itemService.buyItem(item.id);
+    
+    // Nach erfolgreichem Kauf: Profildaten neu laden
+    await userService.getProfile();
+    
+    // Aus localStorage die aktualisierten Daten lesen
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const coins = user.coins ?? 0;
+    
+    successMessage.value = `✅ ${item.name} gekauft! Verbleibende Coins: ${coins}`;
+    
+    // Nachricht nach 3 Sekunden entfernen
+    setTimeout(() => {
+      successMessage.value = '';
+    }, 3000);
+    
+  } catch (err: any) {
+    console.error('Fehler beim Kauf:', err);
+    error.value = err.response?.data;
+    
+    // Fehlermeldung nach 5 Sekunden entfernen
+    setTimeout(() => {
+      error.value = '';
+    }, 5000);
+  } finally {
+    buyingItemId.value = null;
+  }
 };
 
 onMounted(loadShopItems);
@@ -51,13 +81,15 @@ onMounted(loadShopItems);
       <div v-if="loading" class="loading">
         ⏳ Lade Shop-Items...
       </div>
-      <div v-else-if="error" class="error-message">
-        {{ error }}
-        <button class="btn-retry" @click="loadShopItems">Erneut versuchen</button>
+      <div v-if="error" class="error-message">
+        ❌ {{ error }}
+      </div>
+      <div v-if="successMessage" class="success-message">
+        {{ successMessage }}
       </div>
 
       <!-- Items Grid -->
-      <div v-else class="shop-grid">
+      <div v-if="!loading" class="shop-grid">
         <div v-if="items.length === 0" class="empty-state">
           <p>Keine Items im Shop vorhanden.</p>
         </div>
@@ -78,7 +110,13 @@ onMounted(loadShopItems);
                 <span class="coins-icon">💰</span>
                 <span class="price-value">{{ item.price }}</span>
               </div>
-              <button class="btn-buy" @click="buyItem(item)">Kaufen</button>
+              <button 
+                class="btn-buy" 
+                @click="buyItem(item)"
+                :disabled="buyingItemId === item.id"
+              >
+                {{ buyingItemId === item.id ? '⏳ Kaufe...' : 'Kaufen' }}
+              </button>
             </div>
           </div>
         </div>
@@ -119,18 +157,38 @@ onMounted(loadShopItems);
 }
 
 .loading,
-.error-message {
-  background: white;
+.error-message,
+.success-message {
   border-radius: 15px;
   padding: 40px;
   text-align: center;
   font-size: 1.1em;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   color: #333;
+  background: white;
+  margin: 10px 0;
+  animation: slideIn 0.3s ease-out;
 }
 
 .error-message {
   color: #d32f2f;
+  background: rgba(211, 47, 47, 0.1);
+}
+
+.success-message {
+  color: #2e7d32;
+  background: rgba(46, 125, 50, 0.1);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .btn-retry {
@@ -271,6 +329,12 @@ onMounted(loadShopItems);
 
 .btn-buy:active {
   transform: translateY(0);
+}
+
+.btn-buy:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .empty-state {

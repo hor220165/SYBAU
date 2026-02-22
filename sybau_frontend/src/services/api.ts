@@ -85,7 +85,8 @@ export const userService = {
 export const itemService = {
     getShopItems: () => API.get('/shop/items'),
     getUserItems: () => API.get('/users/items'),
-    getBoosts: () => API.get('/boosts')
+    getBoosts: () => API.get('/boosts'),
+    buyItem: (itemId: number) => API.post(`/shop/buy-item/${itemId}`)
 };
 
 export const boostService = {
