@@ -7,6 +7,7 @@ import QuestsView from "@/views/QuestsView.vue";
 import AvatarView from "@/views/AvatarView.vue";
 import LeaderboardView from "@/views/LeaderboardView.vue";
 import ProfileView from "@/views/ProfileView.vue";
+import AdminView from "@/views/AdminView.vue";
 
 const routes = [
     {
@@ -44,6 +45,10 @@ const routes = [
     {
         path: '/profile',
         component: ProfileView
+    },
+    {
+        path: '/admin',
+        component: AdminView
     }
 ]
 
