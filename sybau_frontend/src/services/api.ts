@@ -47,11 +47,17 @@ export const userService = {
     // Hole User aus localStorage statt API (falls bereits vorhanden)
    getProfile: async () => {
     const { data } = await API.get('/users/profile');  // holt alles vom Backend
-    // Nur Basis-Userinfos in LocalStorage speichern
+    // Wichtige Userinfos in LocalStorage speichern
     localStorage.setItem('user', JSON.stringify({ 
         id: data.id, 
         userName: data.userName, 
-        email: data.email 
+        email: data.email,
+        coins: data.coins,
+        avatar: { 
+          bodyStage: data.avatar?.bodyStage,
+          level: data.avatar?.level,
+          experience: data.avatar?.experience
+        }
     }));
     return { data };
     },
@@ -76,7 +82,7 @@ export const userService = {
 };
 
 export const itemService = {
-    getItems: () => API.get('/items'),
+    getShopItems: () => API.get('/shop/items'),
     getUserItems: () => API.get('/users/items'),
     getBoosts: () => API.get('/boosts')
 };
@@ -84,6 +90,27 @@ export const itemService = {
 export const boostService = {
     getBoosts: () => API.get('/boosts'),
     getUserBoosts: () => API.get('/users/boosts')
+};
+
+export const adminService = {
+    // Challenges
+    getChallenges: () => API.get('/admin/challenges'),
+    createChallenge: (data: any) => API.post('/admin/challenges', data),
+    updateChallenge: (id: number, data: any) => API.put(`/admin/challenges/${id}`, data),
+    deleteChallenge: (id: number) => API.delete(`/admin/challenges/${id}`),
+    
+    // Items (Shop)
+    getItems: () => API.get('/admin/items'),
+    createShopItem: (data: any) => API.post('/admin/items', data),
+    updateShopItem: (id: number, data: any) => API.put(`/admin/items/${id}`, data),
+    deleteShopItem: (id: number) => API.delete(`/admin/items/${id}`),
+    
+    // Users
+    getAllUsers: () => API.get('/admin/users'),
+    getUserStats: (id: number) => API.get(`/admin/users/${id}/stats`),
+    updateUserRole: (id: number, data: any) => API.put(`/admin/users/${id}/role`, data),
+    updateUser: (id: number, data: any) => API.put(`/admin/users/${id}`, data),
+    deleteUser: (id: number) => API.delete(`/admin/users/${id}`)
 };
 
 export default API;
