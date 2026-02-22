@@ -53,6 +53,7 @@ export const userService = {
         userName: data.userName, 
         email: data.email,
         coins: data.coins,
+        isAdmin: data.isAdmin,
         avatar: { 
           bodyStage: data.avatar?.bodyStage,
           level: data.avatar?.level,
