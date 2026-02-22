@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Sybau_Backend._Services;
@@ -39,14 +41,14 @@ namespace Sybau_Backend.Controllers
         }
         
         
-        [HttpPost("{userId}/buy/{itemId}")]
-        public async Task<IActionResult> BuyItem(int userId, int itemId)
+        [HttpPost("buy-item/{itemId}")]
+        [Authorize]
+        public async Task<IActionResult> BuyItem(int itemId)
         {
-            var success = await _shopService.BuyItemAsync(userId, itemId);
-
-            if (!success)
-                return BadRequest("Not enough coins or item not found");
-
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var result = await _shopService.BuyItemAsync(userId, itemId);
+    
+            if (!result) return BadRequest("Kauf fehlgeschlagen");
             return Ok();
         }
 
