@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Sybau_Backend._Services;
 using Sybau_Backend.Data;
 using Sybau_Backend.DTOs;
 using Sybau_Backend.Models;
@@ -12,10 +13,12 @@ namespace Sybau_Backend.Controllers
     public class AvatarsController : ControllerBase
     {
         private readonly FitnessDbContext _context;
+        private readonly BodyStageService  _bodyStageService;
         
-        public AvatarsController(FitnessDbContext context)
+        public AvatarsController(FitnessDbContext context,  BodyStageService bodyStageService)
         {
             _context = context;
+            _bodyStageService = bodyStageService;
         }
         // GET: api/<AvatarsController>
         [HttpGet]
@@ -26,6 +29,7 @@ namespace Sybau_Backend.Controllers
                 Id = a.Id,
                 UserId = a.UserId,
                 Level = a.Level,
+                BodyStage = _bodyStageService.GetBodyStage(a.Level),
                 Experience = a.Experience,
                 Boost1 = a.Boost1,
                 Boost2 = a.Boost2,
@@ -47,6 +51,7 @@ namespace Sybau_Backend.Controllers
                     Id = a.Id,
                     UserId = a.UserId,
                     Level = a.Level,
+                    BodyStage = _bodyStageService.GetBodyStage(a.Level),
                     Experience = a.Experience,
                     Boost1 = a.Boost1,
                     Boost2 = a.Boost2,

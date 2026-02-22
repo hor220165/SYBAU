@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Runtime.CompilerServices;
+using Sybau_Backend._Services;
+using Sybau_Backend.Models.Enums;
 
 namespace Sybau_Backend.Models;
 

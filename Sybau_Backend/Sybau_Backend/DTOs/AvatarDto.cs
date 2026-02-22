@@ -1,4 +1,6 @@
-﻿namespace Sybau_Backend.DTOs;
+﻿using Sybau_Backend.Models.Enums;
+
+namespace Sybau_Backend.DTOs;
 
 public class AvatarDto
 {
@@ -6,7 +8,8 @@ public class AvatarDto
     public int UserId { get; set; }   
 
     // Basis-Attribute
-    public int Level { get; set; }
+    public int? Level { get; set; }
+    public BodyStage BodyStage {get; set;}
     public int Experience { get; set; }
     public int XpForNextLevel { get; set; }
 

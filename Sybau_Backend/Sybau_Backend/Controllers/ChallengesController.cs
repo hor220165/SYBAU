@@ -1,11 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Sybau_Backend._Services;
 using Sybau_Backend.DTOs;
 using Sybau_Backend.Models;
 
 namespace Sybau_Backend.Controllers;
 
-[Route("[controller]")]
+[Route("[controller]s")]
 [ApiController]
 public class ChallengeController : ControllerBase
 {
@@ -14,6 +15,13 @@ public class ChallengeController : ControllerBase
     public ChallengeController(ChallengeService challengeService)
     {
         _challengeService = challengeService;
+    }
+
+    [HttpGet("")]
+    public async Task<IActionResult> GetAllChallenges()
+    {
+        var challenges = await _challengeService.GetAllChallenges();
+        return Ok(challenges);
     }
 
     [HttpGet("user/{userId}")]
@@ -29,6 +37,7 @@ public class ChallengeController : ControllerBase
         }));
     }
     
+    [Authorize(Policy = "AdminOnly")]
     [HttpPost("add")]
     public async Task<IActionResult> Add([FromBody] ChallengeDto dto)
     {

@@ -16,10 +16,12 @@ namespace Sybau_Backend.Controllers
     public class UsersController : ControllerBase
     {
         private readonly UserService _userService;
+        private readonly BodyStageService _bodyStageService;
 
-        public UsersController(UserService userService)
+        public UsersController(UserService userService, BodyStageService bodyStageService)
         {
             _userService = userService;
+            _bodyStageService = bodyStageService;
         }
         
         // GET /users/profile
@@ -41,6 +43,7 @@ namespace Sybau_Backend.Controllers
                 Id = user.Avatar.Id,
                 Level = user.Avatar.Level,
                 Experience = user.Avatar.Experience,
+                BodyStage = _bodyStageService.GetBodyStage(user.Avatar.Level),
                 XpForNextLevel = user.Avatar.XpForNextLevel(),
                 Boost1 = user.Avatar.Boost1,
                 Boost2 = user.Avatar.Boost2,
@@ -54,7 +57,8 @@ namespace Sybau_Backend.Controllers
                 UserName = user.UserName,
                 Email = user.Email,
                 Coins = user.Coins,
-                Avatar = avatarDto
+                Avatar = avatarDto,
+                IsAdmin = user.IsAdmin,
             });
         }
         
@@ -99,14 +103,7 @@ namespace Sybau_Backend.Controllers
 
             return NoContent(); // 204 OK
         }
-
-        // GET: api/<UsersController>
-        [HttpGet]
-        public async Task<IActionResult> Get()
-        {
-            var users = await _userService.GetUsers();
-            return Ok(users);
-        }
+      
         
         [HttpGet("leaderboard")]
         public async Task<IActionResult> GetLeaderboard()
@@ -115,6 +112,20 @@ namespace Sybau_Backend.Controllers
             return Ok(topUsers);
         }
 
+        // GET: api/<UsersController>
+        [HttpGet]
+        public async Task<IActionResult> GetUsers()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (userIdClaim == null)
+                return Unauthorized();
+
+            var currentUserId = int.Parse(userIdClaim);
+            
+            var users = await _userService.GetUsersExcept(currentUserId);
+            return Ok(users);
+        }
 
 
         // GET api/<UsersController>/5
@@ -126,7 +137,7 @@ namespace Sybau_Backend.Controllers
             if (user == null)
                 return NotFound();
             
-            var avatarDto = new AvatarDto{Id = user.Avatar.Id,Level = user.Avatar.Level,Experience = user.Avatar.Experience, Boost1 = user.Avatar.Boost1,Boost2 = user.Avatar.Boost2,Boost3 = user.Avatar.Boost3,Boost4 = user.Avatar.Boost4,};
+            var avatarDto = new AvatarDto{Id = user.Avatar.Id,Level = user.Avatar.Level,Experience = user.Avatar.Experience,XpForNextLevel = user.Avatar.XpForNextLevel(),Boost1 = user.Avatar.Boost1,Boost2 = user.Avatar.Boost2,Boost3 = user.Avatar.Boost3,Boost4 = user.Avatar.Boost4,BodyStage = _bodyStageService.GetBodyStage(user.Avatar.Level)};
 
             return Ok(new UserDto
             {
@@ -134,7 +145,8 @@ namespace Sybau_Backend.Controllers
                 UserName = user.UserName,
                 Email = user.Email,
                 Coins = user.Coins,
-                Avatar = avatarDto
+                Avatar = avatarDto,
+                IsAdmin = user.IsAdmin
             });
         }
         
