@@ -40,8 +40,8 @@ async function saveProfile() {
 }
 
 // Progress (read-only)
-const level = computed(() => user.value?.level ?? user.value?.Level ?? 1);
-const experience = computed(() => user.value?.experience ?? user.value?.Experience ?? 0);
+const level = computed(() => user.value?.avatar.level ?? user.value?.avatar.Level ?? 1);
+const experience = computed(() => user.value?.avatar.experience ?? user.value?.avatar.Experience ?? 0);
 const completedChallenges = ref(0);
 const leaderboardPosition = computed(() => {
   const name = user.value?.username ?? user.value?.UserName ?? user.value?.userName ?? '';
@@ -73,7 +73,7 @@ async function changePassword() {
       logout();
       router.push('/auth');
     } else {
-      alert('Fehler: ' + (err.response?.data?.message || err.message));
+      alert(err.response?.data);
     }
   } finally {
     changingPassword.value = false;
@@ -95,9 +95,10 @@ async function deleteAccount() {
 
 onMounted(async () => {
   try {
-    // Profile vom Backend laden
-    const profileRes = await userService.getProfile();
-    user.value = profileRes.data;
+    // Profile vom Backend laden (speichert in localStorage)
+    await userService.getProfile();
+    // Aus localStorage laden statt rohe API Response
+    user.value = JSON.parse(localStorage.getItem('user') || '{}');
     editingUsername.value = user.value.userName;
 
     // Leaderboard laden
