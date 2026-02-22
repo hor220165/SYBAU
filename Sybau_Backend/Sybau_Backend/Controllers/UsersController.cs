@@ -17,11 +17,13 @@ namespace Sybau_Backend.Controllers
     {
         private readonly UserService _userService;
         private readonly BodyStageService _bodyStageService;
+        private readonly AvatarService _avatarService;
 
-        public UsersController(UserService userService, BodyStageService bodyStageService)
+        public UsersController(UserService userService, BodyStageService bodyStageService, AvatarService avatarService)
         {
             _userService = userService;
             _bodyStageService = bodyStageService;
+            _avatarService = avatarService;
         }
         
         // GET /users/profile
@@ -44,7 +46,7 @@ namespace Sybau_Backend.Controllers
                 Level = user.Avatar.Level,
                 Experience = user.Avatar.Experience,
                 BodyStage = _bodyStageService.GetBodyStage(user.Avatar.Level),
-                XpForNextLevel = user.Avatar.XpForNextLevel(),
+                XpForNextLevel = _avatarService.XpForNextLevel(user.Avatar.Level),
                 Boost1 = user.Avatar.Boost1,
                 Boost2 = user.Avatar.Boost2,
                 Boost3 = user.Avatar.Boost3,
@@ -137,7 +139,7 @@ namespace Sybau_Backend.Controllers
             if (user == null)
                 return NotFound();
             
-            var avatarDto = new AvatarDto{Id = user.Avatar.Id,Level = user.Avatar.Level,Experience = user.Avatar.Experience,XpForNextLevel = user.Avatar.XpForNextLevel(),Boost1 = user.Avatar.Boost1,Boost2 = user.Avatar.Boost2,Boost3 = user.Avatar.Boost3,Boost4 = user.Avatar.Boost4,BodyStage = _bodyStageService.GetBodyStage(user.Avatar.Level)};
+            var avatarDto = new AvatarDto{Id = user.Avatar.Id,Level = user.Avatar.Level,Experience = user.Avatar.Experience,XpForNextLevel = _avatarService.XpForNextLevel(user.Avatar.Level),Boost1 = user.Avatar.Boost1,Boost2 = user.Avatar.Boost2,Boost3 = user.Avatar.Boost3,Boost4 = user.Avatar.Boost4,BodyStage = _bodyStageService.GetBodyStage(user.Avatar.Level)};
 
             return Ok(new UserDto
             {

@@ -10,11 +10,13 @@ public class UserService
 {
     private readonly FitnessDbContext _context;
     private readonly ChallengeService _challengeService;
+    private readonly AvatarService _avatarService;
 
-    public UserService(FitnessDbContext context,ChallengeService challengService)
+    public UserService(FitnessDbContext context,ChallengeService challengService, AvatarService avatarService)
     {
         _context = context;
         _challengeService = challengService;
+        _avatarService = avatarService;
     }
 
     // Alle User der Datenbank ausgeben
@@ -33,7 +35,7 @@ public class UserService
         var users = await _context.Users
             .Include(u => u.Avatar)
             .Where(u => u.IsAdmin == false)
-            .OrderByDescending(u => u.Avatar.Experience)
+            .OrderByDescending(u => u.Avatar.Level)
             .Take(10)
             .ToListAsync(); // Daten kommen jetzt in den Speicher
 
@@ -65,7 +67,7 @@ public class UserService
     public async Task AddXpAndHandleLevelUp(User user, int xp)
     {
         int oldLevel = user.Avatar.Level;
-        user.Avatar.AddExperience(xp);
+        _avatarService.AddXpAsync(user.Avatar, xp);
 
         if (user.Avatar.Level > oldLevel)
         {

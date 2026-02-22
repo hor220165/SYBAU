@@ -17,7 +17,7 @@ namespace Sybau_Backend.Controllers
             _config = config;
         }
 
-        [HttpPost("login")]
+        [HttpPost("login")] 
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             try
