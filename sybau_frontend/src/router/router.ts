@@ -48,7 +48,8 @@ const routes = [
     },
     {
         path: '/admin',
-        component: AdminView
+        component: AdminView,
+        meta: { requiresAdmin: true }
     }
 ]
 
@@ -56,3 +57,18 @@ export const router = createRouter({
   history: createWebHistory(),
   routes
 })
+
+// Route Guard für Admin-Schutz
+router.beforeEach((to, from, next) => {
+  if (to.meta.requiresAdmin) {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user.isAdmin) {
+      next();
+    } else {
+      alert('Du hast keine Admin-Berechtigung!');
+      next('/home');
+    }
+  } else {
+    next();
+  }
+});
