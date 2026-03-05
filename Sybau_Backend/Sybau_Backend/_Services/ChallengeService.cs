@@ -26,6 +26,38 @@ public class ChallengeService
 
         return challenge;
     }
+    
+    // Challenge updaten
+    public async Task<ChallengeDto> UpdateChallenge(int id, ChallengeDto dto)
+    {
+        var challenge = await _context.Challenges.FindAsync(id);
+        if(challenge == null) throw new Exception("Challenge not found");
+        
+        challenge.Name = dto.Name;
+        challenge.Description = dto.Description;
+        challenge.XpReward = dto.XpReward;
+        challenge.CoinReward = dto.CoinReward;
+        challenge.RequiredLevel = dto.RequiredLevel;
+        _context.Challenges.Update(challenge);
+        await _context.SaveChangesAsync();
+        return dto;
+    }
+    
+    //Deleten einer Challenge
+    public async Task DeleteChallenge(int id)
+    {
+        var challenge = await _context.Challenges.FindAsync(id);
+        if(challenge == null) throw new Exception("Challenge not found");
+        _context.Challenges.Remove(challenge);
+        await _context.SaveChangesAsync();
+        
+    }
+    
+    //Alle Challenges 
+    public async Task<List<Challenge>> GetAllChallenges()
+    {
+        return await _context.Challenges.ToListAsync();
+    }
 
     // Optional: Alle Challenges eines Users abrufen
     public async Task<List<UserChallenge>> GetUserChallengesAsync(int userId)

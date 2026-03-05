@@ -6,4 +6,5 @@ export interface user{
     email: string,
     coins: number,
     avatar: Avatar,
+    isAdmin: boolean,
 }

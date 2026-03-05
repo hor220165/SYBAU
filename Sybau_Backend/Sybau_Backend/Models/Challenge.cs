@@ -12,7 +12,6 @@ public class Challenge : BaseEntity<int>
     public Challenge(string name, string description, int xpReward, int coinReward ,int requiredLevel)
     {
         if(string.IsNullOrWhiteSpace(name)) throw new ArgumentNullException(nameof(name));
-        if(string.IsNullOrWhiteSpace(description)) throw new ArgumentNullException(nameof(description));
         if(xpReward < 1) throw new ArgumentOutOfRangeException(nameof(xpReward));
         if(requiredLevel < 1) throw new ArgumentOutOfRangeException(nameof(requiredLevel));
         if(coinReward < 1) throw new ArgumentOutOfRangeException(nameof(coinReward));
@@ -25,7 +24,7 @@ public class Challenge : BaseEntity<int>
     
 
     public string Name { get; set; }
-    public string Description { get; set; }
+    public string? Description { get; set; }
     public int XpReward { get; set; }
     public int CoinReward { get; set; }
     public int RequiredLevel { get; set; }

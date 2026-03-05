@@ -30,13 +30,27 @@ export default defineComponent({
       ctx.imageSmoothingEnabled = false;
 
       const sprite = new Image();
+<<<<<<< HEAD
       sprite.src = "./src/assets/Spritesheet_Skinny.png";
+=======
+
+      let user = JSON.parse(localStorage.getItem('user') || '{}');
+      const stage = user.avatar?.bodyStage;
+
+      const stageToSprite: Record<string, string> = {
+        Skinny: "./src/assets/Pixel-Avatar.png",
+        Defined: "./src/assets/Pixel-Avatar-Definiert.png",
+        Bodybuilder: "./src/assets/Pixel-Avatar-Bodybuilder.png"
+      };
+
+      sprite.src = stageToSprite[stage] || "";
+>>>>>>> 47dd41e9f096968df1b049ae0f8e92a89deda542
 
       let frame = 0;
 
       sprite.onload = () => {
         console.log('Sprite geladen:', sprite.width, 'x', sprite.height);
-        
+
         function draw() {
           if (!ctx || !canvas.value) return;
           ctx.clearRect(0, 0, canvas.value.width, canvas.value.height);
@@ -48,7 +62,7 @@ export default defineComponent({
           // Frame aus dem Sprite Sheet zeichnen
           ctx.drawImage(
             sprite,
-            col * props.frameWidth, row * props.frameHeight, 
+            col * props.frameWidth, row * props.frameHeight,
             props.frameWidth, props.frameHeight,
             0, 0, props.frameWidth, props.frameHeight
           );
@@ -72,8 +86,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-
-
 canvas {
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;

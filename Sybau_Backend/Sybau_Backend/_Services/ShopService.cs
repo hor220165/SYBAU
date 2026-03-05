@@ -59,7 +59,7 @@ public class ShopService
         user.Coins -= item.Price;
 
         // Prüfen ob User Item schon besitzt
-        var userItem = user.UserItems.FirstOrDefault(ui => ui.Id == itemId);
+        var userItem = user.UserItems.FirstOrDefault(ui => ui.Item.Id == itemId);
 
         if (userItem == null)
         {

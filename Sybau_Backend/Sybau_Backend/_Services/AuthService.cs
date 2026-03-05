@@ -35,7 +35,8 @@ public class AuthService
             {
                 user.Id,
                 user.UserName,
-                user.Email
+                user.Email,
+                user.IsAdmin,
             }
         };
     }
@@ -80,7 +81,8 @@ public class AuthService
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Name, user.UserName)
+            new Claim(ClaimTypes.Name, user.UserName),
+            new Claim("isAdmin", user.IsAdmin.ToString())
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));

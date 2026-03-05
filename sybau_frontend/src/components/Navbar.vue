@@ -43,13 +43,33 @@
       <span class="nav-icon">⚡</span>
       <span>Profile</span>
     </button>
+    <button v-if="isAdmin" class="nav-item admin-btn"
+            :class="{ active: isActiveRoute('/admin') }"
+            @click="navigateTo('/admin')">
+      <span class="nav-icon">🔐</span>
+      <span>Admin</span>
+    </button>
   </nav>
 </template>
 
 <script setup lang="ts">
 import {useNavigation} from "@/composables/useNavigation.ts";
+import { ref, onMounted } from 'vue';
 
 const {navigateTo, isActiveRoute} = useNavigation()
+const isAdmin = ref(false);
+
+onMounted(() => {
+  const user = localStorage.getItem('user');
+  if (user) {
+    try {
+      const userData = JSON.parse(user);
+      isAdmin.value = userData.isAdmin || false;
+    } catch (e) {
+      isAdmin.value = false;
+    }
+  }
+});
 </script>
 <style scoped>
 /* Navigation */
@@ -114,5 +134,22 @@ const {navigateTo, isActiveRoute} = useNavigation()
 
 .nav-item:focus:not(:focus-visible) {
   outline: none;
+}
+
+.admin-btn {
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 215, 0, 0.05);
+}
+
+.admin-btn:hover {
+  background: rgba(255, 215, 0, 0.15);
+}
+
+.admin-btn.active {
+  color: #ffd700;
+}
+
+.admin-btn.active::after {
+  background: linear-gradient(90deg, #ffd700, #ffed4e);
 }
 </style>

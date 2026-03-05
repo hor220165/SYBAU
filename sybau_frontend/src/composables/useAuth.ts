@@ -15,10 +15,18 @@ export function useAuth() {
     const res = await authService.login(email, password);
     const token = res.data?.token;
     const u = res.data?.user;
+    console.log('Login response:', res.data); // DEBUG
     if (token) localStorage.setItem('token', token);
     if (u) {
-      localStorage.setItem('user', JSON.stringify(u));
-      user.value = u;
+      const userToStore = {
+        id: u.id,
+        userName: u.userName,
+        email: u.email,
+        avatar: { bodyStage: u.avatar?.bodyStage }
+      };
+      console.log('User to store:', userToStore); // DEBUG
+      localStorage.setItem('user', JSON.stringify(userToStore));
+      user.value = userToStore;
     }
     return res;
   };

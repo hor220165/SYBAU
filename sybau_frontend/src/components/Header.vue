@@ -9,9 +9,13 @@ const { user } = useAuth();
 
 onMounted(async () => {
   if (!user.value?.avatar) {
-    const res = await userService.getProfile();
-    user.value = res.data;
-    localStorage.setItem('user', JSON.stringify(res.data));
+    try {
+      await userService.getProfile();
+      // getProfile() speichert bereits in localStorage
+      user.value = JSON.parse(localStorage.getItem('user') || '{}');
+    } catch (err) {
+      console.error('Failed to fetch profile:', err);
+    }
   }
 });
 

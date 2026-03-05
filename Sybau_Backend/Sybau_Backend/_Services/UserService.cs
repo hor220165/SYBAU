@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 using Sybau_Backend.Data;
 using Sybau_Backend.DTOs;
 using Sybau_Backend.Models;
@@ -9,17 +10,22 @@ public class UserService
 {
     private readonly FitnessDbContext _context;
     private readonly ChallengeService _challengeService;
+    private readonly AvatarService _avatarService;
 
-    public UserService(FitnessDbContext context,ChallengeService challengService)
+    public UserService(FitnessDbContext context,ChallengeService challengService, AvatarService avatarService)
     {
         _context = context;
         _challengeService = challengService;
+        _avatarService = avatarService;
     }
 
     // Alle User der Datenbank ausgeben
-    public async Task<IEnumerable<User>> GetUsers()
+    public async Task<IEnumerable<User>> GetUsersExcept(int id)
     {
-        return await _context.Users.ToListAsync();
+        return await _context.Users
+            .Include(u=>u.Avatar)
+            .Where(u => u.Id != id)
+            .ToListAsync();
     }
     
     //Leaderboard Top10
@@ -28,8 +34,8 @@ public class UserService
         // Schritt 1: Daten aus der DB holen
         var users = await _context.Users
             .Include(u => u.Avatar)
-            .Where(u => u.Avatar != null)
-            .OrderByDescending(u => u.Avatar.Experience)
+            .Where(u => u.IsAdmin == false)
+            .OrderByDescending(u => u.Avatar.Level)
             .Take(10)
             .ToListAsync(); // Daten kommen jetzt in den Speicher
 
@@ -61,7 +67,7 @@ public class UserService
     public async Task AddXpAndHandleLevelUp(User user, int xp)
     {
         int oldLevel = user.Avatar.Level;
-        user.Avatar.AddExperience(xp);
+        _avatarService.AddXpAsync(user.Avatar, xp);
 
         if (user.Avatar.Level > oldLevel)
         {
@@ -156,6 +162,35 @@ public class UserService
     {
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
+    }
+    
+    //Für AdminUse
+    public async Task<User> UpdateUserAsync(User user, UpdateUserDto dto)
+    {
+        // User inkl. Avatar laden, falls Avatar-Level geupdatet werden soll
+        var dbUser = await _context.Users
+            .Include(u => u.Avatar)
+            .FirstOrDefaultAsync(u => u.Id == user.Id);
+
+        if (dbUser == null)
+            throw new Exception("User nicht gefunden");
+
+        // User-Felder updaten
+        if (!string.IsNullOrEmpty(dto.Username))
+            dbUser.UserName = dto.Username;
+        if (!string.IsNullOrEmpty(dto.Email))
+            dbUser.Email = dto.Email;
+        if (dto.Coins.HasValue)
+            dbUser.Coins = dto.Coins.Value;
+
+        // Avatar-Level updaten
+        if (dto.Avatar.Level.HasValue)
+        { 
+            dbUser.Avatar.Level = dto.Avatar.Level.Value;
+        }
+        
+        await _context.SaveChangesAsync();
+        return dbUser;
     }
 
     public async Task DeleteUserAsync(int userId)
