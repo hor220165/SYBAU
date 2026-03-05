@@ -30,21 +30,20 @@ export default defineComponent({
       ctx.imageSmoothingEnabled = false;
 
       const sprite = new Image();
-<<<<<<< HEAD
+
       sprite.src = "./src/assets/Spritesheet_Skinny.png";
-=======
+
 
       let user = JSON.parse(localStorage.getItem('user') || '{}');
       const stage = user.avatar?.bodyStage;
 
       const stageToSprite: Record<string, string> = {
-        Skinny: "./src/assets/Pixel-Avatar.png",
-        Defined: "./src/assets/Pixel-Avatar-Definiert.png",
-        Bodybuilder: "./src/assets/Pixel-Avatar-Bodybuilder.png"
+        Skinny: "../src/assets/Spritesheet_Skinny.png",
+        Defined: "./src/assets/Spritesheet_Normal.png",
+        Bodybuilder: "./src/assets/Spritesheet_Bodybuilder.png"
       };
 
       sprite.src = stageToSprite[stage] || "";
->>>>>>> 47dd41e9f096968df1b049ae0f8e92a89deda542
 
       let frame = 0;
 
