@@ -26,10 +26,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   <header class="header">
     <div class="logo-section">
       <img src="../assets/Sybau_Logo_White.png" alt="Sybau_Logo" class="logo-img" />
-      <div class="logo-text">
-        <h1>SYBAU</h1>
-        <p>Shape Your Body And Unleash</p>
-      </div>
+     
     </div>
 
     <!-- Stats header  -->

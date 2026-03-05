@@ -30,7 +30,7 @@ export default defineComponent({
       ctx.imageSmoothingEnabled = false;
 
       const sprite = new Image();
-      sprite.src = "./src/assets/Pixel-Avatar.png";
+      sprite.src = "./src/assets/Spritesheet_Skinny.png";
 
       let frame = 0;
 
