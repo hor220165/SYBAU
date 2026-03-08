@@ -32,7 +32,6 @@ public class WorkoutsController : ControllerBase
         return Ok(workout);
     }
 
-    [Authorize(Policy = "AdminOnly")]
     [HttpPost]
     public async Task<IActionResult> CreateWorkout([FromBody] CreateWorkoutDto dto)
     {
