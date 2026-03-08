@@ -9,21 +9,21 @@
   <main class="workouts-content">
     <!-- Stats Header -->
     <div class="stats-header">
-      <h1 class="page-title">Deine Workouts</h1>
-      <p class="page-subtitle">Wähle ein Workout und starte dein Training!</p>
+      <h1 class="page-title">Deine Übungen</h1>
+      <p class="page-subtitle">Wähle eine Übung und trage deine Wiederholungen ein!</p>
 
       <div class="stats-grid">
         <div class="stat-card">
+          <span class="stat-label">Heute</span>
+          <span class="stat-value">245 Wiederholungen</span>
+        </div>
+        <div class="stat-card">
           <span class="stat-label">Diese Woche</span>
-          <span class="stat-value">12 Workouts</span>
+          <span class="stat-value">1,832 Wiederholungen</span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Trainingszeit</span>
-          <span class="stat-value">6.5 Stunden</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Kalorien</span>
-          <span class="stat-value">3,240 kcal</span>
+          <span class="stat-label">XP Heute</span>
+          <span class="stat-value">+490 XP</span>
         </div>
       </div>
     </div>
@@ -44,20 +44,19 @@
     <!-- Workouts Grid -->
     <div class="workouts-grid">
       <WorkoutCard
-          v-for="workout in filteredWorkouts"
-          :key="workout.id"
-          :category="workout.category"
-          :title="workout.title"
-          :duration="workout.duration"
-          :calories="workout.calories"
-          :exercises="workout.exercises"
-          :difficulty="workout.difficulty"
-          :xp="workout.xp"
-          :completed="workout.completed"
-          @start="startWorkout(workout.id)"
-          @view="viewWorkout(workout.id)"
+          v-for="exercise in filteredExercises"
+          :key="exercise.id"
+          :category="exercise.category"
+          :title="exercise.name"
+          :duration="0"
+          :calories="0"
+          :exercises="[exercise.description]"
+          :difficulty="exercise.difficulty"
+          :xp="exercise.xpPerRep"
+          :completed="exercise.todayCount >= exercise.dailyLimit"
+          @log="logExercise(exercise)"
       />
-    </div> <!-- ← DAS HAT GEFEHLT! -->
+    </div>
 
     <!-- Create Custom Workout Card -->
     <div class="custom-workout-card">
@@ -67,10 +66,21 @@
       </div>
       <button class="create-btn">
         Workout erstellen
-        <span class="icon">→</span>
       </button>
     </div>
   </main>
+
+  <!-- Exercise Modal -->
+  <ExerciseModal 
+    :is-open="showModal"
+    :exercise-name="selectedExercise?.name || ''"
+    :icon="selectedExercise?.icon || ''"
+    :xp-per-rep="selectedExercise?.xpPerRep || 0"
+    :daily-limit="selectedExercise?.dailyLimit || 0"
+    :today-count="selectedExercise?.todayCount || 0"
+    @close="showModal = false"
+    @submit="handleExerciseSubmit"
+  />
 </template>
 
 <script setup lang="ts">
@@ -78,116 +88,156 @@ import { ref, computed } from 'vue';
 import Header from '@/components/Header.vue';
 import Navbar from '@/components/Navbar.vue';
 import WorkoutCard from '@/components/WorkoutCard.vue';
+import ExerciseModal from '@/components/WorkoutPopup.vue';
 
 const activeFilter = ref('Alle');
+const showModal = ref(false);
+const selectedExercise = ref<any>(null);
 
-const filters = ['Alle', 'Cardio', 'Kraft', 'Yoga', 'Core'];
+const filters = ['Alle', 'Cardio', 'Strength', 'Core', 'Flexibility'];
 
-// Dummy Data - später vom Backend holen
-const workouts = ref([
+// Dummy Data - Einzelne Übungen
+const exercises = ref([
   {
     id: 1,
-    category: 'Cardio',
-    title: 'Morning Warrior HIIT',
-    duration: 25,
-    calories: 280,
-    exercises: ['Burpees', 'Mountain Climbers', 'Jump Squats', 'High Knees'],
-    difficulty: 'Hard' as const,
-    xp: 350,
-    completed: false
+    name: 'Push-Ups',
+    description: 'Klassische Liegestütze',
+    category: 'Strength',
+    icon: '💪',
+    xpPerRep: 2,
+    dailyLimit: 200,
+    todayCount: 45,
+    difficulty: 'Medium' as const
   },
   {
     id: 2,
-    category: 'Strength',
-    title: 'Strength Champion',
-    duration: 45,
-    calories: 320,
-    exercises: ['Deadlifts', 'Bench Press', 'Squats', 'Pull-ups'],
-    difficulty: 'Hard' as const,
-    xp: 450,
-    completed: true
+    name: 'Sit-Ups',
+    description: 'Bauchmuskeltraining',
+    category: 'Core',
+    icon: '🔥',
+    xpPerRep: 1,
+    dailyLimit: 300,
+    todayCount: 80,
+    difficulty: 'Easy' as const
   },
   {
     id: 3,
-    category: 'Yoga',
-    title: 'Flexibility Flow',
-    duration: 30,
-    calories: 150,
-    exercises: ['Sun Salutation', 'Warrior Poses', 'Downward Dog', 'Tree Pose'],
-    difficulty: 'Easy' as const,
-    xp: 200,
-    completed: false
+    name: 'Squats',
+    description: 'Kniebeugen',
+    category: 'Strength',
+    icon: '🦵',
+    xpPerRep: 2,
+    dailyLimit: 200,
+    todayCount: 60,
+    difficulty: 'Medium' as const
   },
   {
     id: 4,
-    category: 'Core',
-    title: 'Core Crusher',
-    duration: 20,
-    calories: 180,
-    exercises: ['Planks', 'Russian Twists', 'Leg Raises', 'Mountain Climbers'],
-    difficulty: 'Medium' as const,
-    xp: 250,
-    completed: false
+    name: 'Burpees',
+    description: 'Ganzkörper-Übung',
+    category: 'Cardio',
+    icon: '⚡',
+    xpPerRep: 5,
+    dailyLimit: 100,
+    todayCount: 20,
+    difficulty: 'Hard' as const
   },
   {
     id: 5,
-    category: 'Cardio',
-    title: 'Endurance Run',
-    duration: 40,
-    calories: 450,
-    exercises: ['Steady Pace Run', 'Intervals', 'Cool Down'],
-    difficulty: 'Medium' as const,
-    xp: 400,
-    completed: true
+    name: 'Plank',
+    description: 'Unterarmstütz (in Sekunden)',
+    category: 'Core',
+    icon: '🧘',
+    xpPerRep: 0.5,
+    dailyLimit: 600,
+    todayCount: 120,
+    difficulty: 'Medium' as const
   },
   {
     id: 6,
+    name: 'Pull-Ups',
+    description: 'Klimmzüge',
     category: 'Strength',
-    title: 'Power Athlete',
-    duration: 35,
-    calories: 300,
-    exercises: ['Clean & Jerk', 'Overhead Press', 'Box Jumps', 'Kettlebell Swings'],
-    difficulty: 'Hard' as const,
-    xp: 380,
-    completed: false
+    icon: '🏋️',
+    xpPerRep: 5,
+    dailyLimit: 50,
+    todayCount: 15,
+    difficulty: 'Hard' as const
+  },
+  {
+    id: 7,
+    name: 'Jumping Jacks',
+    description: 'Hampelmänner',
+    category: 'Cardio',
+    icon: '🤸',
+    xpPerRep: 1,
+    dailyLimit: 500,
+    todayCount: 100,
+    difficulty: 'Easy' as const
+  },
+  {
+    id: 8,
+    name: 'Lunges',
+    description: 'Ausfallschritte',
+    category: 'Strength',
+    icon: '🚶',
+    xpPerRep: 2,
+    dailyLimit: 150,
+    todayCount: 40,
+    difficulty: 'Medium' as const
+  },
+  {
+    id: 9,
+    name: 'Mountain Climbers',
+    description: 'Bergsteiger',
+    category: 'Cardio',
+    icon: '⛰️',
+    xpPerRep: 1,
+    dailyLimit: 400,
+    todayCount: 150,
+    difficulty: 'Medium' as const
+  },
+  {
+    id: 10,
+    name: 'Leg Raises',
+    description: 'Beinheben',
+    category: 'Core',
+    icon: '🦿',
+    xpPerRep: 2,
+    dailyLimit: 200,
+    todayCount: 30,
+    difficulty: 'Medium' as const
   }
 ]);
 
-const filteredWorkouts = computed(() => {
+const filteredExercises = computed(() => {
   if (activeFilter.value === 'Alle') {
-    return workouts.value;
+    return exercises.value;
   }
   
-  // Map "Kraft" to "Strength"
-  const filterMap: Record<string, string> = {
-    'Kraft': 'Strength',
-    'Cardio': 'Cardio',
-    'Yoga': 'Yoga',
-    'Core': 'Core'
-  };
-  
-  const mappedFilter = filterMap[activeFilter.value] || activeFilter.value;
-  
-  return workouts.value.filter(w => w.category === mappedFilter);
+  return exercises.value.filter(e => e.category === activeFilter.value);
 });
 
-const startWorkout = (id: number) => {
-  console.log('Starting workout:', id);
-  // TODO: Navigate to workout detail or start workout
+const logExercise = (exercise: any) => {
+  selectedExercise.value = exercise;
+  showModal.value = true;
 };
 
-const viewWorkout = (id: number) => {
-  console.log('Viewing workout:', id);
-  // TODO: Show workout details
+const handleExerciseSubmit = (data: any) => {
+  console.log('Exercise logged:', data);
+  
+  // Update todayCount
+  const exercise = exercises.value.find(e => e.name === data.exercise);
+  if (exercise) {
+    exercise.todayCount += data.reps;
+  }
+  
+  // TODO: Send to backend
+  alert(`${data.exercise}: ${data.reps} Wiederholungen eingetragen! +${data.xp} XP gewonnen!`);
 };
 </script>
 
 <style scoped>
-.workouts-container {
-  min-height: 100vh;
-  color: white;
-}
-
 .workouts-content {
   padding: 40px;
   max-width: 1400px;
@@ -269,7 +319,7 @@ const viewWorkout = (id: number) => {
 }
 
 .filter-btn.active {
- background: linear-gradient(135deg, #ec4899, #f43f5e);
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
   color: white;
   border-color: transparent;
 }
@@ -285,7 +335,7 @@ const viewWorkout = (id: number) => {
 /* Custom Workout Card */
 .custom-workout-card {
   background: rgba(30, 41, 59, 0.6);
-  border: 2px dashed rgba(168, 85, 247, 0.4);
+  border: 2px solid rgba(236, 72, 153, 0.4);
   border-radius: 20px;
   padding: 40px;
   display: flex;
@@ -296,7 +346,7 @@ const viewWorkout = (id: number) => {
 }
 
 .custom-workout-card:hover {
-  border-color: rgba(168, 85, 247, 0.6);
+  border-color: rgba(236, 72, 153, 0.6);
   background: rgba(30, 41, 59, 0.8);
 }
 
@@ -317,7 +367,7 @@ const viewWorkout = (id: number) => {
   padding: 14px 32px;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(90deg, #a855f7, #ec4899);
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
   color: white;
   font-weight: 600;
   font-size: 16px;

@@ -13,18 +13,6 @@
     <!-- Workout Title -->
     <h3 class="workout-title">{{ title }}</h3>
 
-    <!-- Duration & Calories -->
-    <div class="workout-stats">
-      <div class="stat">
-        <span class="icon">🕐</span>
-        <span>{{ duration }} min</span>
-      </div>
-      <div class="stat">
-        <span class="icon">🔥</span>
-        <span>{{ calories }} kcal</span>
-      </div>
-    </div>
-
     <!-- Exercises Pills -->
     <div class="exercises">
       <span 
@@ -46,7 +34,7 @@
           {{ difficulty }}
         </span>
         <span class="xp-badge">
-          <span class="icon">⚡</span>
+          <span >XP</span>
           <span>+{{ xp }}</span>
         </span>
       </div>
@@ -54,10 +42,10 @@
       <button 
         v-if="!completed" 
         class="start-btn"
-        @click="$emit('start')"
+        @click="$emit('log')"
       >
-        Start
-        <span class="icon">▶</span>
+        Training eintragen
+        <span class="icon"></span>
       </button>
       <button 
         v-else 
@@ -65,7 +53,7 @@
         @click="$emit('view')"
       >
         Erledigt
-        <span class="icon">▶</span>
+        <span class="icon">✓</span>
       </button>
     </div>
   </div>
@@ -85,7 +73,7 @@ const props = defineProps<{
   completed?: boolean;
 }>();
 
-defineEmits(['start', 'view']);
+defineEmits(['log', 'view']);
 
 const categoryClass = computed(() => {
   const classes: Record<string, string> = {
@@ -284,13 +272,13 @@ const remainingCount = computed(() => Math.max(0, props.exercises.length - 3));
 }
 
 .start-btn {
-   background: linear-gradient(135deg, #ec4899, #f43f5e);
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
   color: white;
 }
 
 .start-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(168, 85, 247, 0.3);
+  box-shadow: 0 8px 16px rgba(236, 72, 153, 0.3);
 }
 
 .completed-btn {
