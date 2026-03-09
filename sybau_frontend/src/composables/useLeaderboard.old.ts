@@ -8,7 +8,6 @@ const error = ref<string | null>(null);
 
 export async function loadLeaderboard() {
   loading.value = true;
-  error.value = null;
   try {
     const res = await userService.getLeaderboard();
     // Debug: log the full response to inspect shape during development
