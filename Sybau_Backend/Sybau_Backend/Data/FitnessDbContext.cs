@@ -8,6 +8,9 @@ public class FitnessDbContext:DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Avatar> Avatars => Set<Avatar>();
     public DbSet<Item> Items => Set<Item>();
+    public DbSet<Exercise> Exercises => Set<Exercise>();
+    public DbSet<Workout> Workouts => Set<Workout>();
+    public DbSet<WorkoutExercise> WorkoutExercises => Set<WorkoutExercise>();
     public DbSet<UserItem> UserItems => Set<UserItem>();
     public DbSet<UserCoin> UserCoins => Set<UserCoin>();
     public DbSet<Challenge> Challenges => Set<Challenge>();
@@ -52,6 +55,32 @@ public class FitnessDbContext:DbContext
         modelBuilder.Entity<Item>(entity =>
         {
             entity.Property(e => e.Type).HasConversion<string>();
+        });
+
+        //Workout - Exercise Many-to-Many mit Tageslimit
+        modelBuilder.Entity<WorkoutExercise>(entity =>
+        {
+            entity.HasOne(we => we.Workout)
+                .WithMany(w => w.WorkoutExercises)
+                .HasForeignKey(we => we.WorkoutId)
+                .IsRequired();
+
+            entity.HasOne(we => we.Exercise)
+                .WithMany(e => e.WorkoutExercises)
+                .HasForeignKey(we => we.ExerciseId)
+                .IsRequired();
+
+            entity.HasIndex(we => new { we.WorkoutId, we.ExerciseId }).IsUnique();
+        });
+
+        modelBuilder.Entity<Workout>(entity =>
+        {
+            entity.Property(e => e.Category).HasConversion<string>();
+        });
+
+        modelBuilder.Entity<Exercise>(entity =>
+        {
+            entity.Property(e => e.Category).HasConversion<string>();
         });
 
     }
