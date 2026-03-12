@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
@@ -49,10 +49,13 @@ public class AuthService
             .Include(u => u.Avatar)
             .FirstOrDefaultAsync(u => u.Email == email);
 
-        if (user == null) throw new Exception("Email not found");
+        if (user == null)
+            throw new Exception("Invalid credentials");
 
         var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
-        return result == PasswordVerificationResult.Success ? user : throw new Exception("Invalid password");
+        return result == PasswordVerificationResult.Success
+            ? user
+            : throw new Exception("Invalid credentials");
     }
 
     public async Task<User> RegisterAsync(string userName, string email, string password)

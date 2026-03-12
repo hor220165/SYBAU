@@ -27,7 +27,8 @@ namespace Sybau_Backend.Controllers
             }
             catch (Exception e)
             {
-                return Unauthorized(e.Message);
+                // Keine Details nach außen geben, um User-Enumeration zu vermeiden
+                return Unauthorized("Ungültige E-Mail oder Passwort.");
             }
         }
 

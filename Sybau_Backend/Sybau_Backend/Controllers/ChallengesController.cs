@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sybau_Backend._Services;
 using Sybau_Backend.DTOs;
@@ -24,9 +25,20 @@ public class ChallengeController : ControllerBase
         return Ok(challenges);
     }
 
+    [Authorize]
     [HttpGet("user/{userId}")]
     public async Task<IActionResult> GetUserChallenges(int userId)
     {
+        var userIdClaim = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+        if (userIdClaim == null)
+            return Unauthorized();
+
+        var currentUserId = int.Parse(userIdClaim);
+        var isAdmin = User.HasClaim("isAdmin", "True");
+
+        if (currentUserId != userId && !isAdmin)
+            return Forbid();
+
         var challenges = await _challengeService.GetUserChallengesAsync(userId);
         return Ok(challenges.Select(uc => new
         {

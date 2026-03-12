@@ -27,6 +27,7 @@ namespace Sybau_Backend.Controllers
         }
         
         // GET /users/profile
+        [Authorize]
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()
         {
@@ -115,6 +116,7 @@ namespace Sybau_Backend.Controllers
         }
 
         // GET: api/<UsersController>
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetUsers()
         {
@@ -131,9 +133,20 @@ namespace Sybau_Backend.Controllers
 
 
         // GET api/<UsersController>/5
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<UserDto>> GetById(int id)
         {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+                return Unauthorized();
+
+            var currentUserId = int.Parse(userIdClaim);
+            var isAdmin = User.HasClaim("isAdmin", "True");
+
+            if (currentUserId != id && !isAdmin)
+                return Forbid();
+
             var user = await _userService.GetUserById(id);
 
             if (user == null)
@@ -153,9 +166,20 @@ namespace Sybau_Backend.Controllers
         }
         
         // POST: api/users/{userId}/challenge/{challengeId}/complete
+        [Authorize]
         [HttpPost("{userId}/challenge/{challengeId}/complete")]
         public async Task<IActionResult> CompleteChallenge(int userId, int challengeId)
         {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+                return Unauthorized();
+
+            var currentUserId = int.Parse(userIdClaim);
+            var isAdmin = User.HasClaim("isAdmin", "True");
+
+            if (currentUserId != userId && !isAdmin)
+                return Forbid();
+
             var updatedAvatar = await _userService.CompleteChallengeAsync(userId, challengeId);
 
             if (updatedAvatar == null)

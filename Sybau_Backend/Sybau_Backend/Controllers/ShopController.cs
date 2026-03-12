@@ -33,6 +33,7 @@ namespace Sybau_Backend.Controllers
             return Ok(item);
         }
 
+        [Authorize(Policy = "AdminOnly")]
         [HttpPost("items/add")]
         public async Task<IActionResult> AddItem([FromBody] ItemDto dto)
         {
