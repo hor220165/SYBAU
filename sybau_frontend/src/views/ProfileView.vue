@@ -1,8 +1,247 @@
+<template>
+  <!-- Header -->
+  <Header></Header>
+
+  <!-- Navigation -->
+  <Navbar></Navbar>
+
+  <!-- Main Content -->
+  <main class="profile-content">
+    <!-- Header with Settings Button -->
+    <div class="profile-header">
+      <h1 class="profile-title">Mein Profil</h1>
+      <button class="settings-btn" @click="showSettings = true">
+        <span class="icon">⚙️</span>
+        Einstellungen
+      </button>
+    </div>
+
+    <!-- Stats Overview Cards -->
+    <div class="stats-overview">
+      <StatCard
+          icon="🎯"
+          label="Workouts gesamt"
+          value="124"
+          cardClass="stat-purple"
+      />
+      <StatCard
+          icon="📅"
+          label="Trainingszeit"
+          value="42.5h"
+          cardClass="stat-blue"
+      />
+      <StatCard
+          icon="🔥"
+          label="Kalorien verbrannt"
+          value="18,450"
+          cardClass="stat-orange"
+      />
+      <StatCard
+          icon="📈"
+          label="Längster Streak"
+          value="15 Tage"
+          cardClass="stat-green"
+      />
+    </div>
+
+    <!-- Achievements Section -->
+    <section class="achievements-section">
+      <div class="section-header">
+        <div class="title-row">
+          <span class="section-icon">🏆</span>
+          <h2>Achievements</h2>
+        </div>
+        <span class="achievement-count">{{ unlockedCount }} / {{ totalAchievements }} freigeschaltet</span>
+      </div>
+
+      <div class="achievements-carousel">
+        <button 
+          class="carousel-btn prev" 
+          @click="previousAchievements"
+          :disabled="currentAchievementIndex === 0"
+        >
+          ←
+        </button>
+
+        <div class="achievements-grid">
+          <AchievementCard
+            v-for="achievement in visibleAchievements"
+            :key="achievement.id"
+            :icon="achievement.icon"
+            :title="achievement.title"
+            :description="achievement.description"
+            :unlocked="achievement.unlocked"
+          />
+        </div>
+
+        <button 
+          class="carousel-btn next" 
+          @click="nextAchievements"
+          :disabled="currentAchievementIndex >= achievements.length - 4"
+        >
+          →
+        </button>
+      </div>
+    </section>
+
+    <!-- Weekly Activity Calendar -->
+    <section class="activity-section">
+  <div class="section-header">
+    <div class="title-row">
+      <span class="section-icon">📅</span>
+      <h2>Wöchentliche Aktivität</h2>
+    </div>
+  </div>
+
+  <div class="activity-calendar">
+    <button 
+      class="week-nav prev" 
+      @click="previousWeek"
+    >
+      ←
+    </button>
+
+    <div class="days-grid">
+      <div 
+        v-for="day in currentWeekDays" 
+        :key="day.date"
+        class="day-card"
+        :class="{ active: day.workoutDone, today: day.isToday }"
+      >
+        <span class="day-name">{{ day.name }}</span>
+        <span class="day-date">{{ day.dateDisplay }}</span>
+        <div class="day-indicator">
+          <span v-if="day.workoutDone" class="star-icon"><img src="../assets/Star_Pixel.png" alt=""></span>
+          <span v-else class="empty-icon">–</span>
+        </div>
+        <span class="day-duration">{{ day.duration }}</span>
+      </div>
+    </div>
+
+    <button 
+      class="week-nav next" 
+      @click="nextWeek"
+      :disabled="isCurrentWeek"
+    >
+      →
+    </button>
+  </div>
+</section>
+
+    <!-- Recent Activities -->
+    <section class="recent-section">
+      <div class="section-header">
+        <div class="title-row">
+          <span class="section-icon">📊</span>
+          <h2>Letzte Aktivitäten</h2>
+        </div>
+      </div>
+
+      <div class="activities-list">
+        <ActivityItem
+          v-for="activity in recentActivities"
+          :key="activity.id"
+          :icon="activity.icon"
+          :title="activity.title"
+          :time="activity.time"
+          :xp="activity.xp"
+          :type="activity.type"
+        />
+      </div>
+    </section>
+  </main>
+
+  <!-- Settings Sidebar Modal -->
+  <Teleport to="body">
+    <Transition name="settings">
+      <div v-if="showSettings" class="settings-overlay" @click="showSettings = false">
+        <div class="settings-sidebar" @click.stop>
+          <!-- Header -->
+          <div class="settings-header">
+            <h2>Einstellungen</h2>
+            <button class="close-btn" @click="showSettings = false">✕</button>
+          </div>
+
+          <!-- Content -->
+          <div class="settings-content">
+            <!-- Profile Section -->
+            <section class="settings-section">
+              <h3>Profil</h3>
+              <div class="field">
+                <label>Benutzername</label>
+                <input v-model="editingUsername" />
+              </div>
+              <div class="field">
+                <label>E-Mail</label>
+                <input :value="user?.email ?? user?.Email ?? ''" readonly />
+              </div>
+              <button class="btn-primary" @click="saveProfile" :disabled="savingProfile">
+                Speichern
+              </button>
+            </section>
+
+            <!-- Progress Section -->
+            <section class="settings-section">
+              <h3>Fortschritt</h3>
+              <div class="progress-stats">
+                <div class="stat-row">
+                  <span class="stat-label">Level:</span>
+                  <span class="stat-value">{{ level }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">XP:</span>
+                  <span class="stat-value">{{ experience }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">Absolvierte Challenges:</span>
+                  <span class="stat-value">{{ completedChallenges }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">Leaderboard-Position:</span>
+                  <span class="stat-value">{{ leaderboardPosition }}</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- Security Section -->
+            <section class="settings-section">
+              <h3>Sicherheit</h3>
+              <div class="field">
+                <label>Altes Passwort</label>
+                <input type="password" v-model="oldPassword" />
+              </div>
+              <div class="field">
+                <label>Neues Passwort</label>
+                <input type="password" v-model="newPassword" />
+              </div>
+              <button class="btn-primary" @click="changePassword" :disabled="changingPassword">
+                Passwort ändern
+              </button>
+            </section>
+
+            <!-- Danger Zone -->
+            <section class="settings-section danger-zone">
+              <h3>Gefahrenzone</h3>
+              <p>Diese Aktion ist endgültig und kann nicht rückgängig gemacht werden.</p>
+              <button class="btn-danger" @click="deleteAccount">
+                Account löschen
+              </button>
+            </section>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>
+
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import Navbar from "@/components/Navbar.vue";
-import Header from "@/components/Header.vue";
+import Header from '@/components/Header.vue';
+import Navbar from '@/components/Navbar.vue';
+import StatCard from '@/components/StatCard.vue';
+import AchievementCard from '@/components/AchievementCard.vue';
+import ActivityItem from '@/components/ActivityItem.vue';
 import { useAuth } from '@/composables/useAuth';
 import { useLeaderboard } from '@/composables/useLeaderboard';
 import { userService } from '@/services/api';
@@ -10,6 +249,9 @@ import { userService } from '@/services/api';
 const router = useRouter();
 const { user, logout } = useAuth();
 const { sortedLeaderboard, loadLeaderboard } = useLeaderboard();
+
+// Settings Modal
+const showSettings = ref(false);
 
 // Profile editing
 const editingUsername = ref<string>(user.value?.username ?? user.value?.UserName ?? '');
@@ -19,7 +261,6 @@ async function saveProfile() {
   savingProfile.value = true;
   try {
     await userService.updateProfile({ UserName: editingUsername.value });
-    // Update local user object
     const u = { ...user.value };
     if ('username' in u) u.username = editingUsername.value;
     else u.UserName = editingUsername.value;
@@ -39,9 +280,9 @@ async function saveProfile() {
   }
 }
 
-// Progress (read-only)
-const level = computed(() => user.value?.avatar.level ?? user.value?.avatar.Level ?? 1);
-const experience = computed(() => user.value?.avatar.experience ?? user.value?.avatar.Experience ?? 0);
+// Progress
+const level = computed(() => user.value?.avatar?.level ?? user.value?.avatar?.Level ?? 1);
+const experience = computed(() => user.value?.avatar?.experience ?? user.value?.avatar?.Experience ?? 0);
 const completedChallenges = ref(0);
 const leaderboardPosition = computed(() => {
   const name = user.value?.username ?? user.value?.UserName ?? user.value?.userName ?? '';
@@ -53,8 +294,7 @@ const leaderboardPosition = computed(() => {
   return '—';
 });
 
-
-// Security actions
+// Security
 const oldPassword = ref('');
 const newPassword = ref('');
 const changingPassword = ref(false);
@@ -93,112 +333,613 @@ async function deleteAccount() {
   }
 }
 
+// Achievements
+const currentAchievementIndex = ref(0);
+
+const achievements = ref([
+  { id: 1, icon: '🏃', title: 'Speedster', description: 'Laufe 5km unter 25 Min', unlocked: true },
+  { id: 2, icon: '💪', title: 'Iron Body', description: 'Hebe 1000kg gesamt', unlocked: true },
+  { id: 3, icon: '🔥', title: 'On Fire', description: '5-Tage Streak', unlocked: true },
+  { id: 4, icon: '🎯', title: 'Quest Hunter', description: '10 Quests abschließen', unlocked: true },
+  { id: 5, icon: '⭐', title: 'Rising Star', description: 'Level 10 erreichen', unlocked: true },
+  { id: 6, icon: '👑', title: 'Champion', description: 'Platz 1 im Leaderboard', unlocked: false },
+  { id: 7, icon: '🏆', title: 'Legend', description: 'Level 25 erreichen', unlocked: false },
+  { id: 8, icon: '💯', title: 'Perfectionist', description: 'Alle Daily Quests 30 Tage', unlocked: false },
+  { id: 9, icon: '🚀', title: 'Sky Rocket', description: 'Erreiche Level 50', unlocked: true },
+  { id: 10, icon: '💎', title: 'Diamond Grind', description: 'Trainiere 100 Tage in Folge', unlocked: true },
+  { id: 11, icon: '⚡', title: 'Speed Demon', description: '10km unter 40 Minuten', unlocked: false },
+  { id: 12, icon: '🎖️', title: 'Workout Warrior', description: '500 Workouts absolviert', unlocked: false },
+  { id: 13, icon: '🔱', title: 'Triathlon Master', description: 'Schwimmen, Laufen ... in einer Woche', unlocked: false },
+  { id: 14, icon: '🌟', title: 'Shining Star', description: '60-Tage Streak', unlocked: false },
+  { id: 15, icon: '🦾', title: 'Bionic', description: '1000 Liegestütze in 7 Tagen', unlocked: false },
+  { id: 16, icon: '🏅', title: 'Elite Athlete', description: 'Alle Monthly Quests 3 Monate', unlocked: false }
+]);
+
+const visibleAchievements = computed(() => {
+  return achievements.value.slice(currentAchievementIndex.value, currentAchievementIndex.value + 8);
+});
+
+const unlockedCount = computed(() => achievements.value.filter(a => a.unlocked).length);
+const totalAchievements = computed(() => achievements.value.length);
+
+const previousAchievements = () => {
+  if (currentAchievementIndex.value > 0) currentAchievementIndex.value -= 8;
+};
+
+const nextAchievements = () => {
+  if (currentAchievementIndex.value < achievements.value.length - 8) currentAchievementIndex.value += 8;
+};
+
+// Weekly Activity
+const currentWeekOffset = ref(0);
+
+const getWeekDays = (offset: number) => {
+  const today = new Date();
+  const currentDay = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - currentDay + (currentDay === 0 ? -6 : 1) + (offset * 7));
+
+  const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  const weekDays = [];
+
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + i);
+    
+    const isToday = date.toDateString() === today.toDateString();
+    
+    // Datum formatieren (DD.MM)
+    const dateDisplay = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+    
+    // Dummy data - später vom Backend
+    const workoutDone = i < 5 && offset === 0;
+    const duration = workoutDone ? '45 min' : '–';
+
+    weekDays.push({
+      name: days[i],
+      date: date.toISOString(),
+      dateDisplay, // ← NEU
+      workoutDone,
+      duration,
+      isToday
+    });
+  }
+
+  return weekDays;
+};
+
+const currentWeekDays = computed(() => getWeekDays(currentWeekOffset.value));
+const isCurrentWeek = computed(() => currentWeekOffset.value === 0);
+
+const previousWeek = () => { currentWeekOffset.value--; };
+const nextWeek = () => { if (!isCurrentWeek.value) currentWeekOffset.value++; };
+
+// Recent Activities
+const recentActivities = ref([
+  { id: 1, icon: '🎯', title: 'HIIT Blast absolviert', time: 'vor 2 Stunden', xp: 350, type: 'workout' },
+  { id: 2, icon: '🏆', title: "Quest 'Cardio Champion' abgeschlossen", time: 'vor 5 Stunden', xp: 500, type: 'quest' },
+  { id: 3, icon: '🏅', title: "Achievement 'On Fire' freigeschaltet", time: 'Heute', xp: 200, type: 'achievement' },
+  { id: 4, icon: '⚡', title: 'Level 12 erreicht!', time: 'Gestern', xp: 0, type: 'level' }
+]);
+
 onMounted(async () => {
   try {
-    // Profile vom Backend laden (speichert in localStorage)
     await userService.getProfile();
-    // Aus localStorage laden statt rohe API Response
     user.value = JSON.parse(localStorage.getItem('user') || '{}');
     editingUsername.value = user.value.userName;
-
-    // Leaderboard laden
     await loadLeaderboard();
   } catch (err) {
-    console.error('Fehler beim Laden von Profile oder Leaderboard', err);
+    console.error('Fehler beim Laden', err);
   }
 });
 </script>
 
-<template>
-  <div class="dashboard-container">
-    <Header />
-    <Navbar />
-
-    <main class="main-content profile-grid">
-      <!-- Profile -->
-      <section class="card profile-card">
-        <h2>Profil</h2>
-        <div class="field">
-          <label>Benutzername</label>
-          <input v-model="editingUsername" />
-        </div>
-        <div class="field">
-          <label>E-Mail</label>
-          <input :value="user?.email ?? user?.Email ?? ''" readonly />
-        </div>
-        <div class="actions">
-          <button class="btn-primary" @click="saveProfile" :disabled="savingProfile">Speichern</button>
-        </div>
-      </section>
-
-      <!-- Progress -->
-      <section class="card progress-card">
-        <h2>Fortschritt</h2>
-        <div class="progress-row"><strong>Level:</strong> {{ level }}</div>
-        <div class="progress-row"><strong>XP:</strong> {{ experience }}</div>
-        <div class="progress-row"><strong>Absolvierte Challenges:</strong> {{ completedChallenges }}</div>
-        <div class="progress-row"><strong>Leaderboard-Position:</strong> {{ leaderboardPosition }}</div>
-      </section>
-
-      <!-- Security -->
-      <section class="card security-card">
-        <h2>Sicherheit</h2>
-        <div class="field">
-          <label>Altes Passwort</label>
-          <input type="password" v-model="oldPassword" />
-        </div>
-        <div class="field">
-          <label>Neues Passwort</label>
-          <input type="password" v-model="newPassword" />
-        </div>
-        <div class="actions">
-          <button class="btn-primary" @click="changePassword" :disabled="changingPassword">Passwort ändern</button>
-        </div>
-
-        <hr />
-        <div class="danger">
-          <h3>Account löschen</h3>
-          <p>Diese Aktion ist endgültig.</p>
-          <button class="btn-danger" @click="deleteAccount">Account löschen</button>
-        </div>
-      </section>
-    </main>
-
-  </div>
-</template>
-
 <style scoped>
-.main-content.profile-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+.profile-content {
   padding: 40px;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
-.card {
-  background: rgba(15,23,42,0.6);
-  padding: 18px;
-  border-radius: 12px;
-  border: 1px solid rgba(59,130,246,0.06);
-}
-.profile-card { grid-column: 1 / 2; }
-.security-card { grid-column: 1 / 2; }
-.progress-card { grid-column: 2/ 3; }
-.field { margin: 12px 0; display:flex; flex-direction:column; }
-.field label { font-size: 13px; color:#93c5fd; margin-bottom:6px; }
-.field input { padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:rgba(2,6,23,0.4); color:white; }
-.avatar-display-small, .avatar-big { background: rgba(236,72,153,0.08); padding:12px; border-radius:12px; text-align:center; color:white; font-weight:700; }
-.avatar-big { font-size:22px; padding:24px; margin-bottom:12px; }
-.actions { margin-top:12px; }
-.btn-primary { padding:8px 12px; background:linear-gradient(90deg,#3b82f6,#06b6d4); border:none; color:white; border-radius:8px; }
-.btn-danger { padding:8px 12px; background:linear-gradient(90deg,#ef4444,#b91c1c); border:none; color:white; border-radius:8px; }
-.empty { color:#94a3b8; }
-.btn-toggle { align-self:flex-end; padding:6px 8px; border-radius:6px; }
-.progress-row { margin:8px 0; }
-.danger { margin-top:12px; background:rgba(255,0,0,0.03); padding:12px; border-radius:8px; }
 
-@media (max-width: 900px) {
-  .main-content.profile-grid { grid-template-columns: 1fr; }
+/* Profile Header */
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.profile-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.settings-btn {
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.settings-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(168, 85, 247, 0.3);
+}
+
+/* Stats Overview */
+.stats-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+/* Section Styles */
+.achievements-section,
+.activity-section,
+.recent-section {
+  margin-bottom: 48px;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  padding: 32px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-icon {
+  font-size: 28px;
+}
+
+.section-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.achievement-count {
+  padding: 8px 16px;
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #a855f7;
+}
+
+/* Achievements Carousel */
+.achievements-carousel {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.carousel-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(30, 41, 59, 0.6);
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+}
+
+.carousel-btn:hover:not(:disabled) {
+  background: rgba(236, 72, 153, 0.3);
+  border-color: rgba(236, 72, 153, 0.5);
+  transform: scale(1.1);
+}
+
+.carousel-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 20px;
+  flex: 1;
+}
+
+/* Activity Calendar */
+.activity-calendar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.week-nav {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(30, 41, 59, 0.6);
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+}
+
+.week-nav:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.3);
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: scale(1.1);
+}
+
+.week-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 16px;
+  flex: 1;
+}
+
+.day-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.day-card.active {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.day-card.today {
+  border: 2px solid rgba(236, 72, 153, 0.6);
+  box-shadow: 0 0 20px rgba(236, 72, 153, 0.3);
+}
+
+.day-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.day-date {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: -4px;
+}
+
+.day-indicator {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.star-icon {
+  filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.5));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.star-icon img {
+  width: 80px;
+  height: 80px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.5));
+  display: inline-block;
+}
+
+.empty-icon {
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 32px;
+}
+
+.day-duration {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Activities List */
+.activities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Settings Sidebar */
+.settings-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.settings-sidebar {
+  width: 100%;
+  max-width: 500px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.settings-header {
+  padding: 24px 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.close-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.settings-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+}
+
+.settings-section {
+  margin-bottom: 32px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.settings-section:last-child {
+  border-bottom: none;
+}
+
+.settings-section h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 20px 0;
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.field label {
+  display: block;
+  font-size: 14px;
+  color: #93c5fd;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.field input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 14px;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: rgba(236, 72, 153, 0.5);
+}
+
+.field input:read-only {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.progress-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.stat-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}
+
+.stat-value {
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.btn-primary,
+.btn-danger {
+  width: 100%;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 16px;
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, #3b82f6, #06b6d4);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-danger {
+  background: linear-gradient(90deg, #ef4444, #b91c1c);
+  color: white;
+}
+
+.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);
+}
+
+.danger-zone {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.danger-zone p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  margin: 0 0 16px 0;
+}
+
+/* Transitions */
+.settings-enter-active,
+.settings-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.settings-enter-from,
+.settings-leave-to {
+  opacity: 0;
+}
+
+.settings-enter-active .settings-sidebar,
+.settings-leave-active .settings-sidebar {
+  transition: transform 0.3s ease;
+}
+
+.settings-enter-from .settings-sidebar,
+.settings-leave-to .settings-sidebar {
+  transform: translateX(100%);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .achievements-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-content {
+    padding: 20px;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .achievements-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .days-grid {
+    gap: 8px;
+  }
+
+  .day-card {
+    padding: 10px 6px;
+  }
+
+  .settings-sidebar {
+    max-width: 100%;
+  }
+
+  .stats-overview,
+  .achievements-section,
+  .activity-section,
+  .recent-section {
+    padding: 20px;
+  }
 }
 </style>
