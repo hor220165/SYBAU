@@ -183,10 +183,7 @@ onMounted(loadPageData);
   grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
   gap: 24px;
   padding: clamp(24px, 3vw, 36px);
-  background:
-    radial-gradient(circle at top right, rgba(236, 72, 153, 0.32), transparent 32%),
-    radial-gradient(circle at top left, rgba(59, 130, 246, 0.24), transparent 28%),
-    linear-gradient(120deg, rgba(109, 40, 217, 0.66), rgba(15, 23, 42, 0.86));
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
 }
 
 .hero-kicker {
@@ -319,7 +316,7 @@ onMounted(loadPageData);
   border: none;
   border-radius: 14px;
   padding: 12px 16px;
-  background: linear-gradient(90deg, #a855f7, #ec4899);
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
   color: white;
   font-weight: 700;
 }

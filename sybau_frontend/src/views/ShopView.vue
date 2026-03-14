@@ -395,10 +395,7 @@ onMounted(loadPageData);
   gap: 24px;
   align-items: center;
   padding: clamp(24px, 3vw, 36px);
-  background:
-    radial-gradient(circle at top right, rgba(250, 204, 21, 0.24), transparent 28%),
-    radial-gradient(circle at left center, rgba(168, 85, 247, 0.26), transparent 30%),
-    linear-gradient(120deg, rgba(109, 40, 217, 0.7), rgba(15, 23, 42, 0.88));
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
 }
 
 .hero-kicker {
