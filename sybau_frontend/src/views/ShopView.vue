@@ -10,6 +10,7 @@ import { ItemType } from '@/models/ItemType';
 import type { item } from '@/models/Item';
 import type { ShopDisplayItem } from '@/models/ShopDisplayItem';
 import { itemService, userService } from '@/services/api';
+import FooterComponent from '@/components/FooterComponent.vue';
 
 const items = ref<ShopDisplayItem[]>([]);
 const loading = ref(false);
@@ -358,6 +359,8 @@ onMounted(loadPageData);
         </section>
       </template>
     </main>
+     <!-- Footer -->
+    <FooterComponent />
   </div>
 </template>
 

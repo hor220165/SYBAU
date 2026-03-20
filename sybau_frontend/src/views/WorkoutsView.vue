@@ -170,6 +170,8 @@
     @close="showModal = false"
     @submit="handleExerciseSubmit"
   />
+   <!-- Footer -->
+    <FooterComponent />
 </template>
 
 <script setup lang="ts">
@@ -178,16 +180,7 @@ import Header from '@/components/Header.vue';
 import Navbar from '@/components/Navbar.vue';
 import WorkoutCard from '@/components/WorkoutCard.vue';
 import ExerciseModal from '@/components/WorkoutPopup.vue';
-import { workoutService } from '@/services/api';
-
-type Difficulty = 'Easy' | 'Medium' | 'Hard';
-
-interface ExerciseOption {
-  value: string;
-  id: number | null;
-  name: string;
-  category: string;
-}
+import FooterComponent from '@/components/FooterComponent.vue';
 
 const activeFilter = ref('Alle');
 const showModal = ref(false);

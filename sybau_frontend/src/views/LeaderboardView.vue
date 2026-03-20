@@ -8,6 +8,7 @@ import LeaderboardRow from '@/components/LeaderboardRow.vue';
 import { useLeaderboard } from '@/composables/useLeaderboard';
 import { userService } from '@/services/api';
 import type { LeaderboardDisplayEntry } from '@/models/LeaderboardDisplayEntry';
+import FooterComponent from '@/components/FooterComponent.vue';
 
 const { sortedLeaderboard, loading, error, loadLeaderboard } = useLeaderboard();
 const currentUserName = ref('');
@@ -149,6 +150,8 @@ onMounted(loadPageData);
         </section>
       </template>
     </main>
+     <!-- Footer -->
+    <FooterComponent />
   </div>
 </template>
 

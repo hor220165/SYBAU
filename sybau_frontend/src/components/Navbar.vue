@@ -3,7 +3,7 @@
   <nav class="navbar">
     <button class="nav-item"
             :class="{ active: isActiveRoute('/home') }"
-            @click="navigateTo('/home')">
+            @click="navigateTo('/dashboard')">
       <span class="nav-icon">🎯</span>
       <span>Dashboard</span>
     </button>
