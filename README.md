@@ -8,7 +8,7 @@
 
 ---
 
-## 📖 Über das Projekt
+## Über das Projekt
 
 SYBAU ist eine Fitness-Web-App, die Gamification-Elemente mit Workout-Tracking kombiniert. Nutzer können ihren Avatar leveln, Items sammeln, Quests abschließen und sich in globalen Leaderboards messen – während sie gleichzeitig ihre Fitness verbessern!
 
