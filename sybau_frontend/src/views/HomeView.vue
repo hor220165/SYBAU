@@ -830,7 +830,7 @@ onUnmounted(() => {
 }
 
 .tech-logo {
-  height: 80px;  /* ✅ Größer: 80px statt 56px */
+  height: 100px;
   width: auto;
   opacity: 0.7;
   transition: all 0.3s ease;
@@ -854,7 +854,7 @@ onUnmounted(() => {
 /* Responsive */
 @media (max-width: 768px) {
   .tech-logo {
-    height: 56px;  /* ✅ Mobile: 56px statt 40px */
+    height: 72px;  
   }
   
   .logo-set {
