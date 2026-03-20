@@ -3,7 +3,7 @@
   <div class="auth-page">
     <!-- Back Button - Text Only -->
     <button class="back-button" @click="goToHome">
-      ← Zurück zur Startseite
+      Zurück zur Startseite
     </button>
 
     <!-- Zentrale Layout-Spalte -->

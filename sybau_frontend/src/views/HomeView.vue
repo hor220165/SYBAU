@@ -34,9 +34,6 @@
             <span class="play-icon">▶</span>
             Kostenlos starten
           </button>
-          <button class="secondary-btn" @click="scrollToFeatures">
-            Mehr erfahren
-          </button>
         </div>
       </div>
     </section>
@@ -97,6 +94,46 @@
         </div>
       </div>
     </section>
+
+<!-- Tech Stack Section -->
+<section class="tech-section">
+  <div class="tech-title">Made with</div>
+
+  <div class="marquee">
+    <div class="marquee-content">
+      <!-- Erste Reihe -->
+      <div class="logo-set">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg" alt="C#" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/dotnetcore/dotnetcore-original.svg" alt=".NET" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vuejs/vuejs-original.svg" alt="Vue" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" alt="TypeScript" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg" alt="HTML" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg" alt="CSS" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" alt="JavaScript" class="tech-logo">
+      </div>
+      <!-- Zweite Reihe (identisch) -->
+      <div class="logo-set">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg" alt="C#" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/dotnetcore/dotnetcore-original.svg" alt=".NET" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vuejs/vuejs-original.svg" alt="Vue" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" alt="TypeScript" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg" alt="HTML" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg" alt="CSS" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" alt="JavaScript" class="tech-logo">
+      </div>
+      <!-- Dritte Reihe (identisch) -->
+      <div class="logo-set">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg" alt="C#" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/dotnetcore/dotnetcore-original.svg" alt=".NET" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vuejs/vuejs-original.svg" alt="Vue" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" alt="TypeScript" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg" alt="HTML" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg" alt="CSS" class="tech-logo">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" alt="JavaScript" class="tech-logo">
+      </div>
+    </div>
+  </div>
+</section>
 
     <!-- Footer -->
     <FooterComponent />
@@ -205,10 +242,6 @@ const steps = ref([
 
 const navigateTo = (path: string) => {
   router.push(path);
-};
-
-const scrollToFeatures = () => {
-  featuresSection.value?.scrollIntoView({ behavior: 'smooth' });
 };
 
 // Counter Animation für Stats
@@ -421,8 +454,8 @@ onUnmounted(() => {
   gap: 16px;
 }
 
-.primary-btn,
-.secondary-btn {
+
+.primary-btn{
   padding: 16px 40px;
   border-radius: 14px;
   font-weight: 700;
@@ -447,20 +480,6 @@ onUnmounted(() => {
 .primary-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 24px rgba(236, 72, 153, 0.5);
-}
-
-.secondary-btn {
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  color: white;
-  transform: translateY(2px);
-}
-
-.secondary-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: translateY(-1px);
 }
 
 /* Stats Section - Separate mit mehr Padding */
@@ -775,6 +794,78 @@ onUnmounted(() => {
   color: #ec4899;
 }
 
+/* Tech Stack Section */
+.tech-section {
+  padding: 60px 0 40px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.tech-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 32px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.marquee {
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+}
+
+.marquee-content {
+  display: inline-flex;
+  gap: 80px;
+  animation: scroll 40s linear infinite;
+  will-change: transform;
+}
+
+.logo-set {
+  display: flex;
+  align-items: center;
+  gap: 60px;
+}
+
+.tech-logo {
+  height: 100px;
+  width: auto;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+  filter: grayscale(0%);
+}
+
+.tech-logo:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-100% / 3));
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tech-logo {
+    height: 72px;  
+  }
+  
+  .logo-set {
+    gap: 40px;
+  }
+  
+  .marquee-content {
+    gap: 60px;
+  }
+}
+
 /* Responsive Breakpoints */
 
 /* Tablet (1024px und kleiner) */
@@ -871,23 +962,18 @@ onUnmounted(() => {
   }
 
   .hero-buttons {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-    padding: 0 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 16px;
   }
 
-  .primary-btn,
-  .secondary-btn {
+  .primary-btn{
     padding: 14px 28px;
     font-size: 15px;
     height: 48px;
     min-width: unset;
     width: 100%;
-  }
-
-  .secondary-btn {
-    transform: translateY(0);
   }
 
   /* Stats Section */
