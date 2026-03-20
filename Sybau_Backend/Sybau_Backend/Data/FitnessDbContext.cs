@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Sybau_Backend.Models;
 
 namespace Sybau_Backend.Data;
@@ -81,6 +81,7 @@ public class FitnessDbContext:DbContext
         modelBuilder.Entity<Exercise>(entity =>
         {
             entity.Property(e => e.Category).HasConversion<string>();
+            entity.Property(e => e.Difficulty).HasConversion<string>();
         });
 
     }

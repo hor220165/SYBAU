@@ -19,7 +19,7 @@ public class WorkoutService
     {
         if (dto == null) throw new ArgumentNullException(nameof(dto));
 
-        var exercise = new Exercise(dto.Name, dto.Description, dto.Category);
+        var exercise = new Exercise(dto.Name, dto.Description, dto.Category, dto.Difficulty);
         _context.Exercises.Add(exercise);
         await _context.SaveChangesAsync();
 
@@ -28,7 +28,8 @@ public class WorkoutService
             Id = exercise.Id,
             Name = exercise.Name,
             Description = exercise.Description,
-            Category = exercise.Category
+            Category = exercise.Category,
+            Difficulty = exercise.Difficulty
         };
     }
 
@@ -48,7 +49,8 @@ public class WorkoutService
                 Id = e.Id,
                 Name = e.Name,
                 Description = e.Description,
-                Category = e.Category
+                    Category = e.Category,
+                    Difficulty = e.Difficulty
             })
             .ToListAsync();
     }
@@ -136,6 +138,7 @@ public class WorkoutService
                     ExerciseId = we.ExerciseId,
                     ExerciseName = we.Exercise.Name,
                     ExerciseCategory = we.Exercise.Category,
+                    Difficulty = we.Exercise.Difficulty,
                     DailyLimit = we.DailyLimit
                 })
                 .ToList()
