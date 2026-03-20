@@ -3,6 +3,7 @@
 import Navbar from "@/components/Navbar.vue";
 import Header from "@/components/Header.vue";
 import SpriteAnimator from "@/components/spriteAnimator.vue";
+import FooterComponent from "@/components/FooterComponent.vue";
 </script>
 
 <template>
@@ -22,6 +23,8 @@ import SpriteAnimator from "@/components/spriteAnimator.vue";
       </div>
     </div>
   </main>
+   <!-- Footer -->
+    <FooterComponent />
 </template>
 
 <style scoped>

@@ -275,6 +275,8 @@
         {{ statusMessage }}
       </div>
     </main>
+     <!-- Footer -->
+    <FooterComponent />
   </div>
 </template>
 

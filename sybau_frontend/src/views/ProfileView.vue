@@ -232,6 +232,8 @@
       </div>
     </Transition>
   </Teleport>
+  <!-- Footer -->
+    <FooterComponent />
 </template>
 
 <script setup lang="ts">
@@ -245,6 +247,7 @@ import ActivityItem from '@/components/ActivityItem.vue';
 import { useAuth } from '@/composables/useAuth';
 import { useLeaderboard } from '@/composables/useLeaderboard';
 import { userService } from '@/services/api';
+import FooterComponent from '@/components/FooterComponent.vue';
 
 const router = useRouter();
 const { user, logout } = useAuth();
@@ -460,7 +463,7 @@ onMounted(async () => {
   padding: 12px 24px;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
+  background: linear-gradient(135deg, #777676, #4b4b4b);
   color: white;
   font-weight: 600;
   font-size: 16px;
@@ -473,7 +476,7 @@ onMounted(async () => {
 
 .settings-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(236, 72, 153, 0.3);
+  box-shadow: 0 8px 16px rgba(58, 58, 58, 0.3);
 }
 
 /* Stats Overview */
@@ -662,8 +665,8 @@ onMounted(async () => {
 }
 
 .star-icon img {
-  width: 32px;
-  height: 32px;
+  width: 80px;
+  height: 80px;
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;

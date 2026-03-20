@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import AuthView from '../views/AuthView.vue'
-import HomeView from "../views/HomeView.vue";
+import DashboardView from "../views/DashboardView.vue";
 import ShopView from "@/views/ShopView.vue";
 import WorkoutsView from "@/views/WorkoutsView.vue";
 import QuestsView from "@/views/QuestsView.vue";
@@ -8,19 +8,29 @@ import AvatarView from "@/views/AvatarView.vue";
 import LeaderboardView from "@/views/LeaderboardView.vue";
 import ProfileView from "@/views/ProfileView.vue";
 import AdminView from "@/views/AdminView.vue";
+import HomeView from "@/views/HomeView.vue";
+import ImpressumView from '@/views/ImpressumView.vue';
 
 const routes = [
     {
       path: '/',
-      redirect: '/auth'
+      redirect: '/home'
     },
     {
       path: '/auth',
       component: AuthView
     },
     {
-      path: '/home',
-      component: HomeView
+      path: '/impressum',
+      component: ImpressumView
+    },
+    {
+        path: '/home',
+        component: HomeView
+    },
+    {
+      path: '/dashboard',
+      component: DashboardView
     },
     {
         path: '/workouts',

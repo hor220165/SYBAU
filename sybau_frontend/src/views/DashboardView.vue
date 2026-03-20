@@ -67,6 +67,8 @@
         />
       </div>
     </main>
+     <!-- Footer -->
+    <FooterComponent />
   </div>
 </template>
 
@@ -77,6 +79,7 @@ import Navbar from "@/components/Navbar.vue";
 import Header from "@/components/Header.vue";
 import { onMounted, ref, computed } from 'vue';
 import { userService } from '@/services/api';
+import FooterComponent from "@/components/FooterComponent.vue";
 
 const progressPercent = computed(() => {
   const denom = xpForNextLevel.value || 1;
