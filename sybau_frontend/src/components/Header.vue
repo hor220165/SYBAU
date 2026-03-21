@@ -11,7 +11,6 @@ onMounted(async () => {
   if (!user.value?.avatar) {
     try {
       await userService.getProfile();
-      // getProfile() speichert bereits in localStorage
       user.value = JSON.parse(localStorage.getItem('user') || '{}');
     } catch (err) {
       console.error('Failed to fetch profile:', err);
@@ -19,7 +18,6 @@ onMounted(async () => {
   }
 });
 
-// Computed properties mit allen möglichen Varianten
 const userLevel = computed(() => user.value?.avatar?.level ?? user.value?.Avatar?.level ?? 0);
 const userXP = computed(() => user.value?.avatar?.experience ?? user.value?.Avatar?.experience ?? 0);
 const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
@@ -30,25 +28,24 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   <header class="header">
     <div class="logo-section">
       <img src="../assets/Sybau_Logo_White.png" alt="Sybau_Logo" class="logo-img" />
-     
     </div>
 
-    <!-- Stats header  -->
+    <!-- Stats header -->
     <div class="stats-header">
       <div class="stat-badge level">
-        <span>Lvl</span>
-        <span>{{ userLevel }}</span>
+        <span class="stat-label">Lvl</span>
+        <span class="stat-value">{{ userLevel }}</span>
       </div>
       <div class="stat-badge xp">
-        <span class="icon">XP</span>
-        <span>{{ userXP }}</span>
+        <span class="stat-label">XP</span>
+        <span class="stat-value">{{ userXP }}</span>
       </div>
       <div class="stat-badge coins">
-        <span>Coins</span>
-        <span>{{ userCoins }}</span>
+        <span class="stat-label">Coins</span>
+        <span class="stat-value">{{ userCoins }}</span>
       </div>
       <button class="menu-btn" @click="logout">
-        <span><img src="../assets/logout_Icon.png" alt="logout" width="25px" class="logout-icon"></span>
+        <img src="../assets/logout_Icon.png" alt="logout" class="logout-icon">
       </button>
     </div>
   </header>
@@ -67,12 +64,6 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   -webkit-backdrop-filter: blur(20px);
 }
 
-.logout-icon {
-  width: 20px;
-  height: 20px;
-  filter: invert(68%) sepia(47%) saturate(3445%) hue-rotate(318deg) brightness(101%) contrast(92%);
-}
-
 .logo-section {
   display: flex;
   align-items: center;
@@ -83,19 +74,6 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   height: 35px;
   width: auto;
   object-fit: contain;
-}
-
-.logo-text h1 {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 0;
-  color: white;
-}
-
-.logo-text p {
-  font-size: 14px;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.7);
 }
 
 .stats-header {
@@ -113,6 +91,14 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   font-weight: 600;
   border: 1px solid rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(10px);
+}
+
+.stat-label {
+  font-size: 14px;
+}
+
+.stat-value {
+  font-size: 16px;
 }
 
 .stat-badge.level {
@@ -134,7 +120,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 }
 
 .menu-btn {
-  color: rgba(248, 113, 113, 1);;
+  color: rgba(248, 113, 113, 1);
   width: 68px;
   height: 48px;
   border-radius: 12px;
@@ -150,5 +136,130 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 .menu-btn:hover {
   background: rgba(248, 113, 113, 0.3);
   transform: translateY(-2px);
+}
+
+.logout-icon {
+  width: 20px;
+  height: 20px;
+  filter: invert(68%) sepia(47%) saturate(3445%) hue-rotate(318deg) brightness(101%) contrast(92%);
+}
+
+/* Responsive */
+
+/* Tablet (1024px und kleiner) */
+@media (max-width: 1024px) {
+  .header {
+    padding: 16px 24px;
+  }
+
+  .logo-img {
+    height: 30px;
+  }
+
+  .stat-badge {
+    padding: 10px 16px;
+    gap: 6px;
+  }
+
+  .stat-label {
+    font-size: 13px;
+  }
+
+  .stat-value {
+    font-size: 15px;
+  }
+
+  .menu-btn {
+    width: 56px;
+    height: 44px;
+  }
+
+  .logout-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Mobile (768px und kleiner) */
+@media (max-width: 768px) {
+  .header {
+    padding: 12px 16px;
+  }
+
+  .logo-img {
+    height: 26px;
+  }
+
+  .stats-header {
+    gap: 8px;
+  }
+
+  .stat-badge {
+    padding: 8px 12px;
+    gap: 4px;
+    border-radius: 8px;
+  }
+
+  .stat-label {
+    display: none; /* Text ausblenden auf Mobile */
+  }
+
+  .stat-value {
+    font-size: 14px;
+  }
+
+  /* Nur Werte anzeigen mit Icon-Emoji davor */
+  .stat-badge.level::before {
+    content: '⭐';
+    font-size: 14px;
+  }
+
+  .stat-badge.xp::before {
+    content: '⚡';
+    font-size: 14px;
+  }
+
+  .stat-badge.coins::before {
+    content: '💰';
+    font-size: 14px;
+  }
+
+  .menu-btn {
+    width: 44px;
+    height: 40px;
+  }
+
+  .logout-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* Small Mobile (480px und kleiner) */
+@media (max-width: 480px) {
+  .header {
+    padding: 10px 12px;
+  }
+
+  .logo-img {
+    height: 22px;
+  }
+
+  .stats-header {
+    gap: 6px;
+  }
+
+  .stat-badge {
+    padding: 6px 10px;
+  }
+
+  .stat-value {
+    font-size: 13px;
+  }
+
+  .menu-btn {
+    width: 40px;
+    height: 36px;
+  }
 }
 </style>
