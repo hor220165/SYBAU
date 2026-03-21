@@ -1,51 +1,56 @@
 <template>
+  <!-- Mobile Menu Button -->
+  <button class="mobile-menu-btn" @click="mobileMenuOpen = !mobileMenuOpen">
+    <span class="hamburger-icon">☰</span>
+  </button>
+
   <!-- Navigation -->
-  <nav class="navbar">
+  <nav class="navbar" :class="{ 'mobile-open': mobileMenuOpen }">
     <button class="nav-item"
-            :class="{ active: isActiveRoute('/home') }"
-            @click="navigateTo('/dashboard')">
+            :class="{ active: isActiveRoute('/dashboard') }"
+            @click="navigateAndClose('/dashboard')">
       <span class="nav-icon">🎯</span>
       <span>Dashboard</span>
     </button>
     <button class="nav-item"
             :class="{ active: isActiveRoute('/workouts') }"
-            @click="navigateTo('/workouts')">
+            @click="navigateAndClose('/workouts')">
       <span class="nav-icon">🏋️</span>
       <span>Workouts</span>
     </button>
     <button class="nav-item"
             :class="{ active: isActiveRoute('/quests') }"
-            @click="navigateTo('/quests')">
+            @click="navigateAndClose('/quests')">
       <span class="nav-icon">🏆</span>
       <span>Quests</span>
     </button>
     <button class="nav-item"
             :class="{ active: isActiveRoute('/avatar') }"
-            @click="navigateTo('/avatar')">
+            @click="navigateAndClose('/avatar')">
       <span class="nav-icon">👤</span>
       <span>Avatar</span>
     </button>
     <button class="nav-item"
             :class="{ active: isActiveRoute('/shop') }"
-            @click="navigateTo('/shop')">
+            @click="navigateAndClose('/shop')">
       <span class="nav-icon">🛒</span>
       <span>Shop</span>
     </button>
     <button class="nav-item"
             :class="{ active: isActiveRoute('/leaderboard') }"
-            @click="navigateTo('/leaderboard')">
+            @click="navigateAndClose('/leaderboard')">
       <span class="nav-icon">👥</span>
       <span>Leaderboard</span>
     </button>
     <button class="nav-item"
             :class="{ active: isActiveRoute('/profile') }"
-            @click="navigateTo('/profile')">
+            @click="navigateAndClose('/profile')">
       <span class="nav-icon">⚡</span>
       <span>Profile</span>
     </button>
     <button v-if="isAdmin" class="nav-item admin-btn"
             :class="{ active: isActiveRoute('/admin') }"
-            @click="navigateTo('/admin')">
+            @click="navigateAndClose('/admin')">
       <span class="nav-icon">🔐</span>
       <span>Admin</span>
     </button>
@@ -58,6 +63,12 @@ import { ref, onMounted } from 'vue';
 
 const {navigateTo, isActiveRoute} = useNavigation()
 const isAdmin = ref(false);
+const mobileMenuOpen = ref(false);
+
+const navigateAndClose = (path: string) => {
+  navigateTo(path);
+  mobileMenuOpen.value = false;
+};
 
 onMounted(() => {
   const user = localStorage.getItem('user');
@@ -71,7 +82,31 @@ onMounted(() => {
   }
 });
 </script>
+
 <style scoped>
+/* Mobile Menu Button */
+.mobile-menu-btn {
+  display: none;
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 2000;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: none;
+  background: rgba(30, 41, 59, 0.9);
+  backdrop-filter: blur(10px);
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mobile-menu-btn:hover {
+  background: rgba(236, 72, 153, 0.3);
+}
+
 /* Navigation */
 .navbar {
   display: flex;
@@ -124,16 +159,8 @@ onMounted(() => {
   background: linear-gradient(90deg, #ec4899, #f43f5e);
 }
 
-.nav-item:after {
-  transition: opacity 0.3s ease, transform 0.3 ease;
-}
-
 .nav-icon {
   font-size: 20px;
-}
-
-.nav-item:focus:not(:focus-visible) {
-  outline: none;
 }
 
 .admin-btn {
@@ -151,5 +178,59 @@ onMounted(() => {
 
 .admin-btn.active::after {
   background: linear-gradient(90deg, #ffd700, #ffed4e);
+}
+
+/* Responsive - Mobile Menu */
+@media (max-width: 1024px) {
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .navbar {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 280px;
+    height: 100vh;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0;
+    padding: 80px 0 0 0;
+    background: rgba(15, 23, 42, 0.98);
+    backdrop-filter: blur(20px);
+    border-bottom: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    transition: right 0.3s ease;
+    z-index: 1500;
+  }
+
+  .navbar.mobile-open {
+    right: 0;
+  }
+
+  .nav-item {
+    width: 100%;
+    height: 56px;
+    padding: 0 24px;
+    justify-content: flex-start;
+    border-radius: 0;
+  }
+
+  .nav-item.active::after {
+    width: 4px;
+    height: 100%;
+    left: 0;
+    right: auto;
+    top: 0;
+    bottom: 0;
+  }
+
+  .admin-btn {
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    margin-top: auto;
+  }
 }
 </style>
