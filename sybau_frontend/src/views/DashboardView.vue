@@ -10,6 +10,7 @@
     <main class="main-content">
       <!-- Avatar Section -->
       <div class="avatar-section">
+        <!-- Avatar Display -->
         <div class="avatar-display">
           <SpriteAnimator
               :frameWidth="128"
@@ -20,6 +21,11 @@
               :speed="1000"
               :scale="3"
           />
+        </div>
+
+        <!-- Username Box - überlappt die untere Linie -->
+        <div class="username-box">
+          <h2 class="username">{{ userName || 'Champion' }}</h2>
         </div>
 
         <!-- XP Progress -->
@@ -106,7 +112,6 @@ async function loadProfile() {
     const avatar = data.avatar ?? {};
     level.value = avatar.level ?? 0;
     currentXp.value = avatar.experience ?? 0;
-    // xpForNext könnte vom Backend kommen oder statisch initialisiert werden
     xpForNextLevel.value = avatar.xpForNextLevel ?? 1000;
 
   } catch (e) {
@@ -115,7 +120,6 @@ async function loadProfile() {
 }
 
 onMounted(() => loadProfile());
-
 </script>
 
 <style scoped>
@@ -139,7 +143,7 @@ onMounted(() => loadProfile());
   flex-direction: column;
   align-items: center;
   margin-bottom: 40px;
-  gap: 24px;
+  gap: 0;
 }
 
 .avatar-display {
@@ -148,7 +152,36 @@ onMounted(() => loadProfile());
   border-radius: 20px;
   padding: 24px;
   box-shadow: 0 0 40px rgba(236, 72, 153, 0.2);
-  display: inline-block;
+  background: rgba(30, 41, 59, 0.3);
+  backdrop-filter: blur(10px);
+  margin-bottom: -24px;
+  z-index: 1;
+}
+
+/* Username Box - kleiner */
+.username-box {
+  border: 2px solid rgba(236, 72, 153, 0.3);
+  border-radius: 16px;
+  padding: 12px 28px;
+  box-shadow: 0 0 40px rgba(236, 72, 153, 0.2);
+  background: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 200px;
+  z-index: 2;
+  margin-bottom: 24px;
+}
+
+.username {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* XP Progress */
@@ -199,13 +232,76 @@ onMounted(() => loadProfile());
 }
 
 /* Responsive */
+
+/* Tablet (1024px und kleiner) */
+@media (max-width: 1024px) {
+  .main-content {
+    padding: 32px 24px;
+  }
+
+  .avatar-display {
+    margin-bottom: -22px;
+  }
+
+  .username-box {
+    padding: 10px 24px;
+    min-width: 180px;
+  }
+
+  .username {
+    font-size: 20px;
+  }
+}
+
+/* Mobile (768px und kleiner) */
 @media (max-width: 768px) {
-  .navbar {
-    overflow-x: auto;
+  .main-content {
+    padding: 24px 16px;
+  }
+
+  .avatar-display {
+    padding: 20px;
+    margin-bottom: -20px;
+  }
+
+  .username-box {
+    width: 80%;
+    max-width: 350px;
+    padding: 10px 20px;
+    min-width: unset;
+  }
+
+  .username {
+    font-size: 18px;
   }
 
   .xp-progress {
     max-width: 100%;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Small Mobile (480px und kleiner) */
+@media (max-width: 480px) {
+  .main-content {
+    padding: 20px 12px;
+  }
+
+  .avatar-display {
+    padding: 16px;
+    margin-bottom: -18px;
+  }
+
+  .username-box {
+    padding: 8px 16px;
+    border-radius: 12px;
+  }
+
+  .username {
+    font-size: 16px;
   }
 }
 </style>
