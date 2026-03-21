@@ -665,8 +665,8 @@ onMounted(async () => {
 }
 
 .star-icon img {
-  width: 80px;
-  height: 80px;
+  width: 48px;
+  height: 48px;
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;

@@ -32,19 +32,32 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 
     <!-- Stats header -->
     <div class="stats-header">
-      <div class="stat-badge level">
-        <span class="stat-label">Lvl</span>
-        <span class="stat-value">{{ userLevel }}</span>
+      <div class="stat-item level">
+        <img src="../assets/Star_Pixel.png" alt="Level" class="stat-icon level-icon">
+        <div class="stat-info">
+          <span class="stat-label">Level</span>
+          <span class="stat-value">{{ userLevel }}</span>
+        </div>
       </div>
-      <div class="stat-badge xp">
-        <span class="stat-label">XP</span>
-        <span class="stat-value">{{ userXP }}</span>
+
+      <div class="stat-divider"></div>
+
+      <div class="stat-item xp">
+        <img src="../assets/XP_Pixel.png" alt="XP" class="stat-icon xp-icon">
+        <div class="stat-info">
+          <span class="stat-label">XP</span>
+          <span class="stat-value">{{ userXP }}</span>
+        </div>
       </div>
-      <div class="stat-badge coins">
-        <span class="stat-label">Coins</span>
+
+      <div class="stat-divider"></div>
+
+      <div class="stat-item coins">
+        <img src="../assets/SYBAU_Coin.png" alt="Coins" class="stat-icon coin-icon">
         <span class="stat-value">{{ userCoins }}</span>
       </div>
-      <button class="menu-btn" @click="logout">
+
+      <button class="logout-btn" @click="logout">
         <img src="../assets/logout_Icon.png" alt="logout" class="logout-icon">
       </button>
     </div>
@@ -57,8 +70,8 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 40px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 16px 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: transparent;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -67,80 +80,117 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 .logo-section {
   display: flex;
   align-items: center;
-  gap: 16px;
 }
 
 .logo-img {
-  height: 35px;
+  height: 36px;
   width: auto;
   object-fit: contain;
 }
 
+/* Stats Header */
 .stats-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 20px;
 }
 
-.stat-badge {
-  padding: 12px 20px;
-  border-radius: 12px;
+.stat-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
+  gap: 10px;
+}
+
+/* Gemeinsame Icon Styles */
+.stat-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Icon-spezifische Glow-Effekte */
+.level-icon {
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+}
+
+.xp-icon {
+  filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.6));
+}
+
+.coin-icon {
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .stat-label {
-  font-size: 14px;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1;
 }
 
 .stat-value {
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
 }
 
-.stat-badge.level {
-  background: linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(202, 138, 4, 0.2));
-  border-color: rgba(234, 179, 8, 0.3);
+/* Stat Colors */
+.stat-item.level .stat-value {
   color: #fbbf24;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
 }
 
-.stat-badge.xp {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
-  border-color: rgba(59, 130, 246, 0.3);
+.stat-item.xp .stat-value {
   color: #60a5fa;
+  text-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
 }
 
-.stat-badge.coins {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2));
-  border-color: rgba(245, 158, 11, 0.3);
+.stat-item.coins .stat-value {
   color: #fbbf24;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
 }
 
-.menu-btn {
-  color: rgba(248, 113, 113, 1);
-  width: 68px;
-  height: 48px;
+/* Divider */
+.stat-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Logout Button */
+.logout-btn {
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
-  background: rgba(248, 113, 113, 0.2);
-  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: rgba(248, 113, 113, 0.15);
+  border: 1px solid rgba(248, 113, 113, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  margin-left: 8px;
 }
 
-.menu-btn:hover {
-  background: rgba(248, 113, 113, 0.3);
+.logout-btn:hover {
+  background: rgba(248, 113, 113, 0.25);
   transform: translateY(-2px);
 }
 
 .logout-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   filter: invert(68%) sepia(47%) saturate(3445%) hue-rotate(318deg) brightness(101%) contrast(92%);
 }
 
@@ -149,34 +199,42 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 /* Tablet (1024px und kleiner) */
 @media (max-width: 1024px) {
   .header {
-    padding: 16px 24px;
+    padding: 14px 24px;
   }
 
   .logo-img {
-    height: 30px;
+    height: 32px;
   }
 
-  .stat-badge {
-    padding: 10px 16px;
-    gap: 6px;
+  .stats-header {
+    gap: 16px;
+  }
+
+  .stat-icon {
+    width: 22px;
+    height: 22px;
   }
 
   .stat-label {
-    font-size: 13px;
+    font-size: 10px;
   }
 
   .stat-value {
-    font-size: 15px;
+    font-size: 16px;
   }
 
-  .menu-btn {
-    width: 56px;
-    height: 44px;
+  .stat-divider {
+    height: 26px;
+  }
+
+  .logout-btn {
+    width: 40px;
+    height: 40px;
   }
 
   .logout-icon {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
 }
 
@@ -187,51 +245,43 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   }
 
   .logo-img {
-    height: 26px;
+    height: 28px;
   }
 
   .stats-header {
-    gap: 8px;
+    gap: 12px;
   }
 
-  .stat-badge {
-    padding: 8px 12px;
-    gap: 4px;
-    border-radius: 8px;
+  .stat-item {
+    gap: 6px;
   }
 
-  .stat-label {
-    display: none; /* Text ausblenden auf Mobile */
+  .stat-info {
+    display: none;
+  }
+
+  .stat-icon {
+    width: 20px;
+    height: 20px;
   }
 
   .stat-value {
-    font-size: 14px;
+    font-size: 15px;
   }
 
-  /* Nur Werte anzeigen mit Icon-Emoji davor */
-  .stat-badge.level::before {
-    content: '⭐';
-    font-size: 14px;
+  .stat-divider {
+    height: 24px;
   }
 
-  .stat-badge.xp::before {
-    content: '⚡';
-    font-size: 14px;
-  }
-
-  .stat-badge.coins::before {
-    content: '💰';
-    font-size: 14px;
-  }
-
-  .menu-btn {
-    width: 44px;
-    height: 40px;
+  .logout-btn {
+    width: 36px;
+    height: 36px;
+    margin-left: 4px;
   }
 
   .logout-icon {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
   }
 }
 
@@ -242,24 +292,38 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   }
 
   .logo-img {
-    height: 22px;
+    height: 24px;
   }
 
   .stats-header {
-    gap: 6px;
+    gap: 8px;
   }
 
-  .stat-badge {
-    padding: 6px 10px;
+  .stat-item {
+    gap: 4px;
+  }
+
+  .stat-icon {
+    width: 18px;
+    height: 18px;
   }
 
   .stat-value {
-    font-size: 13px;
+    font-size: 14px;
   }
 
-  .menu-btn {
-    width: 40px;
-    height: 36px;
+  .stat-divider {
+    height: 20px;
+  }
+
+  .logout-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .logout-icon {
+    width: 12px;
+    height: 12px;
   }
 }
 </style>
