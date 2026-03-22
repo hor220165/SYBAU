@@ -30,6 +30,15 @@
           </div>
 
           <div class="form-group">
+            <label for="exercise-difficulty">Schwierigkeit</label>
+            <select id="exercise-difficulty" v-model="exerciseForm.difficulty" required>
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+          </div>
+
+          <div class="form-group">
             <label for="exercise-description">Beschreibung</label>
             <textarea
               id="exercise-description"
@@ -188,7 +197,8 @@ const selectedExerciseValues = ref<string[]>([]);
 const exerciseForm = ref({
   name: '',
   description: '',
-  category: 'Cardio'
+  category: 'Cardio',
+  difficulty: 'Medium' as Difficulty
 });
 
 const workoutForm = ref({
@@ -318,7 +328,8 @@ const resetExerciseForm = () => {
   exerciseForm.value = {
     name: '',
     description: '',
-    category: exerciseForm.value.category
+    category: exerciseForm.value.category,
+    difficulty: 'Medium'
   };
 };
 
@@ -347,7 +358,8 @@ const submitExercise = async () => {
     await adminService.createExercise({
       name: exerciseForm.value.name,
       description: exerciseForm.value.description || undefined,
-      category: categoryToEnumValue(exerciseForm.value.category)
+      category: categoryToEnumValue(exerciseForm.value.category),
+      difficulty: exerciseForm.value.difficulty
     });
 
     resetExerciseForm();

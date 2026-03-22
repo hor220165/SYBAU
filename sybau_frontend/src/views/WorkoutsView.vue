@@ -181,6 +181,16 @@ import Navbar from '@/components/Navbar.vue';
 import WorkoutCard from '@/components/WorkoutCard.vue';
 import ExerciseModal from '@/components/WorkoutPopup.vue';
 import FooterComponent from '@/components/FooterComponent.vue';
+import { workoutService } from '@/services/api';
+
+type Difficulty = 'Easy' | 'Medium' | 'Hard';
+
+interface ExerciseOption {
+  value: string;
+  id: number | null;
+  name: string;
+  category: string;
+}
 
 const activeFilter = ref('Alle');
 const showModal = ref(false);
