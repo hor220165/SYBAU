@@ -46,7 +46,10 @@ namespace Sybau_Backend.Controllers
         [Authorize]
         public async Task<IActionResult> BuyItem(int itemId)
         {
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+            
+            var userId = int.Parse(userIdClaim);
             var result = await _shopService.BuyItemAsync(userId, itemId);
     
             if (!result) return BadRequest("Kauf fehlgeschlagen");

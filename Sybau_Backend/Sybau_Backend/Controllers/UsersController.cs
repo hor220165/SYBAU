@@ -128,7 +128,26 @@ namespace Sybau_Backend.Controllers
             var currentUserId = int.Parse(userIdClaim);
             
             var users = await _userService.GetUsersExcept(currentUserId);
-            return Ok(users);
+            return Ok(users.Select(u => new UserDto
+            {
+                Id = u.Id,
+                UserName = u.UserName,
+                Email = u.Email,
+                Coins = u.Coins,
+                IsAdmin = u.IsAdmin,
+                Avatar = new AvatarDto
+                {
+                    Id = u.Avatar.Id,
+                    Level = u.Avatar.Level,
+                    Experience = u.Avatar.Experience,
+                    BodyStage = _bodyStageService.GetBodyStage(u.Avatar.Level),
+                    XpForNextLevel = _avatarService.XpForNextLevel(u.Avatar.Level),
+                    Boost1 = u.Avatar.Boost1,
+                    Boost2 = u.Avatar.Boost2,
+                    Boost3 = u.Avatar.Boost3,
+                    Boost4 = u.Avatar.Boost4
+                }
+            }));
         }
 
 

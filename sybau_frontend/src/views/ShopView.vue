@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar.vue';
 import Header from '@/components/Header.vue';
 import ShopItemCard from '@/components/ShopItemCard.vue';
 import ShopFeatureCard from '@/components/ShopFeatureCard.vue';
+import { useAuth } from '@/composables/useAuth';
 import { ItemType } from '@/models/ItemType';
 import type { item } from '@/models/Item';
 import type { ShopDisplayItem } from '@/models/ShopDisplayItem';
@@ -12,17 +13,14 @@ import { itemService, userService } from '@/services/api';
 import FooterComponent from '@/components/FooterComponent.vue';
 
 const items = ref<ShopDisplayItem[]>([]);
-const currentCoins = ref(0);
 const loading = ref(false);
 const error = ref('');
 const successMessage = ref('');
 const buyingItemId = ref<number | null>(null);
 const activeFilter = ref<'all' | 'chest' | 'boost' | 'item'>('all');
+const { user, syncUserFromStorage } = useAuth();
 
-const syncCoinsFromStorage = () => {
-  const raw = JSON.parse(localStorage.getItem('user') || '{}');
-  currentCoins.value = Number(raw.coins ?? raw.Coins ?? 0);
-};
+const currentCoins = computed(() => Number(user.value?.coins ?? user.value?.Coins ?? 0));
 
 const normalizeTypeValue = (value: unknown) => {
   if (value === ItemType.Booster || value === 'Booster' || value === 'booster') return 'Booster';
@@ -163,7 +161,7 @@ const loadProfile = async () => {
   } catch (profileError) {
     console.warn('Profil konnte nicht aktualisiert werden:', profileError);
   } finally {
-    syncCoinsFromStorage();
+    syncUserFromStorage();
   }
 };
 
@@ -209,7 +207,7 @@ const buyItem = async (shopItem: ShopDisplayItem) => {
 };
 
 const loadPageData = async () => {
-  syncCoinsFromStorage();
+  syncUserFromStorage();
   await loadProfile();
   await loadShopItems();
 };

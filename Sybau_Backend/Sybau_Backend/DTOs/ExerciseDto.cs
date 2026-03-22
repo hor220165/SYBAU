@@ -8,4 +8,5 @@ public class ExerciseDto
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public WorkoutCategory Category { get; set; }
+    public ExerciseDifficulty Difficulty { get; set; }
 }

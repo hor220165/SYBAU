@@ -5,9 +5,11 @@ import { useAuth } from "@/composables/useAuth";
 import { userService } from '@/services/api';
 
 const { logout } = useNavigation();
-const { user } = useAuth();
+const { user, syncUserFromStorage } = useAuth();
 
 onMounted(async () => {
+  syncUserFromStorage();
+
   if (!user.value?.avatar) {
     try {
       await userService.getProfile();
