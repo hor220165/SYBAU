@@ -173,8 +173,8 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgba(248, 113, 113, 0.15);
-  border: 1px solid rgba(248, 113, 113, 0.2);
+  background: transparent;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -184,14 +184,19 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 }
 
 .logout-btn:hover {
-  background: rgba(248, 113, 113, 0.25);
   transform: translateY(-2px);
 }
 
 .logout-icon {
   width: 18px;
   height: 18px;
-  filter: invert(68%) sepia(47%) saturate(3445%) hue-rotate(318deg) brightness(101%) contrast(92%);
+  filter: invert(68%) sepia(47%) saturate(3445%) hue-rotate(318deg) brightness(101%) contrast(92%)
+          drop-shadow(0 0 8px rgba(248, 113, 113, 0.8));
+}
+
+.logout-btn:hover .logout-icon {
+  filter: invert(68%) sepia(47%) saturate(3445%) hue-rotate(318deg) brightness(101%) contrast(92%)
+          drop-shadow(0 0 12px rgba(248, 113, 113, 1));
 }
 
 /* Responsive */
@@ -249,7 +254,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   }
 
   .stats-header {
-    gap: 12px;
+    gap: 8px;
   }
 
   .stat-item {
@@ -257,25 +262,29 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   }
 
   .stat-info {
-    display: none;
+    display: flex; /* war display: none — entfernt */
+  }
+
+  .stat-label {
+    font-size: 9px;
   }
 
   .stat-icon {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 
   .stat-value {
-    font-size: 15px;
+    font-size: 13px;
   }
 
   .stat-divider {
-    height: 24px;
+    height: 22px;
   }
 
   .logout-btn {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     margin-left: 4px;
   }
 
@@ -285,6 +294,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   }
 }
 
+
 /* Small Mobile (480px und kleiner) */
 @media (max-width: 480px) {
   .header {
@@ -292,33 +302,37 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   }
 
   .logo-img {
-    height: 24px;
+    height: 22px;
   }
 
   .stats-header {
-    gap: 8px;
+    gap: 6px;
   }
 
   .stat-item {
     gap: 4px;
   }
 
+  .stat-label {
+    font-size: 8px;
+  }
+
   .stat-icon {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
 
   .stat-value {
-    font-size: 14px;
+    font-size: 12px;
   }
 
   .stat-divider {
-    height: 20px;
+    height: 18px;
   }
 
   .logout-btn {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
   }
 
   .logout-icon {

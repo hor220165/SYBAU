@@ -1,10 +1,10 @@
 <template>
-  <!-- Mobile Menu Button -->
-  <button class="mobile-menu-btn" @click="mobileMenuOpen = !mobileMenuOpen">
+  <button class="mobile-menu-btn"
+          :class="{ 'below-header': headerVisible }"
+          @click="mobileMenuOpen = !mobileMenuOpen">
     <span class="hamburger-icon">☰</span>
   </button>
 
-  <!-- Navigation -->
   <nav class="navbar" :class="{ 'mobile-open': mobileMenuOpen }">
     <button class="nav-item"
             :class="{ active: isActiveRoute('/dashboard') }"
@@ -58,12 +58,13 @@
 </template>
 
 <script setup lang="ts">
-import {useNavigation} from "@/composables/useNavigation.ts";
+import { useNavigation } from "@/composables/useNavigation.ts";
 import { ref, onMounted } from 'vue';
 
-const {navigateTo, isActiveRoute} = useNavigation()
+const { navigateTo, isActiveRoute } = useNavigation();
 const isAdmin = ref(false);
 const mobileMenuOpen = ref(false);
+const headerVisible = ref(true);
 
 const navigateAndClose = (path: string) => {
   navigateTo(path);
@@ -80,11 +81,19 @@ onMounted(() => {
       isAdmin.value = false;
     }
   }
+
+  const header = document.querySelector('header');
+  if (header) {
+    const observer = new IntersectionObserver(
+      ([entry]) => { headerVisible.value = entry.isIntersecting; },
+      { threshold: 0 }
+    );
+    observer.observe(header);
+  }
 });
 </script>
 
 <style scoped>
-/* Mobile Menu Button */
 .mobile-menu-btn {
   display: none;
   position: fixed;
@@ -100,19 +109,22 @@ onMounted(() => {
   color: white;
   font-size: 24px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: top 0.3s ease, background 0.3s ease;
+}
+
+.mobile-menu-btn.below-header {
+  top: 72px;
 }
 
 .mobile-menu-btn:hover {
   background: rgba(236, 72, 153, 0.3);
 }
 
-/* Navigation */
 .navbar {
   display: flex;
   justify-content: center;
   gap: 8px;
-  padding: 0px 40px;
+  padding: 0 40px;
   height: 60px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: sticky;
@@ -128,10 +140,10 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0px 24px;
+  padding: 0 24px;
   background: transparent;
   border: none;
-  border-radius: 0px;
+  border-radius: 0;
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   font-size: 16px;
@@ -152,7 +164,7 @@ onMounted(() => {
 .nav-item.active::after {
   content: '';
   position: absolute;
-  bottom: 0px;
+  bottom: 0;
   left: 0;
   right: 0;
   height: 2px;
@@ -180,7 +192,6 @@ onMounted(() => {
   background: linear-gradient(90deg, #ffd700, #ffed4e);
 }
 
-/* Responsive - Mobile Menu */
 @media (max-width: 1024px) {
   .mobile-menu-btn {
     display: flex;
