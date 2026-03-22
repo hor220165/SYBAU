@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Sybau_Backend._Services;
 using Sybau_Backend.DTOs;
 
@@ -6,6 +7,7 @@ namespace Sybau_Backend.Controllers
 {
     [Route("[controller]")]
     [ApiController]
+    [EnableRateLimiting("auth")]
     public class AuthController : ControllerBase
     {
         private readonly AuthService _authService;
@@ -25,9 +27,8 @@ namespace Sybau_Backend.Controllers
                 var result = await _authService.LoginWithTokenAsync(dto.Email, dto.Password, _config);
                 return Ok(result);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                // Keine Details nach außen geben, um User-Enumeration zu vermeiden
                 return Unauthorized("Ungültige E-Mail oder Passwort.");
             }
         }
@@ -46,9 +47,9 @@ namespace Sybau_Backend.Controllers
                     user.Email
                 });
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                return BadRequest(e.Message);
+                return BadRequest("Registrierung fehlgeschlagen.");
             }
         }
     }

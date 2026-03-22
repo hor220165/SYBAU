@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -65,6 +66,7 @@ namespace Sybau_Backend.Controllers
 
 
         // POST api/<AvatarsController>/create
+        [Authorize(Policy = "AdminOnly")]
         [HttpPost("create")]
         public async Task<ActionResult<AvatarDto>> Create()
         {
@@ -76,18 +78,23 @@ namespace Sybau_Backend.Controllers
         }
 
         // PUT api/<AvatarsController>/5
+        [Authorize(Policy = "AdminOnly")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] Avatar avatar)
+        public async Task<IActionResult> Update(int id, [FromBody] AvatarDto dto)
         {
-            if (id != avatar.Id) return BadRequest();
+            var avatar = await _context.Avatars.FindAsync(id);
+            if (avatar == null) return NotFound();
 
-            _context.Entry(avatar).State = EntityState.Modified;
+            if (dto.Level.HasValue)
+                avatar.Level = dto.Level.Value;
+            avatar.Experience = dto.Experience;
+            
             await _context.SaveChangesAsync();
-
             return NoContent();
         }
 
         // DELETE api/<AvatarsController>/5
+        [Authorize(Policy = "AdminOnly")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {

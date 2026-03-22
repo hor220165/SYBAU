@@ -95,8 +95,7 @@ namespace Sybau_Backend.Controllers
         [HttpGet("users/{id}/stats")]
         public IActionResult GetUserStats(int id)
         {
-            // z.B. XP, Level, Coins zurückgeben
-            var user = _context.Users.Find(id);
+            var user = _context.Users.Include(u => u.Avatar).FirstOrDefault(u => u.Id == id);
             if (user == null) return NotFound();
 
             var stats = new
