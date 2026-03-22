@@ -5,23 +5,22 @@ import Navbar from '@/components/Navbar.vue';
 import Header from '@/components/Header.vue';
 import ShopItemCard from '@/components/ShopItemCard.vue';
 import ShopFeatureCard from '@/components/ShopFeatureCard.vue';
+import { useAuth } from '@/composables/useAuth';
 import { ItemType } from '@/models/ItemType';
 import type { item } from '@/models/Item';
 import type { ShopDisplayItem } from '@/models/ShopDisplayItem';
 import { itemService, userService } from '@/services/api';
+import FooterComponent from '@/components/FooterComponent.vue';
 
 const items = ref<ShopDisplayItem[]>([]);
-const currentCoins = ref(0);
 const loading = ref(false);
 const error = ref('');
 const successMessage = ref('');
 const buyingItemId = ref<number | null>(null);
 const activeFilter = ref<'all' | 'chest' | 'boost' | 'item'>('all');
+const { user, syncUserFromStorage } = useAuth();
 
-const syncCoinsFromStorage = () => {
-  const raw = JSON.parse(localStorage.getItem('user') || '{}');
-  currentCoins.value = Number(raw.coins ?? raw.Coins ?? 0);
-};
+const currentCoins = computed(() => Number(user.value?.coins ?? user.value?.Coins ?? 0));
 
 const normalizeTypeValue = (value: unknown) => {
   if (value === ItemType.Booster || value === 'Booster' || value === 'booster') return 'Booster';
@@ -162,7 +161,7 @@ const loadProfile = async () => {
   } catch (profileError) {
     console.warn('Profil konnte nicht aktualisiert werden:', profileError);
   } finally {
-    syncCoinsFromStorage();
+    syncUserFromStorage();
   }
 };
 
@@ -208,7 +207,7 @@ const buyItem = async (shopItem: ShopDisplayItem) => {
 };
 
 const loadPageData = async () => {
-  syncCoinsFromStorage();
+  syncUserFromStorage();
   await loadProfile();
   await loadShopItems();
 };
@@ -360,6 +359,8 @@ onMounted(loadPageData);
         </section>
       </template>
     </main>
+     <!-- Footer -->
+    <FooterComponent />
   </div>
 </template>
 
@@ -395,10 +396,7 @@ onMounted(loadPageData);
   gap: 24px;
   align-items: center;
   padding: clamp(24px, 3vw, 36px);
-  background:
-    radial-gradient(circle at top right, rgba(250, 204, 21, 0.24), transparent 28%),
-    radial-gradient(circle at left center, rgba(168, 85, 247, 0.26), transparent 30%),
-    linear-gradient(120deg, rgba(109, 40, 217, 0.7), rgba(15, 23, 42, 0.88));
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
 }
 
 .hero-kicker {

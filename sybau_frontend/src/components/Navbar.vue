@@ -3,7 +3,7 @@
   <nav class="navbar">
     <button class="nav-item"
             :class="{ active: isActiveRoute('/home') }"
-            @click="navigateTo('/home')">
+            @click="navigateTo('/dashboard')">
       <span class="nav-icon">🎯</span>
       <span>Dashboard</span>
     </button>
@@ -54,21 +54,15 @@
 
 <script setup lang="ts">
 import {useNavigation} from "@/composables/useNavigation.ts";
-import { ref, onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
+import { useAuth } from '@/composables/useAuth';
 
 const {navigateTo, isActiveRoute} = useNavigation()
-const isAdmin = ref(false);
+const { user, syncUserFromStorage } = useAuth();
+const isAdmin = computed(() => Boolean(user.value?.isAdmin));
 
 onMounted(() => {
-  const user = localStorage.getItem('user');
-  if (user) {
-    try {
-      const userData = JSON.parse(user);
-      isAdmin.value = userData.isAdmin || false;
-    } catch (e) {
-      isAdmin.value = false;
-    }
-  }
+  syncUserFromStorage();
 });
 </script>
 <style scoped>

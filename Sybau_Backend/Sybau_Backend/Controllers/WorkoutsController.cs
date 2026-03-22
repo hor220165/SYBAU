@@ -32,6 +32,7 @@ public class WorkoutsController : ControllerBase
         return Ok(workout);
     }
 
+    [Authorize]
     [HttpPost]
     public async Task<IActionResult> CreateWorkout([FromBody] CreateWorkoutDto dto)
     {

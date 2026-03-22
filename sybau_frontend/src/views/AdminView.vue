@@ -8,7 +8,7 @@
     <main class="admin-main">
       <div class="admin-header">
         <h1>🔐 Admin Dashboard</h1>
-        <p class="subtitle">Verwalte Challenges, Shop-Items und Benutzer</p>
+        <p class="subtitle">Verwalte Challenges, Shop-Items, Workouts und Benutzer</p>
       </div>
 
       <!-- Tab Navigation -->
@@ -30,6 +30,12 @@
           @click="activeTab = 'users'"
         >
           👥 Benutzer
+        </button>
+        <button 
+          :class="['tab-btn', { active: activeTab === 'workouts' }]"
+          @click="activeTab = 'workouts'"
+        >
+          🏋️ Workouts
         </button>
       </div>
 
@@ -268,6 +274,11 @@
           </div>
         </div>
 
+        <!-- Workouts Tab -->
+        <div v-if="activeTab === 'workouts'" class="tab-panel">
+          <AdminWorkoutPanel />
+        </div>
+
         
 
       <!-- Status Messages -->
@@ -275,6 +286,8 @@
         {{ statusMessage }}
       </div>
     </main>
+     <!-- Footer -->
+    <FooterComponent />
   </div>
 </template>
 
@@ -282,13 +295,14 @@
 import { ref, computed, onMounted } from 'vue';
 import Header from '@/components/Header.vue';
 import Navbar from '@/components/Navbar.vue';
+import AdminWorkoutPanel from '@/components/AdminWorkoutPanel.vue';
 import { useAdmin } from '@/composables/useAdmin';
 import type { Challange } from '@/models/Challange';
 import type { item } from '@/models/Item';
 import type { user } from '@/models/User';
 
 // State
-const activeTab = ref<'challenges' | 'shop' | 'users'>('challenges');
+const activeTab = ref<'challenges' | 'shop' | 'users' | 'workouts'>('challenges');
 
 // Status Messages
 const statusMessage = ref('');

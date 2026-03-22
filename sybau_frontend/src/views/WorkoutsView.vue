@@ -41,8 +41,29 @@
       </button>
     </div>
 
+    <!-- Loading / Error State -->
+    <div v-if="loading" class="loading-state">Übungen werden geladen…</div>
+    <div v-else-if="error" class="error-state">{{ error }}</div>
+
     <!-- Workouts Grid -->
-    <div class="workouts-grid">
+    <div v-else class="workouts-grid">
+      <!-- BEISPIELDATEN (zum Vergleich) -->
+      <div class="dummy-wrapper">
+        <span class="dummy-label">📌 Beispieldaten</span>
+        <WorkoutCard
+            :category="dummyExercise.category"
+            :title="dummyExercise.name"
+            :duration="0"
+            :calories="0"
+            :exercises="[dummyExercise.description]"
+            :difficulty="dummyExercise.difficulty"
+            :xp="dummyExercise.xpPerRep"
+            :completed="dummyExercise.todayCount >= dummyExercise.dailyLimit"
+            @log="logExercise(dummyExercise)"
+        />
+      </div>
+
+      <!-- BACKEND-DATEN -->
       <WorkoutCard
           v-for="exercise in filteredExercises"
           :key="exercise.id"
@@ -59,14 +80,82 @@
     </div>
 
     <!-- Create Custom Workout Card -->
+    <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
+
     <div class="custom-workout-card">
       <div class="custom-content">
         <h3>Erstelle dein eigenes Workout</h3>
         <p>Kombiniere Übungen und verdiene Bonus-XP</p>
       </div>
-      <button class="create-btn">
+      <button class="create-btn" @click="openCreateModal">
         Workout erstellen
+        <span class="icon">→</span>
       </button>
+    </div>
+
+    <!-- Create Workout Modal -->
+    <div v-if="showCreateModal" class="modal-overlay" @click.self="closeCreateModal">
+      <div class="modal-card">
+        <h3 class="modal-title">Eigenes Workout erstellen</h3>
+        <form class="create-form" @submit.prevent="submitWorkout">
+          <label class="form-label">
+            Name
+            <input v-model.trim="createForm.title" class="form-input" type="text" required />
+          </label>
+
+          <div class="form-grid">
+            <label class="form-label">
+              Kategorie
+              <select v-model="createForm.category" class="form-select" required>
+                <option v-for="cat in createCategories" :key="cat" :value="cat">{{ cat }}</option>
+              </select>
+            </label>
+            <label class="form-label">
+              Schwierigkeit
+              <select v-model="createForm.difficulty" class="form-select" required>
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+              </select>
+            </label>
+            <label class="form-label">
+              Dauer (Min)
+              <input v-model.number="createForm.duration" class="form-input" type="number" min="1" max="240" required />
+            </label>
+            <label class="form-label">
+              Kalorien
+              <input v-model.number="createForm.calories" class="form-input" type="number" min="0" max="5000" required />
+            </label>
+            <label class="form-label">
+              XP
+              <input v-model.number="createForm.xp" class="form-input" type="number" min="0" max="10000" required />
+            </label>
+          </div>
+
+          <div class="exercise-section">
+            <div class="exercise-header">
+              <span>Übungen aus Backend</span>
+              <span v-if="loadingExercises" class="mini-note">Lade Übungen...</span>
+            </div>
+            <div v-if="exerciseOptions.length" class="exercise-grid">
+              <label v-for="ex in exerciseOptions" :key="ex.value" class="exercise-option">
+                <input v-model="selectedExerciseValues" type="checkbox" :value="ex.value" />
+                <span>{{ ex.name }}</span>
+              </label>
+            </div>
+            <p v-else class="mini-note">Keine Übungen für diese Kategorie gefunden.</p>
+          </div>
+
+          <p v-if="formError" class="form-error">{{ formError }}</p>
+
+          <div class="modal-actions">
+            <button type="button" class="secondary-btn" @click="closeCreateModal">Abbrechen</button>
+            <button type="submit" class="primary-btn" :disabled="submittingWorkout">
+              {{ submittingWorkout ? 'Speichere...' : 'Workout speichern' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </main>
 
@@ -81,140 +170,101 @@
     @close="showModal = false"
     @submit="handleExerciseSubmit"
   />
+   <!-- Footer -->
+    <FooterComponent />
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import Header from '@/components/Header.vue';
 import Navbar from '@/components/Navbar.vue';
 import WorkoutCard from '@/components/WorkoutCard.vue';
 import ExerciseModal from '@/components/WorkoutPopup.vue';
+import FooterComponent from '@/components/FooterComponent.vue';
+import { workoutService } from '@/services/api';
+
+type Difficulty = 'Easy' | 'Medium' | 'Hard';
+
+interface ExerciseOption {
+  value: string;
+  id: number | null;
+  name: string;
+  category: string;
+}
 
 const activeFilter = ref('Alle');
 const showModal = ref(false);
 const selectedExercise = ref<any>(null);
+const loading = ref(false);
+const error = ref<string | null>(null);
+
+// Create Workout Modal
+const showCreateModal = ref(false);
+const loadingExercises = ref(false);
+const submittingWorkout = ref(false);
+const formError = ref('');
+const successMessage = ref('');
+const exerciseOptions = ref<ExerciseOption[]>([]);
+const selectedExerciseValues = ref<string[]>([]);
+
+const createCategories = ['Arms', 'UpperBody', 'LowerBody', 'Core', 'FullBody', 'Cardio'];
+
+const createForm = ref({
+  title: '',
+  category: 'Cardio',
+  duration: 30,
+  calories: 250,
+  difficulty: 'Medium' as Difficulty,
+  xp: 300
+});
 
 const filters = ['Alle', 'Cardio', 'Strength', 'Core', 'Flexibility'];
 
-// Dummy Data - Einzelne Übungen
-const exercises = ref([
-  {
-    id: 1,
-    name: 'Push-Ups',
-    description: 'Klassische Liegestütze',
-    category: 'Strength',
-    icon: '💪',
-    xpPerRep: 2,
-    dailyLimit: 200,
-    todayCount: 45,
-    difficulty: 'Medium' as const
-  },
-  {
-    id: 2,
-    name: 'Sit-Ups',
-    description: 'Bauchmuskeltraining',
-    category: 'Core',
-    icon: '🔥',
-    xpPerRep: 1,
-    dailyLimit: 300,
-    todayCount: 80,
-    difficulty: 'Easy' as const
-  },
-  {
-    id: 3,
-    name: 'Squats',
-    description: 'Kniebeugen',
-    category: 'Strength',
-    icon: '🦵',
-    xpPerRep: 2,
-    dailyLimit: 200,
-    todayCount: 60,
-    difficulty: 'Medium' as const
-  },
-  {
-    id: 4,
-    name: 'Burpees',
-    description: 'Ganzkörper-Übung',
-    category: 'Cardio',
-    icon: '⚡',
-    xpPerRep: 5,
-    dailyLimit: 100,
-    todayCount: 20,
-    difficulty: 'Hard' as const
-  },
-  {
-    id: 5,
-    name: 'Plank',
-    description: 'Unterarmstütz (in Sekunden)',
-    category: 'Core',
-    icon: '🧘',
-    xpPerRep: 0.5,
-    dailyLimit: 600,
-    todayCount: 120,
-    difficulty: 'Medium' as const
-  },
-  {
-    id: 6,
-    name: 'Pull-Ups',
-    description: 'Klimmzüge',
-    category: 'Strength',
-    icon: '🏋️',
-    xpPerRep: 5,
-    dailyLimit: 50,
-    todayCount: 15,
-    difficulty: 'Hard' as const
-  },
-  {
-    id: 7,
-    name: 'Jumping Jacks',
-    description: 'Hampelmänner',
-    category: 'Cardio',
-    icon: '🤸',
-    xpPerRep: 1,
-    dailyLimit: 500,
-    todayCount: 100,
-    difficulty: 'Easy' as const
-  },
-  {
-    id: 8,
-    name: 'Lunges',
-    description: 'Ausfallschritte',
-    category: 'Strength',
-    icon: '🚶',
-    xpPerRep: 2,
-    dailyLimit: 150,
-    todayCount: 40,
-    difficulty: 'Medium' as const
-  },
-  {
-    id: 9,
-    name: 'Mountain Climbers',
-    description: 'Bergsteiger',
-    category: 'Cardio',
-    icon: '⛰️',
-    xpPerRep: 1,
-    dailyLimit: 400,
-    todayCount: 150,
-    difficulty: 'Medium' as const
-  },
-  {
-    id: 10,
-    name: 'Leg Raises',
-    description: 'Beinheben',
-    category: 'Core',
-    icon: '🦿',
-    xpPerRep: 2,
-    dailyLimit: 200,
-    todayCount: 30,
-    difficulty: 'Medium' as const
+// Ein Dummy-Eintrag zum Vergleich mit Backend-Daten
+const dummyExercise = {
+  id: 0,
+  name: 'Push-Ups',
+  description: 'Klassische Liegestütze',
+  category: 'Strength',
+  icon: '💪',
+  xpPerRep: 2,
+  dailyLimit: 200,
+  todayCount: 45,
+  difficulty: 'Medium' as const
+};
+
+// Backend-Daten
+const exercises = ref<any[]>([]);
+
+onMounted(async () => {
+  loading.value = true;
+  error.value = null;
+  try {
+    const { data } = await workoutService.getExercises();
+    exercises.value = (Array.isArray(data) ? data : data.exercises ?? []).map((e: any) => ({
+      id: e.id,
+      name: e.name,
+      description: e.description ?? '',
+      category: e.category ?? 'Strength',
+      icon: e.icon ?? '🏋️',
+      xpPerRep: e.xpPerRep ?? e.xpperrep ?? 0,
+      dailyLimit: e.dailyLimit ?? e.dailylimit ?? 100,
+      todayCount: e.todayCount ?? e.todaycount ?? 0,
+      difficulty: e.difficulty ?? 'Medium'
+    }));
+  } catch (err: any) {
+    error.value = 'Übungen konnten nicht geladen werden.';
+    console.error(err);
+  } finally {
+    loading.value = false;
   }
-]);
+});
+
 
 const filteredExercises = computed(() => {
   if (activeFilter.value === 'Alle') {
     return exercises.value;
   }
-  
   return exercises.value.filter(e => e.category === activeFilter.value);
 });
 
@@ -226,15 +276,120 @@ const logExercise = (exercise: any) => {
 const handleExerciseSubmit = (data: any) => {
   console.log('Exercise logged:', data);
   
-  // Update todayCount
+  // Update todayCount lokal
   const exercise = exercises.value.find(e => e.name === data.exercise);
   if (exercise) {
     exercise.todayCount += data.reps;
   }
-  
-  // TODO: Send to backend
+  if (selectedExercise.value?.id === dummyExercise.id) {
+    dummyExercise.todayCount += data.reps;
+  }
+
+  // TODO: Send to backend (kein dedizierter Log-Endpoint noch)
   alert(`${data.exercise}: ${data.reps} Wiederholungen eingetragen! +${data.xp} XP gewonnen!`);
 };
+
+// ── Create Workout ─────────────────────────────────────────
+
+const normalizeExerciseOpt = (raw: any, index: number): ExerciseOption => {
+  const idRaw = raw?.id ?? raw?.Id;
+  const id = Number.isFinite(Number(idRaw)) ? Number(idRaw) : null;
+  const name = String(raw?.name ?? raw?.Name ?? raw?.title ?? raw?.Title ?? `Übung ${index + 1}`);
+  const category = String(raw?.category ?? raw?.Category ?? createForm.value.category);
+  return {
+    value: id !== null ? `id:${id}` : `name:${name}:${index}`,
+    id,
+    name,
+    category
+  };
+};
+
+const selectedExerciseIds = computed(() =>
+  exerciseOptions.value
+    .filter(opt => selectedExerciseValues.value.includes(opt.value))
+    .map(opt => opt.id)
+    .filter((id): id is number => id !== null)
+);
+
+const loadExercisesForCreate = async (category?: string) => {
+  loadingExercises.value = true;
+  formError.value = '';
+  try {
+    const { data } = await workoutService.getExercises(category);
+    const list = (Array.isArray(data) ? data : data?.exercises ?? []) as any[];
+    exerciseOptions.value = list.map((e, i) => normalizeExerciseOpt(e, i));
+    const validValues = new Set(exerciseOptions.value.map(o => o.value));
+    selectedExerciseValues.value = selectedExerciseValues.value.filter(v => validValues.has(v));
+  } catch {
+    exerciseOptions.value = [];
+    formError.value = 'Übungen konnten nicht geladen werden.';
+  } finally {
+    loadingExercises.value = false;
+  }
+};
+
+const resetCreateForm = () => {
+  createForm.value = { title: '', category: 'Cardio', duration: 30, calories: 250, difficulty: 'Medium', xp: 300 };
+  selectedExerciseValues.value = [];
+  formError.value = '';
+};
+
+const openCreateModal = async () => {
+  showCreateModal.value = true;
+  successMessage.value = '';
+  await loadExercisesForCreate(createForm.value.category);
+};
+
+const closeCreateModal = () => {
+  showCreateModal.value = false;
+  resetCreateForm();
+};
+
+const categoryToEnumValue = (category: string): number => {
+  const mapping: Record<string, number> = {
+    Arms: 0, UpperBody: 1, LowerBody: 2, Core: 3, FullBody: 4, Cardio: 5
+  };
+  return mapping[category] ?? 0;
+};
+
+const submitWorkout = async () => {
+  formError.value = '';
+  if (!createForm.value.title) {
+    formError.value = 'Bitte gib einen Namen ein.';
+    return;
+  }
+  if (selectedExerciseValues.value.length === 0) {
+    formError.value = 'Bitte wähle mindestens eine Übung aus.';
+    return;
+  }
+  if (selectedExerciseIds.value.length !== selectedExerciseValues.value.length) {
+    formError.value = 'Mindestens eine Übung hat keine gültige ID.';
+    return;
+  }
+  submittingWorkout.value = true;
+  try {
+    await workoutService.createWorkout({
+      name: createForm.value.title,
+      category: categoryToEnumValue(createForm.value.category),
+      exercises: selectedExerciseIds.value.map(exerciseId => ({ exerciseId, dailyLimit: 1 }))
+    });
+    closeCreateModal();
+    successMessage.value = 'Workout wurde erfolgreich erstellt!';
+  } catch (err: any) {
+    const msg = err?.response?.data?.message ?? err?.response?.data?.title ?? 'Workout konnte nicht erstellt werden.';
+    formError.value = msg;
+  } finally {
+    submittingWorkout.value = false;
+  }
+};
+
+watch(
+  () => createForm.value.category,
+  async (newCat) => {
+    if (!showCreateModal.value) return;
+    await loadExercisesForCreate(newCat);
+  }
+);
 </script>
 
 <style scoped>
@@ -383,6 +538,179 @@ const handleExerciseSubmit = (data: any) => {
   box-shadow: 0 8px 16px rgba(168, 85, 247, 0.3);
 }
 
+/* Loading / Error */
+.loading-state,
+.error-state {
+  text-align: center;
+  padding: 40px;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 40px;
+}
+.error-state {
+  color: #f87171;
+}
+
+/* Success Message */
+.success-message {
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  font-weight: 600;
+  background: rgba(22, 163, 74, 0.2);
+  border: 1px solid rgba(22, 163, 74, 0.35);
+  color: #bbf7d0;
+}
+
+/* Create Workout Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-card {
+  width: min(760px, 100%);
+  background: #0f172a;
+  border: 1px solid rgba(236, 72, 153, 0.4);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  margin: 0 0 18px 0;
+  color: white;
+}
+
+.create-form {
+  display: grid;
+  gap: 16px;
+}
+
+.form-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.form-label {
+  display: grid;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.form-input,
+.form-select {
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(15, 23, 42, 0.8);
+  color: white;
+  padding: 10px 12px;
+}
+
+.exercise-section {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.exercise-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: white;
+  font-weight: 600;
+}
+
+.exercise-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.exercise-option {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+}
+
+.mini-note {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 13px;
+}
+
+.form-error {
+  color: #fecaca;
+  background: rgba(220, 38, 38, 0.2);
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  border-radius: 10px;
+  padding: 10px;
+  margin: 0;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.secondary-btn,
+.primary-btn {
+  border-radius: 10px;
+  border: 1px solid transparent;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary-btn {
+  background: rgba(148, 163, 184, 0.2);
+  color: white;
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
+  color: white;
+}
+
+.primary-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Dummy-Wrapper */
+.dummy-wrapper {
+  position: relative;
+}
+.dummy-label {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 4px 12px;
+  background: rgba(234, 179, 8, 0.25);
+  border: 1px solid rgba(234, 179, 8, 0.5);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fbbf24;
+  letter-spacing: 0.5px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .workouts-content {
@@ -397,6 +725,12 @@ const handleExerciseSubmit = (data: any) => {
     flex-direction: column;
     gap: 20px;
     text-align: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-actions {
+    flex-direction: column;
   }
 }
 </style>

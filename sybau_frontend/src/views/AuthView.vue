@@ -1,15 +1,20 @@
 <template>
   <!-- Vollbild-Hintergrund -->
   <div class="auth-page">
+    <!-- Back Button - Text Only -->
+    <button class="back-button" @click="goToHome">
+      Zurück zur Startseite
+    </button>
+
     <!-- Zentrale Layout-Spalte -->
     <div class="auth-layout">
       <!-- Logo / Headline -->
-      <header class="auth-header">
+      <header class="auth-header fade-in">
         <h1 class="brand-name">SYBAU</h1>
         <p class="brand-slogan">Shape Your Body And Unleash</p>
       </header>
       <!-- Login / Register Card -->
-      <div class="auth-card">
+      <div class="auth-card fade-in delay-1">
         <!-- Toggle -->
         <div class="toggle">
           <div class="toggle-indicator" :class="{ right: !isLogin }"></div>
@@ -29,9 +34,32 @@
             @submit.prevent="handleLogin"
           >
             <label>E-Mail</label>
-            <input type="email" placeholder="Deine Email" v-model="email" />
+            <input type="email" placeholder="example@gmail.com" v-model="email" />
+            
             <label>Passwort</label>
-            <input type="password" placeholder="••••••••" v-model="password" />
+            <div class="password-input-wrapper">
+              <input 
+                :type="showPassword ? 'text' : 'password'" 
+                placeholder="••••••••" 
+                v-model="password" 
+              />
+              <button 
+                type="button" 
+                class="toggle-password" 
+                @click="showPassword = !showPassword"
+                tabindex="-1"
+              >
+                <svg v-if="!showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+            
             <button type="submit" class="primary-btn">Login</button>
             <div class="switch-text">
               <label>Noch kein Account?</label>
@@ -47,11 +75,34 @@
             @submit.prevent="handleRegister"
           >
             <label>Benutzername</label>
-            <input placeholder="Dein Benutzername" v-model="username" />
+            <input placeholder="example01" v-model="username" />
             <label>E-Mail</label>
-            <input placeholder="Deine Email" type="email" v-model="email" />
+            <input placeholder="example@gmail.com" type="email" v-model="email" />
+            
             <label>Passwort</label>
-            <input type="password" placeholder="••••••••" v-model="password" />
+            <div class="password-input-wrapper">
+              <input 
+                :type="showPassword ? 'text' : 'password'" 
+                placeholder="••••••••" 
+                v-model="password" 
+              />
+              <button 
+                type="button" 
+                class="toggle-password" 
+                @click="showPassword = !showPassword"
+                tabindex="-1"
+              >
+                <svg v-if="!showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+            
             <button type="submit" class="primary-btn">Account erstellen</button>
           </form>
         </transition>
@@ -59,11 +110,13 @@
     </div>
   </div>
 </template>
+
 <script setup lang="ts">
 import { ref } from 'vue'; 
 import { useRouter } from 'vue-router'; 
 import { useAuth } from '@/composables/useAuth';
 import { userService } from '@/services/api';
+
 const router = useRouter(); 
 const { login } = useAuth();
 
@@ -71,6 +124,12 @@ const isLogin = ref(true);
 const email = ref(''); 
 const password = ref(''); 
 const username = ref(''); 
+const showPassword = ref(false); // Neu: Passwort Sichtbarkeit
+
+const goToHome = () => {
+  router.push('/');
+};
+
 const handleLogin = async () => {
   try { 
     const res = await login(email.value, password.value); 
@@ -78,7 +137,7 @@ const handleLogin = async () => {
     if (token) {
       // Profildaten laden vor Navigation
       await userService.getProfile();
-      router.push('/home');
+      router.push('/dashboard');
     } else {
       alert('Kein Token erhalten — Login fehlgeschlagen.');
     }
@@ -127,6 +186,45 @@ body {
     radial-gradient(circle at top left, #1a237e, transparent 45%),
     radial-gradient(circle at bottom right, #311b92, transparent 45%), #050714;
   background-attachment: fixed;
+}
+
+/* === Fade-in Animations === */
+.fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.8s ease forwards;
+}
+
+.fade-in.delay-1 {
+  animation-delay: 0.2s;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* === Back Button - Text Only === */
+.back-button {
+  position: fixed;
+  top: 32px;
+  left: 32px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 100;
+  padding: 0;
+}
+
+.back-button:hover {
+  color: #ff2d75;
+  transform: translateX(-4px);
 }
 
 /* === Vollbild-Container === */
@@ -190,6 +288,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   z-index: 1;
+  transition: all 0.3s ease;
 }
 
 .toggle button.active {
@@ -228,10 +327,54 @@ body {
   border: none;
   background: rgba(18, 22, 40, 0.7);
   color: white;
+  transition: all 0.3s ease;
+}
+
+.form input:focus {
+  outline: none;
+  background: rgba(18, 22, 40, 0.9);
+  box-shadow: 0 0 0 2px rgba(255, 45, 117, 0.3);
 }
 
 .form input::placeholder {
   color: #6b7280;
+}
+
+/* === Password Input Wrapper === */
+.password-input-wrapper {
+  position: relative;
+  margin-top: 6px;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 45px;
+  margin-top: 0;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.toggle-password:hover {
+  color: #ff2d75;
+}
+
+.toggle-password svg {
+  width: 20px;
+  height: 20px;
 }
 
 /* === Button === */
@@ -255,7 +398,11 @@ body {
   box-shadow: 0 10px 25px rgba(255, 45, 117, 0.3);
 }
 
-/* === Animation === */
+.primary-btn:active {
+  transform: translateY(0);
+}
+
+/* === Form Animation === */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.25s ease;
@@ -283,10 +430,28 @@ body {
   cursor: pointer;
   font-weight: 600;
   margin-left: 4px;
+  transition: all 0.3s ease;
 }
 
 .switch-link:hover {
   color: #ff5e9a;
   text-decoration: underline;
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+  .back-button {
+    top: 20px;
+    left: 20px;
+    font-size: 14px;
+  }
+
+  .auth-card {
+    padding: 24px;
+  }
+
+  .brand-name {
+    font-size: 1.8rem;
+  }
 }
 </style>

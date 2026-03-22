@@ -67,7 +67,7 @@ public class UserService
     public async Task AddXpAndHandleLevelUp(User user, int xp)
     {
         int oldLevel = user.Avatar.Level;
-        _avatarService.AddXpAsync(user.Avatar, xp);
+        await _avatarService.AddXpAsync(user.Avatar, xp);
 
         if (user.Avatar.Level > oldLevel)
         {
@@ -184,7 +184,7 @@ public class UserService
             dbUser.Coins = dto.Coins.Value;
 
         // Avatar-Level updaten
-        if (dto.Avatar.Level.HasValue)
+        if (dto.Avatar?.Level.HasValue == true)
         { 
             dbUser.Avatar.Level = dto.Avatar.Level.Value;
         }
