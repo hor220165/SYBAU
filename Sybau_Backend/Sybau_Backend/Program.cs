@@ -116,7 +116,7 @@ app.UseExceptionHandler(errorApp =>
     });
 });
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 // CORS muss VOR Auth und MapControllers stehen
 app.UseCors("Default");
