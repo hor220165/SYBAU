@@ -19,6 +19,10 @@
     box-sizing: border-box;
 }
 
+*:focus {
+  outline: none !important;
+}
+
 html, body {
     margin: 0;
     padding: 0;

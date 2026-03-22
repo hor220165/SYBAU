@@ -94,25 +94,8 @@ export const boostService = {
     getUserBoosts: () => API.get('/users/boosts')
 };
 
-export const workoutService = {
-    getWorkouts: (category?: string) =>
-        API.get('/workouts', {
-            params: category ? { category } : undefined
-        }),
-    getWorkoutById: (id: number) => API.get(`/workouts/${id}`),
-    getExercises: (category?: string) =>
-        API.get('/workouts/exercises', {
-            params: category ? { category } : undefined
-        }),
-    createWorkout: (data: unknown) => API.post('/workouts', data)
-};
-
-
 export const adminService = {
-
-    createExercise: (data: unknown) => API.post('/workouts/exercises', data),
-
-    // Challenges (muss noch geändert werden)
+    // Challenges
     getChallenges: () => API.get('/admin/challenges'),
     createChallenge: (data: any) => API.post('/admin/challenges', data),
     updateChallenge: (id: number, data: any) => API.put(`/admin/challenges/${id}`, data),

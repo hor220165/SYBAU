@@ -3,38 +3,13 @@ import { authService } from '@/services/api';
 
 const user = ref<any>(null);
 
-const syncUserFromStorage = () => {
-  const raw = localStorage.getItem('user');
-
-  if (!raw) {
-    user.value = null;
-    return null;
-  }
-
-  try {
-    const parsedUser = JSON.parse(raw);
-    user.value = parsedUser;
-    return parsedUser;
-  } catch {
-    localStorage.removeItem('user');
-    user.value = null;
-    return null;
-  }
-};
-
-const setUser = (nextUser: any | null) => {
-  if (!nextUser) {
-    localStorage.removeItem('user');
-    user.value = null;
-    return;
-  }
-
-  localStorage.setItem('user', JSON.stringify(nextUser));
-  user.value = nextUser;
-};
-
 export function useAuth() {
-  syncUserFromStorage();
+  const loadUserFromStorage = () => {
+    const raw = localStorage.getItem('user');
+    if (raw) user.value = JSON.parse(raw);
+  };
+
+  loadUserFromStorage();
 
   const login = async (email: string, password: string) => {
     const res = await authService.login(email, password);
@@ -47,16 +22,11 @@ export function useAuth() {
         id: u.id,
         userName: u.userName,
         email: u.email,
-        coins: u.coins ?? 0,
-        isAdmin: u.isAdmin ?? false,
-        avatar: {
-          bodyStage: u.avatar?.bodyStage,
-          level: u.avatar?.level ?? 0,
-          experience: u.avatar?.experience ?? 0,
-        }
+        avatar: { bodyStage: u.avatar?.bodyStage }
       };
       console.log('User to store:', userToStore); // DEBUG
-      setUser(userToStore);
+      localStorage.setItem('user', JSON.stringify(userToStore));
+      user.value = userToStore;
     }
     return res;
   };
@@ -67,8 +37,9 @@ export function useAuth() {
 
   const logout = () => {
     localStorage.removeItem('token');
-    setUser(null);
+    localStorage.removeItem('user');
+    user.value = null;
   };
 
-  return { user, login, register, logout, syncUserFromStorage, setUser };
+  return { user, login, register, logout };
 }

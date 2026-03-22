@@ -1,17 +1,13 @@
 <template>
   <div class="activity-item">
     <div class="activity-icon" :class="`icon-${type}`">
-      {{ icon }}
+      <div v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>${icon}</svg>`"></div>
     </div>
-
     <div class="activity-info">
       <h4 class="activity-title">{{ title }}</h4>
       <span class="activity-time">{{ time }}</span>
     </div>
-
-    <div v-if="xp > 0" class="activity-xp">
-      +{{ xp }} XP
-    </div>
+    <div v-if="xp > 0" class="activity-xp">+{{ xp }} XP</div>
   </div>
 </template>
 
@@ -44,7 +40,6 @@ defineProps<{
   transform: translateX(4px);
 }
 
-/* Icon */
 .activity-icon {
   width: 48px;
   height: 48px;
@@ -52,31 +47,33 @@ defineProps<{
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
   flex-shrink: 0;
 }
 
 .icon-workout {
   background: rgba(59, 130, 246, 0.2);
   border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #3b82f6;
 }
 
 .icon-quest {
   background: rgba(168, 85, 247, 0.2);
   border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #a855f7;
 }
 
 .icon-achievement {
   background: rgba(251, 191, 36, 0.2);
   border: 1px solid rgba(251, 191, 36, 0.4);
+  color: #fbbf24;
 }
 
 .icon-level {
   background: rgba(34, 197, 94, 0.2);
   border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #22c55e;
 }
 
-/* Info */
 .activity-info {
   flex: 1;
   display: flex;
@@ -96,7 +93,6 @@ defineProps<{
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* XP Badge */
 .activity-xp {
   padding: 6px 12px;
   background: rgba(251, 191, 36, 0.2);

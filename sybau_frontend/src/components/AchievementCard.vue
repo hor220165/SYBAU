@@ -1,14 +1,11 @@
 <template>
   <div class="achievement-card" :class="{ unlocked: unlocked, locked: !unlocked }">
-    <!-- Unlock Badge -->
-    <div v-if="unlocked" class="unlock-badge"><img src="../assets/Star_Pixel.png" alt=""></div>
-
-    <!-- Icon -->
-    <div class="achievement-icon" :class="{ grayscale: !unlocked }">
-      {{ icon }}
+    <div v-if="unlocked" class="unlock-badge">
+      <img src="../assets/Star_Pixel.png" alt="">
     </div>
-
-    <!-- Info -->
+    <div class="achievement-icon" :class="{ grayscale: !unlocked }">
+      <div v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>${icon}</svg>`"></div>
+    </div>
     <h4 class="achievement-title">{{ title }}</h4>
     <p class="achievement-description">{{ description }}</p>
   </div>
@@ -61,7 +58,6 @@ defineProps<{
   opacity: 0.7;
 }
 
-/* Unlock Badge */
 .unlock-badge {
   position: absolute;
   top: 10px;
@@ -74,19 +70,24 @@ defineProps<{
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
 }
 
-/* Icon */
+.unlock-badge img {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+}
+
 .achievement-icon {
-  font-size: 48px;
   margin-bottom: 6px;
+  color: #fbbf24;
   filter: drop-shadow(0 4px 12px rgba(251, 191, 36, 0.4));
   transition: all 0.3s ease;
 }
 
 .achievement-icon.grayscale {
   filter: grayscale(100%) opacity(0.4);
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .achievement-card.unlocked:hover .achievement-icon {
@@ -94,7 +95,6 @@ defineProps<{
   filter: drop-shadow(0 8px 20px rgba(251, 191, 36, 0.6));
 }
 
-/* Title */
 .achievement-title {
   font-size: 15px;
   font-weight: 700;
@@ -106,7 +106,6 @@ defineProps<{
   color: rgba(255, 255, 255, 0.4);
 }
 
-/* Description */
 .achievement-description {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.7);

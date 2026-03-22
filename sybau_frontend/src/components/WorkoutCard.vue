@@ -1,293 +1,202 @@
 <template>
-  <div class="workout-card">
-    <!-- Category Badge -->
-    <div class="category-badge" :class="categoryClass">
+  <div class="workout-card" @click="$emit('log')">
+    <!-- Category Badge mit dynamischer Farbe -->
+    <div class="category-badge" :class="`category-${category.toLowerCase()}`">
       {{ category }}
     </div>
-
-    <!-- Completion Badge (optional) -->
-    <div v-if="completed" class="completion-badge">
-      ✓
-    </div>
-
-    <!-- Workout Title -->
+    
+    <!-- Title -->
     <h3 class="workout-title">{{ title }}</h3>
-
-    <!-- Exercises Pills -->
-    <div class="exercises">
-      <span 
-        v-for="(exercise, index) in displayExercises" 
-        :key="index" 
-        class="exercise-pill"
-      >
-        {{ exercise }}
+    
+    <!-- Description -->
+    <p class="workout-description">{{ exercises[0] }}</p>
+    
+    <!-- Bottom Row -->
+    <div class="workout-meta">
+      <span class="difficulty" :class="`difficulty-${difficulty.toLowerCase()}`">
+        {{ difficulty }}
       </span>
-      <span v-if="remainingCount > 0" class="exercise-pill">
-        +{{ remainingCount }}
+      <span class="xp">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        +{{ xp }} XP
       </span>
     </div>
-
-    <!-- Bottom Section: Difficulty + XP + Button -->
-    <div class="workout-footer">
-      <div class="difficulty-section">
-        <span class="difficulty-badge" :class="difficultyClass">
-          {{ difficulty }}
-        </span>
-        <span class="xp-badge">
-          <span >XP</span>
-          <span>+{{ xp }}</span>
-        </span>
-      </div>
-
-      <button 
-        v-if="!completed" 
-        class="start-btn"
-        @click="$emit('log')"
-      >
-        Training eintragen
-        <span class="icon"></span>
-      </button>
-      <button 
-        v-else 
-        class="completed-btn"
-        @click="$emit('view')"
-      >
-        Erledigt
-        <span class="icon">✓</span>
-      </button>
-    </div>
+    
+    <!-- Action Button -->
+    <button class="log-btn" @click.stop="$emit('log')">
+      Training eintragen
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-
-const props = defineProps<{
+defineProps<{
   category: string;
   title: string;
-  duration: number;
-  calories: number;
   exercises: string[];
   difficulty: 'Easy' | 'Medium' | 'Hard';
   xp: number;
   completed?: boolean;
+  duration?: number;
+  calories?: number;
 }>();
 
-defineEmits(['log', 'view']);
-
-const categoryClass = computed(() => {
-  const classes: Record<string, string> = {
-    'Cardio': 'category-cardio',
-    'Strength': 'category-strength',
-    'Yoga': 'category-yoga',
-    'Core': 'category-core'
-  };
-  return classes[props.category] || 'category-default';
-});
-
-const difficultyClass = computed(() => {
-  const classes: Record<string, string> = {
-    'Easy': 'difficulty-easy',
-    'Medium': 'difficulty-medium',
-    'Hard': 'difficulty-hard'
-  };
-  return classes[props.difficulty] || '';
-});
-
-const displayExercises = computed(() => props.exercises.slice(0, 3));
-const remainingCount = computed(() => Math.max(0, props.exercises.length - 3));
+defineEmits<{
+  log: [];
+}>();
 </script>
 
 <style scoped>
 .workout-card {
   background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
   padding: 24px;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  cursor: pointer;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
 }
 
 .workout-card:hover {
-  border-color: rgba(236, 72, 153, 0.4);
+  border-color: rgba(236, 72, 153, 0.3);
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(236, 72, 153, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 /* Category Badge */
 .category-badge {
   display: inline-block;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 13px;
   font-weight: 600;
-  margin-bottom: 16px;
+  width: fit-content;
+  text-transform: capitalize;
 }
 
+/* Category Farben */
 .category-cardio {
-  background: rgba(245, 158, 11, 0.2);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
 }
 
 .category-strength {
-  background: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-}
-
-.category-yoga {
-  background: rgba(139, 92, 246, 0.2);
-  color: #a78bfa;
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #c4b5fd;
 }
 
 .category-core {
   background: rgba(236, 72, 153, 0.2);
-  color: #ec4899;
-  border: 1px solid rgba(236, 72, 153, 0.3);
+  border: 1px solid rgba(236, 72, 153, 0.4);
+  color: #f9a8d4;
 }
 
-/* Completion Badge */
-.completion-badge {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 32px;
-  height: 32px;
-  background: rgba(34, 197, 94, 0.3);
-  border: 2px solid #22c55e;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #22c55e;
-  font-weight: 700;
+.category-flexibility {
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #86efac;
 }
 
 /* Title */
 .workout-title {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   color: white;
-  margin: 0 0 16px 0;
+  margin: 0;
 }
 
-/* Stats */
-.workout-stats {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.stat {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: rgba(255, 255, 255, 0.7);
+/* Description */
+.workout-description {
   font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  line-height: 1.5;
 }
 
-.stat .icon {
-  font-size: 16px;
-}
-
-/* Exercises */
-.exercises {
+/* Meta Row */
+.workout-meta {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.exercise-pill {
-  padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-/* Footer */
-.workout-footer {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 16px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.difficulty-section {
-  display: flex;
-  gap: 12px;
-  align-items: center;
+/* Difficulty - MIT SCHATTEN statt Box */
+.difficulty {
+  font-size: 14px;
+  font-weight: 700;
 }
 
-.difficulty-badge {
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
+/* Difficulty Farben mit Schatten */
 .difficulty-easy {
-  background: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #86efac;
+  text-shadow: 0 0 12px rgba(34, 197, 94, 0.8);
 }
 
 .difficulty-medium {
-  background: rgba(234, 179, 8, 0.2);
-  color: #fbbf24;
-  border: 1px solid rgba(234, 179, 8, 0.3);
+  color: #fde047;
+  text-shadow: 0 0 12px rgba(251, 191, 36, 0.8);
 }
 
 .difficulty-hard {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  text-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
 }
 
-.xp-badge {
+/* XP */
+.xp {
   display: flex;
   align-items: center;
-  gap: 4px;
-  color: #fbbf24;
-  font-weight: 600;
+  gap: 6px;
   font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
 }
 
-/* Buttons */
-.start-btn,
-.completed-btn {
-  padding: 10px 24px;
+.xp svg {
+  color: #fbbf24;
+}
+
+/* Button */
+.log-btn {
+  margin-top: 8px;
+  padding: 14px;
   border-radius: 12px;
   border: none;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.3s ease;
-}
-
-.start-btn {
   background: linear-gradient(135deg, #ec4899, #f43f5e);
   color: white;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
 }
 
-.start-btn:hover {
+.log-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(236, 72, 153, 0.3);
+  box-shadow: 0 6px 16px rgba(236, 72, 153, 0.4);
 }
 
-.completed-btn {
-  background: rgba(236, 72, 153, 0.2);
-  color: #f472b6;
-  border: 1px solid rgba(236, 72, 153, 0.3);
+.log-btn:active {
+  transform: translateY(0);
 }
 
-.completed-btn:hover {
-  background: rgba(236, 72, 153, 0.3);
+/* Responsive */
+@media (max-width: 768px) {
+  .workout-card {
+    padding: 20px;
+  }
+
+  .workout-title {
+    font-size: 20px;
+  }
 }
 </style>

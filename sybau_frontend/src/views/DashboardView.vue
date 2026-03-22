@@ -1,73 +1,154 @@
 <template>
   <div class="dashboard-container">
-    <!-- Header -->
     <Header></Header>
-
-    <!-- Navigation -->
     <Navbar></Navbar>
 
-    <!-- Main Content -->
     <main class="main-content">
-      <!-- Avatar Section -->
       <div class="avatar-section">
-        <div class="avatar-display">
-          <SpriteAnimator
-              :frameWidth="128"
-              :frameHeight="128"
-              :columns="2"
-              :rows="2"
-              :frameCount="4"
-              :speed="1000"
-              :scale="3"
-          />
+
+        <div class="avatar-glow-bg"></div>
+
+        <h2 class="username-clean">{{ userName || 'Champion' }}</h2>
+
+        <div class="avatar-row">
+
+          <div class="equipment-slots left">
+            <div class="equip-slot">
+              <div class="equip-slot-inner empty">
+                <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
+                <span class="equip-name">Booster</span>
+                <span class="equip-empty">Leer</span>
+              </div>
+            </div>
+            <div class="equip-slot">
+              <div class="equip-slot-inner empty">
+                <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
+                <span class="equip-name">Booster</span>
+                <span class="equip-empty">Leer</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="avatar-wrapper">
+            <div class="avatar-sprite">
+              <SpriteAnimator
+                :frameWidth="128"
+                :frameHeight="128"
+                :columns="2"
+                :rows="2"
+                :frameCount="4"
+                :speed="1000"
+                :scale="3"
+              />
+            </div>
+            <div class="avatar-ground"></div>
+          </div>
+
+          <div class="equipment-slots right">
+            <div class="equip-slot">
+              <div class="equip-slot-inner empty">
+                <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
+                <span class="equip-name">Booster</span>
+                <span class="equip-empty">Leer</span>
+              </div>
+            </div>
+            <div class="equip-slot">
+              <div class="equip-slot-inner empty">
+                <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
+                <span class="equip-name">Booster</span>
+                <span class="equip-empty">Leer</span>
+              </div>
+            </div>
+          </div>
+
         </div>
 
-        <!-- XP Progress -->
-        <div class="xp-progress">
-          <div class="progress-header">
-            <span>Level {{ level }} Progress</span>
-            <span>{{ currentXp }} / {{ xpForNextLevel }} XP</span>
+        <!-- XP Arc -->
+        <div class="xp-arc-wrapper">
+          <svg class="xp-arc-svg" viewBox="0 0 200 110" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#2563eb"/>
+                <stop offset="100%" style="stop-color:#06b6d4"/>
+              </linearGradient>
+              <filter id="arcGlow">
+                <feGaussianBlur stdDeviation="3" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <path d="M 10 105 A 90 90 0 0 1 190 105" fill="none" stroke="rgba(59,130,246,0.12)" stroke-width="6" stroke-linecap="round"/>
+            <path d="M 10 105 A 90 90 0 0 1 190 105" fill="none" stroke="url(#arcGrad)" stroke-width="6" stroke-linecap="round"
+              :stroke-dasharray="`${arcProgress} 283`" filter="url(#arcGlow)" class="arc-fill"/>
+          </svg>
+          <div class="arc-center">
+            <span class="arc-percent">{{ progressPercent }}%</span>
+            <span class="arc-next">{{ xpForNextLevel - currentXp }} bis Lv{{ level + 1 }}</span>
           </div>
-          <div class="progress-bar">
-            <div class="progress-fill" :style="`width: ${progressPercent}%`"></div>
-          </div>
-          <p class="progress-text">{{ xpForNextLevel - currentXp }} XP bis Level {{ level + 1 }}</p>
         </div>
+
+        <!-- Level + XP row -->
+        <div class="arc-meta">
+          <span class="arc-meta-item">
+            <span class="arc-meta-label">Level</span>
+            <span class="arc-meta-value">{{ level }}</span>
+          </span>
+          <span class="arc-meta-sep"></span>
+          <span class="arc-meta-item">
+            <span class="arc-meta-label">Gesamt XP</span>
+            <span class="arc-meta-value">{{ currentXp }}</span>
+          </span>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+          <div class="stats-bar-item">
+            <div class="stats-bar-icon flame" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'/></svg>`"></div>
+            <span class="stats-bar-value">5 Tage</span>
+            <span class="stats-bar-label">Streak</span>
+          </div>
+          <div class="stats-bar-sep"></div>
+          <div class="stats-bar-item">
+            <div class="stats-bar-icon trophy" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/></svg>`"></div>
+            <span class="stats-bar-value">24/50</span>
+            <span class="stats-bar-label">Badges</span>
+          </div>
+          <div class="stats-bar-sep"></div>
+          <div class="stats-bar-item">
+            <div class="stats-bar-icon quest" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/></svg>`"></div>
+            <span class="stats-bar-value">3/5</span>
+            <span class="stats-bar-label">Quests</span>
+          </div>
+          <div class="stats-bar-sep"></div>
+          <div class="stats-bar-item">
+            <div class="stats-bar-icon rank" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='8' r='6'/><path d='M15.477 12.89 17 22l-5-3-5 3 1.523-9.11'/></svg>`"></div>
+            <span class="stats-bar-value"><span class="stats-bar-value">{{ leaderboardRank }}</span></span>
+            <span class="stats-bar-label">Rang</span>
+          </div>
+        </div>
+
       </div>
 
       <!-- StatCards -->
       <div class="stats-grid">
         <StatCard
-            icon="🔥"
-            label="Streak"
-            value="5 Tage"
-            trend="+2"
-            cardClass="streak-card"
+          :icon="`<path d='M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'/>`"
+          label="Streak" value="5 Tage" trend="+2" cardClass="streak-card"
         />
         <StatCard
-            icon="🏆"
-            label="Achievements"
-            value="24/50"
-            trend="+3 diese Woche"
-            cardClass="achievements-card"
+          :icon="`<path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/>`"
+          label="Achievements" value="24/50" trend="+3 diese Woche" cardClass="achievements-card"
         />
         <StatCard
-            icon="🎯"
-            label="Quests"
-            value="3/5"
-            trend="2 aktiv"
-            cardClass="quests-card"
+          :icon="`<circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/>`"
+          label="Quests" value="3/5" trend="2 aktiv" cardClass="quests-card"
         />
         <StatCard
-            icon="📈"
-            label="Gesamt XP"
-            value="12,450"
-            trend="+450 heute"
-            cardClass="xp-card"
+          :icon="`<polyline points='22 7 13.5 15.5 8.5 10.5 2 17'/><polyline points='16 7 22 7 22 13'/>`"
+          label="Gesamt XP" value="12,450" trend="+450 heute" cardClass="xp-card"
         />
       </div>
     </main>
-     <!-- Footer -->
+
     <FooterComponent />
   </div>
 </template>
@@ -80,132 +161,445 @@ import Header from "@/components/Header.vue";
 import { onMounted, ref, computed } from 'vue';
 import { userService } from '@/services/api';
 import FooterComponent from "@/components/FooterComponent.vue";
+import { useLeaderboard } from '@/composables/useLeaderboard';
+
+const userName = ref('');
+const email = ref('');
+const coins = ref(0);
+const level = ref(1);
+const currentXp = ref(0);
+const xpForNextLevel = ref(1000);
 
 const progressPercent = computed(() => {
   const denom = xpForNextLevel.value || 1;
   return Math.min(100, Math.floor((currentXp.value / denom) * 100));
 });
 
-const userName = ref('');
-const email = ref('');
-const coins = ref(0);
+const arcProgress = computed(() => (progressPercent.value / 100) * 283);
 
-const level = ref(1);
-const currentXp = ref(0);
-const xpForNextLevel = ref(1000);
+const { sortedLeaderboard, loadLeaderboard } = useLeaderboard();
+
+const leaderboardRank = computed(() => {
+  const name = userName.value.toLowerCase();
+  const entry = sortedLeaderboard.value.find(
+    (p: any) => (p.UserName ?? p.userName ?? '').toLowerCase() === name
+  );
+  return entry ? `#${entry.Rank ?? sortedLeaderboard.value.indexOf(entry) + 1}` : '—';
+});
 
 async function loadProfile() {
   try {
     const res = await userService.getProfile();
     const data = res.data ?? {};
-
     userName.value = data.userName ?? '';
     email.value = data.email ?? '';
     coins.value = data.coins ?? 0;
-
     const avatar = data.avatar ?? {};
     level.value = avatar.level ?? 0;
     currentXp.value = avatar.experience ?? 0;
-    // xpForNext könnte vom Backend kommen oder statisch initialisiert werden
     xpForNextLevel.value = avatar.xpForNextLevel ?? 1000;
-
   } catch (e) {
     console.error('Fehler beim Laden des Profils', e);
   }
+  await loadLeaderboard();
 }
 
 onMounted(() => loadProfile());
-
 </script>
 
 <style scoped>
-/* Base Styles */
 .dashboard-container {
   min-height: 100vh;
   color: white;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Main Content */
 .main-content {
   padding: 40px;
   max-width: 1400px;
   margin: 0 auto;
 }
 
-/* Avatar Section */
 .avatar-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 40px;
-  gap: 24px;
-}
-
-.avatar-display {
+  margin-bottom: 56px;
   position: relative;
-  border: 2px solid rgba(236, 72, 153, 0.3);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 0 40px rgba(236, 72, 153, 0.2);
-  display: inline-block;
 }
 
-/* XP Progress */
-.xp-progress {
-  width: 100%;
-  max-width: 500px;
+.avatar-glow-bg {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 340px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse 65% 100% at 50% 45%,
+    rgba(59, 130, 246, 0.16) 0%,
+    rgba(6, 182, 212, 0.08) 45%,
+    transparent 70%
+  );
+  filter: blur(28px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.username-clean {
+  position: relative;
+  z-index: 2;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0 0 20px 0;
+}
+
+.avatar-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  position: relative;
+  z-index: 2;
+}
+
+/* ══════════════════════════════
+   EQUIPMENT SLOTS
+══════════════════════════════ */
+.equipment-slots {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
-.progress-header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  color: #93c5fd;
+.equip-slot {
+  width: 100px;
+  height: 100px;
 }
 
-.progress-bar {
-  height: 12px;
-  background: rgba(30, 41, 59, 0.5);
-  border-radius: 999px;
-  overflow: hidden;
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  position: relative;
-}
-
-.progress-fill {
+.equip-slot-inner {
+  width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #06b6d4);
-  border-radius: 999px;
-  transition: width 0.3s ease;
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
-.progress-text {
-  font-size: 12px;
-  color: #60a5fa;
-  margin: 0;
-  text-align: center;
+.equip-slot-inner.empty {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px dashed rgba(168, 85, 247, 0.25);
+  backdrop-filter: blur(10px);
 }
 
-/* Stats Grid */
+.equip-slot-inner.empty:hover {
+  border-color: rgba(168, 85, 247, 0.5);
+  background: rgba(168, 85, 247, 0.07);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.15);
+}
+
+.equip-slot-inner::before,
+.equip-slot-inner::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: rgba(168, 85, 247, 0.4);
+  border-style: solid;
+}
+
+.equip-slot-inner::before {
+  top: 6px;
+  left: 6px;
+  border-width: 1px 0 0 1px;
+}
+
+.equip-slot-inner::after {
+  bottom: 6px;
+  right: 6px;
+  border-width: 0 1px 1px 0;
+}
+
+.equip-icon {
+  color: rgba(168, 85, 247, 0.45);
+  display: flex;
+  transition: all 0.3s ease;
+}
+
+.equip-slot-inner:hover .equip-icon {
+  color: rgba(168, 85, 247, 0.8);
+  filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.6));
+}
+
+.equip-name {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.equip-empty {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.5px;
+}
+
+/* ══════════════════════════════
+   AVATAR
+══════════════════════════════ */
+.avatar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.avatar-sprite {
+  image-rendering: pixelated;
+  filter:
+    drop-shadow(0 0 14px rgba(59, 130, 246, 0.6))
+    drop-shadow(0 0 36px rgba(6, 182, 212, 0.3))
+    drop-shadow(0 16px 28px rgba(0, 0, 0, 0.7));
+}
+
+.avatar-ground {
+  width: 180px;
+  height: 28px;
+  margin-top: -50px;
+  margin-bottom: 20px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(59, 130, 246, 0.7) 0%, rgba(59, 130, 246, 0.25) 50%, transparent 70%);
+  filter: blur(10px);
+}
+
+/* ══════════════════════════════
+   XP ARC
+══════════════════════════════ */
+.xp-arc-wrapper {
+  position: relative;
+  z-index: 2;
+  width: 220px;
+  height: 120px;
+  margin-top: -4px;
+}
+
+.xp-arc-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.arc-fill {
+  transition: stroke-dasharray 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.arc-center {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.arc-percent {
+  font-size: 15px;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 0 10px rgba(6, 182, 212, 0.7);
+}
+
+.arc-next {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: 500;
+}
+
+/* ══════════════════════════════
+   ARC META (Level + XP)
+══════════════════════════════ */
+.arc-meta {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+  position: relative;
+  z-index: 2;
+}
+
+.arc-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+}
+
+.arc-meta-sep {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.arc-meta-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.arc-meta-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+}
+
+/* ══════════════════════════════
+   STATS BAR
+══════════════════════════════ */
+.stats-bar {
+  display: flex;
+  align-items: center;
+  margin-top: 20px;
+  position: relative;
+  z-index: 2;
+}
+
+.stats-bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 0 20px;
+}
+
+.stats-bar-sep {
+  width: 1px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.stats-bar-icon {
+  display: flex;
+  margin-bottom: 2px;
+}
+
+.flame  { color: #f97316; filter: drop-shadow(0 0 5px rgba(249, 115, 22, 0.7)); }
+.trophy { color: #fbbf24; filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.7)); }
+.quest  { color: #a855f7; filter: drop-shadow(0 0 5px rgba(168, 85, 247, 0.7)); }
+.rank   { color: #ec4899; filter: drop-shadow(0 0 5px rgba(236, 72, 153, 0.7)); }
+
+.stats-bar-value {
+  font-size: 13px;
+  font-weight: 800;
+  color: white;
+  line-height: 1;
+}
+
+.stats-bar-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* ══════════════════════════════
+   STATS GRID
+══════════════════════════════ */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 24px;
 }
 
-/* Responsive */
+/* ══════════════════════════════
+   RESPONSIVE
+══════════════════════════════ */
+@media (max-width: 1200px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 @media (max-width: 768px) {
-  .navbar {
-    overflow-x: auto;
+  .main-content { padding: 24px 16px; }
+  .equip-slot { width: 80px; height: 80px; }
+  .equip-slot-inner::before,
+  .equip-slot-inner::after { width: 7px; height: 7px; }
+  .stats-bar-item { padding: 0 12px; }
+  .arc-meta-item { padding: 0 12px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+}
+
+@media (max-width: 600px) {
+  .avatar-row {
+    flex-direction: row;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
   }
 
-  .xp-progress {
-    max-width: 100%;
+  .equipment-slots {
+    gap: 8px;
+    flex-shrink: 0;
   }
+
+  .equip-slot {
+    width: 68px;
+    height: 68px;
+  }
+
+  .equip-slot-inner::before,
+  .equip-slot-inner::after {
+    width: 7px;
+    height: 7px;
+  }
+
+  .equip-name { display: none; }
+  .equip-empty { display: none; }
+
+  .avatar-wrapper {
+    flex-shrink: 0;
+  }
+
+  .avatar-sprite {
+  transform: scale(0.8);
+  transform-origin: center bottom;
+  margin-left: -100px;
+  margin-right: -100px;
+  margin-top: -60px;
+}
+
+.avatar-ground {
+  width: 120px;
+  height: 16px;
+  margin-top: -30px;
+}
+
+  .avatar-glow-bg {
+    width: 200px;
+    height: 280px;
+  }
+
+  .username-clean { font-size: 13px; letter-spacing: 3px; }
+  .xp-arc-wrapper { width: 180px; height: 100px; }
+  .stats-bar { flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .stats-bar-sep { display: none; }
+  .stats-bar-item { padding: 0 10px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
 }
 </style>
