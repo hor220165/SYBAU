@@ -9,21 +9,38 @@
   <main class="workouts-content">
     <!-- Stats Header -->
     <div class="stats-header">
-      <h1 class="page-title">Deine Übungen</h1>
-      <p class="page-subtitle">Wähle eine Übung und trage deine Wiederholungen ein!</p>
+      <div class="stats-header-content">
+        <h1 class="page-title">Deine Übungen</h1>
+        <p class="page-subtitle">Wähle eine Übung und trage deine Wiederholungen ein!</p>
 
-      <div class="stats-grid">
-        <div class="stat-card">
-          <span class="stat-label">Heute</span>
-          <span class="stat-value">245 Wiederholungen</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Diese Woche</span>
-          <span class="stat-value">1,832 Wiederholungen</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">XP Heute</span>
-          <span class="stat-value">+490 XP</span>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <Flame :size="28" />
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Heute</span>
+              <span class="stat-value">245 Reps</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <TrendingUp :size="28" />
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Diese Woche</span>
+              <span class="stat-value">1,832 Reps</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <Zap :size="28" />
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">XP Heute</span>
+              <span class="stat-value">+490 XP</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -87,6 +104,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { Flame, TrendingUp, Zap } from 'lucide-vue-next';
 import Header from '@/components/Header.vue';
 import Navbar from '@/components/Navbar.vue';
 import WorkoutCard from '@/components/WorkoutCard.vue';
@@ -247,19 +265,60 @@ const handleExerciseSubmit = (data: any) => {
   margin: 0 auto;
 }
 
-/* Stats Header */
+/* Stats Header - Mehr Farbe */
 .stats-header {
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
+  position: relative;
+  background: linear-gradient(135deg, 
+    rgba(236, 72, 153, 0.25) 0%, 
+    rgba(168, 85, 247, 0.2) 50%, 
+    rgba(59, 130, 246, 0.15) 100%
+  );
+  border: 2px solid rgba(236, 72, 153, 0.5);
   border-radius: 24px;
   padding: 40px;
   margin-bottom: 40px;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  box-shadow: 
+    0 0 40px rgba(236, 72, 153, 0.3),
+    0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Animated Gradient Overlay */
+.stats-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(236, 72, 153, 0.3) 0%, 
+    rgba(168, 85, 247, 0.25) 50%, 
+    rgba(59, 130, 246, 0.2) 100%
+  );
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 0;
+  animation: pulse 8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.8; }
+}
+
+.stats-header-content {
+  position: relative;
+  z-index: 1;
 }
 
 .page-title {
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 700;
   margin: 0 0 8px 0;
   color: white;
+  text-shadow: 0 2px 20px rgba(236, 72, 153, 0.6);
 }
 
 .page-subtitle {
@@ -270,29 +329,54 @@ const handleExerciseSubmit = (data: any) => {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
 
+/* Stat Cards - Bessere Sichtbarkeit, kein Hover */
 .stat-card {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(15, 23, 42, 0.7);
   backdrop-filter: blur(10px);
+  border: 2px solid rgba(236, 72, 153, 0.5);
   border-radius: 16px;
   padding: 20px;
   display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(236, 72, 153, 0.2);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3));
+  border-radius: 12px;
+  color: #ec4899;
+  border: 1px solid rgba(236, 72, 153, 0.4);
+}
+
+.stat-info {
+  display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .stat-label {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: white;
+  text-shadow: 0 2px 10px rgba(236, 72, 153, 0.5);
 }
 
 /* Filter Section */
@@ -306,7 +390,7 @@ const handleExerciseSubmit = (data: any) => {
 .filter-btn {
   padding: 12px 24px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(30, 41, 59, 0.6);
   color: rgba(255, 255, 255, 0.7);
   font-size: 16px;
@@ -317,14 +401,16 @@ const handleExerciseSubmit = (data: any) => {
 }
 
 .filter-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   color: white;
+  border-color: rgba(236, 72, 153, 0.3);
 }
 
 .filter-btn.active {
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3));
   color: white;
-  border-color: transparent;
+  border-color: rgba(236, 72, 153, 0.5);
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
 }
 
 /* Workouts Grid */
@@ -338,7 +424,7 @@ const handleExerciseSubmit = (data: any) => {
 /* Custom Workout Card */
 .custom-workout-card {
   background: rgba(30, 41, 59, 0.6);
-  border: 2px solid rgba(236, 72, 153, 0.4);
+  border: 2px solid rgba(236, 72, 153, 0.3);
   border-radius: 20px;
   padding: 40px;
   display: flex;
@@ -349,8 +435,9 @@ const handleExerciseSubmit = (data: any) => {
 }
 
 .custom-workout-card:hover {
-  border-color: rgba(236, 72, 153, 0.6);
+  border-color: rgba(236, 72, 153, 0.5);
   background: rgba(30, 41, 59, 0.8);
+  box-shadow: 0 8px 24px rgba(236, 72, 153, 0.2);
 }
 
 .custom-content h3 {
@@ -370,7 +457,7 @@ const handleExerciseSubmit = (data: any) => {
   padding: 14px 32px;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.8), rgba(168, 85, 247, 0.8));
   color: white;
   font-weight: 600;
   font-size: 16px;
@@ -379,27 +466,174 @@ const handleExerciseSubmit = (data: any) => {
   align-items: center;
   gap: 8px;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
 }
 
 .create-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(168, 85, 247, 0.3);
+  box-shadow: 0 8px 20px rgba(236, 72, 153, 0.4);
+  background: linear-gradient(135deg, rgba(236, 72, 153, 1), rgba(168, 85, 247, 1));
 }
 
 /* Responsive */
+
+/* Tablet (1024px und kleiner) */
+@media (max-width: 1024px) {
+  .workouts-content {
+    padding: 32px 24px;
+  }
+
+  .stats-header {
+    padding: 32px;
+  }
+
+  .page-title {
+    font-size: 32px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .stat-value {
+    font-size: 18px;
+  }
+
+  .workouts-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+/* Mobile (768px und kleiner) */
 @media (max-width: 768px) {
   .workouts-content {
-    padding: 20px;
+    padding: 24px 16px;
   }
-  
+
+  .stats-header {
+    padding: 24px;
+  }
+
+  .page-title {
+    font-size: 28px;
+  }
+
+  .page-subtitle {
+    font-size: 14px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+  }
+
+  .stat-value {
+    font-size: 16px;
+  }
+
+  .filter-section {
+    gap: 8px;
+  }
+
+  .filter-btn {
+    padding: 10px 18px;
+    font-size: 14px;
+  }
+
   .workouts-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
-  
+
   .custom-workout-card {
     flex-direction: column;
     gap: 20px;
     text-align: center;
+    padding: 24px;
+  }
+
+  .custom-content h3 {
+    font-size: 20px;
+  }
+
+  .create-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Small Mobile (480px und kleiner) */
+@media (max-width: 480px) {
+  .workouts-content {
+    padding: 20px 12px;
+  }
+
+  .stats-header {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .page-title {
+    font-size: 24px;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    padding: 14px;
+  }
+
+  .stat-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .filter-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .custom-workout-card {
+    padding: 20px;
+  }
+
+  .custom-content h3 {
+    font-size: 18px;
+  }
+
+  .custom-content p {
+    font-size: 13px;
+  }
+
+  .create-btn {
+    padding: 12px 24px;
+    font-size: 14px;
   }
 }
 </style>

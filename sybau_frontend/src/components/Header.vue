@@ -3,9 +3,11 @@ import { computed, onMounted } from 'vue';
 import { useNavigation } from "@/composables/useNavigation.ts";
 import { useAuth } from "@/composables/useAuth";
 import { userService } from '@/services/api';
+import { useCoins } from '@/composables/useCoins';
 
 const { logout } = useNavigation();
 const { user } = useAuth();
+const { formatCoins } = useCoins();
 
 onMounted(async () => {
   if (!user.value?.avatar) {
@@ -54,7 +56,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 
       <div class="stat-item coins">
         <img src="../assets/SYBAU_Coin.png" alt="Coins" class="stat-icon coin-icon">
-        <span class="stat-value">{{ userCoins }}</span>
+        <span class="stat-value">{{ formatCoins(userCoins) }}</span>
       </div>
 
       <button class="logout-btn" @click="logout">
