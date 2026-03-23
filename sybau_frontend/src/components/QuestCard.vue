@@ -98,7 +98,7 @@ const progressPercent = computed(() => {
   top: 16px;
   left: 16px;
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: 50px;
   font-size: 12px;
   font-weight: 600;
 }

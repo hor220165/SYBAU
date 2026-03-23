@@ -9,6 +9,10 @@ export function useAuth() {
     if (raw) user.value = JSON.parse(raw);
   };
 
+   const refreshUser = () => {
+    loadUserFromStorage();
+  };
+
   loadUserFromStorage();
 
   const login = async (email: string, password: string) => {
@@ -22,6 +26,7 @@ export function useAuth() {
         id: u.id,
         userName: u.userName,
         email: u.email,
+        coins: u.coins ?? u.Coins ?? 0,
         avatar: { bodyStage: u.avatar?.bodyStage }
       };
       console.log('User to store:', userToStore); // DEBUG
@@ -41,5 +46,5 @@ export function useAuth() {
     user.value = null;
   };
 
-  return { user, login, register, logout };
+  return { user, login, register, logout, refreshUser };
 }

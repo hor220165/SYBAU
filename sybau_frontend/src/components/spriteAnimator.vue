@@ -34,7 +34,7 @@ export default defineComponent({
       const stage = user.avatar?.bodyStage;
 
       const stageToSprite: Record<string, string> = {
-        Skinny: "./src/assets/Spritesheet_Skinny.png",
+        Skinny: "./src/assets/Spritesheet_Bodybuilder.png",
         Defined: "./src/assets/Spritesheet_Normal.png",
         Bodybuilder: "./src/assets/Spritesheet_Bodybuilder.png"
       };

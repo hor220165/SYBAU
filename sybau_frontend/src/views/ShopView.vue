@@ -10,6 +10,7 @@ import type { item } from '@/models/Item';
 import type { ShopDisplayItem } from '@/models/ShopDisplayItem';
 import { itemService, userService } from '@/services/api';
 import FooterComponent from '@/components/FooterComponent.vue';
+import { useAuth } from '@/composables/useAuth';
 
 const items = ref<ShopDisplayItem[]>([]);
 const currentCoins = ref(0);
@@ -18,6 +19,7 @@ const error = ref('');
 const successMessage = ref('');
 const buyingItemId = ref<number | null>(null);
 const activeFilter = ref<'all' | 'chest' | 'boost' | 'item'>('all');
+const { refreshUser } = useAuth();
 
 const syncCoinsFromStorage = () => {
   const raw = JSON.parse(localStorage.getItem('user') || '{}');
@@ -164,6 +166,7 @@ const loadProfile = async () => {
     console.warn('Profil konnte nicht aktualisiert werden:', profileError);
   } finally {
     syncCoinsFromStorage();
+    refreshUser(); 
   }
 };
 
