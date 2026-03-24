@@ -6,6 +6,7 @@ export interface item{
     description: string,
     price: number,
     type: ItemType,
-    xpBoostPercentage: number
+    xpBoostPercentage: number,
+    quantity?: number
 }
 

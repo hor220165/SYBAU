@@ -79,7 +79,9 @@ export const userService = {
     deleteAccount: () =>
         API.delete('/users/account'),
     updateBoostSlots: (slots: Array<number | null>) =>
-        API.put('/users/boosts/slots', { slots })
+        API.put('/users/boosts/slots', { slots }),
+    getUserBoosters: () =>
+        API.get('/users/boosts')
 };
 
 export const itemService = {
