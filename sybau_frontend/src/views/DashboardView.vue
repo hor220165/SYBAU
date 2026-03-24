@@ -13,12 +13,18 @@
         <div class="avatar-row">
 
           <div class="equipment-slots left">
-            <div class="equip-slot" v-for="i in [0, 1]" :key="'left-'+i" @click="openBoostModal(i)">
-              <div :class="['equip-slot-inner', boostSlots[i] ? 'equipped' : 'empty']">
+            <div class="equip-slot" @click="router.push('/avatar')">
+              <div class="equip-slot-inner empty">
                 <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
-                <span class="equip-name">{{ boostSlots[i]?.name || 'Booster' }}</span>
-                <span v-if="boostSlots[i]" class="equip-boost">+{{ boostSlots[i].xpBoostPercentage }}% XP</span>
-                <span v-else class="equip-empty">Leer</span>
+                <span class="equip-name">Booster</span>
+                <span class="equip-empty">Leer</span>
+              </div>
+            </div>
+            <div class="equip-slot" @click="router.push('/avatar')">
+              <div class="equip-slot-inner empty">
+                <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
+                <span class="equip-name">Booster</span>
+                <span class="equip-empty">Leer</span>
               </div>
             </div>
           </div>
@@ -39,12 +45,18 @@
           </div>
 
           <div class="equipment-slots right">
-            <div class="equip-slot" v-for="i in [2, 3]" :key="'right-'+i" @click="openBoostModal(i)">
-              <div :class="['equip-slot-inner', boostSlots[i] ? 'equipped' : 'empty']">
+            <div class="equip-slot" @click="router.push('/avatar')">
+              <div class="equip-slot-inner empty">
                 <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
-                <span class="equip-name">{{ boostSlots[i]?.name || 'Booster' }}</span>
-                <span v-if="boostSlots[i]" class="equip-boost">+{{ boostSlots[i].xpBoostPercentage }}% XP</span>
-                <span v-else class="equip-empty">Leer</span>
+                <span class="equip-name">Booster</span>
+                <span class="equip-empty">Leer</span>
+              </div>
+            </div>
+            <div class="equip-slot" @click="router.push('/avatar')">
+              <div class="equip-slot-inner empty">
+                <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
+                <span class="equip-name">Booster</span>
+                <span class="equip-empty">Leer</span>
               </div>
             </div>
           </div>
@@ -186,10 +198,11 @@ import StatCard from "../components/StatCard.vue";
 import Navbar from "@/components/Navbar.vue";
 import Header from "@/components/Header.vue";
 import { onMounted, ref, computed } from 'vue';
+import type { item } from '@/models/Item';
 import { userService } from '@/services/api';
 import FooterComponent from "@/components/FooterComponent.vue";
 import { useLeaderboard } from '@/composables/useLeaderboard';
-import type { item } from '@/models/Item';
+import { useRouter } from 'vue-router';
 
 const userName = ref('');
 const email = ref('');
@@ -197,6 +210,7 @@ const coins = ref(0);
 const level = ref(1);
 const currentXp = ref(0);
 const xpForNextLevel = ref(1000);
+const router = useRouter();
 
 // Booster State
 const boostSlots = ref<Array<item | null>>([null, null, null, null]);
@@ -259,18 +273,13 @@ async function loadOwnedBoosters() {
 function availableQuantity(booster: item): number {
   const totalOwned = booster.quantity ?? 1;
   const usedInOtherSlots = boostSlots.value.filter(
-    (b, idx) => b?.id === booster.id && idx !== selectedSlotIndex.value
+    (b: item | null, idx: number) => b?.id === booster.id && idx !== selectedSlotIndex.value
   ).length;
   return totalOwned - usedInOtherSlots;
 }
 
-function openBoostModal(slotIndex: number) {
-  selectedSlotIndex.value = slotIndex;
-  showBoostModal.value = true;
-}
-
 async function equipBooster(booster: item) {
-  const slots = boostSlots.value.map(b => b?.id ?? null);
+  const slots = boostSlots.value.map((b: item | null) => b?.id ?? null);
   slots[selectedSlotIndex.value] = booster.id;
 
   try {

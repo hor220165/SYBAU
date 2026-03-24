@@ -11,6 +11,7 @@ import type { ShopDisplayItem } from '@/models/ShopDisplayItem';
 import { itemService, userService } from '@/services/api';
 import FooterComponent from '@/components/FooterComponent.vue';
 import { useAuth } from '@/composables/useAuth';
+import MessagePopup from '@/components/MessagePopup.vue';
 
 const items = ref<ShopDisplayItem[]>([]);
 const currentCoins = ref(0);
@@ -20,6 +21,10 @@ const successMessage = ref('');
 const buyingItemId = ref<number | null>(null);
 const activeFilter = ref<'all' | 'chest' | 'boost' | 'item'>('all');
 const { refreshUser } = useAuth();
+
+const popupMessage = ref("");
+const popupType = ref<"success" | "error">("success");
+
 
 const syncCoinsFromStorage = () => {
   const raw = JSON.parse(localStorage.getItem('user') || '{}');
@@ -192,23 +197,23 @@ const buyItem = async (shopItem: ShopDisplayItem) => {
   successMessage.value = '';
 
   try {
-    await itemService.buyItem(shopItem.id);
-    await loadProfile();
-    successMessage.value = `✅ ${shopItem.name} gekauft! Verbleibende Coins: ${currentCoins.value}`;
+  await itemService.buyItem(shopItem.id);
+  await loadProfile();
 
-    window.setTimeout(() => {
-      successMessage.value = '';
-    }, 3000);
-  } catch (buyError: any) {
-    console.error('Fehler beim Kauf:', buyError);
-    error.value = buyError.response?.data?.message || buyError.response?.data || 'Kauf fehlgeschlagen';
+  popupType.value = "success";
+  popupMessage.value = `${shopItem.name} gekauft! Verbleibende Coins: ${currentCoins.value}`;
+} catch (buyError: any) {
+  console.error("Fehler beim Kauf:", buyError);
 
-    window.setTimeout(() => {
-      error.value = '';
-    }, 4000);
-  } finally {
-    buyingItemId.value = null;
-  }
+  popupType.value = "error";
+  popupMessage.value =
+    buyError.response?.data?.message ||
+    buyError.response?.data ||
+    "Kauf fehlgeschlagen";
+} finally {
+  buyingItemId.value = null;
+}
+
 };
 
 const loadPageData = async () => {
@@ -221,6 +226,14 @@ onMounted(loadPageData);
 </script>
 
 <template>
+
+  <MessagePopup
+  v-if="popupMessage"
+  :message="popupMessage"
+  :type="popupType"
+  @close="popupMessage = ''"
+/>
+
   <div class="shop-page-shell">
     <Header />
     <Navbar />
@@ -247,7 +260,6 @@ onMounted(loadPageData);
 
       <div v-if="loading" class="state-box">Lade Shop-Items…</div>
       <div v-if="error" class="state-box state-box-error">{{ error }}</div>
-      <div v-if="successMessage" class="state-box state-box-success">{{ successMessage }}</div>
 
       <template v-if="!loading">
         <section v-if="featuredItems.length" class="section-card">
