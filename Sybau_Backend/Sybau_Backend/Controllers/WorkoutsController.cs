@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sybau_Backend._Services;
@@ -50,8 +51,34 @@ public class WorkoutsController : ControllerBase
     [HttpGet("exercises")]
     public async Task<IActionResult> GetExercises([FromQuery] WorkoutCategory? category)
     {
-        var exercises = await _workoutService.GetExercisesAsync(category);
+        int? userId = null;
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out var uid))
+        {
+            userId = uid;
+        }
+        var exercises = await _workoutService.GetExercisesAsync(category, userId);
         return Ok(exercises);
+    }
+
+    [Authorize]
+    [HttpPost("exercises/log")]
+    public async Task<IActionResult> LogExercise([FromBody] LogExerciseDto dto)
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
+        try
+        {
+            var result = await _workoutService.LogExerciseAsync(userId, dto.ExerciseId, dto.Reps);
+            if (result == null) return NotFound("Übung oder User nicht gefunden.");
+            return Ok(result);
+        }
+        catch (InvalidOperationException e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [Authorize(Policy = "AdminOnly")]

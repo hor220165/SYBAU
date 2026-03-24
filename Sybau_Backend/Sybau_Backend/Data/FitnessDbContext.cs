@@ -15,6 +15,7 @@ public class FitnessDbContext:DbContext
     public DbSet<UserCoin> UserCoins => Set<UserCoin>();
     public DbSet<Challenge> Challenges => Set<Challenge>();
     public DbSet<UserChallenge> UserChallenges => Set<UserChallenge>();
+    public DbSet<UserExerciseLog> UserExerciseLogs => Set<UserExerciseLog>();
     public FitnessDbContext(DbContextOptions<FitnessDbContext> options) : base(options){}
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -82,6 +83,19 @@ public class FitnessDbContext:DbContext
         {
             entity.Property(e => e.Category).HasConversion<string>();
             entity.Property(e => e.Difficulty).HasConversion<string>();
+        });
+
+        modelBuilder.Entity<UserExerciseLog>(entity =>
+        {
+            entity.HasOne(l => l.User)
+                .WithMany()
+                .HasForeignKey(l => l.UserId)
+                .IsRequired();
+
+            entity.HasOne(l => l.Exercise)
+                .WithMany()
+                .HasForeignKey(l => l.ExerciseId)
+                .IsRequired();
         });
 
     }
