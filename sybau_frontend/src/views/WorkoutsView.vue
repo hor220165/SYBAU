@@ -96,6 +96,9 @@ import WorkoutCard from '@/components/WorkoutCard.vue';
 import ExerciseModal from '@/components/WorkoutPopup.vue';
 import FooterComponent from '@/components/FooterComponent.vue';
 import { workoutService } from '@/services/api';
+import { useAuth } from '@/composables/useAuth';
+
+const { refreshProfile } = useAuth();
 
 const activeFilter = ref('Alle');
 const showModal = ref(false);
@@ -204,6 +207,7 @@ const handleExerciseSubmit = async (data: any) => {
       msg += ` (davon +${bonusXp} Bonus durch ${boostPct}% Booster)`;
     }
     alert(msg);
+    await refreshProfile();
   } catch (e: any) {
     const msg = e.response?.data || 'Fehler beim Eintragen';
     alert(msg);
