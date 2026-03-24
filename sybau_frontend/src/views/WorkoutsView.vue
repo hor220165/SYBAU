@@ -164,62 +164,128 @@
   <!-- Workout Session Modal -->
   <div v-if="workoutSession" class="workout-modal-overlay" @click.self="closeWorkoutSession">
     <div class="create-workout-modal workout-session-modal">
-      <div class="modal-header-cw">
-        <h2>{{ workoutSession.name }}</h2>
-        <button class="close-btn-cw" @click="closeWorkoutSession">&times;</button>
-      </div>
 
-      <div class="session-exercises">
-        <div v-for="(ex, idx) in workoutSession.exercises" :key="ex.exerciseId" 
-             class="session-exercise-item" :class="{ 'session-done': ex.logged }">
-          <div class="session-exercise-info">
-            <span class="session-exercise-num">{{ Number(idx) + 1 }}</span>
-            <div>
-              <span class="session-exercise-name">{{ ex.exerciseName }}</span>
-              <span class="session-exercise-detail">{{ mapDifficulty(ex.difficulty) }} · Limit: {{ ex.dailyLimit }}</span>
+      <!-- ===== ABSCHLUSS-SCREEN ===== -->
+      <template v-if="sessionFinished">
+        <div class="session-finish-screen">
+          <div class="finish-icon">🎉</div>
+          <h2 class="finish-title">Workout abgeschlossen!</h2>
+          <p class="finish-subtitle">{{ workoutSession.name }}</p>
+
+          <div class="finish-stats">
+            <div class="finish-stat">
+              <span class="finish-stat-icon">⭐</span>
+              <span class="finish-stat-value">+{{ sessionTotalXp }}</span>
+              <span class="finish-stat-label">XP verdient</span>
+            </div>
+            <div class="finish-stat">
+              <span class="finish-stat-icon">💰</span>
+              <span class="finish-stat-value">+{{ sessionTotalCoins }}</span>
+              <span class="finish-stat-label">Coins verdient</span>
             </div>
           </div>
-          <div class="session-exercise-action">
-            <template v-if="ex.logged">
-              <span class="session-check">✅ {{ ex.repsLogged }} Reps</span>
-              <span class="session-reward">+{{ ex.xpEarned }} XP · +{{ ex.coinsEarned }} 💰</span>
-            </template>
-            <template v-else>
-              <input v-model.number="ex.repsInput" type="number" min="1" :max="ex.dailyLimit" 
-                     placeholder="Reps" class="session-reps-input">
-              <button class="session-log-btn" @click="logWorkoutExercise(ex)" :disabled="!ex.repsInput || ex.repsInput < 1">
-                Eintragen
-              </button>
-            </template>
+
+          <div class="finish-details">
+            <div class="finish-detail-row">
+              <span>✅ Übungen abgeschlossen</span>
+              <span>{{ sessionActiveCount }}</span>
+            </div>
+            <div v-if="sessionSkippedCount > 0" class="finish-detail-row finish-detail-skipped">
+              <span>⏭️ Übersprungen (Limit erreicht)</span>
+              <span>{{ sessionSkippedCount }}</span>
+            </div>
+          </div>
+
+          <!-- Einzelne Ergebnisse -->
+          <div class="finish-exercises">
+            <div v-for="ex in workoutSession.exercises" :key="ex.exerciseId" class="finish-exercise-row">
+              <span class="finish-ex-name">{{ ex.exerciseName }}</span>
+              <template v-if="ex.skipped">
+                <span class="finish-ex-skipped">Limit erreicht</span>
+              </template>
+              <template v-else>
+                <span class="finish-ex-reward">{{ ex.repsLogged }} Reps · +{{ ex.xpEarned }} XP · +{{ ex.coinsEarned }} 💰</span>
+              </template>
+            </div>
+          </div>
+
+          <button class="finish-close-btn" @click="closeWorkoutSession">Fertig</button>
+        </div>
+      </template>
+
+      <!-- ===== AKTIVE SESSION ===== -->
+      <template v-else>
+        <div class="modal-header-cw">
+          <h2>{{ workoutSession.name }}</h2>
+          <button class="close-btn-cw" @click="closeWorkoutSession">&times;</button>
+        </div>
+
+        <!-- Limit-Hinweis oben -->
+        <div v-if="sessionSkippedCount > 0" class="session-limit-notice">
+          ⚠️ {{ sessionSkippedCount }} Übung{{ sessionSkippedCount > 1 ? 'en' : '' }} übersprungen – Tageslimit bereits erreicht
+        </div>
+
+        <div class="session-exercises">
+          <div v-for="(ex, idx) in workoutSession.exercises" :key="ex.exerciseId" 
+               class="session-exercise-item" :class="{ 'session-done': ex.logged, 'session-skipped': ex.skipped }">
+            <div class="session-exercise-info">
+              <span class="session-exercise-num">{{ Number(idx) + 1 }}</span>
+              <div>
+                <span class="session-exercise-name">{{ ex.exerciseName }}</span>
+                <span class="session-exercise-detail">{{ mapDifficulty(ex.difficulty) }} · Limit: {{ ex.dailyLimit }}</span>
+              </div>
+            </div>
+            <div class="session-exercise-action">
+              <!-- Limit erreicht -->
+              <template v-if="ex.skipped">
+                <span class="session-limit-badge">🚫 Limit erreicht</span>
+              </template>
+              <!-- Bereits geloggt -->
+              <template v-else-if="ex.logged">
+                <span class="session-check">✅ {{ ex.repsLogged }} Reps</span>
+                <span class="session-reward">+{{ ex.xpEarned }} XP · +{{ ex.coinsEarned }} 💰</span>
+              </template>
+              <!-- Noch offen -->
+              <template v-else>
+                <span v-if="ex.remaining < ex.dailyLimit" class="session-remaining-hint">
+                  Noch {{ ex.remaining }} möglich
+                </span>
+                <input v-model.number="ex.repsInput" type="number" min="1" :max="ex.remaining" 
+                       placeholder="Reps" class="session-reps-input">
+                <button class="session-log-btn" @click="logWorkoutExercise(ex)" :disabled="!ex.repsInput || ex.repsInput < 1">
+                  Eintragen
+                </button>
+              </template>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Session Summary -->
-      <div class="session-summary">
-        <div class="session-summary-row">
-          <span>Fortschritt</span>
-          <span>{{ sessionCompletedCount }} / {{ workoutSession.exercises.length }} Übungen</span>
+        <!-- Session Summary -->
+        <div class="session-summary">
+          <div class="session-summary-row">
+            <span>Fortschritt</span>
+            <span>{{ sessionCompletedCount }} / {{ workoutSession.exercises.length }} Übungen</span>
+          </div>
+          <div class="session-progress-bar">
+            <div class="session-progress-fill" :style="{ width: sessionProgressPercent + '%' }"></div>
+          </div>
+          <div class="session-summary-row">
+            <span>⭐ Gesamt XP</span>
+            <span class="session-total-xp">+{{ sessionTotalXp }}</span>
+          </div>
+          <div class="session-summary-row">
+            <span>💰 Gesamt Coins</span>
+            <span class="session-total-coins">+{{ sessionTotalCoins }}</span>
+          </div>
         </div>
-        <div class="session-progress-bar">
-          <div class="session-progress-fill" :style="{ width: sessionProgressPercent + '%' }"></div>
-        </div>
-        <div class="session-summary-row">
-          <span>⭐ Gesamt XP</span>
-          <span class="session-total-xp">+{{ sessionTotalXp }}</span>
-        </div>
-        <div class="session-summary-row">
-          <span>💰 Gesamt Coins</span>
-          <span class="session-total-coins">+{{ sessionTotalCoins }}</span>
-        </div>
-      </div>
 
-      <div class="modal-actions-cw">
-        <button class="btn-cancel-cw" @click="closeWorkoutSession">Schließen</button>
-        <button v-if="sessionCompletedCount === workoutSession.exercises.length" class="btn-create-cw" @click="closeWorkoutSession">
-          🎉 Workout abgeschlossen!
-        </button>
-      </div>
+        <div class="modal-actions-cw">
+          <button class="btn-cancel-cw" @click="closeWorkoutSession">Schließen</button>
+          <button v-if="sessionCompletedCount === workoutSession.exercises.length" class="btn-create-cw" @click="finishWorkoutSession">
+            🎉 Workout abgeschlossen!
+          </button>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -395,28 +461,52 @@ async function handleCreateWorkout() {
 }
 
 // ===== WORKOUT SESSION =====
+const sessionFinished = ref(false);
+
 function startWorkoutSession(wo: any) {
+  sessionFinished.value = false;
   workoutSession.value = {
     id: wo.id,
     name: wo.name,
-    exercises: wo.exercises.map((ex: any) => ({
-      ...ex,
-      repsInput: ex.dailyLimit,
-      logged: false,
-      repsLogged: 0,
-      xpEarned: 0,
-      coinsEarned: 0
-    }))
+    exercises: wo.exercises.map((ex: any) => {
+      const localEx = exercises.value.find(e => e.id === ex.exerciseId);
+      const todayCount = localEx?.todayCount ?? 0;
+      const limit = localEx?.dailyLimit ?? ex.dailyLimit;
+      const remaining = Math.max(0, limit - todayCount);
+      const limitReached = remaining === 0;
+      return {
+        ...ex,
+        repsInput: remaining,
+        remaining,
+        limitReached,
+        logged: false,
+        skipped: limitReached,
+        repsLogged: 0,
+        xpEarned: 0,
+        coinsEarned: 0
+      };
+    })
   };
+}
+
+function finishWorkoutSession() {
+  sessionFinished.value = true;
 }
 
 function closeWorkoutSession() {
   workoutSession.value = null;
-  loadExercises(); // todayCounts aktualisieren
+  sessionFinished.value = false;
+  loadExercises();
 }
 
 const sessionCompletedCount = computed(() => 
-  workoutSession.value?.exercises.filter((e: any) => e.logged).length ?? 0
+  workoutSession.value?.exercises.filter((e: any) => e.logged || e.skipped).length ?? 0
+);
+const sessionActiveCount = computed(() =>
+  workoutSession.value?.exercises.filter((e: any) => !e.skipped).length ?? 0
+);
+const sessionSkippedCount = computed(() =>
+  workoutSession.value?.exercises.filter((e: any) => e.skipped).length ?? 0
 );
 const sessionProgressPercent = computed(() => {
   if (!workoutSession.value) return 0;
@@ -1288,5 +1378,179 @@ const handleExerciseSubmit = async (data: any) => {
 .start-workout-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+}
+
+/* ===== Limit & Skipped States ===== */
+.session-limit-notice {
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #fbbf24;
+  text-align: center;
+}
+
+.session-exercise-item.session-skipped {
+  opacity: 0.5;
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.session-limit-badge {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.session-remaining-hint {
+  font-size: 11px;
+  color: #fbbf24;
+  white-space: nowrap;
+}
+
+/* ===== Finish Screen ===== */
+.session-finish-screen {
+  text-align: center;
+  padding: 16px 0;
+}
+
+.finish-icon {
+  font-size: 64px;
+  margin-bottom: 8px;
+  animation: finishBounce 0.6s ease;
+}
+
+@keyframes finishBounce {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.finish-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 4px;
+}
+
+.finish-subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 24px;
+}
+
+.finish-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 24px;
+}
+
+.finish-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 16px;
+  padding: 20px 28px;
+  min-width: 120px;
+}
+
+.finish-stat-icon {
+  font-size: 28px;
+}
+
+.finish-stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ec4899, #facc15);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.finish-stat-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+
+.finish-details {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.finish-detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 6px 0;
+}
+
+.finish-detail-skipped {
+  color: #fbbf24;
+}
+
+.finish-exercises {
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.finish-exercise-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.finish-exercise-row:last-child {
+  border-bottom: none;
+}
+
+.finish-ex-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+}
+
+.finish-ex-reward {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.finish-ex-skipped {
+  font-size: 12px;
+  color: rgba(251, 191, 36, 0.7);
+  font-style: italic;
+}
+
+.finish-close-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #ec4899, #a855f7);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.finish-close-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
 }
 </style>
