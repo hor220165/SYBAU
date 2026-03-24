@@ -56,6 +56,9 @@ const getCategory = (shopItem: item): ShopDisplayItem['category'] => {
 };
 
 const getRarity = (shopItem: item): ShopDisplayItem['rarity'] => {
+  // Rarity aus Backend nutzen wenn vorhanden
+  if (shopItem.rarity) return shopItem.rarity;
+
   const searchBase = `${shopItem.name} ${shopItem.description}`.toLowerCase();
 
   if (/legend|legendary|mythic/.test(searchBase) || shopItem.price >= 1200 || shopItem.xpBoostPercentage >= 100) {

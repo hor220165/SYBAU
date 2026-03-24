@@ -277,7 +277,7 @@ function mapBooster(b: any): BoosterItem {
     xpBoost: xp,
     coinBoost: coin,
     boostValue: xp + coin,
-    rarity: getRarity(xp, coin),
+    rarity: b.rarity ?? getRarity(xp, coin),
     quantity: b.quantity ?? 1
   };
 }
