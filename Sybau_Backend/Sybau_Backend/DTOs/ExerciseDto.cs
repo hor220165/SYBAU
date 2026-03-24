@@ -12,4 +12,9 @@ public class ExerciseDto
     public double XpPerRep { get; set; }
     public int DailyLimit { get; set; }
     public int TodayCount { get; set; }
+
+    // Nur bei Log-Response befüllt
+    public int? XpEarned { get; set; }
+    public int? BonusXp { get; set; }
+    public int? BoostPercent { get; set; }
 }

@@ -161,6 +161,36 @@ public class WorkoutService
         };
     }
 
+    /// <summary>
+    /// Berechnet den Gesamt-Boost-Prozentsatz aller equippten Booster eines Users.
+    /// </summary>
+    public async Task<int> GetEquippedBoostPercentAsync(int userId)
+    {
+        var avatar = await _context.Avatars
+            .Where(a => a.UserId == userId)
+            .Select(a => new { a.Boost1, a.Boost2, a.Boost3, a.Boost4 })
+            .FirstOrDefaultAsync();
+
+        if (avatar == null) return 0;
+
+        var slotNames = new[] { avatar.Boost1, avatar.Boost2, avatar.Boost3, avatar.Boost4 }
+            .Where(n => !string.IsNullOrEmpty(n))
+            .ToList();
+
+        if (slotNames.Count == 0) return 0;
+
+        // Lade die XpBoostPercent-Werte der Items nach Name
+        var boosterValues = await _context.Items
+            .Where(i => i.Type == ItemType.Booster && slotNames.Contains(i.Name))
+            .Select(i => new { i.Name, i.XpBoostPercent })
+            .ToListAsync();
+
+        var lookup = boosterValues.ToDictionary(b => b.Name, b => b.XpBoostPercent);
+
+        // Jeden Slot einzeln aufsummieren (gleicher Booster in 2 Slots = doppelt)
+        return slotNames.Sum(name => lookup.GetValueOrDefault(name, 0));
+    }
+
     public async Task<ExerciseDto?> LogExerciseAsync(int userId, int exerciseId, int reps)
     {
         if (reps < 1) throw new ArgumentOutOfRangeException(nameof(reps));
@@ -183,8 +213,12 @@ public class WorkoutService
         _context.UserExerciseLogs.Add(log);
         await _context.SaveChangesAsync();
 
-        // XP vergeben
-        var totalXp = (int)Math.Round(exercise.XpPerRep * reps);
+        // XP berechnen mit Booster-Boost
+        var baseXp = (int)Math.Round(exercise.XpPerRep * reps);
+        var boostPercent = await GetEquippedBoostPercentAsync(userId);
+        var bonusXp = (int)Math.Round(baseXp * boostPercent / 100.0);
+        var totalXp = baseXp + bonusXp;
+
         if (totalXp > 0)
         {
             var userWithAvatar = await _context.Users
@@ -202,7 +236,10 @@ public class WorkoutService
             Difficulty = exercise.Difficulty,
             XpPerRep = exercise.XpPerRep,
             DailyLimit = exercise.DailyLimit,
-            TodayCount = todayTotal + reps
+            TodayCount = todayTotal + reps,
+            XpEarned = totalXp,
+            BonusXp = bonusXp,
+            BoostPercent = boostPercent
         };
     }
 }

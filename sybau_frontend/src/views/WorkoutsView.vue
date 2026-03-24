@@ -196,7 +196,14 @@ const handleExerciseSubmit = async (data: any) => {
   try {
     const res = await workoutService.logExercise(exercise.id, data.reps);
     exercise.todayCount = res.data.todayCount;
-    alert(`${data.exercise}: ${data.reps} Wiederholungen eingetragen! +${data.xp} XP gewonnen!`);
+    const xpEarned = res.data.xpEarned ?? 0;
+    const bonusXp = res.data.bonusXp ?? 0;
+    const boostPct = res.data.boostPercent ?? 0;
+    let msg = `${data.exercise}: ${data.reps} Wiederholungen eingetragen! +${xpEarned} XP`;
+    if (bonusXp > 0) {
+      msg += ` (davon +${bonusXp} Bonus durch ${boostPct}% Booster)`;
+    }
+    alert(msg);
   } catch (e: any) {
     const msg = e.response?.data || 'Fehler beim Eintragen';
     alert(msg);
