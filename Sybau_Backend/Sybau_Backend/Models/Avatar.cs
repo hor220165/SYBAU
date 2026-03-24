@@ -36,8 +36,8 @@ public class Avatar : BaseEntity<int>
     
 
     //Booster
-    public string? Boost1 { get; private set; }
-    public string? Boost2 { get; private set; }
-    public string? Boost3 { get; private set; }
-    public string? Boost4 { get; private set; }
+    public string? Boost1 { get; set; }
+    public string? Boost2 { get; set; }
+    public string? Boost3 { get; set; }
+    public string? Boost4 { get; set; }
 }
