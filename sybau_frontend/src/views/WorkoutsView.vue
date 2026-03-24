@@ -66,9 +66,35 @@
         <h3>Erstelle dein eigenes Workout</h3>
         <p>Kombiniere Übungen und verdiene Bonus-XP</p>
       </div>
-      <button class="create-btn">
+      <button class="create-btn" @click="showCreateWorkout = true">
         Workout erstellen
       </button>
+    </div>
+
+    <!-- Saved Workouts Section -->
+    <div v-if="workouts.length > 0" class="workouts-section">
+      <h2 class="section-title">Deine Workouts</h2>
+      <div class="workouts-grid">
+        <div v-for="wo in filteredWorkouts" :key="wo.id" class="workout-plan-card" @click="toggleWorkoutExpand(wo.id)">
+          <div class="workout-plan-header">
+            <div class="category-badge" :class="`category-${mapCategory(wo.category).toLowerCase()}`">
+              {{ mapCategory(wo.category) }}
+            </div>
+            <h3>{{ wo.name }}</h3>
+            <p v-if="wo.description" class="workout-plan-desc">{{ wo.description }}</p>
+          </div>
+          <div class="workout-plan-meta">
+            <span>💪 {{ wo.exercises?.length ?? 0 }} Übungen</span>
+            <span class="expand-icon">{{ expandedWorkout === wo.id ? '▲' : '▼' }}</span>
+          </div>
+          <div v-if="expandedWorkout === wo.id" class="workout-exercises-list">
+            <div v-for="ex in wo.exercises" :key="ex.exerciseId" class="workout-exercise-item">
+              <span class="exercise-name-label">{{ ex.exerciseName }}</span>
+              <span class="exercise-meta-label">{{ mapDifficulty(ex.difficulty) }} · Limit: {{ ex.dailyLimit }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -85,6 +111,52 @@
   />
    <!-- Footer -->
     <FooterComponent />
+
+  <!-- Create Workout Modal -->
+  <div v-if="showCreateWorkout" class="workout-modal-overlay" @click.self="showCreateWorkout = false">
+    <div class="create-workout-modal">
+      <div class="modal-header-cw">
+        <h2>Neues Workout erstellen</h2>
+        <button class="close-btn-cw" @click="showCreateWorkout = false">&times;</button>
+      </div>
+      <form @submit.prevent="handleCreateWorkout">
+        <div class="form-group-cw">
+          <label>Name</label>
+          <input v-model="newWorkout.name" type="text" required placeholder="z.B. Oberkörper Power">
+        </div>
+        <div class="form-group-cw">
+          <label>Beschreibung</label>
+          <input v-model="newWorkout.description" type="text" placeholder="Optional">
+        </div>
+        <div class="form-group-cw">
+          <label>Kategorie</label>
+          <select v-model.number="newWorkout.category" required>
+            <option value="" disabled>-- Wähle Kategorie --</option>
+            <option :value="0">Strength</option>
+            <option :value="1">Core</option>
+            <option :value="2">Cardio</option>
+            <option :value="3">Flexibility</option>
+          </select>
+        </div>
+        <div class="form-group-cw">
+          <label>Übungen</label>
+          <div v-for="(entry, idx) in newWorkout.exercises" :key="idx" class="exercise-row-cw">
+            <select v-model.number="entry.exerciseId" required>
+              <option value="0" disabled>-- Übung wählen --</option>
+              <option v-for="ex in exercises" :key="ex.id" :value="ex.id">{{ ex.name }}</option>
+            </select>
+            <input v-model.number="entry.dailyLimit" type="number" min="1" placeholder="Limit" class="limit-input-cw">
+            <button type="button" class="remove-btn-cw" @click="newWorkout.exercises.splice(idx, 1)" v-if="newWorkout.exercises.length > 1">✕</button>
+          </div>
+          <button type="button" class="add-exercise-btn" @click="newWorkout.exercises.push({ exerciseId: 0, dailyLimit: 50 })">+ Übung hinzufügen</button>
+        </div>
+        <div class="modal-actions-cw">
+          <button type="button" class="btn-cancel-cw" @click="showCreateWorkout = false">Abbrechen</button>
+          <button type="submit" class="btn-create-cw">Erstellen</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -141,8 +213,20 @@ interface ExerciseLocal {
 }
 
 const exercises = ref<ExerciseLocal[]>([]);
+const workouts = ref<any[]>([]);
+const showCreateWorkout = ref(false);
+const expandedWorkout = ref<number | null>(null);
+const newWorkout = ref({
+  name: '',
+  description: '',
+  category: '' as number | '',
+  exercises: [{ exerciseId: 0, dailyLimit: 50 }] as { exerciseId: number; dailyLimit: number }[]
+});
 
-onMounted(() => loadExercises());
+onMounted(async () => {
+  await loadExercises();
+  await loadWorkouts();
+});
 
 // Stats berechnen
 const todayReps = computed(() => exercises.value.reduce((sum, e) => sum + e.todayCount, 0));
@@ -199,6 +283,50 @@ const filteredExercises = computed(() => {
   
   return exercises.value.filter(e => e.category === activeFilter.value);
 });
+
+const filteredWorkouts = computed(() => {
+  if (activeFilter.value === 'Alle') return workouts.value;
+  return workouts.value.filter(w => mapCategory(w.category) === activeFilter.value);
+});
+
+async function loadWorkouts() {
+  try {
+    const res = await workoutService.getWorkouts();
+    workouts.value = res.data ?? [];
+  } catch (e) {
+    console.error('Fehler beim Laden der Workouts', e);
+  }
+}
+
+function toggleWorkoutExpand(id: number) {
+  expandedWorkout.value = expandedWorkout.value === id ? null : id;
+}
+
+async function handleCreateWorkout() {
+  const validExercises = newWorkout.value.exercises.filter(e => e.exerciseId > 0);
+  if (validExercises.length === 0) {
+    alert('Bitte mindestens eine Übung hinzufügen');
+    return;
+  }
+  try {
+    await workoutService.createWorkout({
+      name: newWorkout.value.name,
+      description: newWorkout.value.description || null,
+      category: newWorkout.value.category,
+      exercises: validExercises
+    });
+    showCreateWorkout.value = false;
+    newWorkout.value = {
+      name: '',
+      description: '',
+      category: '',
+      exercises: [{ exerciseId: 0, dailyLimit: 50 }]
+    };
+    await loadWorkouts();
+  } catch (err: any) {
+    alert(err.response?.data || 'Fehler beim Erstellen des Workouts');
+  }
+}
 
 const logExercise = (exercise: any) => {
   selectedExercise.value = exercise;
@@ -611,5 +739,239 @@ const handleExerciseSubmit = async (data: any) => {
     padding: 12px 24px;
     font-size: 14px;
   }
+}
+
+/* Workouts Section */
+.workouts-section {
+  margin-top: 48px;
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 24px 0;
+}
+
+.workout-plan-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.workout-plan-card:hover {
+  border-color: rgba(168, 85, 247, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.workout-plan-header h3 {
+  margin: 10px 0 4px;
+  font-size: 18px;
+  color: white;
+}
+
+.workout-plan-desc {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 8px;
+}
+
+.workout-plan-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 8px;
+}
+
+.expand-icon {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.workout-exercises-list {
+  margin-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workout-exercise-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.exercise-name-label {
+  font-weight: 600;
+  color: white;
+  font-size: 14px;
+}
+
+.exercise-meta-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Create Workout Modal */
+.workout-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.create-workout-modal {
+  background: #1e293b;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 20px;
+  padding: 32px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  color: white;
+}
+
+.modal-header-cw {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.modal-header-cw h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.close-btn-cw {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.form-group-cw {
+  margin-bottom: 20px;
+}
+
+.form-group-cw label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
+}
+
+.form-group-cw input,
+.form-group-cw select {
+  width: 100%;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: white;
+  font-size: 14px;
+}
+
+.form-group-cw input:focus,
+.form-group-cw select:focus {
+  outline: none;
+  border-color: rgba(168, 85, 247, 0.5);
+}
+
+.exercise-row-cw {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.exercise-row-cw select {
+  flex: 2;
+  padding: 10px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+}
+
+.limit-input-cw {
+  flex: 0 0 80px !important;
+  width: 80px !important;
+}
+
+.remove-btn-cw {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.add-exercise-btn {
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px dashed rgba(168, 85, 247, 0.4);
+  color: #c4b5fd;
+  border-radius: 10px;
+  padding: 10px;
+  width: 100%;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.modal-actions-cw {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.btn-cancel-cw {
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-create-cw {
+  padding: 12px 28px;
+  background: linear-gradient(135deg, #ec4899, #a855f7);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-create-cw:hover {
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.4);
 }
 </style>
