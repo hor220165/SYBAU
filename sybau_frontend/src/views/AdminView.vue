@@ -31,6 +31,18 @@
         >
           👥 Benutzer
         </button>
+        <button 
+          :class="['tab-btn', { active: activeTab === 'exercises' }]"
+          @click="activeTab = 'exercises'"
+        >
+          💪 Übungen
+        </button>
+        <button 
+          :class="['tab-btn', { active: activeTab === 'workouts' }]"
+          @click="activeTab = 'workouts'"
+        >
+          🏋️ Workouts
+        </button>
       </div>
 
       <!-- Content Sections -->
@@ -235,6 +247,10 @@
                   <label>XP Boost % (optional)</label>
                   <input v-model.number="shopItemForm.xpBoostPercentage" type="number" min="0" max="100">
                 </div>
+                <div class="form-group">
+                  <label>Coin Boost % (optional)</label>
+                  <input v-model.number="shopItemForm.coinBoostPercentage" type="number" min="0" max="100">
+                </div>
               </div>
               <div class="form-actions">
                 <button type="submit" class="btn-primary">Speichern</button>
@@ -262,13 +278,160 @@
                   <span>💰 {{ item.price }} Münzen</span>
                   <span>📦 {{ item.type }}</span>
                   <span v-if="item.xpBoostPercentage > 0">⚡ +{{ item.xpBoostPercentage }}% XP</span>
+                  <span v-if="item.coinBoostPercentage > 0">💎 +{{ item.coinBoostPercentage }}% Coins</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        
+        <!-- Exercises Tab -->
+        <div v-if="activeTab === 'exercises'" class="tab-panel">
+          <div class="section-header">
+            <h2>Übungen Management</h2>
+            <button class="btn-primary" @click="openExerciseForm">+ Neue Übung</button>
+          </div>
+
+          <!-- Exercise Form -->
+          <div v-if="showExerciseForm" class="form-container">
+            <h3>Neue Übung erstellen</h3>
+            <form @submit.prevent="saveExercise">
+              <div class="form-group">
+                <label>Name</label>
+                <input v-model="exerciseForm.name" type="text" required placeholder="z.B. Liegestütze">
+              </div>
+              <div class="form-group">
+                <label>Beschreibung</label>
+                <textarea v-model="exerciseForm.description" placeholder="Beschreibe die Übung..."></textarea>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Kategorie</label>
+                  <select v-model.number="exerciseForm.category" required>
+                    <option value="">-- Wähle Kategorie --</option>
+                    <option :value="0">Strength</option>
+                    <option :value="1">Core</option>
+                    <option :value="2">Cardio</option>
+                    <option :value="3">Flexibility</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Schwierigkeit</label>
+                  <select v-model.number="exerciseForm.difficulty" required>
+                    <option value="">-- Wähle Schwierigkeit --</option>
+                    <option :value="0">Easy</option>
+                    <option :value="1">Medium</option>
+                    <option :value="2">Hard</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>XP pro Rep</label>
+                  <input v-model.number="exerciseForm.xpPerRep" type="number" required min="0" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label>Tägliches Limit</label>
+                  <input v-model.number="exerciseForm.dailyLimit" type="number" required min="1">
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn-primary">Speichern</button>
+                <button type="button" class="btn-secondary" @click="showExerciseForm = false">Abbrechen</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Exercises List -->
+          <div class="list-container">
+            <div v-if="exercises.length === 0" class="empty-state">
+              <p>Keine Übungen vorhanden</p>
+            </div>
+            <div v-else class="items-grid">
+              <div v-for="ex in exercises" :key="ex.id" class="card exercise-card">
+                <div class="card-header">
+                  <h4>{{ ex.name }}</h4>
+                </div>
+                <p class="description">{{ ex.description }}</p>
+                <div class="card-stats">
+                  <span>📂 {{ categoryLabels[ex.category] ?? ex.category }}</span>
+                  <span>📊 {{ difficultyLabels[ex.difficulty] ?? ex.difficulty }}</span>
+                  <span>⭐ {{ ex.xpPerRep }} XP/Rep</span>
+                  <span>🔄 Limit: {{ ex.dailyLimit }}/Tag</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Workouts Tab -->
+        <div v-if="activeTab === 'workouts'" class="tab-panel">
+          <div class="section-header">
+            <h2>Workout Management</h2>
+            <button class="btn-primary" @click="openWorkoutForm">+ Neues Workout</button>
+          </div>
+
+          <!-- Workout Form -->
+          <div v-if="showWorkoutForm" class="form-container">
+            <h3>Neues Workout erstellen</h3>
+            <form @submit.prevent="saveWorkout">
+              <div class="form-group">
+                <label>Name</label>
+                <input v-model="workoutForm.name" type="text" required placeholder="z.B. Oberkörper Power">
+              </div>
+              <div class="form-group">
+                <label>Beschreibung</label>
+                <textarea v-model="workoutForm.description" placeholder="Beschreibe das Workout..."></textarea>
+              </div>
+              <div class="form-group">
+                <label>Kategorie</label>
+                <select v-model.number="workoutForm.category" required>
+                  <option value="">-- Wähle Kategorie --</option>
+                  <option :value="0">Strength</option>
+                  <option :value="1">Core</option>
+                  <option :value="2">Cardio</option>
+                  <option :value="3">Flexibility</option>
+                </select>
+              </div>
+
+              <!-- Exercise Selection -->
+              <div class="form-group">
+                <label>Übungen hinzufügen</label>
+                <div v-for="(we, index) in workoutForm.exercises" :key="index" class="workout-exercise-row">
+                  <select v-model.number="we.exerciseId" required>
+                    <option value="">-- Übung wählen --</option>
+                    <option v-for="ex in exercises" :key="ex.id" :value="ex.id">{{ ex.name }}</option>
+                  </select>
+                  <input v-model.number="we.dailyLimit" type="number" min="1" placeholder="Limit" class="small-input">
+                  <button type="button" class="btn-icon btn-danger" @click="workoutForm.exercises.splice(index, 1)">🗑️</button>
+                </div>
+                <button type="button" class="btn-secondary" @click="workoutForm.exercises.push({ exerciseId: 0, dailyLimit: 50 })">+ Übung hinzufügen</button>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-primary">Speichern</button>
+                <button type="button" class="btn-secondary" @click="showWorkoutForm = false">Abbrechen</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Workouts List -->
+          <div class="list-container">
+            <div v-if="workouts.length === 0" class="empty-state">
+              <p>Keine Workouts vorhanden</p>
+            </div>
+            <div v-else class="items-grid">
+              <div v-for="wo in workouts" :key="wo.id" class="card workout-card">
+                <div class="card-header">
+                  <h4>{{ wo.name }}</h4>
+                </div>
+                <p class="description">{{ wo.description }}</p>
+                <div class="card-stats">
+                  <span>📂 {{ categoryLabels[wo.category] ?? wo.category }}</span>
+                  <span>💪 {{ wo.exercises?.length ?? 0 }} Übungen</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
       <!-- Status Messages -->
       <div v-if="statusMessage" :class="['status-message', statusType]">
@@ -290,7 +453,7 @@ import type { item } from '@/models/Item';
 import type { user } from '@/models/User';
 
 // State
-const activeTab = ref<'challenges' | 'shop' | 'users'>('challenges');
+const activeTab = ref<'challenges' | 'shop' | 'users' | 'exercises' | 'workouts'>('challenges');
 
 // Status Messages
 const statusMessage = ref('');
@@ -316,9 +479,35 @@ const shopItemForm = ref({
   description: '',
   price: 0,
   type: '',
-  xpBoostPercentage: 0
+  xpBoostPercentage: 0,
+  coinBoostPercentage: 0
 });
 const shopItems = ref<item[]>([]);
+
+// Exercise Management
+const showExerciseForm = ref(false);
+const exerciseForm = ref({
+  name: '',
+  description: '',
+  category: '' as number | '',
+  difficulty: '' as number | '',
+  xpPerRep: 1,
+  dailyLimit: 200
+});
+const exercises = ref<any[]>([]);
+
+// Workout Management
+const showWorkoutForm = ref(false);
+const workoutForm = ref({
+  name: '',
+  description: '',
+  category: '' as number | '',
+  exercises: [{ exerciseId: 0, dailyLimit: 50 }] as { exerciseId: number; dailyLimit: number }[]
+});
+const workouts = ref<any[]>([]);
+
+const categoryLabels: Record<number, string> = { 0: 'Strength', 1: 'Core', 2: 'Cardio', 3: 'Flexibility' };
+const difficultyLabels: Record<number, string> = { 0: 'Easy', 1: 'Medium', 2: 'Hard' };
 
 // User Management
 const userSearchQuery = ref('');
@@ -348,7 +537,11 @@ const {
   getAllUsers,
   updateUserRole,
   updateUser,
-  deleteUserApi
+  deleteUserApi,
+  getAllExercises,
+  createExercise,
+  getAllWorkouts,
+  createWorkout
 } = useAdmin();
 
 const showMessage = (message: string, type: 'success' | 'error' = 'success') => {
@@ -429,7 +622,8 @@ const openShopForm = () => {
     description: '',
     price: 0,
     type: '',
-    xpBoostPercentage: 0
+    xpBoostPercentage: 0,
+    coinBoostPercentage: 0
   };
   showShopForm.value = true;
 };
@@ -543,11 +737,85 @@ const deleteUser = async (id: number) => {
   }
 };
 
+// ===== EXERCISES =====
+const openExerciseForm = () => {
+  exerciseForm.value = {
+    name: '',
+    description: '',
+    category: '',
+    difficulty: '',
+    xpPerRep: 1,
+    dailyLimit: 200
+  };
+  showExerciseForm.value = true;
+};
+
+const saveExercise = async () => {
+  try {
+    await createExercise(exerciseForm.value as any);
+    showMessage('Übung erstellt! ✓');
+    showExerciseForm.value = false;
+    await loadExercises();
+  } catch (err: any) {
+    showMessage(err.message || 'Fehler beim Erstellen', 'error');
+  }
+};
+
+const loadExercises = async () => {
+  try {
+    const res = await getAllExercises();
+    exercises.value = res.data || res || [];
+  } catch (err) {
+    console.error('Fehler beim Laden der Übungen:', err);
+  }
+};
+
+// ===== WORKOUTS =====
+const openWorkoutForm = () => {
+  workoutForm.value = {
+    name: '',
+    description: '',
+    category: '',
+    exercises: [{ exerciseId: 0, dailyLimit: 50 }]
+  };
+  showWorkoutForm.value = true;
+};
+
+const saveWorkout = async () => {
+  try {
+    const validExercises = workoutForm.value.exercises.filter(e => e.exerciseId > 0);
+    if (validExercises.length === 0) {
+      showMessage('Bitte mindestens eine Übung hinzufügen', 'error');
+      return;
+    }
+    await createWorkout({
+      ...workoutForm.value,
+      exercises: validExercises
+    } as any);
+    showMessage('Workout erstellt! ✓');
+    showWorkoutForm.value = false;
+    await loadWorkouts();
+  } catch (err: any) {
+    showMessage(err.message || 'Fehler beim Erstellen', 'error');
+  }
+};
+
+const loadWorkouts = async () => {
+  try {
+    const res = await getAllWorkouts();
+    workouts.value = res.data || res || [];
+  } catch (err) {
+    console.error('Fehler beim Laden der Workouts:', err);
+  }
+};
+
 // Load data on mount
 onMounted(async () => {
   await loadChallenges();
   await loadShopItems();
   await loadUsers();
+  await loadExercises();
+  await loadWorkouts();
 });
 </script>
 
@@ -985,5 +1253,29 @@ onMounted(async () => {
   .col-coins::before { content: "Münzen: "; font-weight: 600; }
   .col-status::before { content: "Status: "; font-weight: 600; }
   .col-actions::before { content: "Aktionen: "; font-weight: 600; }
+}
+
+.workout-exercise-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.workout-exercise-row select {
+  flex: 2;
+  padding: 10px;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-size: 1em;
+}
+
+.workout-exercise-row .small-input {
+  flex: 1;
+  max-width: 100px;
+  padding: 10px;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-size: 1em;
 }
 </style>

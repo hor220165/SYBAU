@@ -204,15 +204,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Zap, TrendingUp, CircleDollarSign, Sparkles, ShoppingBag, Shield } from 'lucide-vue-next';
 import Header from '@/components/Header.vue';
 import Navbar from '@/components/Navbar.vue';
 import SpriteAnimator from '@/components/spriteAnimator.vue';
 import FooterComponent from '@/components/FooterComponent.vue';
-import { onMounted } from 'vue';
 import { userService } from '@/services/api';
+import { useAuth } from '@/composables/useAuth';
 
+const { refreshProfile } = useAuth();
 const userName = ref('');
 
 interface BoosterItem {
@@ -224,6 +225,7 @@ interface BoosterItem {
   coinBoost: number;
   boostValue: number;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  quantity: number;
 }
 
 interface EquipSlot {
@@ -239,49 +241,40 @@ const equipSlots = ref<EquipSlot[]>([
 ]);
 
 const selectingSlotFor = ref<BoosterItem | null>(null);
+const inventory = ref<BoosterItem[]>([]);
 
-const inventory = ref<BoosterItem[]>([
-  {
-    id: 1,
-    name: 'XP Surge',
-    icon: '⚡',
-    description: 'Erhöht deine XP-Einnahmen für alle Aktivitäten.',
-    xpBoost: 25,
-    coinBoost: 0,
-    boostValue: 25,
-    rarity: 'rare',
-  },
-  {
-    id: 2,
-    name: 'Gold Rush',
-    icon: '🪙',
-    description: 'Verdiene mehr Coins bei jeder Aktivität.',
-    xpBoost: 0,
-    coinBoost: 20,
-    boostValue: 20,
-    rarity: 'common',
-  },
-  {
-    id: 3,
-    name: 'Double Power',
-    icon: '🔥',
-    description: 'Boosted sowohl XP als auch Coins gleichzeitig.',
-    xpBoost: 15,
-    coinBoost: 15,
-    boostValue: 30,
-    rarity: 'epic',
-  },
-  {
-    id: 4,
-    name: 'Lucky Charm',
-    icon: '🍀',
-    description: 'Ein seltener Glücksbringer mit starkem Coin-Boost.',
-    xpBoost: 5,
-    coinBoost: 30,
-    boostValue: 35,
-    rarity: 'legendary',
-  },
-]);
+// Rarity basierend auf Gesamt-Boost ableiten
+function getRarity(xp: number, coin: number): 'common' | 'rare' | 'epic' | 'legendary' {
+  const total = xp + coin;
+  if (total >= 60) return 'legendary';
+  if (total >= 40) return 'epic';
+  if (total >= 20) return 'rare';
+  return 'common';
+}
+
+// Icon basierend auf Boost-Typ ableiten
+function getIcon(xp: number, coin: number): string {
+  if (xp > 0 && coin > 0) return '🔥';
+  if (coin > 0) return '🪙';
+  return '⚡';
+}
+
+// Backend-Booster in Frontend-Format umwandeln
+function mapBooster(b: any): BoosterItem {
+  const xp = b.xpBoostPercentage ?? 0;
+  const coin = b.coinBoostPercentage ?? 0;
+  return {
+    id: b.id,
+    name: b.name,
+    icon: getIcon(xp, coin),
+    description: b.description ?? '',
+    xpBoost: xp,
+    coinBoost: coin,
+    boostValue: xp + coin,
+    rarity: getRarity(xp, coin),
+    quantity: b.quantity ?? 1
+  };
+}
 
 const availableBoosters = computed(() => inventory.value);
 
@@ -296,33 +289,78 @@ const totalCoinBoost = computed(() =>
 const isEquipped = (id: number) =>
   equipSlots.value.some(s => s.item?.id === id);
 
+// Verfügbare Anzahl (Quantity minus bereits in anderen Slots equippt)
+function availableQuantity(booster: BoosterItem): number {
+  const usedInOtherSlots = equipSlots.value.filter(
+    (s, idx) => s.item?.id === booster.id && idx !== (selectingSlotFor.value ? equipSlots.value.findIndex((_, i) => selectingSlotFor.value !== null) : -1)
+  ).length;
+  return booster.quantity - usedInOtherSlots;
+}
+
 const startEquip = (booster: BoosterItem) => {
   selectingSlotFor.value = booster;
 };
 
-const handleSlotClick = (slotIndex: number) => {
+const handleSlotClick = async (slotIndex: number) => {
   if (slotIndex < 0 || slotIndex >= equipSlots.value.length) return;
-  
+
   if (selectingSlotFor.value) {
+    // Booster in Slot setzen
     equipSlots.value[slotIndex]!.item = selectingSlotFor.value;
     selectingSlotFor.value = null;
+    await saveSlots();
   } else if (equipSlots.value[slotIndex]!.item) {
+    // Slot leeren
     equipSlots.value[slotIndex]!.item = null;
+    await saveSlots();
   }
 };
 
-const unequipBoosterById = (id: number) => {
+const unequipBoosterById = async (id: number) => {
   const slot = equipSlots.value.find(s => s.item?.id === id);
-  if (slot) slot.item = null;
+  if (slot) {
+    slot.item = null;
+    await saveSlots();
+  }
 };
+
+async function saveSlots() {
+  const slots = equipSlots.value.map(s => s.item?.id ?? null);
+  try {
+    await userService.updateBoostSlots(slots);
+    await refreshProfile();
+  } catch (e) {
+    console.error('Fehler beim Speichern der Booster-Slots', e);
+  }
+}
 
 async function loadProfile() {
   try {
     const res = await userService.getProfile();
     const data = res.data ?? {};
     userName.value = data.userName ?? '';
+
+    // Booster-Inventar laden
+    await loadOwnedBoosters();
+
+    // Equippte Slots aus Profil wiederherstellen
+    const avatar = data.avatar ?? {};
+    const slotNames = [avatar.boost1, avatar.boost2, avatar.boost3, avatar.boost4];
+    equipSlots.value = slotNames.map((name: string | null) => ({
+      label: 'Booster',
+      item: name ? inventory.value.find(b => b.name === name) ?? null : null
+    }));
   } catch (e) {
     console.error('Fehler beim Laden des Profils', e);
+  }
+}
+
+async function loadOwnedBoosters() {
+  try {
+    const res = await userService.getUserBoosters();
+    inventory.value = (res.data ?? []).map(mapBooster);
+  } catch (e) {
+    console.error('Fehler beim Laden der Booster', e);
   }
 }
 

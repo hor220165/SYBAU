@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { authService } from '@/services/api';
+import { authService, userService } from '@/services/api';
 
 const user = ref<any>(null);
 
@@ -11,6 +11,15 @@ export function useAuth() {
 
    const refreshUser = () => {
     loadUserFromStorage();
+  };
+
+  const refreshProfile = async () => {
+    try {
+      const res = await userService.getProfile();
+      user.value = JSON.parse(localStorage.getItem('user') || '{}');
+    } catch (e) {
+      console.error('Fehler beim Aktualisieren des Profils', e);
+    }
   };
 
   loadUserFromStorage();
@@ -46,5 +55,5 @@ export function useAuth() {
     user.value = null;
   };
 
-  return { user, login, register, logout, refreshUser };
+  return { user, login, register, logout, refreshUser, refreshProfile };
 }

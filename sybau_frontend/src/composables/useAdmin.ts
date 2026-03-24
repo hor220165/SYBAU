@@ -15,6 +15,23 @@ export interface CreateShopItemDto {
   price: number;
   type: string;
   xpBoostPercentage?: number;
+  coinBoostPercentage?: number;
+}
+
+export interface CreateExerciseDto {
+  name: string;
+  description?: string;
+  category: number;
+  difficulty: number;
+  xpPerRep: number;
+  dailyLimit: number;
+}
+
+export interface CreateWorkoutDto {
+  name: string;
+  description?: string;
+  category: number;
+  exercises: { exerciseId: number; dailyLimit: number }[];
 }
 
 export interface UpdateUserDto {
@@ -198,6 +215,64 @@ export const useAdmin = () => {
     }
   };
 
+  // ===== EXERCISE MANAGEMENT =====
+  const getAllExercises = async () => {
+    isLoading.value = true;
+    error.value = '';
+    try {
+      const response = await API.get('/workouts/exercises');
+      return response.data;
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Fehler beim Laden der Übungen';
+      throw new Error(error.value);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const createExercise = async (data: CreateExerciseDto) => {
+    isLoading.value = true;
+    error.value = '';
+    try {
+      const response = await API.post('/workouts/exercises', data);
+      return response.data;
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Fehler beim Erstellen der Übung';
+      throw new Error(error.value);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  // ===== WORKOUT MANAGEMENT =====
+  const getAllWorkouts = async () => {
+    isLoading.value = true;
+    error.value = '';
+    try {
+      const response = await API.get('/workouts');
+      return response.data;
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Fehler beim Laden der Workouts';
+      throw new Error(error.value);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const createWorkout = async (data: CreateWorkoutDto) => {
+    isLoading.value = true;
+    error.value = '';
+    try {
+      const response = await API.post('/workouts', data);
+      return response.data;
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Fehler beim Erstellen des Workouts';
+      throw new Error(error.value);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   // ===== USER STATISTICS =====
   const getUserStats = async (userId: number) => {
     isLoading.value = true;
@@ -231,6 +306,12 @@ export const useAdmin = () => {
     updateUserRole,
     updateUser,
     deleteUserApi,
-    getUserStats
+    getUserStats,
+    // Exercises
+    getAllExercises,
+    createExercise,
+    // Workouts
+    getAllWorkouts,
+    createWorkout
   };
 };

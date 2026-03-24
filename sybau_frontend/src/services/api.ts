@@ -122,7 +122,8 @@ export const workoutService = {
     getWorkouts: (category?: string) => API.get('/workouts', { params: category ? { category } : {} }),
     getWorkoutById: (id: number) => API.get(`/workouts/${id}`),
     createWorkout: (data: any) => API.post('/workouts', data),
-    createExercise: (data: any) => API.post('/workouts/exercises', data)
+    createExercise: (data: any) => API.post('/workouts/exercises', data),
+    logExercise: (exerciseId: number, reps: number) => API.post('/workouts/exercises/log', { exerciseId, reps })
 };
 
 export default API;
