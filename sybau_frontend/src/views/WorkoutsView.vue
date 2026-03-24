@@ -26,7 +26,7 @@
         </div>
         <div class="stat-card">
           <span class="stat-label">XP Heute</span>
-          <span class="stat-value">+490 XP</span>
+          <span class="stat-value">+{{ todayXp }} XP</span>
         </div>
       </div>
     </div>
@@ -104,140 +104,12 @@ const loading = ref(true);
 
 const filters = ['Alle', 'Cardio', 'Strength', 'Core', 'Flexibility'];
 
-// Dummy Data - Einzelne Übungen
-const exercises2 = ref([
-  {
-    id: 1,
-    name: 'Push-Ups',
-    description: 'Klassische Liegestütze',
-    category: 'Strength',
-    icon: '💪',
-    xpPerRep: 2,
-    dailyLimit: 200,
-    todayCount: 45,
-    difficulty: 'Medium' as const
-  },
-  {
-    id: 2,
-    name: 'Sit-Ups',
-    description: 'Bauchmuskeltraining',
-    category: 'Core',
-    icon: '🔥',
-    xpPerRep: 1,
-    dailyLimit: 300,
-    todayCount: 80,
-    difficulty: 'Easy' as const
-  },
-  {
-    id: 3,
-    name: 'Squats',
-    description: 'Kniebeugen',
-    category: 'Strength',
-    icon: '🦵',
-    xpPerRep: 2,
-    dailyLimit: 200,
-    todayCount: 60,
-    difficulty: 'Medium' as const
-  },
-  {
-    id: 4,
-    name: 'Burpees',
-    description: 'Ganzkörper-Übung',
-    category: 'Cardio',
-    icon: '⚡',
-    xpPerRep: 5,
-    dailyLimit: 100,
-    todayCount: 20,
-    difficulty: 'Hard' as const
-  },
-  {
-    id: 5,
-    name: 'Plank',
-    description: 'Unterarmstütz (in Sekunden)',
-    category: 'Core',
-    icon: '🧘',
-    xpPerRep: 0.5,
-    dailyLimit: 600,
-    todayCount: 120,
-    difficulty: 'Medium' as const
-  },
-  {
-    id: 6,
-    name: 'Pull-Ups',
-    description: 'Klimmzüge',
-    category: 'Strength',
-    icon: '🏋️',
-    xpPerRep: 5,
-    dailyLimit: 50,
-    todayCount: 15,
-    difficulty: 'Hard' as const
-  },
-  {
-    id: 7,
-    name: 'Jumping Jacks',
-    description: 'Hampelmänner',
-    category: 'Cardio',
-    icon: '🤸',
-    xpPerRep: 1,
-    dailyLimit: 500,
-    todayCount: 100,
-    difficulty: 'Easy' as const
-  },
-  {
-    id: 8,
-    name: 'Lunges',
-    description: 'Ausfallschritte',
-    category: 'Strength',
-    icon: '🚶',
-    xpPerRep: 2,
-    dailyLimit: 150,
-    todayCount: 40,
-    difficulty: 'Medium' as const
-  },
-  {
-    id: 9,
-    name: 'Mountain Climbers',
-    description: 'Bergsteiger',
-    category: 'Cardio',
-    icon: '⛰️',
-    xpPerRep: 1,
-    dailyLimit: 400,
-    todayCount: 150,
-    difficulty: 'Medium' as const
-  },
-  {
-    id: 10,
-    name: 'Leg Raises',
-    description: 'Beinheben',
-    category: 'Core',
-    icon: '🦿',
-    xpPerRep: 2,
-    dailyLimit: 200,
-    todayCount: 30,
-    difficulty: 'Medium' as const
-  }
-]);
-
 // Kategorie → Icon Mapping
 const categoryIcons: Record<string, string> = {
   Strength: '💪',
   Core: '🔥',
   Cardio: '⚡',
   Flexibility: '🧘'
-};
-
-// Difficulty → XP pro Wiederholung
-const difficultyXp: Record<string, number> = {
-  Easy: 1,
-  Medium: 2,
-  Hard: 5
-};
-
-// Difficulty → Standard Daily Limit
-const difficultyDailyLimit: Record<string, number> = {
-  Easy: 300,
-  Medium: 200,
-  Hard: 100
 };
 
 interface ExerciseLocal {
@@ -274,9 +146,9 @@ async function loadExercises() {
         description: e.description ?? '',
         category: cat,
         icon: categoryIcons[cat] ?? '🏋️',
-        xpPerRep: difficultyXp[diff] ?? 2,
-        dailyLimit: difficultyDailyLimit[diff] ?? 200,
-        todayCount: 0,
+        xpPerRep: e.xpPerRep ?? 1,
+        dailyLimit: e.dailyLimit ?? 200,
+        todayCount: e.todayCount ?? 0,
         difficulty: diff
       };
     });
@@ -317,17 +189,18 @@ const logExercise = (exercise: any) => {
   showModal.value = true;
 };
 
-const handleExerciseSubmit = (data: any) => {
-  console.log('Exercise logged:', data);
-  
-  // Update todayCount
+const handleExerciseSubmit = async (data: any) => {
   const exercise = exercises.value.find(e => e.name === data.exercise);
-  if (exercise) {
-    exercise.todayCount += data.reps;
+  if (!exercise) return;
+
+  try {
+    const res = await workoutService.logExercise(exercise.id, data.reps);
+    exercise.todayCount = res.data.todayCount;
+    alert(`${data.exercise}: ${data.reps} Wiederholungen eingetragen! +${data.xp} XP gewonnen!`);
+  } catch (e: any) {
+    const msg = e.response?.data || 'Fehler beim Eintragen';
+    alert(msg);
   }
-  
-  // TODO: Send to backend
-  alert(`${data.exercise}: ${data.reps} Wiederholungen eingetragen! +${data.xp} XP gewonnen!`);
 };
 </script>
 
