@@ -14,4 +14,5 @@ public class ItemDto
     public int XpBoostPercentage { get; set; }
     public int CoinBoostPercentage { get; set; }
     public int Quantity { get; set; }
+    public int MaxQuantity { get; set; }
 }

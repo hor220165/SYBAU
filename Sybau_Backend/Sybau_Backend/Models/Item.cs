@@ -31,5 +31,6 @@ public class Item : BaseEntity<int>
     public int Price { get; set; }
     public int XpBoostPercent { get; set; }
     public int CoinBoostPercent { get; set; }
+    public int MaxQuantity { get; set; } = 5;
     public ICollection<UserItem> UserItems { get; set; } = new List<UserItem>();
 }

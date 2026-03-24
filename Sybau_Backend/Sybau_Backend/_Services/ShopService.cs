@@ -32,6 +32,7 @@ public class ShopService
          if(dto == null)throw new ArgumentNullException(nameof(dto));
 
          var item = new Item(dto.Name,dto.Description,dto.Type,dto.Price,dto.XpBoostPercentage, dto.CoinBoostPercentage);
+         if (dto.MaxQuantity > 0) item.MaxQuantity = dto.MaxQuantity;
          
          _context.Items.Add(item);
          await _context.SaveChangesAsync();
@@ -39,27 +40,32 @@ public class ShopService
          return item;
     }
     
-    public async Task<bool> BuyItemAsync(int userId, int itemId)
+    public async Task<string?> BuyItemAsync(int userId, int itemId)
     {
         var user = await _context.Users
             .Include(u => u.UserItems)
             .ThenInclude(ui => ui.Item)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
-        if (user == null) return false;
+        if (user == null) return "Benutzer nicht gefunden";
 
         var item = await _context.Items.FindAsync(itemId);
-        if (item == null) return false;
+        if (item == null) return "Item nicht gefunden";
 
         // Coins prüfen
         if (user.Coins < item.Price)
-            return false;
-
-        // Coins abziehen
-        user.Coins -= item.Price;
+            return "Nicht genug Coins";
 
         // Prüfen ob User Item schon besitzt
         var userItem = user.UserItems.FirstOrDefault(ui => ui.Item.Id == itemId);
+
+        // Kauflimit prüfen
+        var currentQty = userItem?.Quantity ?? 0;
+        if (currentQty >= item.MaxQuantity)
+            return $"Limit erreicht! Du kannst maximal {item.MaxQuantity}x \"{item.Name}\" besitzen.";
+
+        // Coins abziehen
+        user.Coins -= item.Price;
 
         if (userItem == null)
         {
@@ -78,6 +84,6 @@ public class ShopService
         _context.UserCoins.Add(history);
 
         await _context.SaveChangesAsync();
-        return true;
+        return null; // null = Erfolg
     }
 }

@@ -52,7 +52,7 @@ namespace Sybau_Backend.Controllers
             var userId = int.Parse(userIdClaim);
             var result = await _shopService.BuyItemAsync(userId, itemId);
     
-            if (!result) return BadRequest("Kauf fehlgeschlagen");
+            if (result != null) return BadRequest(result);
             return Ok();
         }
 
