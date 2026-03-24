@@ -186,8 +186,8 @@ public class WorkoutService
 
         var lookup = boosterValues.ToDictionary(b => b.Name);
 
-        var xpBoost = slotNames.Sum(name => lookup.TryGetValue(name, out var v) ? v.XpBoostPercent : 0);
-        var coinBoost = slotNames.Sum(name => lookup.TryGetValue(name, out var v) ? v.CoinBoostPercent : 0);
+        var xpBoost = slotNames.Sum(name => name != null && lookup.TryGetValue(name, out var v) ? v.XpBoostPercent : 0);
+        var coinBoost = slotNames.Sum(name => name != null && lookup.TryGetValue(name, out var v) ? v.CoinBoostPercent : 0);
 
         return (xpBoost, coinBoost);
     }
@@ -222,8 +222,8 @@ public class WorkoutService
         var bonusXp = (int)Math.Round(baseXp * xpBoostPct / 100.0);
         var totalXp = baseXp + bonusXp;
 
-        // Coins berechnen: 1 Coin pro 10 Reps als Basis
-        var baseCoins = reps / 10;
+        // Coins berechnen: 1 Coin pro 10 Reps als Basis (mindestens 1 Coin)
+        var baseCoins = Math.Max(1, reps / 10);
         var bonusCoins = (int)Math.Round(baseCoins * coinBoostPct / 100.0);
         var totalCoins = baseCoins + bonusCoins;
 
