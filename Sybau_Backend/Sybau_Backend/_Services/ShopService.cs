@@ -31,7 +31,7 @@ public class ShopService
     {
          if(dto == null)throw new ArgumentNullException(nameof(dto));
 
-         var item = new Item(dto.Name,dto.Description,dto.Type,dto.Price,dto.XpBoostPercentage);
+         var item = new Item(dto.Name,dto.Description,dto.Type,dto.Price,dto.XpBoostPercentage, dto.CoinBoostPercentage);
          
          _context.Items.Add(item);
          await _context.SaveChangesAsync();

@@ -232,6 +232,7 @@ public class UserService
                 Type = g.First().Item.Type,
                 Price = g.First().Item.Price,
                 XpBoostPercentage = g.First().Item.XpBoostPercent,
+                CoinBoostPercentage = g.First().Item.CoinBoostPercent,
                 Quantity = g.Sum(ui => ui.Quantity)
             })
             .ToList();

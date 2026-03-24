@@ -17,4 +17,7 @@ public class ExerciseDto
     public int? XpEarned { get; set; }
     public int? BonusXp { get; set; }
     public int? BoostPercent { get; set; }
+    public int? CoinsEarned { get; set; }
+    public int? BonusCoins { get; set; }
+    public int? CoinBoostPercent { get; set; }
 }

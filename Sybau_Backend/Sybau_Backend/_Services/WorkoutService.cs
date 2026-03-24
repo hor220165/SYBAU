@@ -162,33 +162,34 @@ public class WorkoutService
     }
 
     /// <summary>
-    /// Berechnet den Gesamt-Boost-Prozentsatz aller equippten Booster eines Users.
+    /// Berechnet XP- und Coin-Boost-Prozentsatz aller equippten Booster eines Users.
     /// </summary>
-    public async Task<int> GetEquippedBoostPercentAsync(int userId)
+    public async Task<(int xpBoost, int coinBoost)> GetEquippedBoostsAsync(int userId)
     {
         var avatar = await _context.Avatars
             .Where(a => a.UserId == userId)
             .Select(a => new { a.Boost1, a.Boost2, a.Boost3, a.Boost4 })
             .FirstOrDefaultAsync();
 
-        if (avatar == null) return 0;
+        if (avatar == null) return (0, 0);
 
         var slotNames = new[] { avatar.Boost1, avatar.Boost2, avatar.Boost3, avatar.Boost4 }
             .Where(n => !string.IsNullOrEmpty(n))
             .ToList();
 
-        if (slotNames.Count == 0) return 0;
+        if (slotNames.Count == 0) return (0, 0);
 
-        // Lade die XpBoostPercent-Werte der Items nach Name
         var boosterValues = await _context.Items
             .Where(i => i.Type == ItemType.Booster && slotNames.Contains(i.Name))
-            .Select(i => new { i.Name, i.XpBoostPercent })
+            .Select(i => new { i.Name, i.XpBoostPercent, i.CoinBoostPercent })
             .ToListAsync();
 
-        var lookup = boosterValues.ToDictionary(b => b.Name, b => b.XpBoostPercent);
+        var lookup = boosterValues.ToDictionary(b => b.Name);
 
-        // Jeden Slot einzeln aufsummieren (gleicher Booster in 2 Slots = doppelt)
-        return slotNames.Sum(name => lookup.GetValueOrDefault(name, 0));
+        var xpBoost = slotNames.Sum(name => lookup.TryGetValue(name, out var v) ? v.XpBoostPercent : 0);
+        var coinBoost = slotNames.Sum(name => lookup.TryGetValue(name, out var v) ? v.CoinBoostPercent : 0);
+
+        return (xpBoost, coinBoost);
     }
 
     public async Task<ExerciseDto?> LogExerciseAsync(int userId, int exerciseId, int reps)
@@ -213,19 +214,28 @@ public class WorkoutService
         _context.UserExerciseLogs.Add(log);
         await _context.SaveChangesAsync();
 
+        // Boosts laden
+        var (xpBoostPct, coinBoostPct) = await GetEquippedBoostsAsync(userId);
+
         // XP berechnen mit Booster-Boost
         var baseXp = (int)Math.Round(exercise.XpPerRep * reps);
-        var boostPercent = await GetEquippedBoostPercentAsync(userId);
-        var bonusXp = (int)Math.Round(baseXp * boostPercent / 100.0);
+        var bonusXp = (int)Math.Round(baseXp * xpBoostPct / 100.0);
         var totalXp = baseXp + bonusXp;
 
+        // Coins berechnen: 1 Coin pro 10 Reps als Basis
+        var baseCoins = reps / 10;
+        var bonusCoins = (int)Math.Round(baseCoins * coinBoostPct / 100.0);
+        var totalCoins = baseCoins + bonusCoins;
+
+        var userWithAvatar = await _context.Users
+            .Include(u => u.Avatar)
+            .SingleAsync(u => u.Id == userId);
+
         if (totalXp > 0)
-        {
-            var userWithAvatar = await _context.Users
-                .Include(u => u.Avatar)
-                .SingleAsync(u => u.Id == userId);
             await _userService.AddXpAndHandleLevelUp(userWithAvatar, totalXp);
-        }
+
+        if (totalCoins > 0)
+            await _userService.AddCoinsAsync(userWithAvatar, totalCoins, $"Exercise: {exercise.Name}");
 
         return new ExerciseDto
         {
@@ -239,7 +249,10 @@ public class WorkoutService
             TodayCount = todayTotal + reps,
             XpEarned = totalXp,
             BonusXp = bonusXp,
-            BoostPercent = boostPercent
+            BoostPercent = xpBoostPct,
+            CoinsEarned = totalCoins,
+            BonusCoins = bonusCoins,
+            CoinBoostPercent = coinBoostPct
         };
     }
 }
