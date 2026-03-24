@@ -127,7 +127,7 @@
             <Sparkles :size="22" class="section-icon" />
             <h2>Inventar</h2>
           </div>
-          <span class="inventory-count">{{ availableBoosters.length }} verfügbar</span>
+          <span class="inventory-count">{{ inventory.reduce((sum, b) => sum + b.quantity, 0) }} Booster ({{ inventory.length }} verschiedene)</span>
         </div>
 
         <div v-if="availableBoosters.length === 0" class="empty-inventory">
@@ -152,6 +152,7 @@
               <div class="booster-card-top">
                 <div class="booster-icon-wrapper" :class="'rarity-icon-' + booster.rarity">
                   <span class="booster-icon">{{ booster.icon }}</span>
+                  <span v-if="booster.quantity > 1" class="booster-qty-badge">{{ booster.quantity }}x</span>
                 </div>
                 <div class="booster-meta">
                   <h3>{{ booster.name }}</h3>
@@ -172,19 +173,24 @@
                 </div>
               </div>
 
+              <!-- Quantity Anzeige -->
+              <div v-if="booster.quantity > 1" class="booster-qty-row">
+                <span class="booster-qty-label">{{ equippedCount(booster.id) }}/{{ booster.quantity }} ausgerüstet</span>
+              </div>
+
               <div class="booster-card-footer">
                 <span v-if="isEquipped(booster.id)" class="equipped-badge">
-                  <Shield :size="12" /> Ausgerüstet
+                  <Shield :size="12" /> {{ equippedCount(booster.id) }}x Ausgerüstet
                 </span>
                 <button
-                  v-if="!isEquipped(booster.id)"
+                  v-if="canEquipMore(booster)"
                   class="equip-btn"
                   @click="startEquip(booster)"
                 >
                   <Zap :size="14" /> Ausrüsten
                 </button>
                 <button
-                  v-else
+                  v-if="isEquipped(booster.id)"
                   class="unequip-btn"
                   @click="unequipBoosterById(booster.id)"
                 >
@@ -286,15 +292,16 @@ const totalCoinBoost = computed(() =>
   equipSlots.value.reduce((sum, slot) => sum + (slot.item?.coinBoost ?? 0), 0)
 );
 
-const isEquipped = (id: number) =>
-  equipSlots.value.some(s => s.item?.id === id);
+// Wie oft ist dieser Booster aktuell in Slots?
+function equippedCount(id: number): number {
+  return equipSlots.value.filter(s => s.item?.id === id).length;
+}
 
-// Verfügbare Anzahl (Quantity minus bereits in anderen Slots equippt)
-function availableQuantity(booster: BoosterItem): number {
-  const usedInOtherSlots = equipSlots.value.filter(
-    (s, idx) => s.item?.id === booster.id && idx !== (selectingSlotFor.value ? equipSlots.value.findIndex((_, i) => selectingSlotFor.value !== null) : -1)
-  ).length;
-  return booster.quantity - usedInOtherSlots;
+const isEquipped = (id: number) => equippedCount(id) > 0;
+
+// Kann noch in weitere Slots?
+function canEquipMore(booster: BoosterItem): boolean {
+  return booster.quantity > equippedCount(booster.id);
 }
 
 const startEquip = (booster: BoosterItem) => {
@@ -915,6 +922,7 @@ onMounted(() => loadProfile());
 }
 
 .booster-icon-wrapper {
+  position: relative;
   width: 48px;
   height: 48px;
   border-radius: 12px;
@@ -1088,6 +1096,35 @@ onMounted(() => loadProfile());
   background: rgba(239, 68, 68, 0.12);
   border-color: rgba(239, 68, 68, 0.35);
   color: #f87171;
+}
+
+.booster-qty-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 999px;
+  line-height: 1.2;
+  box-shadow: 0 2px 6px rgba(236, 72, 153, 0.4);
+}
+
+.booster-qty-row {
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+
+.booster-qty-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(168, 85, 247, 0.8);
+  background: rgba(168, 85, 247, 0.1);
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(168, 85, 247, 0.2);
 }
 
 /* ══════════════════════════════
