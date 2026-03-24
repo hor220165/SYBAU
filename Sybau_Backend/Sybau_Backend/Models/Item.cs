@@ -9,7 +9,7 @@ public class Item : BaseEntity<int>
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 
-    public Item(string name, string description, ItemType type, int price, int xpBoostPercent, int coinBoostPercent = 0)
+    public Item(string name, string description, ItemType type, int price, int xpBoostPercent, int coinBoostPercent = 0, ItemRarity rarity = ItemRarity.Common)
     {
         if(string.IsNullOrWhiteSpace(name)) throw new ArgumentNullException(nameof(name));
         if(string.IsNullOrWhiteSpace(description)) throw new ArgumentNullException(nameof(description));
@@ -22,6 +22,7 @@ public class Item : BaseEntity<int>
         Price = price;
         XpBoostPercent = xpBoostPercent;
         CoinBoostPercent = coinBoostPercent;
+        Rarity = rarity;
     }
     
     public string Name { get; set; }
@@ -31,6 +32,7 @@ public class Item : BaseEntity<int>
     public int Price { get; set; }
     public int XpBoostPercent { get; set; }
     public int CoinBoostPercent { get; set; }
+    public ItemRarity Rarity { get; set; } = ItemRarity.Common;
     public int MaxQuantity { get; set; } = 5;
     public ICollection<UserItem> UserItems { get; set; } = new List<UserItem>();
 }

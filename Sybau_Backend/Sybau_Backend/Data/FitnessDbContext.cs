@@ -56,6 +56,7 @@ public class FitnessDbContext:DbContext
         modelBuilder.Entity<Item>(entity =>
         {
             entity.Property(e => e.Type).HasConversion<string>();
+            entity.Property(e => e.Rarity).HasConversion<string>();
         });
 
         //Workout - Exercise Many-to-Many mit Tageslimit

@@ -31,7 +31,7 @@ public class ShopService
     {
          if(dto == null)throw new ArgumentNullException(nameof(dto));
 
-         var item = new Item(dto.Name,dto.Description,dto.Type,dto.Price,dto.XpBoostPercentage, dto.CoinBoostPercentage);
+         var item = new Item(dto.Name,dto.Description,dto.Type,dto.Price,dto.XpBoostPercentage, dto.CoinBoostPercentage, dto.Rarity);
          if (dto.MaxQuantity > 0) item.MaxQuantity = dto.MaxQuantity;
          
          _context.Items.Add(item);

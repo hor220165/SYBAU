@@ -13,6 +13,8 @@ public class ItemDto
     public int Price { get; set; }
     public int XpBoostPercentage { get; set; }
     public int CoinBoostPercentage { get; set; }
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public ItemRarity Rarity { get; set; }
     public int Quantity { get; set; }
     public int MaxQuantity { get; set; }
 }

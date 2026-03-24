@@ -233,6 +233,7 @@ public class UserService
                 Price = g.First().Item.Price,
                 XpBoostPercentage = g.First().Item.XpBoostPercent,
                 CoinBoostPercentage = g.First().Item.CoinBoostPercent,
+                Rarity = g.First().Item.Rarity,
                 Quantity = g.Sum(ui => ui.Quantity)
             })
             .ToList();
