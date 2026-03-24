@@ -16,7 +16,19 @@ export function useAuth() {
   const refreshProfile = async () => {
     try {
       const res = await userService.getProfile();
-      user.value = JSON.parse(localStorage.getItem('user') || '{}');
+      // getProfile speichert bereits in localStorage, jetzt user.value direkt updaten
+      user.value = res.data ? {
+        id: res.data.id,
+        userName: res.data.userName,
+        email: res.data.email,
+        coins: res.data.coins,
+        isAdmin: res.data.isAdmin,
+        avatar: {
+          bodyStage: res.data.avatar?.bodyStage,
+          level: res.data.avatar?.level,
+          experience: res.data.avatar?.experience
+        }
+      } : JSON.parse(localStorage.getItem('user') || '{}');
     } catch (e) {
       console.error('Fehler beim Aktualisieren des Profils', e);
     }
