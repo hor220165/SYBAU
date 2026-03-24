@@ -95,6 +95,9 @@ import WorkoutCard from '@/components/WorkoutCard.vue';
 import ExerciseModal from '@/components/WorkoutPopup.vue';
 import FooterComponent from '@/components/FooterComponent.vue';
 import { workoutService } from '@/services/api';
+import { useAuth } from '@/composables/useAuth';
+
+const { refreshProfile } = useAuth();
 
 const activeFilter = ref('Alle');
 const showModal = ref(false);
@@ -159,9 +162,9 @@ async function loadExercises() {
         description: e.description ?? '',
         category: cat,
         icon: categoryIcons[cat] ?? '🏋️',
-        xpPerRep: difficultyXp[diff] ?? 2,
-        dailyLimit: difficultyDailyLimit[diff] ?? 200,
-        todayCount: 0,
+        xpPerRep: e.xpPerRep ?? difficultyXp[diff] ?? 2,
+        dailyLimit: e.dailyLimit ?? difficultyDailyLimit[diff] ?? 200,
+        todayCount: e.todayCount ?? 0,
         difficulty: diff
       };
     });
@@ -202,17 +205,33 @@ const logExercise = (exercise: any) => {
   showModal.value = true;
 };
 
-const handleExerciseSubmit = (data: any) => {
-  console.log('Exercise logged:', data);
-  
-  // Update todayCount
+const handleExerciseSubmit = async (data: any) => {
   const exercise = exercises.value.find(e => e.name === data.exercise);
-  if (exercise) {
+  if (!exercise) return;
+
+  try {
+    const res = await workoutService.logExercise(exercise.id, data.reps);
+    const result = res.data;
+
+    // Update lokalen todayCount
     exercise.todayCount += data.reps;
+
+    // Zeige echte XP/Coin-Ergebnisse vom Backend
+    let msg = `${data.exercise}: ${data.reps} Reps eingetragen!\n`;
+    msg += `+${result.xpEarned ?? data.xp} XP`;
+    if (result.bonusXp > 0) msg += ` (+${result.bonusXp} Bonus, ${result.boostPercent}% Boost)`;
+    if (result.coinsEarned > 0) {
+      msg += `\n+${result.coinsEarned} Coins`;
+      if (result.bonusCoins > 0) msg += ` (+${result.bonusCoins} Bonus, ${result.coinBoostPercent}% Boost)`;
+    }
+    alert(msg);
+
+    // Header aktualisieren (Level, XP, Coins)
+    await refreshProfile();
+  } catch (err: any) {
+    const errorMsg = err.response?.data || 'Fehler beim Eintragen';
+    alert(errorMsg);
   }
-  
-  // TODO: Send to backend
-  alert(`${data.exercise}: ${data.reps} Wiederholungen eingetragen! +${data.xp} XP gewonnen!`);
 };
 </script>
 
