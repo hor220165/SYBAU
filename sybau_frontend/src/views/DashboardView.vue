@@ -13,14 +13,14 @@
         <div class="avatar-row">
 
           <div class="equipment-slots left">
-            <div class="equip-slot">
+            <div class="equip-slot" @click="router.push('/avatar')">
               <div class="equip-slot-inner empty">
                 <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
                 <span class="equip-name">Booster</span>
                 <span class="equip-empty">Leer</span>
               </div>
             </div>
-            <div class="equip-slot">
+            <div class="equip-slot" @click="router.push('/avatar')">
               <div class="equip-slot-inner empty">
                 <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
                 <span class="equip-name">Booster</span>
@@ -45,14 +45,14 @@
           </div>
 
           <div class="equipment-slots right">
-            <div class="equip-slot">
+            <div class="equip-slot" @click="router.push('/avatar')">
               <div class="equip-slot-inner empty">
                 <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
                 <span class="equip-name">Booster</span>
                 <span class="equip-empty">Leer</span>
               </div>
             </div>
-            <div class="equip-slot">
+            <div class="equip-slot" @click="router.push('/avatar')">
               <div class="equip-slot-inner empty">
                 <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
                 <span class="equip-name">Booster</span>
@@ -162,6 +162,7 @@ import { onMounted, ref, computed } from 'vue';
 import { userService } from '@/services/api';
 import FooterComponent from "@/components/FooterComponent.vue";
 import { useLeaderboard } from '@/composables/useLeaderboard';
+import { useRouter } from 'vue-router';
 
 const userName = ref('');
 const email = ref('');
@@ -169,6 +170,11 @@ const coins = ref(0);
 const level = ref(1);
 const currentXp = ref(0);
 const xpForNextLevel = ref(1000);
+const router = useRouter();
+
+const goToAvatar = () => {
+  router.push('/avatar');
+};
 
 const progressPercent = computed(() => {
   const denom = xpForNextLevel.value || 1;

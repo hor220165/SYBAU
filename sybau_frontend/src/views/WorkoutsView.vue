@@ -457,7 +457,7 @@ const handleExerciseSubmit = (data: any) => {
   padding: 14px 32px;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.8), rgba(168, 85, 247, 0.8));
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
   color: white;
   font-weight: 600;
   font-size: 16px;
@@ -471,8 +471,7 @@ const handleExerciseSubmit = (data: any) => {
 
 .create-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(236, 72, 153, 0.4);
-  background: linear-gradient(135deg, rgba(236, 72, 153, 1), rgba(168, 85, 247, 1));
+  box-shadow: 0 6px 16px rgba(236, 72, 153, 0.4);
 }
 
 /* Responsive */
