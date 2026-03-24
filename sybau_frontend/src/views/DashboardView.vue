@@ -13,18 +13,18 @@
         <div class="avatar-row">
 
           <div class="equipment-slots left">
-            <div class="equip-slot" @click="router.push('/avatar')">
-              <div class="equip-slot-inner empty">
-                <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
-                <span class="equip-name">Booster</span>
-                <span class="equip-empty">Leer</span>
-              </div>
-            </div>
-            <div class="equip-slot" @click="router.push('/avatar')">
-              <div class="equip-slot-inner empty">
-                <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
-                <span class="equip-name">Booster</span>
-                <span class="equip-empty">Leer</span>
+            <div class="equip-slot" v-for="slotIdx in [0, 1]" :key="slotIdx" @click="router.push('/avatar')">
+              <div class="equip-slot-inner" :class="{ empty: !boostSlots[slotIdx], equipped: !!boostSlots[slotIdx] }">
+                <template v-if="boostSlots[slotIdx]">
+                  <div class="equip-item-icon">⚡</div>
+                  <span class="equip-name">{{ boostSlots[slotIdx]!.name }}</span>
+                  <span class="equip-badge">+{{ boostSlots[slotIdx]!.xpBoostPercentage || boostSlots[slotIdx]!.coinBoostPercentage || 0 }}%</span>
+                </template>
+                <template v-else>
+                  <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
+                  <span class="equip-name">Booster</span>
+                  <span class="equip-empty">Leer</span>
+                </template>
               </div>
             </div>
           </div>
@@ -45,18 +45,18 @@
           </div>
 
           <div class="equipment-slots right">
-            <div class="equip-slot" @click="router.push('/avatar')">
-              <div class="equip-slot-inner empty">
-                <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
-                <span class="equip-name">Booster</span>
-                <span class="equip-empty">Leer</span>
-              </div>
-            </div>
-            <div class="equip-slot" @click="router.push('/avatar')">
-              <div class="equip-slot-inner empty">
-                <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
-                <span class="equip-name">Booster</span>
-                <span class="equip-empty">Leer</span>
+            <div class="equip-slot" v-for="slotIdx in [2, 3]" :key="slotIdx" @click="router.push('/avatar')">
+              <div class="equip-slot-inner" :class="{ empty: !boostSlots[slotIdx], equipped: !!boostSlots[slotIdx] }">
+                <template v-if="boostSlots[slotIdx]">
+                  <div class="equip-item-icon">⚡</div>
+                  <span class="equip-name">{{ boostSlots[slotIdx]!.name }}</span>
+                  <span class="equip-badge">+{{ boostSlots[slotIdx]!.xpBoostPercentage || boostSlots[slotIdx]!.coinBoostPercentage || 0 }}%</span>
+                </template>
+                <template v-else>
+                  <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
+                  <span class="equip-name">Booster</span>
+                  <span class="equip-empty">Leer</span>
+                </template>
               </div>
             </div>
           </div>
@@ -728,6 +728,21 @@ onMounted(() => loadProfile());
   font-size: 8px;
   font-weight: 700;
   color: rgba(168, 85, 247, 0.9);
+  letter-spacing: 0.5px;
+}
+
+.equip-item-icon {
+  font-size: 22px;
+  filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.6));
+}
+
+.equip-badge {
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(168, 85, 247, 0.95);
+  background: rgba(168, 85, 247, 0.15);
+  padding: 2px 6px;
+  border-radius: 8px;
   letter-spacing: 0.5px;
 }
 
