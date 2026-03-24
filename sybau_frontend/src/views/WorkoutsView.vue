@@ -92,6 +92,9 @@
               <span class="exercise-name-label">{{ ex.exerciseName }}</span>
               <span class="exercise-meta-label">{{ mapDifficulty(ex.difficulty) }} · Limit: {{ ex.dailyLimit }}</span>
             </div>
+            <button class="start-workout-btn" @click.stop="startWorkoutSession(wo)">
+              🏋️ Workout starten
+            </button>
           </div>
         </div>
       </div>
@@ -157,6 +160,68 @@
       </form>
     </div>
   </div>
+
+  <!-- Workout Session Modal -->
+  <div v-if="workoutSession" class="workout-modal-overlay" @click.self="closeWorkoutSession">
+    <div class="create-workout-modal workout-session-modal">
+      <div class="modal-header-cw">
+        <h2>{{ workoutSession.name }}</h2>
+        <button class="close-btn-cw" @click="closeWorkoutSession">&times;</button>
+      </div>
+
+      <div class="session-exercises">
+        <div v-for="(ex, idx) in workoutSession.exercises" :key="ex.exerciseId" 
+             class="session-exercise-item" :class="{ 'session-done': ex.logged }">
+          <div class="session-exercise-info">
+            <span class="session-exercise-num">{{ Number(idx) + 1 }}</span>
+            <div>
+              <span class="session-exercise-name">{{ ex.exerciseName }}</span>
+              <span class="session-exercise-detail">{{ mapDifficulty(ex.difficulty) }} · Limit: {{ ex.dailyLimit }}</span>
+            </div>
+          </div>
+          <div class="session-exercise-action">
+            <template v-if="ex.logged">
+              <span class="session-check">✅ {{ ex.repsLogged }} Reps</span>
+              <span class="session-reward">+{{ ex.xpEarned }} XP · +{{ ex.coinsEarned }} 💰</span>
+            </template>
+            <template v-else>
+              <input v-model.number="ex.repsInput" type="number" min="1" :max="ex.dailyLimit" 
+                     placeholder="Reps" class="session-reps-input">
+              <button class="session-log-btn" @click="logWorkoutExercise(ex)" :disabled="!ex.repsInput || ex.repsInput < 1">
+                Eintragen
+              </button>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- Session Summary -->
+      <div class="session-summary">
+        <div class="session-summary-row">
+          <span>Fortschritt</span>
+          <span>{{ sessionCompletedCount }} / {{ workoutSession.exercises.length }} Übungen</span>
+        </div>
+        <div class="session-progress-bar">
+          <div class="session-progress-fill" :style="{ width: sessionProgressPercent + '%' }"></div>
+        </div>
+        <div class="session-summary-row">
+          <span>⭐ Gesamt XP</span>
+          <span class="session-total-xp">+{{ sessionTotalXp }}</span>
+        </div>
+        <div class="session-summary-row">
+          <span>💰 Gesamt Coins</span>
+          <span class="session-total-coins">+{{ sessionTotalCoins }}</span>
+        </div>
+      </div>
+
+      <div class="modal-actions-cw">
+        <button class="btn-cancel-cw" @click="closeWorkoutSession">Schließen</button>
+        <button v-if="sessionCompletedCount === workoutSession.exercises.length" class="btn-create-cw" @click="closeWorkoutSession">
+          🎉 Workout abgeschlossen!
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -216,6 +281,7 @@ const exercises = ref<ExerciseLocal[]>([]);
 const workouts = ref<any[]>([]);
 const showCreateWorkout = ref(false);
 const expandedWorkout = ref<number | null>(null);
+const workoutSession = ref<any>(null);
 const newWorkout = ref({
   name: '',
   description: '',
@@ -325,6 +391,61 @@ async function handleCreateWorkout() {
     await loadWorkouts();
   } catch (err: any) {
     alert(err.response?.data || 'Fehler beim Erstellen des Workouts');
+  }
+}
+
+// ===== WORKOUT SESSION =====
+function startWorkoutSession(wo: any) {
+  workoutSession.value = {
+    id: wo.id,
+    name: wo.name,
+    exercises: wo.exercises.map((ex: any) => ({
+      ...ex,
+      repsInput: ex.dailyLimit,
+      logged: false,
+      repsLogged: 0,
+      xpEarned: 0,
+      coinsEarned: 0
+    }))
+  };
+}
+
+function closeWorkoutSession() {
+  workoutSession.value = null;
+  loadExercises(); // todayCounts aktualisieren
+}
+
+const sessionCompletedCount = computed(() => 
+  workoutSession.value?.exercises.filter((e: any) => e.logged).length ?? 0
+);
+const sessionProgressPercent = computed(() => {
+  if (!workoutSession.value) return 0;
+  return Math.round((sessionCompletedCount.value / workoutSession.value.exercises.length) * 100);
+});
+const sessionTotalXp = computed(() => 
+  workoutSession.value?.exercises.reduce((sum: number, e: any) => sum + (e.xpEarned ?? 0), 0) ?? 0
+);
+const sessionTotalCoins = computed(() => 
+  workoutSession.value?.exercises.reduce((sum: number, e: any) => sum + (e.coinsEarned ?? 0), 0) ?? 0
+);
+
+async function logWorkoutExercise(ex: any) {
+  if (!ex.repsInput || ex.repsInput < 1) return;
+  try {
+    const res = await workoutService.logExercise(ex.exerciseId, ex.repsInput);
+    const result = res.data;
+    ex.logged = true;
+    ex.repsLogged = ex.repsInput;
+    ex.xpEarned = (result.xpEarned ?? 0) + (result.bonusXp ?? 0);
+    ex.coinsEarned = (result.coinsEarned ?? 0) + (result.bonusCoins ?? 0);
+
+    // Lokalen Exercise-Counter auch updaten
+    const localEx = exercises.value.find(e => e.id === ex.exerciseId);
+    if (localEx) localEx.todayCount += ex.repsInput;
+
+    await refreshProfile();
+  } catch (err: any) {
+    alert(err.response?.data || 'Fehler beim Eintragen');
   }
 }
 
@@ -973,5 +1094,199 @@ const handleExerciseSubmit = async (data: any) => {
 
 .btn-create-cw:hover {
   box-shadow: 0 4px 16px rgba(168, 85, 247, 0.4);
+}
+
+/* ===== Workout Session Modal ===== */
+.workout-session-modal {
+  max-width: 560px;
+}
+
+.session-exercises {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.session-exercise-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.session-exercise-item.session-done {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.session-exercise-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #c4b5fd;
+  flex-shrink: 0;
+}
+
+.session-done .session-exercise-num {
+  background: rgba(34, 197, 94, 0.25);
+  border-color: rgba(34, 197, 94, 0.5);
+  color: #86efac;
+}
+
+.session-exercise-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.session-exercise-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: white;
+}
+
+.session-exercise-detail {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 2px;
+}
+
+.session-exercise-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.session-reps-input {
+  width: 70px;
+  padding: 8px 10px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  text-align: center;
+}
+
+.session-reps-input:focus {
+  outline: none;
+  border-color: rgba(168, 85, 247, 0.5);
+}
+
+.session-log-btn {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #ec4899, #a855f7);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.session-log-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.session-log-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+}
+
+.session-check {
+  color: #22c55e;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.session-reward {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 4px;
+  text-align: right;
+}
+
+.session-reward span {
+  margin-left: 8px;
+}
+
+.session-summary {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.session-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.session-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.session-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ec4899, #a855f7);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.session-total-xp {
+  color: #facc15;
+  font-weight: 700;
+}
+
+.session-total-coins {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.start-workout-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #ec4899, #a855f7);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.start-workout-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
 }
 </style>
