@@ -117,4 +117,12 @@ export const adminService = {
     deleteUser: (id: number) => API.delete(`/admin/users/${id}`)
 };
 
+export const workoutService = {
+    getExercises: (category?: string) => API.get('/workouts/exercises', { params: category ? { category } : {} }),
+    getWorkouts: (category?: string) => API.get('/workouts', { params: category ? { category } : {} }),
+    getWorkoutById: (id: number) => API.get(`/workouts/${id}`),
+    createWorkout: (data: any) => API.post('/workouts', data),
+    createExercise: (data: any) => API.post('/workouts/exercises', data)
+};
+
 export default API;

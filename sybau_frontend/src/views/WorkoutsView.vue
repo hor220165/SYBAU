@@ -15,11 +15,14 @@
       <div class="stats-grid">
         <div class="stat-card">
           <span class="stat-label">Heute</span>
-          <span class="stat-value">245 Wiederholungen</span>
+          <span class="stat-value">167 Wiederholungen</span>
+          <!---<span class="stat-value">{{ todayReps }} Wiederholungen</span>-->
         </div>
         <div class="stat-card">
           <span class="stat-label">Diese Woche</span>
           <span class="stat-value">1,832 Wiederholungen</span>
+         <!--- <span class="stat-label">Übungen</span>
+          <span class="stat-value">{{ exercises.length }} verfügbar</span>--> 
         </div>
         <div class="stat-card">
           <span class="stat-label">XP Heute</span>
@@ -86,21 +89,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import Header from '@/components/Header.vue';
 import Navbar from '@/components/Navbar.vue';
 import WorkoutCard from '@/components/WorkoutCard.vue';
 import ExerciseModal from '@/components/WorkoutPopup.vue';
 import FooterComponent from '@/components/FooterComponent.vue';
+import { workoutService } from '@/services/api';
 
 const activeFilter = ref('Alle');
 const showModal = ref(false);
 const selectedExercise = ref<any>(null);
+const loading = ref(true);
 
 const filters = ['Alle', 'Cardio', 'Strength', 'Core', 'Flexibility'];
 
 // Dummy Data - Einzelne Übungen
-const exercises = ref([
+const exercises2 = ref([
   {
     id: 1,
     name: 'Push-Ups',
@@ -212,6 +217,92 @@ const exercises = ref([
     difficulty: 'Medium' as const
   }
 ]);
+
+// Kategorie → Icon Mapping
+const categoryIcons: Record<string, string> = {
+  Strength: '💪',
+  Core: '🔥',
+  Cardio: '⚡',
+  Flexibility: '🧘'
+};
+
+// Difficulty → XP pro Wiederholung
+const difficultyXp: Record<string, number> = {
+  Easy: 1,
+  Medium: 2,
+  Hard: 5
+};
+
+// Difficulty → Standard Daily Limit
+const difficultyDailyLimit: Record<string, number> = {
+  Easy: 300,
+  Medium: 200,
+  Hard: 100
+};
+
+interface ExerciseLocal {
+  id: number;
+  name: string;
+  description: string;
+  category: string;
+  icon: string;
+  xpPerRep: number;
+  dailyLimit: number;
+  todayCount: number;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+}
+
+const exercises = ref<ExerciseLocal[]>([]);
+
+onMounted(() => loadExercises());
+
+// Stats berechnen
+const todayReps = computed(() => exercises.value.reduce((sum, e) => sum + e.todayCount, 0));
+const todayXp = computed(() => exercises.value.reduce((sum, e) => sum + (e.todayCount * e.xpPerRep), 0));
+
+async function loadExercises() {
+  loading.value = true;
+  try {
+    const res = await workoutService.getExercises();
+    const data = res.data ?? [];
+    exercises.value = data.map((e: any) => {
+      const diff = mapDifficulty(e.difficulty);
+      const cat = mapCategory(e.category);
+      return {
+        id: e.id,
+        name: e.name,
+        description: e.description ?? '',
+        category: cat,
+        icon: categoryIcons[cat] ?? '🏋️',
+        xpPerRep: difficultyXp[diff] ?? 2,
+        dailyLimit: difficultyDailyLimit[diff] ?? 200,
+        todayCount: 0,
+        difficulty: diff
+      };
+    });
+  } catch (e) {
+    console.error('Fehler beim Laden der Übungen', e);
+  }
+  loading.value = false;
+}
+
+// Backend gibt Enums als camelCase Strings zurück (z.B. "easy", "strength")
+function mapDifficulty(val: any): 'Easy' | 'Medium' | 'Hard' {
+  const s = String(val).toLowerCase();
+  if (s === 'easy') return 'Easy';
+  if (s === 'hard') return 'Hard';
+  return 'Medium';
+}
+
+function mapCategory(val: any): string {
+  const s = String(val).toLowerCase();
+  if (s === 'strength') return 'Strength';
+  if (s === 'core') return 'Core';
+  if (s === 'cardio') return 'Cardio';
+  if (s === 'flexibility') return 'Flexibility';
+  return 'Strength';
+}
+
 
 const filteredExercises = computed(() => {
   if (activeFilter.value === 'Alle') {
