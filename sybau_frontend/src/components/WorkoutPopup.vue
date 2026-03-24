@@ -37,6 +37,14 @@
         </div>
       </div>
 
+      <!-- Coin Preview -->
+      <div class="xp-preview coin-preview">
+        <span>Münzen-Gewinn</span>
+        <div class="xp-amount coin-amount">
+          💰 +{{ coinGain }}
+        </div>
+      </div>
+
       <!-- Actions -->
       <div class="modal-actions">
         <button class="action-btn secondary" @click="$emit('close')">
@@ -71,6 +79,7 @@ const count = ref(0);
 
 const remaining = computed(() => Math.max(0, props.dailyLimit - props.todayCount));
 const xpGain = computed(() => Math.round(count.value * props.xpPerRep));
+const coinGain = computed(() => count.value > 0 ? Math.max(1, Math.floor(count.value / 10)) : 0);
 
 const increaseCount = (amount: number) => {
   const newCount = count.value + amount;
@@ -265,6 +274,17 @@ watch(() => props.isOpen, (isOpen) => {
 .xp-amount svg {
   color: #fbbf24;
 }
+
+.coin-preview {
+  background: rgba(250, 204, 21, 0.1);
+  border-color: rgba(250, 204, 21, 0.2);
+  margin-top: -12px;
+}
+
+.coin-amount {
+  color: #facc15;
+}
+
 
 /* Actions */
 .modal-actions {
