@@ -14,6 +14,7 @@ import { useAuth } from '@/composables/useAuth';
 import MessagePopup from '@/components/MessagePopup.vue';
 
 const items = ref<ShopDisplayItem[]>([]);
+const ownedItems = ref<Record<number, number>>({});
 const currentCoins = ref(0);
 const loading = ref(false);
 const error = ref('');
@@ -128,6 +129,8 @@ const toDisplayItem = (shopItem: item): ShopDisplayItem => {
     rarity,
     icon: getIcon(category, rarity),
     highlights: buildHighlights(shopItem, category),
+    ownedQuantity: ownedItems.value[shopItem.id] ?? 0,
+    maxQuantity: (shopItem as any).maxQuantity ?? 5,
   };
 };
 
@@ -200,6 +203,11 @@ const buyItem = async (shopItem: ShopDisplayItem) => {
   await itemService.buyItem(shopItem.id);
   await loadProfile();
 
+  // Owned-Quantity lokal hochzählen
+  ownedItems.value[shopItem.id] = (ownedItems.value[shopItem.id] ?? 0) + 1;
+  // Items neu mappen damit Quantity aktualisiert wird
+  items.value = items.value.map(i => ({ ...i, ownedQuantity: ownedItems.value[i.id] ?? 0 }));
+
   popupType.value = "success";
   popupMessage.value = `${shopItem.name} gekauft! Verbleibende Coins: ${currentCoins.value}`;
 } catch (buyError: any) {
@@ -216,9 +224,24 @@ const buyItem = async (shopItem: ShopDisplayItem) => {
 
 };
 
+const loadOwnedItems = async () => {
+  try {
+    const res = await userService.getUserBoosters();
+    const boosters = res.data ?? [];
+    const map: Record<number, number> = {};
+    for (const b of boosters) {
+      map[b.id] = b.quantity ?? 1;
+    }
+    ownedItems.value = map;
+  } catch (e) {
+    console.warn('Inventar konnte nicht geladen werden', e);
+  }
+};
+
 const loadPageData = async () => {
   syncCoinsFromStorage();
   await loadProfile();
+  await loadOwnedItems();
   await loadShopItems();
 };
 

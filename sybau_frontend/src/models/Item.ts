@@ -8,6 +8,7 @@ export interface item{
     type: ItemType,
     xpBoostPercentage: number,
     coinBoostPercentage: number,
-    quantity?: number
+    quantity?: number,
+    maxQuantity?: number
 }
 

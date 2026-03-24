@@ -12,4 +12,6 @@ export interface ShopDisplayItem {
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   icon: string;
   highlights: string[];
+  ownedQuantity: number;
+  maxQuantity: number;
 }

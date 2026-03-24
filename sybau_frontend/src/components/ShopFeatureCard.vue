@@ -15,12 +15,19 @@ const emit = defineEmits<{
 }>();
 
 const canAfford = computed(() => props.currentCoins >= props.item.price);
+const limitReached = computed(() => props.item.ownedQuantity >= props.item.maxQuantity);
+const canBuy = computed(() => canAfford.value && !limitReached.value);
 </script>
 
 <template>
   <article class="feature-card" :class="[`rarity-${item.rarity}`]">
     <span v-if="badgeText" class="feature-badge">{{ badgeText }}</span>
 
+    <span v-if="item.ownedQuantity > 0" class="owned-badge"
+          :class="{ 'owned-badge-full': limitReached }">
+      {{ item.ownedQuantity }}/{{ item.maxQuantity }}
+    </span>
+    <span v-else class="owned-badge owned-badge-empty">0/{{ item.maxQuantity }}</span>
     <div class="feature-icon">{{ item.icon }}</div>
     <h4 class="feature-title">{{ item.name }}</h4>
     <p class="feature-description">{{ item.description }}</p>
@@ -32,12 +39,12 @@ const canAfford = computed(() => props.currentCoins >= props.item.price);
       </div>
       <button
         class="feature-buy-btn"
-        :class="{ disabled: !canAfford || busy }"
-        :disabled="!canAfford || busy"
+        :class="{ disabled: !canBuy || busy }"
+        :disabled="!canBuy || busy"
         @click="emit('buy', item)"
       >
         <ShoppingBag :size="16" />
-        {{ busy ? 'Kaufe...' : canAfford ? 'Jetzt kaufen' : 'Zu teuer' }}
+        {{ busy ? 'Kaufe...' : limitReached ? 'Max erreicht' : canAfford ? 'Jetzt kaufen' : 'Zu teuer' }}
       </button>
     </div>
   </article>
@@ -166,5 +173,31 @@ const canAfford = computed(() => props.currentCoins >= props.item.price);
   .feature-buy-btn {
     justify-content: center;
   }
+}
+
+.owned-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.18);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #86efac;
+  font-size: 0.76rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  z-index: 1;
+  position: relative;
+}
+
+.owned-badge-empty {
+  background: rgba(148, 163, 184, 0.1);
+  border-color: rgba(148, 163, 184, 0.25);
+  color: rgba(148, 163, 184, 0.6);
+}
+
+.owned-badge-full {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
 }
 </style>
