@@ -79,7 +79,9 @@ export const userService = {
     deleteAccount: () =>
         API.delete('/users/account'),
     updateBoostSlots: (slots: Array<number | null>) =>
-        API.put('/users/boosts/slots', { slots })
+        API.put('/users/boosts/slots', { slots }),
+    getUserBoosters: () =>
+        API.get('/users/boosts')
 };
 
 export const itemService = {
@@ -113,6 +115,14 @@ export const adminService = {
     updateUserRole: (id: number, data: any) => API.put(`/admin/users/${id}/role`, data),
     updateUser: (id: number, data: any) => API.put(`/admin/users/${id}`, data),
     deleteUser: (id: number) => API.delete(`/admin/users/${id}`)
+};
+
+export const workoutService = {
+    getExercises: (category?: string) => API.get('/workouts/exercises', { params: category ? { category } : {} }),
+    getWorkouts: (category?: string) => API.get('/workouts', { params: category ? { category } : {} }),
+    getWorkoutById: (id: number) => API.get(`/workouts/${id}`),
+    createWorkout: (data: any) => API.post('/workouts', data),
+    createExercise: (data: any) => API.post('/workouts/exercises', data)
 };
 
 export default API;

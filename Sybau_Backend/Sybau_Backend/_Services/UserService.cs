@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Sybau_Backend.Data;
 using Sybau_Backend.DTOs;
 using Sybau_Backend.Models;
+using Sybau_Backend.Models.Enums;
 
 namespace Sybau_Backend._Services;
 
@@ -211,6 +212,84 @@ public class UserService
 
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
+    }
+
+    // Gekaufte Booster-Items eines Users abrufen (mit Quantity, aggregiert)
+    public async Task<List<ItemDto>> GetUserBoostersAsync(int userId)
+    {
+        var userItems = await _context.UserItems
+            .Include(ui => ui.Item)
+            .Where(ui => ui.User.Id == userId && ui.Item.Type == ItemType.Booster)
+            .ToListAsync();
+
+        return userItems
+            .GroupBy(ui => ui.Item.Id)
+            .Select(g => new ItemDto
+            {
+                Id = g.First().Item.Id,
+                Name = g.First().Item.Name,
+                Description = g.First().Item.Description,
+                Type = g.First().Item.Type,
+                Price = g.First().Item.Price,
+                XpBoostPercentage = g.First().Item.XpBoostPercent,
+                Quantity = g.Sum(ui => ui.Quantity)
+            })
+            .ToList();
+    }
+
+    // Booster in Slots equippen
+    public async Task<bool> UpdateBoostSlotsAsync(int userId, List<int?> slots)
+    {
+        if (slots == null || slots.Count != 4)
+            return false;
+
+        var user = await _context.Users
+            .Include(u => u.Avatar)
+            .Include(u => u.UserItems)
+            .ThenInclude(ui => ui.Item)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user == null) return false;
+
+        // Prüfe ob der User die angegebenen Booster-Items besitzt UND genug Quantity hat
+        var ownedBoosters = user.UserItems
+            .Where(ui => ui.Item.Type == ItemType.Booster)
+            .GroupBy(ui => ui.Item.Id)
+            .ToDictionary(g => g.Key, g => g.Sum(ui => ui.Quantity));
+
+        // Zähle wie oft jede Item-ID in den Slots vorkommt
+        var slotCounts = slots
+            .Where(s => s.HasValue)
+            .GroupBy(s => s!.Value)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        foreach (var (itemId, requiredCount) in slotCounts)
+        {
+            if (!ownedBoosters.TryGetValue(itemId, out var ownedQty) || ownedQty < requiredCount)
+                return false; // User besitzt nicht genug Exemplare
+        }
+
+        // Item-Namen für die Slots auflösen
+        var itemIds = slots.Where(s => s.HasValue).Select(s => s!.Value).Distinct().ToList();
+        var items = await _context.Items
+            .Where(i => itemIds.Contains(i.Id) && i.Type == ItemType.Booster)
+            .ToDictionaryAsync(i => i.Id);
+
+        // Sicherstellen, dass alle IDs gültige Booster-Items sind
+        foreach (var slotItemId in slots)
+        {
+            if (slotItemId.HasValue && !items.ContainsKey(slotItemId.Value))
+                return false;
+        }
+
+        // Slots setzen (Name des Items als String)
+        user.Avatar.Boost1 = slots[0].HasValue ? items[slots[0].Value].Name : null;
+        user.Avatar.Boost2 = slots[1].HasValue ? items[slots[1].Value].Name : null;
+        user.Avatar.Boost3 = slots[2].HasValue ? items[slots[2].Value].Name : null;
+        user.Avatar.Boost4 = slots[3].HasValue ? items[slots[3].Value].Name : null;
+
+        await _context.SaveChangesAsync();
+        return true;
     }
 
 }

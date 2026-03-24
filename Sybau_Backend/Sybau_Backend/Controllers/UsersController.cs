@@ -206,6 +206,36 @@ namespace Sybau_Backend.Controllers
 
             return Ok(updatedAvatar);
         }
+        
+        // GET /users/boosts - Gekaufte Booster-Items des Users
+        [Authorize]
+        [HttpGet("boosts")]
+        public async Task<IActionResult> GetUserBoosters()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            var userId = int.Parse(userIdClaim);
+            var boosters = await _userService.GetUserBoostersAsync(userId);
+            return Ok(boosters);
+        }
+
+        // PUT /users/boosts/slots - Booster in Slots equippen
+        [Authorize]
+        [HttpPut("boosts/slots")]
+        public async Task<IActionResult> UpdateBoostSlots([FromBody] DTOs.UpdateBoostSlotsDto dto)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            var userId = int.Parse(userIdClaim);
+            var success = await _userService.UpdateBoostSlotsAsync(userId, dto.Slots);
+
+            if (!success)
+                return BadRequest("Ungültige Booster-Konfiguration. Prüfe ob du die Items besitzt.");
+
+            return Ok();
+        }
     }
 }
 

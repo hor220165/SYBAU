@@ -52,7 +52,7 @@
     </section>
 
     <!-- Features Section -->
-    <section class="features-section" ref="featuresSection">
+    <section class="features-section">
       <div class="container">
         <h2 class="section-title scroll-reveal">Warum SYBAU?</h2>
         <p class="section-subtitle scroll-reveal">Die perfekte Kombination aus Fitness und Gaming</p>
@@ -70,7 +70,7 @@
     </section>
 
     <!-- How It Works Section -->
-    <section class="how-section" ref="howSection">
+    <section class="how-section">
       <div class="container">
         <h2 class="section-title scroll-reveal">So funktioniert's</h2>
         <p class="section-subtitle scroll-reveal">In 3 einfachen Schritten zum Fitness-Champion</p>
@@ -146,9 +146,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const featuresSection = ref<HTMLElement | null>(null);
 const statsBox = ref<HTMLElement | null>(null);
-const howSection = ref<HTMLElement | null>(null);
 
 const stats = ref([
   { 
@@ -177,7 +175,7 @@ const stats = ref([
   }
 ]);
 
-const animatedStats = ref([0, 0, 0, 0]);
+const animatedStats = ref(['0', '0', '0', '0']);
 const statsAnimated = ref(false);
 
 const features = ref([

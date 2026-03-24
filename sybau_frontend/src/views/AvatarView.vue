@@ -301,11 +301,13 @@ const startEquip = (booster: BoosterItem) => {
 };
 
 const handleSlotClick = (slotIndex: number) => {
+  if (slotIndex < 0 || slotIndex >= equipSlots.value.length) return;
+  
   if (selectingSlotFor.value) {
-    equipSlots.value[slotIndex].item = selectingSlotFor.value;
+    equipSlots.value[slotIndex]!.item = selectingSlotFor.value;
     selectingSlotFor.value = null;
-  } else if (equipSlots.value[slotIndex].item) {
-    equipSlots.value[slotIndex].item = null;
+  } else if (equipSlots.value[slotIndex]!.item) {
+    equipSlots.value[slotIndex]!.item = null;
   }
 };
 

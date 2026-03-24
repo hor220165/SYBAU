@@ -149,6 +149,45 @@
       </div>
     </main>
 
+    <!-- Booster-Auswahl Modal -->
+    <Teleport to="body">
+      <div v-if="showBoostModal" class="boost-modal-overlay" @click.self="showBoostModal = false">
+        <div class="boost-modal">
+          <div class="boost-modal-header">
+            <h3>Booster auswählen — Slot {{ selectedSlotIndex + 1 }}</h3>
+            <button class="boost-modal-close" @click="showBoostModal = false">&times;</button>
+          </div>
+          <div class="boost-modal-body">
+            <div v-if="ownedBoosters.length === 0" class="boost-modal-empty">
+              Du besitzt noch keine Booster. Kaufe welche im Shop!
+            </div>
+            <div v-else class="boost-list">
+              <div
+                v-for="booster in ownedBoosters"
+                :key="booster.id"
+                :class="['boost-item', { 'boost-item-disabled': availableQuantity(booster) <= 0 }]"
+                @click="availableQuantity(booster) > 0 && equipBooster(booster)"
+              >
+                <div class="boost-item-icon">⚡</div>
+                <div class="boost-item-info">
+                  <span class="boost-item-name">{{ booster.name }}</span>
+                  <span class="boost-item-desc">+{{ booster.xpBoostPercentage }}% XP Boost</span>
+                </div>
+                <span class="boost-item-qty">{{ availableQuantity(booster) }}x</span>
+              </div>
+              <div class="boost-item boost-item-remove" @click="unequipSlot()" v-if="boostSlots[selectedSlotIndex]">
+                <div class="boost-item-icon">🗑️</div>
+                <div class="boost-item-info">
+                  <span class="boost-item-name">Slot leeren</span>
+                  <span class="boost-item-desc">Booster entfernen</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
     <FooterComponent />
   </div>
 </template>
@@ -159,6 +198,7 @@ import StatCard from "../components/StatCard.vue";
 import Navbar from "@/components/Navbar.vue";
 import Header from "@/components/Header.vue";
 import { onMounted, ref, computed } from 'vue';
+import type { item } from '@/models/Item';
 import { userService } from '@/services/api';
 import FooterComponent from "@/components/FooterComponent.vue";
 import { useLeaderboard } from '@/composables/useLeaderboard';
@@ -172,9 +212,11 @@ const currentXp = ref(0);
 const xpForNextLevel = ref(1000);
 const router = useRouter();
 
-const goToAvatar = () => {
-  router.push('/avatar');
-};
+// Booster State
+const boostSlots = ref<Array<item | null>>([null, null, null, null]);
+const ownedBoosters = ref<item[]>([]);
+const showBoostModal = ref(false);
+const selectedSlotIndex = ref(0);
 
 const progressPercent = computed(() => {
   const denom = xpForNextLevel.value || 1;
@@ -204,10 +246,62 @@ async function loadProfile() {
     level.value = avatar.level ?? 0;
     currentXp.value = avatar.experience ?? 0;
     xpForNextLevel.value = avatar.xpForNextLevel ?? 1000;
+
+    // Booster-Slots aus Profil laden und mit owned Boosters matchen
+    await loadOwnedBoosters();
+    const slotNames = [avatar.boost1, avatar.boost2, avatar.boost3, avatar.boost4];
+    boostSlots.value = slotNames.map((name: string | null) => {
+      if (!name) return null;
+      return ownedBoosters.value.find(b => b.name === name) ?? null;
+    });
   } catch (e) {
     console.error('Fehler beim Laden des Profils', e);
   }
   await loadLeaderboard();
+}
+
+async function loadOwnedBoosters() {
+  try {
+    const res = await userService.getUserBoosters();
+    ownedBoosters.value = res.data ?? [];
+  } catch (e) {
+    console.error('Fehler beim Laden der Booster', e);
+  }
+}
+
+// Berechne wie oft ein Booster schon in Slots verwendet wird (ohne den aktuellen Slot)
+function availableQuantity(booster: item): number {
+  const totalOwned = booster.quantity ?? 1;
+  const usedInOtherSlots = boostSlots.value.filter(
+    (b: item | null, idx: number) => b?.id === booster.id && idx !== selectedSlotIndex.value
+  ).length;
+  return totalOwned - usedInOtherSlots;
+}
+
+async function equipBooster(booster: item) {
+  const slots = boostSlots.value.map((b: item | null) => b?.id ?? null);
+  slots[selectedSlotIndex.value] = booster.id;
+
+  try {
+    await userService.updateBoostSlots(slots);
+    boostSlots.value[selectedSlotIndex.value] = booster;
+    showBoostModal.value = false;
+  } catch (e) {
+    console.error('Fehler beim Equippen des Boosters', e);
+  }
+}
+
+async function unequipSlot() {
+  const slots = boostSlots.value.map(b => b?.id ?? null);
+  slots[selectedSlotIndex.value] = null;
+
+  try {
+    await userService.updateBoostSlots(slots);
+    boostSlots.value[selectedSlotIndex.value] = null;
+    showBoostModal.value = false;
+  } catch (e) {
+    console.error('Fehler beim Entfernen des Boosters', e);
+  }
 }
 
 onMounted(() => loadProfile());
@@ -607,5 +701,167 @@ onMounted(() => loadProfile());
   .stats-bar-sep { display: none; }
   .stats-bar-item { padding: 0 10px; }
   .stats-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+}
+
+/* ══════════════════════════════
+   EQUIPPED SLOT
+══════════════════════════════ */
+.equip-slot-inner.equipped {
+  background: rgba(168, 85, 247, 0.12);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  backdrop-filter: blur(10px);
+}
+
+.equip-slot-inner.equipped:hover {
+  border-color: rgba(168, 85, 247, 0.7);
+  background: rgba(168, 85, 247, 0.18);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.25);
+}
+
+.equip-slot-inner.equipped .equip-icon {
+  color: rgba(168, 85, 247, 0.9);
+  filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.6));
+}
+
+.equip-boost {
+  font-size: 8px;
+  font-weight: 700;
+  color: rgba(168, 85, 247, 0.9);
+  letter-spacing: 0.5px;
+}
+
+/* ══════════════════════════════
+   BOOSTER MODAL
+══════════════════════════════ */
+.boost-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.boost-modal {
+  background: #0f172a;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 16px;
+  width: 380px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5), 0 0 60px rgba(168, 85, 247, 0.1);
+}
+
+.boost-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.boost-modal-header h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.boost-modal-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color 0.2s;
+}
+
+.boost-modal-close:hover {
+  color: white;
+}
+
+.boost-modal-body {
+  padding: 12px 16px 20px;
+  overflow-y: auto;
+  max-height: 50vh;
+}
+
+.boost-modal-empty {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+  padding: 24px 0;
+}
+
+.boost-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.boost-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.boost-item:hover {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.35);
+  transform: translateX(4px);
+}
+
+.boost-item-remove:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.boost-item-disabled {
+  opacity: 0.35;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+.boost-item-qty {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(168, 85, 247, 0.7);
+  flex-shrink: 0;
+}
+
+.boost-item-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.boost-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.boost-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+}
+
+.boost-item-desc {
+  font-size: 11px;
+  color: rgba(168, 85, 247, 0.7);
+  font-weight: 500;
 }
 </style>
