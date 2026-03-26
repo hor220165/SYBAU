@@ -82,7 +82,9 @@ export const userService = {
     getUserBoosters: () =>
         API.get('/users/boosts'),
     getStreaks: () =>
-        API.get('/users/profile/streaks')
+        API.get('/users/profile/streaks'),
+    getWeeklyActivity: (from: string, to: string) =>
+        API.get(`/users/profile/weekly-activity?from=${from}&to=${to}`)
 };
 
 export const itemService = {

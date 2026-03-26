@@ -382,12 +382,35 @@ const nextAchievements = () => {
 
 // Weekly Activity
 const currentWeekOffset = ref(0);
+const activityDates = ref<Set<string>>(new Set());
 
-const getWeekDays = (offset: number) => {
+function getMonday(offset: number): Date {
   const today = new Date();
   const currentDay = today.getDay();
   const monday = new Date(today);
   monday.setDate(today.getDate() - currentDay + (currentDay === 0 ? -6 : 1) + (offset * 7));
+  return monday;
+}
+
+function toDateString(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+async function loadWeeklyActivity() {
+  const monday = getMonday(currentWeekOffset.value);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  try {
+    const res = await userService.getWeeklyActivity(toDateString(monday), toDateString(sunday));
+    activityDates.value = new Set(res.data as string[]);
+  } catch {
+    activityDates.value = new Set();
+  }
+}
+
+const getWeekDays = (offset: number) => {
+  const today = new Date();
+  const monday = getMonday(offset);
   const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
   const weekDays = [];
   for (let i = 0; i < 7; i++) {
@@ -395,7 +418,7 @@ const getWeekDays = (offset: number) => {
     date.setDate(monday.getDate() + i);
     const isToday = date.toDateString() === today.toDateString();
     const dateDisplay = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-    const workoutDone = i < 5 && offset === 0;
+    const workoutDone = activityDates.value.has(toDateString(date));
     const duration = workoutDone ? '45 min' : '–';
     weekDays.push({ name: days[i], date: date.toISOString(), dateDisplay, workoutDone, duration, isToday });
   }
@@ -404,8 +427,8 @@ const getWeekDays = (offset: number) => {
 
 const currentWeekDays = computed(() => getWeekDays(currentWeekOffset.value));
 const isCurrentWeek = computed(() => currentWeekOffset.value === 0);
-const previousWeek = () => { currentWeekOffset.value--; };
-const nextWeek = () => { if (!isCurrentWeek.value) currentWeekOffset.value++; };
+const previousWeek = () => { currentWeekOffset.value--; loadWeeklyActivity(); };
+const nextWeek = () => { if (!isCurrentWeek.value) { currentWeekOffset.value++; loadWeeklyActivity(); } };
 
 const weekLabel = computed(() => {
   const days = currentWeekDays.value || [];
@@ -430,6 +453,7 @@ onMounted(async () => {
       longestStreak.value = streakRes.data.longestStreak ?? 0;
       currentStreak.value = streakRes.data.currentStreak ?? 0;
     } catch { /* streak nicht verfügbar */ }
+    await loadWeeklyActivity();
   } catch (err) {
     console.error('Fehler beim Laden', err);
   }
