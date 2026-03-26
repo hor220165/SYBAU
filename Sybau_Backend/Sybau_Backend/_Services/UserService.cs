@@ -158,6 +158,50 @@ public class UserService
         };
     }
     
+    public async Task<(int longestStreak, int currentStreak)> GetStreaksAsync(int userId)
+    {
+        var dates = await _context.UserExerciseLogs
+            .Where(l => l.UserId == userId)
+            .Select(l => l.Date)
+            .Distinct()
+            .OrderBy(d => d)
+            .ToListAsync();
+
+        if (dates.Count == 0) return (0, 0);
+
+        int longest = 1, current = 1, streak = 1;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        for (int i = 1; i < dates.Count; i++)
+        {
+            if (dates[i].DayNumber - dates[i - 1].DayNumber == 1)
+                streak++;
+            else
+                streak = 1;
+
+            if (streak > longest) longest = streak;
+        }
+
+        // Current streak: prüfe ob die letzte Aktivität heute oder gestern war
+        var lastDate = dates[^1];
+        if (lastDate != today && lastDate.DayNumber != today.DayNumber - 1)
+        {
+            current = 0;
+        }
+        else
+        {
+            current = 1;
+            for (int i = dates.Count - 2; i >= 0; i--)
+            {
+                if (dates[i + 1].DayNumber - dates[i].DayNumber == 1)
+                    current++;
+                else
+                    break;
+            }
+        }
+
+        return (longest, current);
+    }
     
     public async Task UpdateUserAsync(User user)
     {

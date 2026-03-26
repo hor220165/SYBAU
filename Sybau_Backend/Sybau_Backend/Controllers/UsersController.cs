@@ -135,6 +135,20 @@ namespace Sybau_Backend.Controllers
             return Ok(topUsers);
         }
 
+        // GET /users/profile/streaks
+        [Authorize]
+        [HttpGet("profile/streaks")]
+        public async Task<IActionResult> GetStreaks()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            var userId = int.Parse(userIdClaim);
+            var (longestStreak, currentStreak) = await _userService.GetStreaksAsync(userId);
+
+            return Ok(new { longestStreak, currentStreak });
+        }
+
         // GET: api/<UsersController>
         [Authorize]
         [HttpGet]
