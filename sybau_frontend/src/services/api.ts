@@ -63,7 +63,6 @@ export const userService = {
     return { data };
     },
     getLeaderboard: () => API.get('/users/leaderboard'),
-        //Update Profile bzw Username ändern geht noch NICHT!!!!
     updateProfile: (data: { UserName?: string}) => {
         // Aktualisiere in localStorage UND Backend
         const user = JSON.parse(localStorage.getItem('user') || '{}');

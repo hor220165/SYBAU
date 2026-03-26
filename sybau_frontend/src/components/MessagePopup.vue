@@ -57,7 +57,7 @@ watch(
   position: fixed;
   bottom: 18px;
   right: 18px;
-  z-index: 9999;
+  z-index: 10001;
 
   min-width: 240px;
   max-width: 420px;

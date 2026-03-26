@@ -65,6 +65,26 @@ namespace Sybau_Backend.Controllers
             });
         }
         
+        // PUT /users/profile
+        [Authorize]
+        [HttpPut("profile")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserDto dto)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            var userId = int.Parse(userIdClaim);
+            var user = await _userService.GetUserById(userId);
+            if (user == null) return NotFound();
+
+            if (!string.IsNullOrEmpty(dto.Username))
+                user.UserName = dto.Username;
+
+            await _userService.UpdateUserAsync(user);
+
+            return NoContent();
+        }
+        
         [Authorize]
         [HttpPost("profile/change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)

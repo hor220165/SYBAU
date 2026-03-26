@@ -5,7 +5,7 @@
   <main class="profile-content">
     <div class="profile-header">
       <h1 class="profile-title">Mein Profil</h1>
-      <button class="settings-btn" @click="showSettings = true">
+      <button class="settings-btn" @click="openSettings">
   <div v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z'/><circle cx='12' cy='12' r='3'/></svg>`"></div>
 </button>
     </div>
@@ -143,7 +143,7 @@
                 <label>E-Mail</label>
                 <input :value="user?.email ?? user?.Email ?? ''" readonly />
               </div>
-              <button class="btn-primary" @click="saveProfile" :disabled="savingProfile">Speichern</button>
+              <button class="btn-primary" @click="saveProfile" :disabled="savingProfile || usernameUnchanged">Speichern</button>
             </section>
 
             <section class="settings-section">
@@ -192,6 +192,15 @@
     </Transition>
   </Teleport>
 
+  <Teleport to="body">
+    <MessagePopup
+      v-if="popupMessage"
+      :message="popupMessage"
+      :type="popupType"
+      @close="popupMessage = ''"
+    />
+  </Teleport>
+
   <FooterComponent />
 </template>
 
@@ -207,32 +216,49 @@ import { useAuth } from '@/composables/useAuth';
 import { useLeaderboard } from '@/composables/useLeaderboard';
 import { userService } from '@/services/api';
 import FooterComponent from '@/components/FooterComponent.vue';
+import MessagePopup from '@/components/MessagePopup.vue';
 
 const router = useRouter();
 const { user, logout } = useAuth();
 const { sortedLeaderboard, loadLeaderboard } = useLeaderboard();
 
 const showSettings = ref(false);
-const editingUsername = ref<string>(user.value?.username ?? user.value?.UserName ?? '');
+const editingUsername = ref('');
 const savingProfile = ref(false);
+
+const currentUsername = computed(() => user.value?.userName ?? user.value?.UserName ?? user.value?.username ?? '');
+
+function openSettings() {
+  editingUsername.value = currentUsername.value;
+  showSettings.value = true;
+}
+
+const popupMessage = ref('');
+const popupType = ref<'success' | 'error'>('success');
+
+const usernameUnchanged = computed(() => {
+  return editingUsername.value.trim() === currentUsername.value;
+});
 
 async function saveProfile() {
   savingProfile.value = true;
   try {
     await userService.updateProfile({ UserName: editingUsername.value });
     const u = { ...user.value };
-    if ('username' in u) u.username = editingUsername.value;
-    else u.UserName = editingUsername.value;
+    u.userName = editingUsername.value;
     user.value = u;
     localStorage.setItem('user', JSON.stringify(u));
-    alert('Profil gespeichert!');
+    popupType.value = 'success';
+    popupMessage.value = 'Profil gespeichert!';
   } catch (err: any) {
     if (err.response?.status === 401) {
-      alert('Session abgelaufen. Bitte melden Sie sich erneut an.');
+      popupType.value = 'error';
+      popupMessage.value = 'Session abgelaufen. Bitte melden Sie sich erneut an.';
       logout();
       router.push('/auth');
     } else {
-      alert('Fehler beim Speichern: ' + (err.response?.data?.message || err.message));
+      popupType.value = 'error';
+      popupMessage.value = 'Fehler beim Speichern: ' + (err.response?.data?.message || err.message);
     }
   } finally {
     savingProfile.value = false;
@@ -243,7 +269,7 @@ const level = computed(() => user.value?.avatar?.level ?? user.value?.avatar?.Le
 const experience = computed(() => user.value?.avatar?.experience ?? user.value?.avatar?.Experience ?? 0);
 const completedChallenges = ref(0);
 const leaderboardPosition = computed(() => {
-  const name = user.value?.username ?? user.value?.UserName ?? user.value?.userName ?? '';
+  const name = currentUsername.value;
   const idx = sortedLeaderboard.value.findIndex((u: any) => (u.UserName ?? u.username ?? '').toLowerCase() === name.toLowerCase());
   if (idx >= 0 && idx < sortedLeaderboard.value.length) {
     const rank = sortedLeaderboard.value[idx]?.Rank;
@@ -257,20 +283,32 @@ const newPassword = ref('');
 const changingPassword = ref(false);
 
 async function changePassword() {
-  if (!oldPassword.value || !newPassword.value) return alert('Bitte beide Felder ausfüllen.');
+  if (!oldPassword.value || !newPassword.value) {
+    popupType.value = 'error';
+    popupMessage.value = 'Bitte beide Felder ausfüllen.';
+    return;
+  }
+  if (oldPassword.value === newPassword.value) {
+    popupType.value = 'error';
+    popupMessage.value = 'Das neue Passwort darf nicht mit dem alten übereinstimmen.';
+    return;
+  }
   changingPassword.value = true;
   try {
     await userService.changePassword(oldPassword.value, newPassword.value);
     oldPassword.value = '';
     newPassword.value = '';
-    alert('Passwort erfolgreich geändert!');
+    popupType.value = 'success';
+    popupMessage.value = 'Passwort erfolgreich geändert!';
   } catch (err: any) {
     if (err.response?.status === 401) {
-      alert('Session abgelaufen. Bitte melden Sie sich erneut an.');
+      popupType.value = 'error';
+      popupMessage.value = 'Session abgelaufen. Bitte melden Sie sich erneut an.';
       logout();
       router.push('/auth');
     } else {
-      alert(err.response?.data);
+      popupType.value = 'error';
+      popupMessage.value = err.response?.data || 'Fehler beim Ändern des Passworts.';
     }
   } finally {
     changingPassword.value = false;
@@ -286,7 +324,8 @@ async function deleteAccount() {
     logout();
     router.push('/auth');
   } catch (err: any) {
-    alert('Fehler beim Löschen: ' + (err.response?.data?.message || err.message));
+    popupType.value = 'error';
+    popupMessage.value = 'Fehler beim Löschen: ' + (err.response?.data?.message || err.message);
   }
 }
 
