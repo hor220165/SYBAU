@@ -202,6 +202,15 @@ public class UserService
 
         return (longest, current);
     }
+
+    public async Task<List<DateOnly>> GetActivityDatesAsync(int userId, DateOnly from, DateOnly to)
+    {
+        return await _context.UserExerciseLogs
+            .Where(l => l.UserId == userId && l.Date >= from && l.Date <= to)
+            .Select(l => l.Date)
+            .Distinct()
+            .ToListAsync();
+    }
     
     public async Task UpdateUserAsync(User user)
     {

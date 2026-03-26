@@ -149,6 +149,20 @@ namespace Sybau_Backend.Controllers
             return Ok(new { longestStreak, currentStreak });
         }
 
+        // GET /users/profile/weekly-activity?from=2026-03-23&to=2026-03-29
+        [Authorize]
+        [HttpGet("profile/weekly-activity")]
+        public async Task<IActionResult> GetWeeklyActivity([FromQuery] DateOnly from, [FromQuery] DateOnly to)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            var userId = int.Parse(userIdClaim);
+            var dates = await _userService.GetActivityDatesAsync(userId, from, to);
+
+            return Ok(dates.Select(d => d.ToString("yyyy-MM-dd")));
+        }
+
         // GET: api/<UsersController>
         [Authorize]
         [HttpGet]
