@@ -10,6 +10,11 @@ const props = defineProps<{
 const emit = defineEmits(["close"]);
 const visible = ref(false);
 
+function closePopup() {
+  visible.value = false;
+  setTimeout(() => emit("close"), 220);
+}
+
 watch(
   () => props.message,
   async (newVal) => {
@@ -37,7 +42,7 @@ watch(
       v-if="visible"
       :class="['popup', type]"
     >
-      <button class="popup-close" @click="visible = false; setTimeout(() => emit('close'), 220)">
+      <button class="popup-close" @click="closePopup">
         ✕
       </button>
 
