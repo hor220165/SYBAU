@@ -80,7 +80,9 @@ export const userService = {
     updateBoostSlots: (slots: Array<number | null>) =>
         API.put('/users/boosts/slots', { slots }),
     getUserBoosters: () =>
-        API.get('/users/boosts')
+        API.get('/users/boosts'),
+    getStreaks: () =>
+        API.get('/users/profile/streaks')
 };
 
 export const itemService = {

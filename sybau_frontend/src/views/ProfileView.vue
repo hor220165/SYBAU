@@ -32,7 +32,7 @@
       <StatCard
         :icon="`<polyline points='22 7 13.5 15.5 8.5 10.5 2 17'/><polyline points='16 7 22 7 22 13'/>`"
         label="Längster Streak"
-        value="15 Tage"
+        :value="longestStreak + ' Tage'"
         cardClass="stat-green"
       />
     </div>
@@ -222,6 +222,8 @@ const router = useRouter();
 const { user, logout } = useAuth();
 const { sortedLeaderboard, loadLeaderboard } = useLeaderboard();
 
+const longestStreak = ref(0);
+
 const showSettings = ref(false);
 const editingUsername = ref('');
 const savingProfile = ref(false);
@@ -405,8 +407,8 @@ const previousWeek = () => { currentWeekOffset.value--; };
 const nextWeek = () => { if (!isCurrentWeek.value) currentWeekOffset.value++; };
 
 const weekLabel = computed(() => {
-  const days = currentWeekDays.value;
-  return `${days[0].dateDisplay} – ${days[6].dateDisplay}`;
+  const days = currentWeekDays.value || [];
+  return `${days[0]?.dateDisplay} – ${days[6]?.dateDisplay}`;
 });
 
 const recentActivities = ref([
@@ -422,6 +424,10 @@ onMounted(async () => {
     user.value = JSON.parse(localStorage.getItem('user') || '{}');
     editingUsername.value = user.value.userName;
     await loadLeaderboard();
+    try {
+      const streakRes = await userService.getStreaks();
+      longestStreak.value = streakRes.data.longestStreak ?? 0;
+    } catch { /* streak nicht verfügbar */ }
   } catch (err) {
     console.error('Fehler beim Laden', err);
   }
