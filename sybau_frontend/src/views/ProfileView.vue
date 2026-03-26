@@ -32,7 +32,7 @@
       <StatCard
         :icon="`<polyline points='22 7 13.5 15.5 8.5 10.5 2 17'/><polyline points='16 7 22 7 22 13'/>`"
         label="Längster Streak"
-        :value="longestStreak + ' Tage'"
+        :value="currentStreak + ' Tage'"
         cardClass="stat-green"
       />
     </div>
@@ -223,6 +223,7 @@ const { user, logout } = useAuth();
 const { sortedLeaderboard, loadLeaderboard } = useLeaderboard();
 
 const longestStreak = ref(0);
+const currentStreak = ref(0);
 
 const showSettings = ref(false);
 const editingUsername = ref('');
@@ -427,6 +428,7 @@ onMounted(async () => {
     try {
       const streakRes = await userService.getStreaks();
       longestStreak.value = streakRes.data.longestStreak ?? 0;
+      currentStreak.value = streakRes.data.currentStreak ?? 0;
     } catch { /* streak nicht verfügbar */ }
   } catch (err) {
     console.error('Fehler beim Laden', err);
