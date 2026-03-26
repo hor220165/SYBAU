@@ -288,6 +288,15 @@
       </template>
     </div>
   </div>
+
+  <Teleport to="body">
+    <MessagePopup
+      v-if="popupMessage"
+      :message="popupMessage"
+      :type="popupType"
+      @close="popupMessage = ''"
+    />
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -297,6 +306,7 @@ import Navbar from '@/components/Navbar.vue';
 import WorkoutCard from '@/components/WorkoutCard.vue';
 import ExerciseModal from '@/components/WorkoutPopup.vue';
 import FooterComponent from '@/components/FooterComponent.vue';
+import MessagePopup from '@/components/MessagePopup.vue';
 import { workoutService } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
 
@@ -306,6 +316,9 @@ const activeFilter = ref('Alle');
 const showModal = ref(false);
 const selectedExercise = ref<any>(null);
 const loading = ref(true);
+
+const popupMessage = ref('');
+const popupType = ref<'success' | 'error'>('success');
 
 const filters = ['Alle', 'Cardio', 'Strength', 'Core', 'Flexibility'];
 
@@ -437,7 +450,8 @@ function toggleWorkoutExpand(id: number) {
 async function handleCreateWorkout() {
   const validExercises = newWorkout.value.exercises.filter(e => e.exerciseId > 0);
   if (validExercises.length === 0) {
-    alert('Bitte mindestens eine Übung hinzufügen');
+    popupType.value = 'error';
+    popupMessage.value = 'Bitte mindestens eine Übung hinzufügen';
     return;
   }
   try {
@@ -456,7 +470,8 @@ async function handleCreateWorkout() {
     };
     await loadWorkouts();
   } catch (err: any) {
-    alert(err.response?.data || 'Fehler beim Erstellen des Workouts');
+    popupType.value = 'error';
+    popupMessage.value = err.response?.data || 'Fehler beim Erstellen des Workouts';
   }
 }
 
@@ -535,7 +550,8 @@ async function logWorkoutExercise(ex: any) {
 
     await refreshProfile();
   } catch (err: any) {
-    alert(err.response?.data || 'Fehler beim Eintragen');
+    popupType.value = 'error';
+    popupMessage.value = err.response?.data || 'Fehler beim Eintragen';
   }
 }
 
@@ -563,13 +579,15 @@ const handleExerciseSubmit = async (data: any) => {
       msg += `\n+${result.coinsEarned} Coins`;
       if (result.bonusCoins > 0) msg += ` (+${result.bonusCoins} Bonus, ${result.coinBoostPercent}% Boost)`;
     }
-    alert(msg);
+    popupType.value = 'success';
+    popupMessage.value = msg;
 
     // Header aktualisieren (Level, XP, Coins)
     await refreshProfile();
   } catch (err: any) {
     const errorMsg = err.response?.data || 'Fehler beim Eintragen';
-    alert(errorMsg);
+    popupType.value = 'error';
+    popupMessage.value = errorMsg;
   }
 };
 </script>

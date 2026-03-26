@@ -60,7 +60,10 @@
               </button>
             </div>
             
-            <button type="submit" class="primary-btn">Login</button>
+            <button type="submit" class="primary-btn" :disabled="loading">
+              <span v-if="loading" class="spinner"></span>
+              <span v-else>Login</span>
+            </button>
             <div class="switch-text">
               <label>Noch kein Account?</label>
               <label class="switch-link" @click="isLogin = false"
@@ -103,7 +106,10 @@
               </button>
             </div>
             
-            <button type="submit" class="primary-btn">Account erstellen</button>
+            <button type="submit" class="primary-btn" :disabled="loading">
+              <span v-if="loading" class="spinner"></span>
+              <span v-else>Account erstellen</span>
+            </button>
           </form>
         </transition>
       </div>
@@ -124,18 +130,19 @@ const isLogin = ref(true);
 const email = ref(''); 
 const password = ref(''); 
 const username = ref(''); 
-const showPassword = ref(false); // Neu: Passwort Sichtbarkeit
+const showPassword = ref(false);
+const loading = ref(false);
 
 const goToHome = () => {
   router.push('/');
 };
 
 const handleLogin = async () => {
+  loading.value = true;
   try { 
     const res = await login(email.value, password.value); 
     const token = res.data?.token; 
     if (token) {
-      // Profildaten laden vor Navigation
       await userService.getProfile();
       router.push('/dashboard');
     } else {
@@ -144,21 +151,24 @@ const handleLogin = async () => {
   } catch (err) { 
     console.error(err); 
     alert('Login fehlgeschlagen'); 
+  } finally {
+    loading.value = false;
   }
 };
 
-const handleRegister = async () => { 
+const handleRegister = async () => {
+  loading.value = true;
   try { 
     const { register } = useAuth();
     await register(username.value, email.value, password.value); 
-    // optional: auto-login after register 
     await login(email.value, password.value); 
-    // Profildaten laden vor Navigation
     await userService.getProfile();
     router.push('/home');
   } catch (err) { 
     console.error(err); 
     alert('Registration fehlgeschlagen');
+  } finally {
+    loading.value = false;
   }
 }; 
 </script>
@@ -400,6 +410,30 @@ body {
 
 .primary-btn:active {
   transform: translateY(0);
+}
+
+.primary-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* === Spinner === */
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* === Form Animation === */
