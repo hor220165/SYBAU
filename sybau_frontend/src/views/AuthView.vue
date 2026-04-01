@@ -64,6 +64,7 @@
               <span v-if="loading" class="spinner"></span>
               <span v-else>Login</span>
             </button>
+            <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
             <div class="switch-text">
               <label>Noch kein Account?</label>
               <label class="switch-link" @click="isLogin = false"
@@ -110,6 +111,7 @@
               <span v-if="loading" class="spinner"></span>
               <span v-else>Account erstellen</span>
             </button>
+            <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
           </form>
         </transition>
       </div>
@@ -132,6 +134,19 @@ const password = ref('');
 const username = ref(''); 
 const showPassword = ref(false);
 const loading = ref(false);
+const errorMessage = ref('');
+
+const parseError = (err: any, fallback: string): string => {
+  const data = err.response?.data;
+  if (!data) return fallback;
+  if (data.message) return data.message;
+  if (data.errors) {
+    const msgs = Object.values(data.errors).flat() as string[];
+    return msgs.join(' ') || fallback;
+  }
+  if (typeof data === 'string') return data;
+  return fallback;
+};
 
 const goToHome = () => {
   router.push('/');
@@ -139,6 +154,7 @@ const goToHome = () => {
 
 const handleLogin = async () => {
   loading.value = true;
+  errorMessage.value = '';
   try { 
     const res = await login(email.value, password.value); 
     const token = res.data?.token; 
@@ -146,11 +162,10 @@ const handleLogin = async () => {
       await userService.getProfile();
       router.push('/dashboard');
     } else {
-      alert('Kein Token erhalten — Login fehlgeschlagen.');
+      errorMessage.value = 'Kein Token erhalten — Login fehlgeschlagen.';
     }
-  } catch (err) { 
-    console.error(err); 
-    alert('Login fehlgeschlagen'); 
+  } catch (err: any) { 
+    errorMessage.value = parseError(err, 'Ungültige E-Mail oder Passwort.');
   } finally {
     loading.value = false;
   }
@@ -158,15 +173,15 @@ const handleLogin = async () => {
 
 const handleRegister = async () => {
   loading.value = true;
+  errorMessage.value = '';
   try { 
     const { register } = useAuth();
     await register(username.value, email.value, password.value); 
     await login(email.value, password.value); 
     await userService.getProfile();
     router.push('/home');
-  } catch (err) { 
-    console.error(err); 
-    alert('Registration fehlgeschlagen');
+  } catch (err: any) { 
+    errorMessage.value = parseError(err, 'Registrierung fehlgeschlagen.');
   } finally {
     loading.value = false;
   }
@@ -451,6 +466,18 @@ body {
 .switch-text {
   text-align: center;
   margin-top: 16px;
+}
+
+/* === Fehlermeldung === */
+.error-msg {
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: rgba(255, 45, 75, 0.12);
+  border: 1px solid rgba(255, 45, 75, 0.3);
+  border-radius: 12px;
+  color: #ff6b8a;
+  font-size: 0.9rem;
+  text-align: center;
 }
 
 .switch-text label {
