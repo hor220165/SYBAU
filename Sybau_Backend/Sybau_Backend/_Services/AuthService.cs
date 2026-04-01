@@ -50,18 +50,24 @@ public class AuthService
             .FirstOrDefaultAsync(u => u.Email == email);
 
         if (user == null)
-            throw new Exception("Invalid credentials");
+            throw new Exception("Ungültige E-Mail oder Passwort.");
 
         var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
         return result == PasswordVerificationResult.Success
             ? user
-            : throw new Exception("Invalid credentials");
+            : throw new Exception("Ungültige E-Mail oder Passwort.");
     }
 
     public async Task<User> RegisterAsync(string userName, string email, string password)
     {
         if (await _context.Users.AnyAsync(u => u.Email == email))
-            throw new Exception("Email is already in use");
+            throw new Exception("Diese E-Mail wird bereits verwendet.");
+
+        if (string.IsNullOrWhiteSpace(userName))
+            throw new Exception("Benutzername darf nicht leer sein.");
+
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
+            throw new Exception("Passwort muss mindestens 6 Zeichen lang sein.");
 
         var tempUser = new User(userName, null, null, email, "tempHash");
         var passwordHash = _passwordHasher.HashPassword(tempUser, password);
