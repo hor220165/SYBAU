@@ -132,7 +132,9 @@ export const workoutService = {
 export const questService = {
     getMyQuests: () => API.get('/quests'),
     getStats: () => API.get('/quests/stats'),
-    claimReward: (userQuestId: number) => API.post(`/quests/${userQuestId}/claim`)
+    claimReward: (userQuestId: number) => API.post(`/quests/${userQuestId}/claim`),
+    logActivity: (type: 'Steps' | 'Kilometers', value: number) => API.post('/quests/activity', { type, value }),
+    getTodayActivity: () => API.get('/quests/activity/today')
 };
 
 export default API;

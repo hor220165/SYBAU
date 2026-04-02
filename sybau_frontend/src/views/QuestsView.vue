@@ -48,6 +48,58 @@
         </div>
       </div>
 
+      <!-- Aktivität manuell eintragen -->
+      <section class="activity-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-icon">👟</span>
+            <h2>Aktivität eintragen</h2>
+          </div>
+        </div>
+
+        <div class="activity-cards">
+          <!-- Heute-Zusammenfassung -->
+          <div class="today-summary">
+            <div class="today-item">
+              <span class="today-icon">🚶</span>
+              <div class="today-info">
+                <span class="today-label">Schritte heute</span>
+                <span class="today-value">{{ todayActivity.steps.toLocaleString('de-DE') }}</span>
+              </div>
+            </div>
+            <div class="today-item">
+              <span class="today-icon">📍</span>
+              <div class="today-info">
+                <span class="today-label">Kilometer heute</span>
+                <span class="today-value">{{ todayActivity.kilometers }} km</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Eingabefelder -->
+          <div class="activity-inputs">
+            <div class="input-group">
+              <label>🚶 Schritte</label>
+              <div class="input-row">
+                <input v-model.number="stepsInput" type="number" min="1" placeholder="z.B. 5000" class="activity-input" />
+                <button class="activity-btn" :disabled="!stepsInput || stepsInput <= 0 || activityLoading" @click="logSteps">
+                  {{ activityLoading ? '...' : 'Eintragen' }}
+                </button>
+              </div>
+            </div>
+            <div class="input-group">
+              <label>📍 Kilometer</label>
+              <div class="input-row">
+                <input v-model.number="kmInput" type="number" min="0.1" step="0.1" placeholder="z.B. 3.5" class="activity-input" />
+                <button class="activity-btn" :disabled="!kmInput || kmInput <= 0 || activityLoading" @click="logKm">
+                  {{ activityLoading ? '...' : 'Eintragen' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Daily Quests -->
       <section class="quest-section" v-if="dailyQuests.length">
         <div class="section-header">
@@ -159,6 +211,12 @@ const stats = ref<QuestStats>({ completed: 0, active: 0, totalXpEarned: 0 });
 const loading = ref(true);
 const popup = ref({ message: '', type: 'success' as 'success' | 'error', visible: false });
 
+// Aktivitäts-Eingabe
+const stepsInput = ref<number | null>(null);
+const kmInput = ref<number | null>(null);
+const activityLoading = ref(false);
+const todayActivity = ref({ steps: 0, kilometers: 0 });
+
 const dailyQuests = computed(() => allQuests.value.filter(q => q.type === 'daily'));
 const weeklyQuests = computed(() => allQuests.value.filter(q => q.type === 'weekly'));
 const monthlyQuests = computed(() => allQuests.value.filter(q => q.type === 'monthly'));
@@ -184,15 +242,51 @@ const claimReward = async (quest: UserQuest) => {
   try {
     const { data } = await questService.claimReward(quest.id);
     showPopup(data.message, 'success');
-    // Quests + Profil neu laden (Coins/XP haben sich geändert)
     await Promise.all([loadQuests(), refreshProfile()]);
   } catch (e: any) {
     showPopup(e.response?.data?.message || 'Fehler beim Einfordern.', 'error');
   }
 };
 
+const loadTodayActivity = async () => {
+  try {
+    const { data } = await questService.getTodayActivity();
+    todayActivity.value = data;
+  } catch { /* ignore */ }
+};
+
+const logSteps = async () => {
+  if (!stepsInput.value || stepsInput.value <= 0) return;
+  activityLoading.value = true;
+  try {
+    await questService.logActivity('Steps', stepsInput.value);
+    showPopup(`${stepsInput.value.toLocaleString('de-DE')} Schritte eingetragen!`, 'success');
+    stepsInput.value = null;
+    await Promise.all([loadQuests(), loadTodayActivity()]);
+  } catch (e: any) {
+    showPopup(e.response?.data?.message || 'Fehler beim Eintragen.', 'error');
+  } finally {
+    activityLoading.value = false;
+  }
+};
+
+const logKm = async () => {
+  if (!kmInput.value || kmInput.value <= 0) return;
+  activityLoading.value = true;
+  try {
+    await questService.logActivity('Kilometers', kmInput.value);
+    showPopup(`${kmInput.value} km eingetragen!`, 'success');
+    kmInput.value = null;
+    await Promise.all([loadQuests(), loadTodayActivity()]);
+  } catch (e: any) {
+    showPopup(e.response?.data?.message || 'Fehler beim Eintragen.', 'error');
+  } finally {
+    activityLoading.value = false;
+  }
+};
+
 onMounted(async () => {
-  await loadQuests();
+  await Promise.all([loadQuests(), loadTodayActivity()]);
   loading.value = false;
 });
 </script>
@@ -510,6 +604,139 @@ onMounted(async () => {
   .stat-icon {
     width: 36px;
     height: 36px;
+  }
+}
+
+/* Aktivitäts-Sektion */
+.activity-section {
+  margin-bottom: 40px;
+}
+
+.activity-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.today-summary {
+  display: flex;
+  gap: 20px;
+}
+
+.today-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.1));
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 16px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.today-icon {
+  font-size: 32px;
+}
+
+.today-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.today-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+
+.today-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #34d399;
+}
+
+.activity-inputs {
+  display: flex;
+  gap: 20px;
+}
+
+.input-group {
+  flex: 1;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.input-group label {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 12px;
+}
+
+.input-row {
+  display: flex;
+  gap: 10px;
+}
+
+.activity-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 16px;
+  color: white;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.activity-input:focus {
+  border-color: rgba(236, 72, 153, 0.6);
+}
+
+.activity-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.activity-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #ec4899, #a855f7);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.activity-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.activity-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Mobile für Aktivitäts-Sektion */
+@media (max-width: 768px) {
+  .today-summary {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .activity-inputs {
+    flex-direction: column;
+    gap: 12px;
   }
 }
 </style>

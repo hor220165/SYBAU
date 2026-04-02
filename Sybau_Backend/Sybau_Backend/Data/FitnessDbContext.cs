@@ -19,6 +19,7 @@ public class FitnessDbContext:DbContext
     public DbSet<UserExerciseLog> UserExerciseLogs => Set<UserExerciseLog>();
     public DbSet<Quest> Quests => Set<Quest>();
     public DbSet<UserQuest> UserQuests => Set<UserQuest>();
+    public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public FitnessDbContext(DbContextOptions<FitnessDbContext> options) : base(options){}
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -110,6 +111,17 @@ public class FitnessDbContext:DbContext
             entity.Property(e => e.TargetType).HasConversion<string>();
         });
 
+        // ActivityLog
+        modelBuilder.Entity<ActivityLog>(entity =>
+        {
+            entity.HasOne(a => a.User)
+                .WithMany()
+                .HasForeignKey(a => a.UserId)
+                .IsRequired();
+
+            entity.Property(a => a.Type).HasConversion<string>();
+        });
+
         // UserQuest Relationships
         modelBuilder.Entity<UserQuest>(entity =>
         {
@@ -139,7 +151,11 @@ public class FitnessDbContext:DbContext
             // Monatliche Quests (Legendary)
             new { Id = 7, Name = "Marathon Meister", Description = "Schließe 60 Übungen diesen Monat ab", Type = QuestType.Monthly, Rarity = ItemRarity.Legendary, TargetType = QuestTargetType.ExercisesCompleted, TargetValue = 60, XpReward = 2000, CoinReward = 200, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
             new { Id = 8, Name = "Iron Body", Description = "Mache insgesamt 10.000 Wiederholungen diesen Monat", Type = QuestType.Monthly, Rarity = ItemRarity.Legendary, TargetType = QuestTargetType.TotalReps, TargetValue = 10000, XpReward = 3000, CoinReward = 300, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new { Id = 9, Name = "Transformer", Description = "Trainiere an 20 verschiedenen Tagen diesen Monat", Type = QuestType.Monthly, Rarity = ItemRarity.Legendary, TargetType = QuestTargetType.TrainingDays, TargetValue = 20, XpReward = 5000, CoinReward = 500, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+            new { Id = 9, Name = "Transformer", Description = "Trainiere an 20 verschiedenen Tagen diesen Monat", Type = QuestType.Monthly, Rarity = ItemRarity.Legendary, TargetType = QuestTargetType.TrainingDays, TargetValue = 20, XpReward = 5000, CoinReward = 500, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            // Schritte & Kilometer Quests
+            new { Id = 10, Name = "Step Master", Description = "Laufe 10.000 Schritte", Type = QuestType.Daily, Rarity = ItemRarity.Common, TargetType = QuestTargetType.Steps, TargetValue = 10000, XpReward = 120, CoinReward = 12, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new { Id = 11, Name = "Wanderer", Description = "Laufe insgesamt 10 km diese Woche", Type = QuestType.Weekly, Rarity = ItemRarity.Rare, TargetType = QuestTargetType.Kilometers, TargetValue = 10, XpReward = 500, CoinReward = 50, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new { Id = 12, Name = "Marathon Läufer", Description = "Laufe insgesamt 42 km diesen Monat", Type = QuestType.Monthly, Rarity = ItemRarity.Legendary, TargetType = QuestTargetType.Kilometers, TargetValue = 42, XpReward = 2000, CoinReward = 200, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
         );
 
     }

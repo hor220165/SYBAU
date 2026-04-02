@@ -147,7 +147,7 @@ public class QuestService
     }
 
     /// <summary>
-    /// Berechnet den Fortschritt aller nicht-abgeschlossenen Quests aus UserExerciseLogs.
+    /// Berechnet den Fortschritt aller nicht-abgeschlossenen Quests aus UserExerciseLogs und ActivityLogs.
     /// </summary>
     private async Task RecalculateAllProgressAsync(int userId)
     {
@@ -158,13 +158,19 @@ public class QuestService
 
         if (activeQuests.Count == 0) return;
 
-        // Alle Logs einmal laden statt pro Quest einzeln abzufragen
         var earliestPeriod = activeQuests.Min(uq => uq.PeriodStart);
         var startDate = DateOnly.FromDateTime(earliestPeriod);
 
-        var logs = await _context.UserExerciseLogs
+        // Exercise-Logs laden
+        var exerciseLogs = await _context.UserExerciseLogs
             .Where(l => l.UserId == userId && l.Date >= startDate)
             .Select(l => new { l.Date, l.Reps })
+            .ToListAsync();
+
+        // Activity-Logs laden (Schritte, Kilometer)
+        var activityLogs = await _context.ActivityLogs
+            .Where(a => a.UserId == userId && a.Date >= startDate)
+            .Select(a => new { a.Date, a.Type, a.Value })
             .ToListAsync();
 
         foreach (var uq in activeQuests)
@@ -172,17 +178,24 @@ public class QuestService
             var periodStartDate = DateOnly.FromDateTime(uq.PeriodStart);
             var periodEndDate = DateOnly.FromDateTime(GetPeriodEnd(uq.Quest.Type, uq.PeriodStart));
 
-            var periodLogs = logs.Where(l => l.Date >= periodStartDate && l.Date < periodEndDate).ToList();
+            var periodExerciseLogs = exerciseLogs
+                .Where(l => l.Date >= periodStartDate && l.Date < periodEndDate).ToList();
+
+            var periodActivityLogs = activityLogs
+                .Where(a => a.Date >= periodStartDate && a.Date < periodEndDate).ToList();
 
             uq.Progress = uq.Quest.TargetType switch
             {
-                QuestTargetType.ExercisesCompleted => periodLogs.Count,
-                QuestTargetType.TotalReps => periodLogs.Sum(l => l.Reps),
-                QuestTargetType.TrainingDays => periodLogs.Select(l => l.Date).Distinct().Count(),
+                QuestTargetType.ExercisesCompleted => periodExerciseLogs.Count,
+                QuestTargetType.TotalReps => periodExerciseLogs.Sum(l => l.Reps),
+                QuestTargetType.TrainingDays => periodExerciseLogs.Select(l => l.Date).Distinct().Count(),
+                QuestTargetType.Steps => (int)periodActivityLogs
+                    .Where(a => a.Type == ActivityType.Steps).Sum(a => a.Value),
+                QuestTargetType.Kilometers => (int)periodActivityLogs
+                    .Where(a => a.Type == ActivityType.Kilometers).Sum(a => a.Value),
                 _ => 0
             };
 
-            // Fortschritt darf TargetValue nicht überschreiten (für Anzeige)
             if (uq.Progress > uq.Quest.TargetValue)
                 uq.Progress = uq.Quest.TargetValue;
 

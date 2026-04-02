@@ -4,5 +4,7 @@ public enum QuestTargetType
 {
     ExercisesCompleted,
     TotalReps,
-    TrainingDays
+    TrainingDays,
+    Steps,
+    Kilometers
 }
