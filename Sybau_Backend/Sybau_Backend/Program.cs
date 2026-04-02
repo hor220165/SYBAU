@@ -7,10 +7,12 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using Sybau_Backend._Services;
 using Sybau_Backend.Data;
+using Sybau_Backend.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddSignalR();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ChallengeService>();
@@ -20,6 +22,8 @@ builder.Services.AddScoped<AvatarService>();
 builder.Services.AddScoped<WorkoutService>();
 builder.Services.AddScoped<QuestService>();
 builder.Services.AddScoped<AchievementService>();
+builder.Services.AddScoped<FriendService>();
+builder.Services.AddScoped<FriendChallengeService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -36,6 +40,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ),
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromMinutes(1)
+        };
+
+        // SignalR sendet JWT als Query-Parameter
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -63,18 +82,20 @@ builder.Services.AddCors(options =>
     options.AddPolicy("Default", policy =>
     {
         var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
-        if (allowedOrigins is { Length: > 0 })
+        if (allowedOrigins is { Length: > 0 } && !allowedOrigins.Contains("*"))
         {
             policy.WithOrigins(allowedOrigins)
                 .AllowAnyMethod()
-                .AllowAnyHeader();
+                .AllowAnyHeader()
+                .AllowCredentials();
         }
         else
         {
-            // Fallback für Development
-            policy.AllowAnyOrigin()
+            // Fallback für Development – erlaubt alle Origins mit Credentials
+            policy.SetIsOriginAllowed(_ => true)
                 .AllowAnyMethod()
-                .AllowAnyHeader();
+                .AllowAnyHeader()
+                .AllowCredentials();
         }
     });
 });
@@ -129,5 +150,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();

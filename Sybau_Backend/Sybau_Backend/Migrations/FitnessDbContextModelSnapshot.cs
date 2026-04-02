@@ -394,6 +394,105 @@ namespace Sybau_Backend.Migrations
                     b.ToTable("Exercises");
                 });
 
+            modelBuilder.Entity("Sybau_Backend.Models.FriendChallenge", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ChallengerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ChallengerProgress")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CoinReward")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("GoalAmount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("OpponentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("OpponentProgress")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("WinnerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("XpReward")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChallengerId");
+
+                    b.HasIndex("OpponentId");
+
+                    b.HasIndex("WinnerId");
+
+                    b.ToTable("FriendChallenges");
+                });
+
+            modelBuilder.Entity("Sybau_Backend.Models.Friendship", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("AcceptedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AddresseeId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RequesterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AddresseeId");
+
+                    b.HasIndex("RequesterId", "AddresseeId")
+                        .IsUnique();
+
+                    b.ToTable("Friendships");
+                });
+
             modelBuilder.Entity("Sybau_Backend.Models.Item", b =>
                 {
                     b.Property<int>("Id")
@@ -979,6 +1078,7 @@ namespace Sybau_Backend.Migrations
                     b.Navigation("User");
                 });
 
+<<<<<<< HEAD
             modelBuilder.Entity("Sybau_Backend.Models.UserAchievement", b =>
                 {
                     b.HasOne("Sybau_Backend.Models.Achievement", "Achievement")
@@ -996,6 +1096,51 @@ namespace Sybau_Backend.Migrations
                     b.Navigation("Achievement");
 
                     b.Navigation("User");
+=======
+            modelBuilder.Entity("Sybau_Backend.Models.FriendChallenge", b =>
+                {
+                    b.HasOne("Sybau_Backend.Models.User", "Challenger")
+                        .WithMany()
+                        .HasForeignKey("ChallengerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Sybau_Backend.Models.User", "Opponent")
+                        .WithMany()
+                        .HasForeignKey("OpponentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Sybau_Backend.Models.User", "Winner")
+                        .WithMany()
+                        .HasForeignKey("WinnerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Challenger");
+
+                    b.Navigation("Opponent");
+
+                    b.Navigation("Winner");
+                });
+
+            modelBuilder.Entity("Sybau_Backend.Models.Friendship", b =>
+                {
+                    b.HasOne("Sybau_Backend.Models.User", "Addressee")
+                        .WithMany()
+                        .HasForeignKey("AddresseeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Sybau_Backend.Models.User", "Requester")
+                        .WithMany()
+                        .HasForeignKey("RequesterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Addressee");
+
+                    b.Navigation("Requester");
+>>>>>>> feature/backendfrontend-freundeviewundnotifications
                 });
 
             modelBuilder.Entity("Sybau_Backend.Models.UserChallenge", b =>

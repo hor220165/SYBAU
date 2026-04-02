@@ -22,6 +22,8 @@ public class FitnessDbContext:DbContext
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<Achievement> Achievements => Set<Achievement>();
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
+    public DbSet<Friendship> Friendships => Set<Friendship>();
+    public DbSet<FriendChallenge> FriendChallenges => Set<FriendChallenge>();
     public FitnessDbContext(DbContextOptions<FitnessDbContext> options) : base(options){}
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -201,6 +203,46 @@ public class FitnessDbContext:DbContext
             new { Id = 15, Key = "bionic",           Title = "Bionic",            Description = "Mache 1.000 Wiederholungen in 7 Tagen",   Type = AchievementType.WeeklyReps,            TargetValue = 1000,  XpReward = 1000, CreatedAt = seedDate, UpdatedAt = seedDate },
             new { Id = 16, Key = "elite-athlete",    Title = "Elite Athlete",     Description = "Schließe 3 monatliche Quests ab",         Type = AchievementType.MonthlyQuestsCompleted,TargetValue = 3,     XpReward = 3000, CreatedAt = seedDate, UpdatedAt = seedDate }
         );
+
+        // Friendship: User m-n User (self-referencing)
+        modelBuilder.Entity<Friendship>(entity =>
+        {
+            entity.HasOne(f => f.Requester)
+                .WithMany()
+                .HasForeignKey(f => f.RequesterId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(f => f.Addressee)
+                .WithMany()
+                .HasForeignKey(f => f.AddresseeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(f => f.Status).HasConversion<string>();
+
+            // Ein Paar kann nur eine Freundschaft haben
+            entity.HasIndex(f => new { f.RequesterId, f.AddresseeId }).IsUnique();
+        });
+
+        // FriendChallenge: Challenges zwischen Freunden
+        modelBuilder.Entity<FriendChallenge>(entity =>
+        {
+            entity.HasOne(fc => fc.Challenger)
+                .WithMany()
+                .HasForeignKey(fc => fc.ChallengerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(fc => fc.Opponent)
+                .WithMany()
+                .HasForeignKey(fc => fc.OpponentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(fc => fc.Winner)
+                .WithMany()
+                .HasForeignKey(fc => fc.WinnerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(fc => fc.Status).HasConversion<string>();
+        });
 
     }
 }

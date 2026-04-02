@@ -1,8 +1,10 @@
 import { useRouter, useRoute } from 'vue-router';
+import { useNotifications } from '@/composables/useNotifications';
 
 export function useNavigation() {
     const router = useRouter();
     const route = useRoute();
+    const { disconnect, clearAll } = useNotifications();
 
     const navigateTo = (path: string) => {
         router.push(path);
@@ -13,6 +15,8 @@ export function useNavigation() {
     };
 
     const logout = () => {
+        disconnect();
+        clearAll();
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         router.push('/auth');

@@ -10,6 +10,7 @@ import ProfileView from "@/views/ProfileView.vue";
 import AdminView from "@/views/AdminView.vue";
 import HomeView from "@/views/HomeView.vue";
 import ImpressumView from '@/views/ImpressumView.vue';
+import FriendsView from '@/views/FriendsView.vue';
 
 const routes = [
     {
@@ -55,6 +56,10 @@ const routes = [
     {
         path: '/profile',
         component: ProfileView
+    },
+    {
+        path: '/friends',
+        component: FriendsView
     },
     {
         path: '/admin',

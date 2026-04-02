@@ -37,6 +37,12 @@
       <span>Shop</span>
     </button>
     <button class="nav-item"
+            :class="{ active: isActiveRoute('/friends') }"
+            @click="navigateAndClose('/friends')">
+      <span class="nav-icon">🤝</span>
+      <span>Friends</span>
+    </button>
+    <button class="nav-item"
             :class="{ active: isActiveRoute('/leaderboard') }"
             @click="navigateAndClose('/leaderboard')">
       <span class="nav-icon">👥</span>
