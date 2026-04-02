@@ -95,7 +95,7 @@
           <span class="arc-meta-sep"></span>
           <span class="arc-meta-item">
             <span class="arc-meta-label">Gesamt XP</span>
-            <span class="arc-meta-value">{{ currentXp }}</span>
+            <span class="arc-meta-value">{{ totalXp.toLocaleString('de-DE') }}</span>
           </span>
         </div>
 
@@ -103,19 +103,19 @@
         <div class="stats-bar">
           <div class="stats-bar-item">
             <div class="stats-bar-icon flame" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'/></svg>`"></div>
-            <span class="stats-bar-value">5 Tage</span>
+            <span class="stats-bar-value">{{ currentStreak }} Tage</span>
             <span class="stats-bar-label">Streak</span>
           </div>
           <div class="stats-bar-sep"></div>
           <div class="stats-bar-item">
             <div class="stats-bar-icon trophy" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/></svg>`"></div>
-            <span class="stats-bar-value">24/50</span>
+            <span class="stats-bar-value">{{ unlockedAchievements }}/{{ totalAchievements }}</span>
             <span class="stats-bar-label">Badges</span>
           </div>
           <div class="stats-bar-sep"></div>
           <div class="stats-bar-item">
             <div class="stats-bar-icon quest" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/></svg>`"></div>
-            <span class="stats-bar-value">3/5</span>
+            <span class="stats-bar-value">{{ completedQuests }}/{{ totalQuests }}</span>
             <span class="stats-bar-label">Quests</span>
           </div>
           <div class="stats-bar-sep"></div>
@@ -132,19 +132,19 @@
       <div class="stats-grid">
         <StatCard
           :icon="`<path d='M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'/>`"
-          label="Streak" value="5 Tage" trend="+2" cardClass="streak-card"
+          label="Streak" :value="currentStreak + ' Tage'" cardClass="streak-card"
         />
         <StatCard
           :icon="`<path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/>`"
-          label="Achievements" value="24/50" trend="+3 diese Woche" cardClass="achievements-card"
+          label="Achievements" :value="unlockedAchievements + '/' + totalAchievements" cardClass="achievements-card"
         />
         <StatCard
           :icon="`<circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/>`"
-          label="Quests" value="3/5" trend="2 aktiv" cardClass="quests-card"
+          label="Quests" :value="completedQuests + '/' + totalQuests" :trend="activeQuests + ' aktiv'" cardClass="quests-card"
         />
         <StatCard
           :icon="`<polyline points='22 7 13.5 15.5 8.5 10.5 2 17'/><polyline points='16 7 22 7 22 13'/>`"
-          label="Gesamt XP" value="12,450" trend="+450 heute" cardClass="xp-card"
+          label="Gesamt XP" :value="totalXp.toLocaleString('de-DE')" :trend="'+' + todayXp + ' XP heute'" cardClass="xp-card"
         />
       </div>
     </main>
@@ -199,7 +199,7 @@ import Navbar from "@/components/Navbar.vue";
 import Header from "@/components/Header.vue";
 import { onMounted, ref, computed } from 'vue';
 import type { item } from '@/models/Item';
-import { userService } from '@/services/api';
+import { userService, achievementService, questService } from '@/services/api';
 import FooterComponent from "@/components/FooterComponent.vue";
 import { useLeaderboard } from '@/composables/useLeaderboard';
 import { useRouter } from 'vue-router';
@@ -211,6 +211,17 @@ const level = ref(1);
 const currentXp = ref(0);
 const xpForNextLevel = ref(1000);
 const router = useRouter();
+
+// Stats vom Backend
+const currentStreak = ref(0);
+const unlockedAchievements = ref(0);
+const totalAchievements = ref(16);
+const completedQuests = ref(0);
+const activeQuests = ref(0);
+const totalQuests = ref(0);
+const caloriesBurned = ref(0);
+const todayXp = ref(0);
+const totalXp = ref(0);
 
 // Booster State
 const boostSlots = ref<Array<item | null>>([null, null, null, null]);
@@ -304,7 +315,29 @@ async function unequipSlot() {
   }
 }
 
-onMounted(() => loadProfile());
+onMounted(async () => {
+  await loadProfile();
+  try {
+    const [achRes, questRes, statsRes, xpRes] = await Promise.all([
+      achievementService.getAll(),
+      questService.getMyQuests(),
+      achievementService.getProfileStats(),
+      achievementService.getTodayXp()
+    ]);
+    const achs = achRes.data ?? [];
+    totalAchievements.value = achs.length;
+    unlockedAchievements.value = achs.filter((a: any) => a.unlocked).length;
+    const quests = questRes.data ?? [];
+    totalQuests.value = quests.length;
+    completedQuests.value = quests.filter((q: any) => q.isCompleted).length;
+    activeQuests.value = quests.filter((q: any) => !q.isCompleted).length;
+    const stats = statsRes.data ?? {};
+    caloriesBurned.value = stats.caloriesBurned ?? 0;
+    currentStreak.value = stats.currentStreak ?? 0;
+    todayXp.value = xpRes.data?.todayXp ?? 0;
+    totalXp.value = xpRes.data?.totalXp ?? 0;
+  } catch { /* stats nicht verfügbar */ }
+});
 </script>
 
 <style scoped>
