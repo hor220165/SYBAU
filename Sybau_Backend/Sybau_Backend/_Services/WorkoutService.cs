@@ -11,12 +11,14 @@ public class WorkoutService
     private readonly FitnessDbContext _context;
     private readonly UserService _userService;
     private readonly QuestService _questService;
+    private readonly AchievementService _achievementService;
 
-    public WorkoutService(FitnessDbContext context, UserService userService, QuestService questService)
+    public WorkoutService(FitnessDbContext context, UserService userService, QuestService questService, AchievementService achievementService)
     {
         _context = context;
         _userService = userService;
         _questService = questService;
+        _achievementService = achievementService;
     }
 
     public async Task<ExerciseDto> CreateExerciseAsync(CreateExerciseDto dto)
@@ -241,6 +243,9 @@ public class WorkoutService
 
         // Quest-Fortschritt aktualisieren
         await _questService.UpdateQuestProgressAsync(userId);
+
+        // Achievement-Check
+        await _achievementService.CheckAndUnlockAsync(userId);
 
         return new ExerciseDto
         {

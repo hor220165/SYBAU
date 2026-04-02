@@ -137,4 +137,10 @@ export const questService = {
     getTodayActivity: () => API.get('/quests/activity/today')
 };
 
+export const achievementService = {
+    getAll: () => API.get('/achievements'),
+    getProfileStats: () => API.get('/achievements/stats'),
+    getTodayXp: () => API.get('/achievements/today-xp')
+};
+
 export default API;

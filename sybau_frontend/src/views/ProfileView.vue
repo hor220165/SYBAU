@@ -14,25 +14,25 @@
       <StatCard
         :icon="`<circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/>`"
         label="Workouts gesamt"
-        value="124"
+        :value="String(profileStats.totalWorkouts)"
         cardClass="stat-purple"
       />
       <StatCard
         :icon="`<rect width='18' height='18' x='3' y='4' rx='2' ry='2'/><line x1='16' x2='16' y1='2' y2='6'/><line x1='8' x2='8' y1='2' y2='6'/><line x1='3' x2='21' y1='10' y2='10'/>`"
         label="Trainingszeit"
-        value="42.5h"
+        :value="profileStats.trainingHours + 'h'"
         cardClass="stat-blue"
       />
       <StatCard
         :icon="`<path d='M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'/>`"
         label="Kalorien verbrannt"
-        value="18,450"
+        :value="profileStats.caloriesBurned.toLocaleString('de-DE')"
         cardClass="stat-orange"
       />
       <StatCard
         :icon="`<polyline points='22 7 13.5 15.5 8.5 10.5 2 17'/><polyline points='16 7 22 7 22 13'/>`"
         label="Längster Streak"
-        :value="currentStreak + ' Tage'"
+        :value="profileStats.longestStreak + ' Tage'"
         cardClass="stat-green"
       />
     </div>
@@ -214,9 +214,10 @@ import AchievementCard from '@/components/AchievementCard.vue';
 import ActivityItem from '@/components/ActivityItem.vue';
 import { useAuth } from '@/composables/useAuth';
 import { useLeaderboard } from '@/composables/useLeaderboard';
-import { userService } from '@/services/api';
+import { userService, achievementService } from '@/services/api';
 import FooterComponent from '@/components/FooterComponent.vue';
 import MessagePopup from '@/components/MessagePopup.vue';
+import type { Achievement, ProfileStats } from '@/models/Achievement';
 
 const router = useRouter();
 const { user, logout } = useAuth();
@@ -224,6 +225,7 @@ const { sortedLeaderboard, loadLeaderboard } = useLeaderboard();
 
 const longestStreak = ref(0);
 const currentStreak = ref(0);
+const profileStats = ref<ProfileStats>({ totalWorkouts: 0, trainingHours: 0, caloriesBurned: 0, longestStreak: 0, currentStreak: 0 });
 
 const showSettings = ref(false);
 const editingUsername = ref('');
@@ -347,24 +349,27 @@ const visibleCount = computed(() => {
 
 const currentAchievementIndex = ref(0);
 
-const achievements = ref([
-  { id: 1,  icon: `<polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/>`, title: 'Speedster', description: 'Laufe 5km unter 25 Min', unlocked: true },
-  { id: 2,  icon: `<path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/>`, title: 'Iron Body', description: 'Hebe 1000kg gesamt', unlocked: true },
-  { id: 3,  icon: `<path d='M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'/>`, title: 'On Fire', description: '5-Tage Streak', unlocked: true },
-  { id: 4,  icon: `<circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/>`, title: 'Quest Hunter', description: '10 Quests abschließen', unlocked: true },
-  { id: 5,  icon: `<polygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'/>`, title: 'Rising Star', description: 'Level 10 erreichen', unlocked: true },
-  { id: 6,  icon: `<path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/>`, title: 'Champion', description: 'Platz 1 im Leaderboard', unlocked: false },
-  { id: 7,  icon: `<circle cx='12' cy='8' r='7'/><polyline points='8.21 13.89 7 23 12 20 17 23 15.79 13.88'/>`, title: 'Legend', description: 'Level 25 erreichen', unlocked: false },
-  { id: 8,  icon: `<polyline points='20 6 9 17 4 12'/>`, title: 'Perfectionist', description: 'Alle Daily Quests 30 Tage', unlocked: false },
-  { id: 9,  icon: `<path d='M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z'/><path d='m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z'/><path d='M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0'/><path d='M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5'/>`, title: 'Sky Rocket', description: 'Erreiche Level 50', unlocked: true },
-  { id: 10, icon: `<path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/>`, title: 'Diamond Grind', description: 'Trainiere 100 Tage in Folge', unlocked: true },
-  { id: 11, icon: `<polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/>`, title: 'Speed Demon', description: '10km unter 40 Minuten', unlocked: false },
-  { id: 12, icon: `<polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/>`, title: 'Workout Warrior', description: '500 Workouts absolviert', unlocked: false },
-  { id: 13, icon: `<path d='M2 12h20'/><path d='M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z'/><circle cx='12' cy='12' r='10'/>`, title: 'Triathlon Master', description: 'Schwimmen, Laufen... in einer Woche', unlocked: false },
-  { id: 14, icon: `<polygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'/>`, title: 'Shining Star', description: '60-Tage Streak', unlocked: false },
-  { id: 15, icon: `<path d='M18 3a3 3 0 0 1 0 6h-6a3 3 0 0 1 0-6h6z'/><path d='M6 21a3 3 0 0 1 0-6h6a3 3 0 0 1 0 6H6z'/><path d='M15 12a3 3 0 1 1 0-6 3 3 0 0 1 0 6z'/><path d='M9 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'/>`, title: 'Bionic', description: '1000 Liegestütze in 7 Tagen', unlocked: false },
-  { id: 16, icon: `<circle cx='12' cy='8' r='7'/><polyline points='8.21 13.89 7 23 12 20 17 23 15.79 13.88'/>`, title: 'Elite Athlete', description: 'Alle Monthly Quests 3 Monate', unlocked: false }
-]);
+// Icon-Map: key → SVG-Pfade (gleiche Icons wie vorher)
+const achievementIcons: Record<string, string> = {
+  'speedster': `<polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/>`,
+  'iron-body': `<path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/>`,
+  'on-fire': `<path d='M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'/>`,
+  'quest-hunter': `<circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/>`,
+  'rising-star': `<polygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'/>`,
+  'champion': `<path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/>`,
+  'legend': `<circle cx='12' cy='8' r='7'/><polyline points='8.21 13.89 7 23 12 20 17 23 15.79 13.88'/>`,
+  'perfectionist': `<polyline points='20 6 9 17 4 12'/>`,
+  'sky-rocket': `<path d='M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z'/><path d='m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z'/><path d='M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0'/><path d='M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5'/>`,
+  'diamond-grind': `<path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/>`,
+  'speed-demon': `<polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/>`,
+  'workout-warrior': `<polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/>`,
+  'triathlon-master': `<path d='M2 12h20'/><path d='M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z'/><circle cx='12' cy='12' r='10'/>`,
+  'shining-star': `<polygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'/>`,
+  'bionic': `<path d='M18 3a3 3 0 0 1 0 6h-6a3 3 0 0 1 0-6h6z'/><path d='M6 21a3 3 0 0 1 0-6h6a3 3 0 0 1 0 6H6z'/><path d='M15 12a3 3 0 1 1 0-6 3 3 0 0 1 0 6z'/><path d='M9 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'/>`,
+  'elite-athlete': `<circle cx='12' cy='8' r='7'/><polyline points='8.21 13.89 7 23 12 20 17 23 15.79 13.88'/>`
+};
+
+const achievements = ref<Array<{ id: number; icon: string; title: string; description: string; unlocked: boolean }>>([]);
 
 const visibleAchievements = computed(() =>
   achievements.value.slice(currentAchievementIndex.value, currentAchievementIndex.value + visibleCount.value)
@@ -448,11 +453,25 @@ onMounted(async () => {
     user.value = JSON.parse(localStorage.getItem('user') || '{}');
     editingUsername.value = user.value.userName;
     await loadLeaderboard();
+
+    // Achievements & Stats vom Backend laden
     try {
-      const streakRes = await userService.getStreaks();
-      longestStreak.value = streakRes.data.longestStreak ?? 0;
-      currentStreak.value = streakRes.data.currentStreak ?? 0;
-    } catch { /* streak nicht verfügbar */ }
+      const [achievementsRes, statsRes] = await Promise.all([
+        achievementService.getAll(),
+        achievementService.getProfileStats()
+      ]);
+      achievements.value = (achievementsRes.data as Achievement[]).map(a => ({
+        id: a.id,
+        icon: achievementIcons[a.key] || '',
+        title: a.title,
+        description: a.description,
+        unlocked: a.unlocked
+      }));
+      profileStats.value = statsRes.data;
+      longestStreak.value = statsRes.data.longestStreak ?? 0;
+      currentStreak.value = statsRes.data.currentStreak ?? 0;
+    } catch { /* Achievements/Stats nicht verfügbar */ }
+
     await loadWeeklyActivity();
   } catch (err) {
     console.error('Fehler beim Laden', err);

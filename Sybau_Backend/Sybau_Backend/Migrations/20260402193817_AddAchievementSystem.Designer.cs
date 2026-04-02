@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Sybau_Backend.Data;
 
@@ -10,9 +11,11 @@ using Sybau_Backend.Data;
 namespace Sybau_Backend.Migrations
 {
     [DbContext(typeof(FitnessDbContext))]
-    partial class FitnessDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260402193817_AddAchievementSystem")]
+    partial class AddAchievementSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.11");
@@ -60,7 +63,7 @@ namespace Sybau_Backend.Migrations
                         {
                             Id = 1,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Laufe insgesamt 5 km",
+                            Description = "Laufe 5km unter 25 Min",
                             Key = "speedster",
                             TargetValue = 5,
                             Title = "Speedster",
@@ -72,9 +75,9 @@ namespace Sybau_Backend.Migrations
                         {
                             Id = 2,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Mache insgesamt 10.000 Wiederholungen",
+                            Description = "Hebe 1000kg gesamt",
                             Key = "iron-body",
-                            TargetValue = 10000,
+                            TargetValue = 1000,
                             Title = "Iron Body",
                             Type = "TotalReps",
                             UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -84,7 +87,7 @@ namespace Sybau_Backend.Migrations
                         {
                             Id = 3,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Erreiche eine 5-Tage Streak",
+                            Description = "5-Tage Streak",
                             Key = "on-fire",
                             TargetValue = 5,
                             Title = "On Fire",
@@ -96,7 +99,7 @@ namespace Sybau_Backend.Migrations
                         {
                             Id = 4,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Schließe 10 Quests ab",
+                            Description = "10 Quests abschließen",
                             Key = "quest-hunter",
                             TargetValue = 10,
                             Title = "Quest Hunter",
@@ -108,7 +111,7 @@ namespace Sybau_Backend.Migrations
                         {
                             Id = 5,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Erreiche Level 10",
+                            Description = "Level 10 erreichen",
                             Key = "rising-star",
                             TargetValue = 10,
                             Title = "Rising Star",
@@ -120,7 +123,7 @@ namespace Sybau_Backend.Migrations
                         {
                             Id = 6,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Erreiche Platz 1 im Leaderboard",
+                            Description = "Platz 1 im Leaderboard",
                             Key = "champion",
                             TargetValue = 1,
                             Title = "Champion",
@@ -132,7 +135,7 @@ namespace Sybau_Backend.Migrations
                         {
                             Id = 7,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Erreiche Level 25",
+                            Description = "Level 25 erreichen",
                             Key = "legend",
                             TargetValue = 25,
                             Title = "Legend",
@@ -144,7 +147,7 @@ namespace Sybau_Backend.Migrations
                         {
                             Id = 8,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Trainiere an 30 verschiedenen Tagen",
+                            Description = "Alle Daily Quests 30 Tage",
                             Key = "perfectionist",
                             TargetValue = 30,
                             Title = "Perfectionist",
@@ -180,9 +183,9 @@ namespace Sybau_Backend.Migrations
                         {
                             Id = 11,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Laufe insgesamt 50 km",
+                            Description = "10km unter 40 Minuten",
                             Key = "speed-demon",
-                            TargetValue = 50,
+                            TargetValue = 10,
                             Title = "Speed Demon",
                             Type = "TotalKilometers",
                             UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -192,7 +195,7 @@ namespace Sybau_Backend.Migrations
                         {
                             Id = 12,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Trainiere an 500 verschiedenen Tagen",
+                            Description = "500 Workouts absolviert",
                             Key = "workout-warrior",
                             TargetValue = 500,
                             Title = "Workout Warrior",
@@ -204,7 +207,7 @@ namespace Sybau_Backend.Migrations
                         {
                             Id = 13,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Trainiere 3 Kategorien in einer Woche",
+                            Description = "3 Kategorien in einer Woche trainieren",
                             Key = "triathlon-master",
                             TargetValue = 3,
                             Title = "Triathlon Master",
@@ -216,7 +219,7 @@ namespace Sybau_Backend.Migrations
                         {
                             Id = 14,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Erreiche eine 60-Tage Streak",
+                            Description = "60-Tage Streak",
                             Key = "shining-star",
                             TargetValue = 60,
                             Title = "Shining Star",
@@ -228,7 +231,7 @@ namespace Sybau_Backend.Migrations
                         {
                             Id = 15,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Mache 1.000 Wiederholungen in 7 Tagen",
+                            Description = "1000 Wiederholungen in 7 Tagen",
                             Key = "bionic",
                             TargetValue = 1000,
                             Title = "Bionic",
@@ -240,7 +243,7 @@ namespace Sybau_Backend.Migrations
                         {
                             Id = 16,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Schließe 3 monatliche Quests ab",
+                            Description = "3 monatliche Quests abschließen",
                             Key = "elite-athlete",
                             TargetValue = 3,
                             Title = "Elite Athlete",

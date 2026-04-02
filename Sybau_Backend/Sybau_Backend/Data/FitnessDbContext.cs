@@ -20,6 +20,8 @@ public class FitnessDbContext:DbContext
     public DbSet<Quest> Quests => Set<Quest>();
     public DbSet<UserQuest> UserQuests => Set<UserQuest>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
+    public DbSet<Achievement> Achievements => Set<Achievement>();
+    public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
     public FitnessDbContext(DbContextOptions<FitnessDbContext> options) : base(options){}
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -156,6 +158,48 @@ public class FitnessDbContext:DbContext
             new { Id = 10, Name = "Step Master", Description = "Laufe 10.000 Schritte", Type = QuestType.Daily, Rarity = ItemRarity.Common, TargetType = QuestTargetType.Steps, TargetValue = 10000, XpReward = 120, CoinReward = 12, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
             new { Id = 11, Name = "Wanderer", Description = "Laufe insgesamt 10 km diese Woche", Type = QuestType.Weekly, Rarity = ItemRarity.Rare, TargetType = QuestTargetType.Kilometers, TargetValue = 10, XpReward = 500, CoinReward = 50, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
             new { Id = 12, Name = "Marathon Läufer", Description = "Laufe insgesamt 42 km diesen Monat", Type = QuestType.Monthly, Rarity = ItemRarity.Legendary, TargetType = QuestTargetType.Kilometers, TargetValue = 42, XpReward = 2000, CoinReward = 200, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+        );
+
+        // Achievement Entity Config
+        modelBuilder.Entity<Achievement>(entity =>
+        {
+            entity.Property(a => a.Type).HasConversion<string>();
+        });
+
+        modelBuilder.Entity<UserAchievement>(entity =>
+        {
+            entity.HasOne(ua => ua.User)
+                .WithMany(u => u.UserAchievements)
+                .HasForeignKey(ua => ua.UserId)
+                .IsRequired();
+
+            entity.HasOne(ua => ua.Achievement)
+                .WithMany(a => a.UserAchievements)
+                .HasForeignKey(ua => ua.AchievementId)
+                .IsRequired();
+
+            entity.HasIndex(ua => new { ua.UserId, ua.AchievementId }).IsUnique();
+        });
+
+        // Achievement Seed Data (passend zu den 16 Frontend-Achievements)
+        var seedDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        modelBuilder.Entity<Achievement>().HasData(
+            new { Id = 1,  Key = "speedster",        Title = "Speedster",         Description = "Laufe insgesamt 5 km",                    Type = AchievementType.TotalKilometers,       TargetValue = 5,     XpReward = 200,  CreatedAt = seedDate, UpdatedAt = seedDate },
+            new { Id = 2,  Key = "iron-body",        Title = "Iron Body",         Description = "Mache insgesamt 10.000 Wiederholungen",   Type = AchievementType.TotalReps,             TargetValue = 10000, XpReward = 300,  CreatedAt = seedDate, UpdatedAt = seedDate },
+            new { Id = 3,  Key = "on-fire",          Title = "On Fire",           Description = "Erreiche eine 5-Tage Streak",             Type = AchievementType.CurrentStreak,         TargetValue = 5,     XpReward = 200,  CreatedAt = seedDate, UpdatedAt = seedDate },
+            new { Id = 4,  Key = "quest-hunter",     Title = "Quest Hunter",      Description = "Schließe 10 Quests ab",                   Type = AchievementType.QuestsCompleted,       TargetValue = 10,    XpReward = 300,  CreatedAt = seedDate, UpdatedAt = seedDate },
+            new { Id = 5,  Key = "rising-star",      Title = "Rising Star",       Description = "Erreiche Level 10",                       Type = AchievementType.Level,                 TargetValue = 10,    XpReward = 500,  CreatedAt = seedDate, UpdatedAt = seedDate },
+            new { Id = 6,  Key = "champion",         Title = "Champion",          Description = "Erreiche Platz 1 im Leaderboard",         Type = AchievementType.LeaderboardRank,       TargetValue = 1,     XpReward = 1000, CreatedAt = seedDate, UpdatedAt = seedDate },
+            new { Id = 7,  Key = "legend",           Title = "Legend",            Description = "Erreiche Level 25",                       Type = AchievementType.Level,                 TargetValue = 25,    XpReward = 800,  CreatedAt = seedDate, UpdatedAt = seedDate },
+            new { Id = 8,  Key = "perfectionist",    Title = "Perfectionist",     Description = "Trainiere an 30 verschiedenen Tagen",     Type = AchievementType.TrainingDays,          TargetValue = 30,    XpReward = 1000, CreatedAt = seedDate, UpdatedAt = seedDate },
+            new { Id = 9,  Key = "sky-rocket",       Title = "Sky Rocket",        Description = "Erreiche Level 50",                       Type = AchievementType.Level,                 TargetValue = 50,    XpReward = 2000, CreatedAt = seedDate, UpdatedAt = seedDate },
+            new { Id = 10, Key = "diamond-grind",    Title = "Diamond Grind",     Description = "Trainiere 100 Tage in Folge",             Type = AchievementType.CurrentStreak,         TargetValue = 100,   XpReward = 3000, CreatedAt = seedDate, UpdatedAt = seedDate },
+            new { Id = 11, Key = "speed-demon",      Title = "Speed Demon",       Description = "Laufe insgesamt 50 km",                   Type = AchievementType.TotalKilometers,       TargetValue = 50,    XpReward = 400,  CreatedAt = seedDate, UpdatedAt = seedDate },
+            new { Id = 12, Key = "workout-warrior",  Title = "Workout Warrior",   Description = "Trainiere an 500 verschiedenen Tagen",    Type = AchievementType.TotalWorkouts,         TargetValue = 500,   XpReward = 5000, CreatedAt = seedDate, UpdatedAt = seedDate },
+            new { Id = 13, Key = "triathlon-master", Title = "Triathlon Master",  Description = "Trainiere 3 Kategorien in einer Woche",   Type = AchievementType.WeeklyCategories,      TargetValue = 3,     XpReward = 500,  CreatedAt = seedDate, UpdatedAt = seedDate },
+            new { Id = 14, Key = "shining-star",     Title = "Shining Star",      Description = "Erreiche eine 60-Tage Streak",            Type = AchievementType.CurrentStreak,         TargetValue = 60,    XpReward = 2000, CreatedAt = seedDate, UpdatedAt = seedDate },
+            new { Id = 15, Key = "bionic",           Title = "Bionic",            Description = "Mache 1.000 Wiederholungen in 7 Tagen",   Type = AchievementType.WeeklyReps,            TargetValue = 1000,  XpReward = 1000, CreatedAt = seedDate, UpdatedAt = seedDate },
+            new { Id = 16, Key = "elite-athlete",    Title = "Elite Athlete",     Description = "Schließe 3 monatliche Quests ab",         Type = AchievementType.MonthlyQuestsCompleted,TargetValue = 3,     XpReward = 3000, CreatedAt = seedDate, UpdatedAt = seedDate }
         );
 
     }
