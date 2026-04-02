@@ -10,11 +10,13 @@ public class WorkoutService
 {
     private readonly FitnessDbContext _context;
     private readonly UserService _userService;
+    private readonly QuestService _questService;
 
-    public WorkoutService(FitnessDbContext context, UserService userService)
+    public WorkoutService(FitnessDbContext context, UserService userService, QuestService questService)
     {
         _context = context;
         _userService = userService;
+        _questService = questService;
     }
 
     public async Task<ExerciseDto> CreateExerciseAsync(CreateExerciseDto dto)
@@ -236,6 +238,9 @@ public class WorkoutService
 
         if (totalCoins > 0)
             await _userService.AddCoinsAsync(userWithAvatar, totalCoins, $"Exercise: {exercise.Name}");
+
+        // Quest-Fortschritt aktualisieren
+        await _questService.UpdateQuestProgressAsync(userId);
 
         return new ExerciseDto
         {

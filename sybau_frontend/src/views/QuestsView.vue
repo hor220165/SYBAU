@@ -1,246 +1,200 @@
 <template>
-  <!-- Header -->
-  <Header></Header>
+  <Header />
+  <Navbar />
 
-  <!-- Navigation -->
-  <Navbar></Navbar>
-
-  <!-- Main Content -->
   <main class="quests-content">
-    <!-- Stats Header -->
-    <div class="stats-header">
-      <div class="stats-header-content">
-        <h1 class="page-title">Quest Log</h1>
-        <p class="page-subtitle">Schließe Quests ab und sammle epische Belohnungen!</p>
-
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon">
-              <Trophy :size="28" />
-            </div>
-            <div class="stat-info">
-              <span class="stat-label">Abgeschlossen</span>
-              <span class="stat-value">47 Quests</span>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">
-              <Swords :size="28" />
-            </div>
-            <div class="stat-info">
-              <span class="stat-label">Aktiv</span>
-              <span class="stat-value">9 Quests</span>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">
-              <Sparkles :size="28" />
-            </div>
-            <div class="stat-info">
-              <span class="stat-label">Verdient</span>
-              <span class="stat-value">12,450 XP</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Quests werden geladen...</p>
     </div>
 
-    <!-- Daily Quests -->
-    <section class="quest-section">
-      <div class="section-header">
-        <div class="section-title">
-          <span class="section-icon">🔥</span>
-          <h2>Tägliche Quests</h2>
+    <template v-else>
+      <!-- Stats Header -->
+      <div class="stats-header">
+        <div class="stats-header-content">
+          <h1 class="page-title">Quest Log</h1>
+          <p class="page-subtitle">Schließe Quests ab und sammle epische Belohnungen!</p>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon">
+                <Trophy :size="28" />
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Abgeschlossen</span>
+                <span class="stat-value">{{ stats.completed }} Quests</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">
+                <Swords :size="28" />
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Aktiv</span>
+                <span class="stat-value">{{ stats.active }} Quests</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">
+                <Sparkles :size="28" />
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Verdient</span>
+                <span class="stat-value">{{ stats.totalXpEarned.toLocaleString('de-DE') }} XP</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <span class="renewal-badge">Erneuert in 18h</span>
       </div>
 
-      <div class="quests-grid">
-        <QuestCard
-          v-for="quest in dailyQuests"
-          :key="quest.id"
-          :rarity="quest.rarity"
-          :title="quest.title"
-          :description="quest.description"
-          :progress="quest.progress"
-          :max-progress="quest.maxProgress"
-          :xp-reward="quest.xpReward"
-          :time-left="quest.timeLeft"
-          @click="viewQuest(quest)"
-        />
-      </div>
-    </section>
-
-    <!-- Weekly Quests -->
-    <section class="quest-section">
-      <div class="section-header">
-        <div class="section-title">
-          <span class="section-icon">🎯</span>
-          <h2>Wöchentliche Quests</h2>
+      <!-- Daily Quests -->
+      <section class="quest-section" v-if="dailyQuests.length">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-icon">🔥</span>
+            <h2>Tägliche Quests</h2>
+          </div>
+          <span class="renewal-badge">{{ dailyQuests[0]?.timeLeft }}</span>
         </div>
-        <span class="renewal-badge renewal-weekly">Erneuert in 4 Tagen</span>
-      </div>
-
-      <div class="quests-grid">
-        <QuestCard
-          v-for="quest in weeklyQuests"
-          :key="quest.id"
-          :rarity="quest.rarity"
-          :title="quest.title"
-          :description="quest.description"
-          :progress="quest.progress"
-          :max-progress="quest.maxProgress"
-          :xp-reward="quest.xpReward"
-          :time-left="quest.timeLeft"
-          @click="viewQuest(quest)"
-        />
-      </div>
-    </section>
-
-    <!-- Monthly Quests -->
-    <section class="quest-section">
-      <div class="section-header">
-        <div class="section-title">
-          <span class="section-icon">🏆</span>
-          <h2>Monatliche Quests</h2>
+        <div class="quests-grid">
+          <QuestCard
+            v-for="quest in dailyQuests"
+            :key="quest.id"
+            :rarity="quest.rarity"
+            :title="quest.name"
+            :description="quest.description"
+            :progress="quest.progress"
+            :max-progress="quest.targetValue"
+            :xp-reward="quest.xpReward"
+            :coin-reward="quest.coinReward"
+            :time-left="quest.timeLeft"
+            :is-completed="quest.isCompleted"
+            :is-reward-claimed="quest.isRewardClaimed"
+            @claim="claimReward(quest)"
+          />
         </div>
-        <span class="renewal-badge renewal-monthly">Limitiert</span>
-      </div>
+      </section>
 
-      <div class="quests-grid">
-        <QuestCard
-          v-for="quest in monthlyQuests"
-          :key="quest.id"
-          :rarity="quest.rarity"
-          :title="quest.title"
-          :description="quest.description"
-          :progress="quest.progress"
-          :max-progress="quest.maxProgress"
-          :xp-reward="quest.xpReward"
-          :time-left="quest.timeLeft"
-          @click="viewQuest(quest)"
-        />
-      </div>
-    </section>
+      <!-- Weekly Quests -->
+      <section class="quest-section" v-if="weeklyQuests.length">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-icon">🎯</span>
+            <h2>Wöchentliche Quests</h2>
+          </div>
+          <span class="renewal-badge renewal-weekly">{{ weeklyQuests[0]?.timeLeft }}</span>
+        </div>
+        <div class="quests-grid">
+          <QuestCard
+            v-for="quest in weeklyQuests"
+            :key="quest.id"
+            :rarity="quest.rarity"
+            :title="quest.name"
+            :description="quest.description"
+            :progress="quest.progress"
+            :max-progress="quest.targetValue"
+            :xp-reward="quest.xpReward"
+            :coin-reward="quest.coinReward"
+            :time-left="quest.timeLeft"
+            :is-completed="quest.isCompleted"
+            :is-reward-claimed="quest.isRewardClaimed"
+            @claim="claimReward(quest)"
+          />
+        </div>
+      </section>
+
+      <!-- Monthly Quests -->
+      <section class="quest-section" v-if="monthlyQuests.length">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-icon">🏆</span>
+            <h2>Monatliche Quests</h2>
+          </div>
+          <span class="renewal-badge renewal-monthly">{{ monthlyQuests[0]?.timeLeft }}</span>
+        </div>
+        <div class="quests-grid">
+          <QuestCard
+            v-for="quest in monthlyQuests"
+            :key="quest.id"
+            :rarity="quest.rarity"
+            :title="quest.name"
+            :description="quest.description"
+            :progress="quest.progress"
+            :max-progress="quest.targetValue"
+            :xp-reward="quest.xpReward"
+            :coin-reward="quest.coinReward"
+            :time-left="quest.timeLeft"
+            :is-completed="quest.isCompleted"
+            :is-reward-claimed="quest.isRewardClaimed"
+            @claim="claimReward(quest)"
+          />
+        </div>
+      </section>
+    </template>
+
+    <!-- Popup -->
+    <MessagePopup :message="popup.message" :type="popup.type" :visible="popup.visible" @close="popup.visible = false" />
   </main>
-   <!-- Footer -->
-    <FooterComponent />
+
+  <FooterComponent />
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Trophy, Swords, Sparkles } from 'lucide-vue-next';
 import Header from '@/components/Header.vue';
 import Navbar from '@/components/Navbar.vue';
 import QuestCard from '@/components/QuestCard.vue';
 import FooterComponent from '@/components/FooterComponent.vue';
+import MessagePopup from '@/components/MessagePopup.vue';
+import { questService } from '@/services/api';
+import { useAuth } from '@/composables/useAuth';
+import type { UserQuest, QuestStats } from '@/models/Quest';
 
-// Daily Quests
-const dailyQuests = ref([
-  {
-    id: 1,
-    rarity: 'Common',
-    title: 'Tägliches Training',
-    description: 'Schließe ein beliebiges Workout ab',
-    progress: 0,
-    maxProgress: 1,
-    xpReward: 100,
-    timeLeft: '18h'
-  },
-  {
-    id: 2,
-    rarity: 'Common',
-    title: 'Kalorienjäger',
-    description: 'Verbrenne 300 Kalorien',
-    progress: 180,
-    maxProgress: 300,
-    xpReward: 150,
-    timeLeft: '18h'
-  },
-  {
-    id: 3,
-    rarity: 'Common',
-    title: 'Step Master',
-    description: 'Laufe 10.000 Schritte',
-    progress: 6500,
-    maxProgress: 10000,
-    xpReward: 120,
-    timeLeft: '18h'
-  }
-]);
+const { refreshProfile } = useAuth();
 
-// Weekly Quests
-const weeklyQuests = ref([
-  {
-    id: 4,
-    rarity: 'Rare',
-    title: 'Cardio Champion',
-    description: 'Laufe insgesamt 10km',
-    progress: 7,
-    maxProgress: 10,
-    xpReward: 500,
-    timeLeft: '4d'
-  },
-  {
-    id: 5,
-    rarity: 'Rare',
-    title: 'Kraft Krieger',
-    description: 'Hebe insgesamt 5000kg',
-    progress: 3200,
-    maxProgress: 5000,
-    xpReward: 600,
-    timeLeft: '4d'
-  },
-  {
-    id: 6,
-    rarity: 'Epic',
-    title: 'Consistency King',
-    description: 'Trainiere 5 Tage diese Woche',
-    progress: 3,
-    maxProgress: 5,
-    xpReward: 800,
-    timeLeft: '4d'
-  }
-]);
+const allQuests = ref<UserQuest[]>([]);
+const stats = ref<QuestStats>({ completed: 0, active: 0, totalXpEarned: 0 });
+const loading = ref(true);
+const popup = ref({ message: '', type: 'success' as 'success' | 'error', visible: false });
 
-// Monthly Quests
-const monthlyQuests = ref([
-  {
-    id: 7,
-    rarity: 'Legendary',
-    title: 'Marathon Meister',
-    description: 'Laufe insgesamt 42km',
-    progress: 28,
-    maxProgress: 42,
-    xpReward: 2000,
-    timeLeft: '30d'
-  },
-  {
-    id: 8,
-    rarity: 'Legendary',
-    title: 'Iron Body',
-    description: 'Hebe insgesamt 50.000kg',
-    progress: 23400,
-    maxProgress: 50000,
-    xpReward: 3000,
-    timeLeft: '30d'
-  },
-  {
-    id: 9,
-    rarity: 'Legendary',
-    title: 'Transformer',
-    description: 'Trainiere 30 Tage in Folge',
-    progress: 12,
-    maxProgress: 30,
-    xpReward: 5000,
-    timeLeft: '∞'
-  }
-]);
+const dailyQuests = computed(() => allQuests.value.filter(q => q.type === 'daily'));
+const weeklyQuests = computed(() => allQuests.value.filter(q => q.type === 'weekly'));
+const monthlyQuests = computed(() => allQuests.value.filter(q => q.type === 'monthly'));
 
-const viewQuest = (quest: any) => {
-  console.log('Viewing quest:', quest);
-  // TODO: Show quest details or navigate
+const showPopup = (message: string, type: 'success' | 'error') => {
+  popup.value = { message, type, visible: true };
 };
+
+const loadQuests = async () => {
+  try {
+    const [questsRes, statsRes] = await Promise.all([
+      questService.getMyQuests(),
+      questService.getStats()
+    ]);
+    allQuests.value = questsRes.data;
+    stats.value = statsRes.data;
+  } catch (e: any) {
+    showPopup(e.response?.data?.message || 'Fehler beim Laden der Quests.', 'error');
+  }
+};
+
+const claimReward = async (quest: UserQuest) => {
+  try {
+    const { data } = await questService.claimReward(quest.id);
+    showPopup(data.message, 'success');
+    // Quests + Profil neu laden (Coins/XP haben sich geändert)
+    await Promise.all([loadQuests(), refreshProfile()]);
+  } catch (e: any) {
+    showPopup(e.response?.data?.message || 'Fehler beim Einfordern.', 'error');
+  }
+};
+
+onMounted(async () => {
+  await loadQuests();
+  loading.value = false;
+});
 </script>
 
 <style scoped>
@@ -248,6 +202,30 @@ const viewQuest = (quest: any) => {
   padding: 40px;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(236, 72, 153, 0.2);
+  border-top-color: #ec4899;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Stats Header - Glassmorphism Style */

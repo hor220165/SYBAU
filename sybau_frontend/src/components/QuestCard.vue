@@ -1,5 +1,5 @@
 <template>
-  <div class="quest-card" :class="`rarity-${rarity.toLowerCase()}`">
+  <div class="quest-card" :class="[`rarity-${rarity.toLowerCase()}`, { completed: isCompleted, claimed: isRewardClaimed }]">
     <!-- Rarity Badge -->
     <div class="rarity-badge" :class="`badge-${rarity.toLowerCase()}`">
       {{ rarity }}
@@ -22,16 +22,32 @@
         <span class="progress-percent">{{ progressPercent }}%</span>
       </div>
       <div class="progress-bar">
-        <div class="progress-fill" :style="`width: ${progressPercent}%`"></div>
+        <div class="progress-fill" :class="{ 'fill-complete': isCompleted }" :style="`width: ${progressPercent}%`"></div>
       </div>
     </div>
 
     <!-- Reward -->
     <div class="reward-section">
-      <div class="xp-reward">
-        <span class="icon">⭐</span>
-        <span>+{{ xpReward }} XP</span>
+      <div class="rewards">
+        <div class="xp-reward">
+          <span class="icon">⭐</span>
+          <span>+{{ xpReward }} XP</span>
+        </div>
+        <div class="coin-reward" v-if="coinReward > 0">
+          <span class="icon">🪙</span>
+          <span>+{{ coinReward }}</span>
+        </div>
       </div>
+
+      <button
+        v-if="isCompleted && !isRewardClaimed"
+        class="claim-btn"
+        :class="`claim-${rarity.toLowerCase()}`"
+        @click.stop="$emit('claim')"
+      >
+        Einfordern
+      </button>
+      <span v-else-if="isRewardClaimed" class="claimed-badge">✅ Erhalten</span>
     </div>
   </div>
 </template>
@@ -46,8 +62,13 @@ const props = defineProps<{
   progress: number;
   maxProgress: number;
   xpReward: number;
+  coinReward: number;
   timeLeft: string;
+  isCompleted: boolean;
+  isRewardClaimed: boolean;
 }>();
+
+defineEmits<{ claim: [] }>();
 
 const progressPercent = computed(() => {
   return Math.min(100, Math.round((props.progress / props.maxProgress) * 100));
@@ -201,6 +222,12 @@ const progressPercent = computed(() => {
   align-items: center;
 }
 
+.rewards {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .xp-reward {
   display: flex;
   align-items: center;
@@ -208,5 +235,76 @@ const progressPercent = computed(() => {
   font-size: 16px;
   font-weight: 700;
   color: #fbbf24;
+}
+
+.coin-reward {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #f59e0b;
+}
+
+/* Completed State */
+.quest-card.completed {
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
+}
+
+.quest-card.claimed {
+  opacity: 0.6;
+}
+
+.progress-fill.fill-complete {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+/* Claim Button */
+.claim-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  animation: claimPulse 2s ease-in-out infinite;
+}
+
+.claim-common {
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
+  color: white;
+}
+
+.claim-rare {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.claim-epic {
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  color: white;
+}
+
+.claim-legendary {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #1e293b;
+}
+
+.claim-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes claimPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  50% { box-shadow: 0 0 16px 4px rgba(34, 197, 94, 0.2); }
+}
+
+.claimed-badge {
+  font-size: 14px;
+  font-weight: 600;
+  color: #22c55e;
 }
 </style>

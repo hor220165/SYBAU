@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Sybau_Backend.Models;
+using Sybau_Backend.Models.Enums;
 
 namespace Sybau_Backend.Data;
 
@@ -16,6 +17,8 @@ public class FitnessDbContext:DbContext
     public DbSet<Challenge> Challenges => Set<Challenge>();
     public DbSet<UserChallenge> UserChallenges => Set<UserChallenge>();
     public DbSet<UserExerciseLog> UserExerciseLogs => Set<UserExerciseLog>();
+    public DbSet<Quest> Quests => Set<Quest>();
+    public DbSet<UserQuest> UserQuests => Set<UserQuest>();
     public FitnessDbContext(DbContextOptions<FitnessDbContext> options) : base(options){}
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -98,6 +101,46 @@ public class FitnessDbContext:DbContext
                 .HasForeignKey(l => l.ExerciseId)
                 .IsRequired();
         });
+
+        // Quest Enum Conversions
+        modelBuilder.Entity<Quest>(entity =>
+        {
+            entity.Property(e => e.Type).HasConversion<string>();
+            entity.Property(e => e.Rarity).HasConversion<string>();
+            entity.Property(e => e.TargetType).HasConversion<string>();
+        });
+
+        // UserQuest Relationships
+        modelBuilder.Entity<UserQuest>(entity =>
+        {
+            entity.HasOne(uq => uq.User)
+                .WithMany(u => u.UserQuests)
+                .HasForeignKey(uq => uq.UserId)
+                .IsRequired();
+
+            entity.HasOne(uq => uq.Quest)
+                .WithMany(q => q.UserQuests)
+                .HasForeignKey(uq => uq.QuestId)
+                .IsRequired();
+
+            entity.HasIndex(uq => new { uq.UserId, uq.QuestId, uq.PeriodStart }).IsUnique();
+        });
+
+        // Quest Seed Data
+        modelBuilder.Entity<Quest>().HasData(
+            // Tägliche Quests (Common)
+            new { Id = 1, Name = "Tägliches Training", Description = "Schließe eine Übung ab", Type = QuestType.Daily, Rarity = ItemRarity.Common, TargetType = QuestTargetType.ExercisesCompleted, TargetValue = 1, XpReward = 100, CoinReward = 10, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new { Id = 2, Name = "Wiederholungsjäger", Description = "Mache insgesamt 100 Wiederholungen", Type = QuestType.Daily, Rarity = ItemRarity.Common, TargetType = QuestTargetType.TotalReps, TargetValue = 100, XpReward = 150, CoinReward = 15, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new { Id = 3, Name = "Fleißiger Athlet", Description = "Schließe 3 verschiedene Übungen ab", Type = QuestType.Daily, Rarity = ItemRarity.Common, TargetType = QuestTargetType.ExercisesCompleted, TargetValue = 3, XpReward = 120, CoinReward = 12, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            // Wöchentliche Quests (Rare/Epic)
+            new { Id = 4, Name = "Cardio Champion", Description = "Schließe 20 Übungen diese Woche ab", Type = QuestType.Weekly, Rarity = ItemRarity.Rare, TargetType = QuestTargetType.ExercisesCompleted, TargetValue = 20, XpReward = 500, CoinReward = 50, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new { Id = 5, Name = "Kraft Krieger", Description = "Mache insgesamt 1.000 Wiederholungen diese Woche", Type = QuestType.Weekly, Rarity = ItemRarity.Rare, TargetType = QuestTargetType.TotalReps, TargetValue = 1000, XpReward = 600, CoinReward = 60, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new { Id = 6, Name = "Consistency King", Description = "Trainiere an 5 verschiedenen Tagen diese Woche", Type = QuestType.Weekly, Rarity = ItemRarity.Epic, TargetType = QuestTargetType.TrainingDays, TargetValue = 5, XpReward = 800, CoinReward = 80, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            // Monatliche Quests (Legendary)
+            new { Id = 7, Name = "Marathon Meister", Description = "Schließe 60 Übungen diesen Monat ab", Type = QuestType.Monthly, Rarity = ItemRarity.Legendary, TargetType = QuestTargetType.ExercisesCompleted, TargetValue = 60, XpReward = 2000, CoinReward = 200, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new { Id = 8, Name = "Iron Body", Description = "Mache insgesamt 10.000 Wiederholungen diesen Monat", Type = QuestType.Monthly, Rarity = ItemRarity.Legendary, TargetType = QuestTargetType.TotalReps, TargetValue = 10000, XpReward = 3000, CoinReward = 300, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new { Id = 9, Name = "Transformer", Description = "Trainiere an 20 verschiedenen Tagen diesen Monat", Type = QuestType.Monthly, Rarity = ItemRarity.Legendary, TargetType = QuestTargetType.TrainingDays, TargetValue = 20, XpReward = 5000, CoinReward = 500, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+        );
 
     }
 }

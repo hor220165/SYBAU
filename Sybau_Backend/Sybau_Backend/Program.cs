@@ -18,6 +18,7 @@ builder.Services.AddScoped<ShopService>();
 builder.Services.AddScoped<BodyStageService>();
 builder.Services.AddScoped<AvatarService>();
 builder.Services.AddScoped<WorkoutService>();
+builder.Services.AddScoped<QuestService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

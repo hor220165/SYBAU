@@ -129,4 +129,10 @@ export const workoutService = {
     logExercise: (exerciseId: number, reps: number) => API.post('/workouts/exercises/log', { exerciseId, reps })
 };
 
+export const questService = {
+    getMyQuests: () => API.get('/quests'),
+    getStats: () => API.get('/quests/stats'),
+    claimReward: (userQuestId: number) => API.post(`/quests/${userQuestId}/claim`)
+};
+
 export default API;
