@@ -1078,7 +1078,6 @@ namespace Sybau_Backend.Migrations
                     b.Navigation("User");
                 });
 
-<<<<<<< HEAD
             modelBuilder.Entity("Sybau_Backend.Models.UserAchievement", b =>
                 {
                     b.HasOne("Sybau_Backend.Models.Achievement", "Achievement")
@@ -1096,7 +1095,8 @@ namespace Sybau_Backend.Migrations
                     b.Navigation("Achievement");
 
                     b.Navigation("User");
-=======
+                });
+
             modelBuilder.Entity("Sybau_Backend.Models.FriendChallenge", b =>
                 {
                     b.HasOne("Sybau_Backend.Models.User", "Challenger")
@@ -1140,7 +1140,6 @@ namespace Sybau_Backend.Migrations
                     b.Navigation("Addressee");
 
                     b.Navigation("Requester");
->>>>>>> feature/backendfrontend-freundeviewundnotifications
                 });
 
             modelBuilder.Entity("Sybau_Backend.Models.UserChallenge", b =>

@@ -1,62 +1,44 @@
 <template>
-  <button class="mobile-menu-btn"
-          :class="{ 'below-header': headerVisible }"
-          @click="mobileMenuOpen = !mobileMenuOpen">
+  <button class="mobile-menu-btn" :class="{ 'below-header': headerVisible }" @click="mobileMenuOpen = !mobileMenuOpen">
     <span class="hamburger-icon">☰</span>
   </button>
 
   <nav class="navbar" :class="{ 'mobile-open': mobileMenuOpen }">
-    <button class="nav-item"
-            :class="{ active: isActiveRoute('/dashboard') }"
-            @click="navigateAndClose('/dashboard')">
+    <button class="nav-item" :class="{ active: isActiveRoute('/dashboard') }" @click="navigateAndClose('/dashboard')">
       <span class="nav-icon">🎯</span>
       <span>Dashboard</span>
     </button>
-    <button class="nav-item"
-            :class="{ active: isActiveRoute('/workouts') }"
-            @click="navigateAndClose('/workouts')">
+    <button class="nav-item" :class="{ active: isActiveRoute('/workouts') }" @click="navigateAndClose('/workouts')">
       <span class="nav-icon">🏋️</span>
       <span>Workouts</span>
     </button>
-    <button class="nav-item"
-            :class="{ active: isActiveRoute('/quests') }"
-            @click="navigateAndClose('/quests')">
+    <button class="nav-item" :class="{ active: isActiveRoute('/quests') }" @click="navigateAndClose('/quests')">
       <span class="nav-icon">🏆</span>
       <span>Quests</span>
     </button>
-    <button class="nav-item"
-            :class="{ active: isActiveRoute('/avatar') }"
-            @click="navigateAndClose('/avatar')">
+    <button class="nav-item" :class="{ active: isActiveRoute('/avatar') }" @click="navigateAndClose('/avatar')">
       <span class="nav-icon">👤</span>
       <span>Avatar</span>
     </button>
-    <button class="nav-item"
-            :class="{ active: isActiveRoute('/shop') }"
-            @click="navigateAndClose('/shop')">
+    <button class="nav-item" :class="{ active: isActiveRoute('/shop') }" @click="navigateAndClose('/shop')">
       <span class="nav-icon">🛒</span>
       <span>Shop</span>
     </button>
-    <button class="nav-item"
-            :class="{ active: isActiveRoute('/friends') }"
-            @click="navigateAndClose('/friends')">
+    <button class="nav-item" :class="{ active: isActiveRoute('/friends') }" @click="navigateAndClose('/friends')">
       <span class="nav-icon">🤝</span>
       <span>Friends</span>
     </button>
-    <button class="nav-item"
-            :class="{ active: isActiveRoute('/leaderboard') }"
-            @click="navigateAndClose('/leaderboard')">
+    <button class="nav-item" :class="{ active: isActiveRoute('/leaderboard') }"
+      @click="navigateAndClose('/leaderboard')">
       <span class="nav-icon">👥</span>
       <span>Leaderboard</span>
     </button>
-    <button class="nav-item"
-            :class="{ active: isActiveRoute('/profile') }"
-            @click="navigateAndClose('/profile')">
+    <button class="nav-item" :class="{ active: isActiveRoute('/profile') }" @click="navigateAndClose('/profile')">
       <span class="nav-icon">⚡</span>
       <span>Profile</span>
     </button>
-    <button v-if="isAdmin" class="nav-item admin-btn"
-            :class="{ active: isActiveRoute('/admin') }"
-            @click="navigateAndClose('/admin')">
+    <button v-if="isAdmin" class="nav-item admin-btn" :class="{ active: isActiveRoute('/admin') }"
+      @click="navigateAndClose('/admin')">
       <span class="nav-icon">🔐</span>
       <span>Admin</span>
     </button>
@@ -91,7 +73,11 @@ onMounted(() => {
   const header = document.querySelector('header');
   if (header) {
     const observer = new IntersectionObserver(
-      ([entry]) => { headerVisible.value = entry.isIntersecting; },
+      ([entry]) => {
+        if (entry) {
+          headerVisible.value = entry.isIntersecting;
+        }
+      },
       { threshold: 0 }
     );
     observer.observe(header);
