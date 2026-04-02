@@ -73,6 +73,11 @@ public class UserService
         if (user.Avatar.Level > oldLevel)
         {
             await _challengeService.AssignChallengesForLevelUpAsync(user, oldLevel);
+
+            // Level-Up loggen (1 Coin symbolisch, für Recent Activities)
+            var levelUpCoin = new UserCoin(user, 1, $"Level {user.Avatar.Level} erreicht");
+            _context.UserCoins.Add(levelUpCoin);
+            user.Coins += 1;
         }
 
         await _context.SaveChangesAsync();
@@ -210,6 +215,79 @@ public class UserService
             .Select(l => l.Date)
             .Distinct()
             .ToListAsync();
+    }
+
+    public async Task<List<RecentActivityDto>> GetRecentActivitiesAsync(int userId, int limit = 10)
+    {
+        var activities = new List<RecentActivityDto>();
+
+        // 1) Workout-Sessions: Jeder Exercise-Log einzeln
+        var workoutActivities = await _context.UserExerciseLogs
+            .Where(l => l.UserId == userId)
+            .Include(l => l.Exercise)
+            .OrderByDescending(l => l.CreatedAt)
+            .Select(l => new RecentActivityDto
+            {
+                Type = "workout",
+                Title = l.Exercise.Name + " – " + l.Reps + " Reps",
+                Xp = (int)Math.Round(l.Reps * l.Exercise.XpPerRep),
+                Timestamp = l.CreatedAt
+            })
+            .ToListAsync();
+        activities.AddRange(workoutActivities);
+
+        // 2) Abgeschlossene Quests
+        var questActivities = await _context.UserQuests
+            .Where(q => q.UserId == userId && q.IsCompleted && q.CompletedAt != null)
+            .Include(q => q.Quest)
+            .Select(q => new RecentActivityDto
+            {
+                Type = "quest",
+                Title = "Quest '" + q.Quest.Name + "' abgeschlossen",
+                Xp = q.Quest.XpReward,
+                Timestamp = q.CompletedAt!.Value
+            })
+            .ToListAsync();
+        activities.AddRange(questActivities);
+
+        // 3) Freigeschaltete Achievements
+        var achievementActivities = await _context.UserAchievements
+            .Where(a => a.UserId == userId)
+            .Include(a => a.Achievement)
+            .Select(a => new RecentActivityDto
+            {
+                Type = "achievement",
+                Title = "Achievement '" + a.Achievement.Title + "' freigeschaltet",
+                Xp = a.Achievement.XpReward,
+                Timestamp = a.UnlockedAt
+            })
+            .ToListAsync();
+        activities.AddRange(achievementActivities);
+
+        // 4) Level-Ups (aus UserCoin-Einträgen mit "Level X erreicht")
+        var levelActivities = await _context.UserCoins
+            .Where(c => c.UserId == userId && c.Reason.StartsWith("Level ") && c.Reason.EndsWith(" erreicht"))
+            .Select(c => new RecentActivityDto
+            {
+                Type = "level",
+                Title = c.Reason + "!",
+                Xp = 0,
+                Timestamp = c.CreatedAt
+            })
+            .ToListAsync();
+        activities.AddRange(levelActivities);
+
+        // Nach Datum sortieren und limitieren
+        var result = activities
+            .OrderByDescending(a => a.Timestamp)
+            .Take(limit)
+            .ToList();
+
+        // IDs zuweisen
+        for (int i = 0; i < result.Count; i++)
+            result[i].Id = i + 1;
+
+        return result;
     }
     
     public async Task UpdateUserAsync(User user)

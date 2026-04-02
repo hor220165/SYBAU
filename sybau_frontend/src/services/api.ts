@@ -80,7 +80,9 @@ export const userService = {
     getStreaks: () =>
         API.get('/users/profile/streaks'),
     getWeeklyActivity: (from: string, to: string) =>
-        API.get(`/users/profile/weekly-activity?from=${from}&to=${to}`)
+        API.get(`/users/profile/weekly-activity?from=${from}&to=${to}`),
+    getRecentActivities: (limit = 10) =>
+        API.get(`/users/profile/recent-activities?limit=${limit}`)
 };
 
 export const itemService = {

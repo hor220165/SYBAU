@@ -163,6 +163,20 @@ namespace Sybau_Backend.Controllers
             return Ok(dates.Select(d => d.ToString("yyyy-MM-dd")));
         }
 
+        // GET /users/profile/recent-activities?limit=10
+        [Authorize]
+        [HttpGet("profile/recent-activities")]
+        public async Task<IActionResult> GetRecentActivities([FromQuery] int limit = 10)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            var userId = int.Parse(userIdClaim);
+            var activities = await _userService.GetRecentActivitiesAsync(userId, limit);
+
+            return Ok(activities);
+        }
+
         // GET: api/<UsersController>
         [Authorize]
         [HttpGet]

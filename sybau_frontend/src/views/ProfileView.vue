@@ -440,12 +440,46 @@ const weekLabel = computed(() => {
   return `${days[0]?.dateDisplay} – ${days[6]?.dateDisplay}`;
 });
 
-const recentActivities = ref([
-  { id: 1, icon: `<circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/>`, title: 'HIIT Blast absolviert', time: 'vor 2 Stunden', xp: 350, type: 'workout' as const },
-  { id: 2, icon: `<path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/>`, title: "Quest 'Cardio Champion' abgeschlossen", time: 'vor 5 Stunden', xp: 500, type: 'quest' as const },
-  { id: 3, icon: `<circle cx='12' cy='8' r='7'/><polyline points='8.21 13.89 7 23 12 20 17 23 15.79 13.88'/>`, title: "Achievement 'On Fire' freigeschaltet", time: 'Heute', xp: 200, type: 'achievement' as const },
-  { id: 4, icon: `<polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/>`, title: 'Level 12 erreicht!', time: 'Gestern', xp: 0, type: 'level' as const }
-]);
+const recentActivities = ref<Array<{ id: number; icon: string; title: string; time: string; xp: number; type: 'workout' | 'quest' | 'achievement' | 'level' }>>([]);
+
+const activityIcons: Record<string, string> = {
+  workout: `<circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/>`,
+  quest: `<path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/>`,
+  achievement: `<circle cx='12' cy='8' r='7'/><polyline points='8.21 13.89 7 23 12 20 17 23 15.79 13.88'/>`,
+  level: `<polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/>`,
+};
+
+function formatTimeAgo(timestamp: string): string {
+  const now = new Date();
+  const date = new Date(timestamp);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffH = Math.floor(diffMin / 60);
+  const diffD = Math.floor(diffH / 24);
+
+  if (diffMin < 1) return 'Gerade eben';
+  if (diffMin < 60) return `vor ${diffMin} Minuten`;
+  if (diffH < 24) return `vor ${diffH} Stunde${diffH > 1 ? 'n' : ''}`;
+  if (diffD === 1) return 'Gestern';
+  if (diffD < 7) return `vor ${diffD} Tagen`;
+  return date.toLocaleDateString('de-DE');
+}
+
+async function loadRecentActivities() {
+  try {
+    const res = await userService.getRecentActivities(10);
+    recentActivities.value = (res.data as any[]).map((a: any) => ({
+      id: a.id,
+      icon: activityIcons[a.type] ?? activityIcons.workout ?? '',
+      title: a.title,
+      time: formatTimeAgo(a.timestamp),
+      xp: a.xp,
+      type: a.type as 'workout' | 'quest' | 'achievement' | 'level'
+    }));
+  } catch {
+    recentActivities.value = [];
+  }
+}
 
 onMounted(async () => {
   try {
@@ -473,6 +507,7 @@ onMounted(async () => {
     } catch { /* Achievements/Stats nicht verfügbar */ }
 
     await loadWeeklyActivity();
+    await loadRecentActivities();
   } catch (err) {
     console.error('Fehler beim Laden', err);
   }
