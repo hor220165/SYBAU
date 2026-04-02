@@ -16,6 +16,8 @@ public class FitnessDbContext:DbContext
     public DbSet<Challenge> Challenges => Set<Challenge>();
     public DbSet<UserChallenge> UserChallenges => Set<UserChallenge>();
     public DbSet<UserExerciseLog> UserExerciseLogs => Set<UserExerciseLog>();
+    public DbSet<Friendship> Friendships => Set<Friendship>();
+    public DbSet<FriendChallenge> FriendChallenges => Set<FriendChallenge>();
     public FitnessDbContext(DbContextOptions<FitnessDbContext> options) : base(options){}
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -97,6 +99,46 @@ public class FitnessDbContext:DbContext
                 .WithMany()
                 .HasForeignKey(l => l.ExerciseId)
                 .IsRequired();
+        });
+
+        // Friendship: User m-n User (self-referencing)
+        modelBuilder.Entity<Friendship>(entity =>
+        {
+            entity.HasOne(f => f.Requester)
+                .WithMany()
+                .HasForeignKey(f => f.RequesterId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(f => f.Addressee)
+                .WithMany()
+                .HasForeignKey(f => f.AddresseeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(f => f.Status).HasConversion<string>();
+
+            // Ein Paar kann nur eine Freundschaft haben
+            entity.HasIndex(f => new { f.RequesterId, f.AddresseeId }).IsUnique();
+        });
+
+        // FriendChallenge: Challenges zwischen Freunden
+        modelBuilder.Entity<FriendChallenge>(entity =>
+        {
+            entity.HasOne(fc => fc.Challenger)
+                .WithMany()
+                .HasForeignKey(fc => fc.ChallengerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(fc => fc.Opponent)
+                .WithMany()
+                .HasForeignKey(fc => fc.OpponentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(fc => fc.Winner)
+                .WithMany()
+                .HasForeignKey(fc => fc.WinnerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(fc => fc.Status).HasConversion<string>();
         });
 
     }

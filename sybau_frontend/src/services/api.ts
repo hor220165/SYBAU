@@ -21,16 +21,13 @@ API.interceptors.response.use(
     (res) => res,
     (err) => {
         // Handle 401 Unauthorized - Token expired oder ungültig
-        if (err.response?.status === 401) {
+        // Auth-Endpunkte (login/register) ausschließen, damit deren Fehler normal im catch landen
+        const url = err.config?.url || '';
+        const isAuthRequest = url.includes('/auth/');
+        if (err.response?.status === 401 && !isAuthRequest) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            // Redirect to auth (wenn Vue Router verfügbar)
-            try {
-                const router = useRouter();
-                router.push('/auth');
-            } catch (e) {
-                window.location.href = '/auth';
-            }
+            window.location.href = '/auth';
         }
         return Promise.reject(err);
     }
@@ -127,6 +124,25 @@ export const workoutService = {
     createWorkout: (data: any) => API.post('/workouts', data),
     createExercise: (data: any) => API.post('/workouts/exercises', data),
     logExercise: (exerciseId: number, reps: number) => API.post('/workouts/exercises/log', { exerciseId, reps })
+};
+
+export const friendService = {
+    // Freundschaften
+    getFriends: () => API.get('/friends'),
+    getPendingRequests: () => API.get('/friends/requests'),
+    sendFriendRequest: (userName: string) => API.post('/friends/request', { userName }),
+    acceptRequest: (id: number) => API.post(`/friends/requests/${id}/accept`),
+    declineRequest: (id: number) => API.post(`/friends/requests/${id}/decline`),
+    removeFriend: (id: number) => API.delete(`/friends/${id}`),
+    getFriendsLeaderboard: () => API.get('/friends/leaderboard'),
+
+    // Freundes-Challenges
+    getChallenges: () => API.get('/friends/challenges'),
+    getPendingChallenges: () => API.get('/friends/challenges/pending'),
+    createChallenge: (data: any) => API.post('/friends/challenges', data),
+    acceptChallenge: (id: number) => API.post(`/friends/challenges/${id}/accept`),
+    declineChallenge: (id: number) => API.post(`/friends/challenges/${id}/decline`),
+    updateProgress: (id: number, amount: number) => API.put(`/friends/challenges/${id}/progress`, { amount })
 };
 
 export default API;

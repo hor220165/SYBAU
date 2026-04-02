@@ -27,9 +27,9 @@ namespace Sybau_Backend.Controllers
                 var result = await _authService.LoginWithTokenAsync(dto.Email, dto.Password, _config);
                 return Ok(result);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return Unauthorized("Ungültige E-Mail oder Passwort.");
+                return Unauthorized(new { message = ex.Message });
             }
         }
 
@@ -47,9 +47,9 @@ namespace Sybau_Backend.Controllers
                     user.Email
                 });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return BadRequest("Registrierung fehlgeschlagen.");
+                return BadRequest(new { message = ex.Message });
             }
         }
     }

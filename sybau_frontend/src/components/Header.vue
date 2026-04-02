@@ -4,10 +4,13 @@ import { useNavigation } from "@/composables/useNavigation.ts";
 import { useAuth } from "@/composables/useAuth";
 import { userService } from '@/services/api';
 import { useCoins } from '@/composables/useCoins';
+import { useNotifications } from '@/composables/useNotifications';
+import NotificationBell from '@/components/NotificationBell.vue';
 
 const { logout } = useNavigation();
 const { user } = useAuth();
 const { formatCoins } = useCoins();
+const { connect } = useNotifications();
 
 onMounted(async () => {
   if (!user.value?.avatar) {
@@ -18,6 +21,7 @@ onMounted(async () => {
       console.error('Failed to fetch profile:', err);
     }
   }
+  connect();
 });
 
 const userLevel = computed(() => user.value?.avatar?.level ?? user.value?.Avatar?.level ?? 0);
@@ -59,6 +63,8 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
         <span class="stat-value">{{ formatCoins(userCoins) }}</span>
       </div>
 
+      <NotificationBell />
+
       <button class="logout-btn" @click="logout">
         <img src="../assets/logout_Icon.png" alt="logout" class="logout-icon">
       </button>
@@ -77,6 +83,8 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   background: transparent;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  position: relative;
+  z-index: 2500;
 }
 
 .logo-section {
