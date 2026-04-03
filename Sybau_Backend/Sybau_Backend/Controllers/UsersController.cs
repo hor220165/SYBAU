@@ -158,9 +158,9 @@ namespace Sybau_Backend.Controllers
             if (userIdClaim == null) return Unauthorized();
 
             var userId = int.Parse(userIdClaim);
-            var dates = await _userService.GetActivityDatesAsync(userId, from, to);
+            var activities = await _userService.GetWeeklyActivityAsync(userId, from, to);
 
-            return Ok(dates.Select(d => d.ToString("yyyy-MM-dd")));
+            return Ok(activities);
         }
 
         // GET /users/profile/recent-activities?limit=10

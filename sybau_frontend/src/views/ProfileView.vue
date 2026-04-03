@@ -387,7 +387,7 @@ const nextAchievements = () => {
 
 // Weekly Activity
 const currentWeekOffset = ref(0);
-const activityDates = ref<Set<string>>(new Set());
+const activityDates = ref<Map<string, number>>(new Map());
 
 function getMonday(offset: number): Date {
   const today = new Date();
@@ -407,9 +407,13 @@ async function loadWeeklyActivity() {
   sunday.setDate(monday.getDate() + 6);
   try {
     const res = await userService.getWeeklyActivity(toDateString(monday), toDateString(sunday));
-    activityDates.value = new Set(res.data as string[]);
+    const map = new Map<string, number>();
+    (res.data as Array<{ date: string; reps: number }> || []).forEach(item => {
+      map.set(item.date, item.reps);
+    });
+    activityDates.value = map;
   } catch {
-    activityDates.value = new Set();
+    activityDates.value = new Map();
   }
 }
 
@@ -423,8 +427,9 @@ const getWeekDays = (offset: number) => {
     date.setDate(monday.getDate() + i);
     const isToday = date.toDateString() === today.toDateString();
     const dateDisplay = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-    const workoutDone = activityDates.value.has(toDateString(date));
-    const duration = workoutDone ? '45 min' : '–';
+    const reps = activityDates.value.get(toDateString(date)) ?? 0;
+    const workoutDone = reps > 0;
+    const duration = workoutDone ? `${reps} Reps` : '–';
     weekDays.push({ name: days[i], date: date.toISOString(), dateDisplay, workoutDone, duration, isToday });
   }
   return weekDays;

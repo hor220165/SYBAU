@@ -217,6 +217,19 @@ public class UserService
             .ToListAsync();
     }
 
+    public async Task<List<WeeklyActivityDto>> GetWeeklyActivityAsync(int userId, DateOnly from, DateOnly to)
+    {
+        return await _context.UserExerciseLogs
+            .Where(l => l.UserId == userId && l.Date >= from && l.Date <= to)
+            .GroupBy(l => l.Date)
+            .Select(g => new WeeklyActivityDto
+            {
+                Date = g.Key.ToString("yyyy-MM-dd"),
+                Reps = g.Sum(l => l.Reps)
+            })
+            .ToListAsync();
+    }
+
     public async Task<List<RecentActivityDto>> GetRecentActivitiesAsync(int userId, int limit = 10)
     {
         var activities = new List<RecentActivityDto>();
