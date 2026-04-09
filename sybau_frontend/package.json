@@ -7,9 +7,17 @@
     "dev": "vite",
     "dev:network": "vite --mode network",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cap:build": "vue-tsc -b && vite build && npx cap sync",
+    "cap:sync": "npx cap sync",
+    "cap:open": "npx cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/cli": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
     "@microsoft/signalr": "^10.0.0",
     "@vueuse/motion": "^3.0.3",
     "axios": "^1.13.4",

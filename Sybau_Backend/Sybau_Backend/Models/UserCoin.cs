@@ -21,6 +21,6 @@ namespace Sybau_Backend.Models
 
         public int Amount { get; set; } // positiv = gutgeschrieben, negativ = ausgegeben
         public string Reason { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public new DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

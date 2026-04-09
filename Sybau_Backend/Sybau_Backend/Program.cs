@@ -8,6 +8,7 @@ using Scalar.AspNetCore;
 using Sybau_Backend._Services;
 using Sybau_Backend.Data;
 using Sybau_Backend.Hubs;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,7 @@ builder.Services.AddScoped<QuestService>();
 builder.Services.AddScoped<AchievementService>();
 builder.Services.AddScoped<FriendService>();
 builder.Services.AddScoped<FriendChallengeService>();
+builder.Services.AddScoped<IFitnessProviderService, FitnessProviderService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -112,8 +114,9 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
+// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddDbContext<FitnessDbContext>(options =>
-    options.UseSqlite(
+    options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")
     )
 );
@@ -139,7 +142,7 @@ app.UseExceptionHandler(errorApp =>
     });
 });
 
-//app.UseHttpsRedirection();
+app.UseHttpsRedirection();
 
 // CORS muss VOR Auth und MapControllers stehen
 app.UseCors("Default");

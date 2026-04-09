@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import AuthView from '../views/AuthView.vue'
 import DashboardView from "../views/DashboardView.vue";
 import ShopView from "@/views/ShopView.vue";
@@ -69,12 +69,12 @@ const routes = [
 ]
 
 export const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes
 })
 
 // Route Guard für Admin-Schutz
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _, next) => {
   if (to.meta.requiresAdmin) {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (user.isAdmin) {

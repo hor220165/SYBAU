@@ -24,8 +24,6 @@ public class User: BaseEntity<int>
         Email = email;
         PasswordHash = passwordHash;
         
-        Avatar = Avatar.CreateDefault();
-        
         IsAdmin = false;
     }
     

@@ -1,16 +1,25 @@
 :root {
-    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-    line-height: 1.5;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    line-height: 1.6;
     font-weight: 400;
 
     color-scheme: light dark;
     color: rgba(255, 255, 255, 0.87);
-    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    background: linear-gradient(135deg, #0f0c29 0%, #1a1a2e 50%, #16213e 100%);
+    background-attachment: fixed;
 
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    --neon-blue: #00ffff;
+    --neon-pink: #ff00ff;
+    --neon-green: #00ff00;
+    --neon-purple: #bf00ff;
+    --neon-yellow: #ffff00;
+    --neon-orange: #ff4500;
+
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+
+    --transition-speed: 0.3s;
 }
 
 * {
@@ -28,65 +37,229 @@ html, body {
     padding: 0;
     width: 100%;
     min-height: 100vh;
-    overflow-y: auto; /* ← Wichtig für Scrolling! */
+    overflow-y: auto;
     overflow-x: hidden;
 }
 
 body {
     min-width: 320px;
+    font-smoothing: antialiased;
 }
 
 #app {
     width: 100%;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 a {
     font-weight: 500;
-    color: #646cff;
+    color: var(--neon-blue);
     text-decoration: inherit;
-}
-a:hover {
-    color: #535bf2;
+    transition: var(--transition-speed);
 }
 
-h1 {
-    font-size: 3.2em;
-    line-height: 1.1;
+a:hover {
+    color: var(--neon-pink);
+    text-shadow: 0 0 5px var(--neon-pink);
 }
 
 button {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
+    border-radius: 12px;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
     font-family: inherit;
-    background-color: #1a1a1a;
     cursor: pointer;
-    transition: border-color 0.25s;
+    transition: var(--transition-speed);
+    position: relative;
+    overflow: hidden;
 }
+
 button:hover {
-    border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
 }
 
-.card {
-    padding: 2em;
+button:active {
+    transform: translateY(0);
 }
 
-@media (prefers-color-scheme: light) {
+button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    transition: var(--transition-speed);
+}
+
+button:hover::before {
+    left: 100%;
+}
+
+/* Glassmorphism Card */
+.glass-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 2rem;
+    backdrop-filter: blur(10px);
+    box-shadow: var(--glass-shadow);
+    transition: var(--transition-speed);
+}
+
+.glass-card:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    transform: translateY(-5px);
+}
+
+/* Neon Button Variants */
+.btn-neon-blue {
+    background: linear-gradient(45deg, #00ffff, #0099cc);
+    color: #000;
+    box-shadow: 0 0 10px var(--neon-blue);
+}
+
+.btn-neon-blue:hover {
+    background: linear-gradient(45deg, #00ccff, #007799);
+    box-shadow: 0 0 15px var(--neon-blue), 0 0 25px var(--neon-blue);
+}
+
+.btn-neon-pink {
+    background: linear-gradient(45deg, #ff00ff, #cc00cc);
+    color: #fff;
+    box-shadow: 0 0 10px var(--neon-pink);
+}
+
+.btn-neon-pink:hover {
+    background: linear-gradient(45deg, #ff00cc, #aa00aa);
+    box-shadow: 0 0 15px var(--neon-pink), 0 0 25px var(--neon-pink);
+}
+
+.btn-neon-green {
+    background: linear-gradient(45deg, #00ff00, #00cc00);
+    color: #000;
+    box-shadow: 0 0 10px var(--neon-green);
+}
+
+.btn-neon-green:hover {
+    background: linear-gradient(45deg, #00cc00, #009900);
+    box-shadow: 0 0 15px var(--neon-green), 0 0 25px var(--neon-green);
+}
+
+/* Animated Gradient Background for Hero Sections */
+.hero-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        linear-gradient(-45deg, #0f0c29, #1a1a2e, #16213e, #0f0c29);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+    z-index: -2;
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Floating Particles */
+.particles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    overflow: hidden;
+}
+
+.particle {
+    position: absolute;
+    background: var(--neon-blue);
+    border-radius: 50%;
+    opacity: 0.7;
+    animation: floatUp var(--transition-speed) infinite ease-in-out;
+}
+
+@keyframes floatUp {
+    0% {
+        transform: translateY(0) translateX(0);
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-100vh) translateX(-50px);
+        opacity: 0;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
     :root {
-        color: #213547;
-        background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+        font-size: 14px;
     }
-    a:hover {
-        color: #747bff;
+    
+    .glass-card {
+        padding: 1.5rem;
+        border-radius: 15px;
     }
+    
     button {
-        background-color: #f9f9f9;
+        padding: 0.6rem 1.2rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* ============================================
+   Mobile / Capacitor safe-area support
+   ============================================ */
+html {
+    /* Ensure the app can draw behind system UI */
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+}
+
+body {
+    /* Prevent pull-to-refresh and over-scroll on mobile */
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+#app {
+    /* Reserve space for the bottom tab bar on mobile */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* On mobile (<= 768px) reserve space for bottom nav */
+@media (max-width: 768px) {
+    #app {
+        padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
     }
 }

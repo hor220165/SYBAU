@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: sybau-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sybau
+      POSTGRES_PASSWORD: sybau123
+      POSTGRES_DB: sybau
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+  api:
+    build: .
+    container_name: sybau-api
+    restart: unless-stopped
+    ports:
+      - "5243:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=host.docker.internal;Port=5432;Username=sybau;Password=sybau123;Database=sybau
+      - Jwt__Key=MeineSuperGeheimeTestKey1234567890!
+      - Jwt__Issuer=sybau-api
+      - Jwt__Audience=sybau-client
+      - Jwt__RefreshTokenTTL=7
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:

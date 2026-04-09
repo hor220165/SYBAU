@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Sybau_Backend.Data;
 using Sybau_Backend.DTOs;
@@ -13,7 +13,7 @@ public class UserService
     private readonly ChallengeService _challengeService;
     private readonly AvatarService _avatarService;
 
-    public UserService(FitnessDbContext context,ChallengeService challengService, AvatarService avatarService)
+    public UserService(FitnessDbContext context, ChallengeService challengService, AvatarService avatarService)
     {
         _context = context;
         _challengeService = challengService;
@@ -24,7 +24,7 @@ public class UserService
     public async Task<IEnumerable<User>> GetUsersExcept(int id)
     {
         return await _context.Users
-            .Include(u=>u.Avatar)
+            .Include(u => u.Avatar)
             .Where(u => u.Id != id)
             .ToListAsync();
     }
@@ -55,7 +55,6 @@ public class UserService
         return leaderboard;
     }
 
-    
     //Einen genauen User ausgeben
     public async Task<User?> GetUserById(int id)
     {
@@ -63,7 +62,7 @@ public class UserService
             .Include(u => u.Avatar)
             .SingleOrDefaultAsync(u => u.Id == id);
     }
-    
+
     // Methode zum Hinzufügen von XP und automatischer Challenge-Zuweisung
     public async Task AddXpAndHandleLevelUp(User user, int xp)
     {
@@ -80,9 +79,13 @@ public class UserService
             user.Coins += 1;
         }
 
+        // Update workout streak and check achievements
+        await UpdateStreakAsync(user, StreakType.Workout);
+        await CheckAndAwardAchievementsAsync(user);
+
         await _context.SaveChangesAsync();
     }
-    
+
     //Challenges von Lvl 1 zum User hinzufügen
     public async Task AssignStartingChallengesAsync(User user)
     {
@@ -104,7 +107,7 @@ public class UserService
 
         await _context.SaveChangesAsync();
     }
-    
+
     //Coins speichern Methode
     public async Task AddCoinsAsync(User user, int amount, string reason)
     {
@@ -120,7 +123,6 @@ public class UserService
 
         await _context.SaveChangesAsync();
     }
-
 
     // Challenge für User abschließen und prüfen auf levelup
     public async Task<AvatarDto?> CompleteChallengeAsync(int userId, int challengeId)
@@ -151,6 +153,10 @@ public class UserService
             }
         }
 
+        // Update challenge streak and check achievements
+        await UpdateStreakAsync(user, StreakType.Challenge);
+        await CheckAndAwardAchievementsAsync(user);
+
         return new AvatarDto
         {
             Id = user.Avatar.Id,
@@ -162,6 +168,7 @@ public class UserService
             Boost4 = user.Avatar.Boost4
         };
     }
+
     
     public async Task<(int longestStreak, int currentStreak)> GetStreaksAsync(int userId)
     {
@@ -242,7 +249,7 @@ public class UserService
             .Select(l => new RecentActivityDto
             {
                 Type = "workout",
-                Title = l.Exercise.Name + " – " + l.Reps + " Reps",
+                Title = l.Exercise.Name + " - " + l.Reps + " Reps",
                 Xp = (int)Math.Round(l.Reps * l.Exercise.XpPerRep),
                 Timestamp = l.CreatedAt
             })
@@ -302,13 +309,12 @@ public class UserService
 
         return result;
     }
-    
     public async Task UpdateUserAsync(User user)
     {
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
     }
-    
+
     //Für AdminUse
     public async Task<User> UpdateUserAsync(User user, UpdateUserDto dto)
     {
@@ -333,7 +339,7 @@ public class UserService
         { 
             dbUser.Avatar.Level = dto.Avatar.Level.Value;
         }
-        
+
         await _context.SaveChangesAsync();
         return dbUser;
     }
@@ -437,5 +443,99 @@ public class UserService
         await _context.SaveChangesAsync();
         return true;
     }
+    // New methods for gamification
 
+    private async Task UpdateStreakAsync(User user, StreakType type)
+    {
+        var streak = await _context.Streaks
+            .FirstOrDefaultAsync(s => s.UserId == user.Id && s.Type == type);
+
+        if (streak == null)
+        {
+            streak = new Streak(user, type);
+            _context.Streaks.Add(streak);
+        }
+
+        streak.Increment();
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task CheckAndAwardAchievementsAsync(User user)
+    {
+        // Get all achievements that the user hasn't earned yet
+        var earnedAchievementIds = await _context.UserAchievements
+            .Where(ua => ua.UserId == user.Id)
+            .Select(ua => ua.AchievementId)
+            .ToListAsync();
+
+        var achievements = await _context.Achievements
+            .Where(a => !earnedAchievementIds.Contains(a.Id))
+            .ToListAsync();
+
+        foreach (var achievement in achievements)
+        {
+            bool earned = false;
+            switch (achievement.CriteriaType)
+            {
+                case AchievementCriteriaType.WorkoutsCompleted:
+                    var workoutCount = await _context.WorkoutLogs
+                        .CountAsync(wl => wl.UserId == user.Id);
+                    earned = workoutCount >= achievement.CriteriaValue;
+                    break;
+                case AchievementCriteriaType.StreakDays:
+                    // We'll check the workout streak for this criterion
+                    var workoutStreak = await _context.Streaks
+                        .Where(s => s.UserId == user.Id && s.Type == StreakType.Workout)
+                        .Select(s => s.LongestStreak)
+                        .FirstOrDefaultAsync();
+                    earned = workoutStreak >= achievement.CriteriaValue;
+                    break;
+                case AchievementCriteriaType.LevelReached:
+                    earned = user.Avatar.Level >= achievement.CriteriaValue;
+                    break;
+                case AchievementCriteriaType.CoinsEarned:
+                    var totalCoinsEarned = await _context.UserCoins
+                        .Where(uc => uc.UserId == user.Id && uc.Amount > 0)
+                        .SumAsync(uc => (long?)uc.Amount) ?? 0;
+                    earned = totalCoinsEarned >= achievement.CriteriaValue;
+                    break;
+                case AchievementCriteriaType.ChallengesCompleted:
+                    var completedChallenges = await _context.UserChallenges
+                        .CountAsync(uc => uc.UserId == user.Id && uc.Completed);
+                    earned = completedChallenges >= achievement.CriteriaValue;
+                    break;
+                case AchievementCriteriaType.ItemsCollected:
+                    var totalItems = await _context.UserItems
+                        .Where(ui => ui.UserId == user.Id)
+                        .SumAsync(ui => (long?)ui.Quantity) ?? 0;
+                    earned = totalItems >= achievement.CriteriaValue;
+                    break;
+            }
+
+            if (earned)
+            {
+                var userAchievement = new UserAchievement(user, achievement);
+                _context.UserAchievements.Add(userAchievement);
+
+                // Award XP and Coins
+                await AddXpAndHandleLevelUp(user, achievement.XpReward);
+                if (achievement.CoinReward > 0)
+                {
+                    await AddCoinsAsync(user, achievement.CoinReward, $"Achievement earned: {achievement.Name}");
+                }
+
+                // Create notification
+                await CreateNotificationAsync(user, $"Achievement Unlocked: {achievement.Name}", achievement.Description, NotificationType.AchievementEarned);
+            }
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task CreateNotificationAsync(User user, string title, string message, NotificationType type)
+    {
+        var notification = new Notification(user, title, message, type);
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+    }
 }
