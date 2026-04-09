@@ -12,3 +12,5 @@ project.fragment.lock.json
 artifacts/
 secrets.json
 .idea/nul
+
+nul
