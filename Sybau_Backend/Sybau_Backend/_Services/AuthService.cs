@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Sybau_Backend.Data;
 using Sybau_Backend.Models;
-using System.Security.Cryptography;
 
 namespace Sybau_Backend._Services;
 
@@ -27,19 +26,11 @@ public class AuthService
     {
         var user = await LoginAsync(email, password); // existierender Login-Flow
 
-        var accessToken = GenerateJwtToken(user, config);
-        var refreshToken = GenerateRefreshToken();
-        
-        // Save refresh token to database
-        var refreshTokenEntity = new RefreshToken(user, refreshToken, 
-            DateTime.UtcNow.AddDays(config.GetValue<int>("Jwt:RefreshTokenTTL")));
-        _context.RefreshTokens.Add(refreshTokenEntity);
-        await _context.SaveChangesAsync();
+        var token = GenerateJwtToken(user, config);
 
         return new
         {
-            accessToken,
-            refreshToken,
+            token,
             user = new
             {
                 user.Id,
@@ -48,15 +39,6 @@ public class AuthService
                 user.IsAdmin,
             }
         };
-    }
-
-    private string GenerateRefreshToken()
-    {
-        // Generate a cryptographically secure random token
-        var randomNumber = new byte[32];
-        using var rng = RandomNumberGenerator.Create();
-        rng.GetBytes(randomNumber);
-        return Convert.ToBase64String(randomNumber);
     }
 
     
@@ -104,9 +86,6 @@ public class AuthService
     //JWT erzeugen
     public string GenerateJwtToken(User user, IConfiguration config)
     {
-        if (user == null)
-            throw new ArgumentNullException(nameof(user));
-
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -127,48 +106,5 @@ public class AuthService
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    public async Task<object> RefreshTokenAsync(string refreshToken, IConfiguration config)
-    {
-        // Find the refresh token in the database
-        var storedToken = await _context.RefreshTokens
-            .Include(rt => rt.User)
-            .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
-
-        if (storedToken == null || storedToken.IsExpired || storedToken.IsRevoked)
-        {
-            throw new Exception("Invalid refresh token");
-        }
-
-        // Revoke the current refresh token
-        storedToken.IsRevoked = true;
-        storedToken.RevokedAt = DateTime.UtcNow;
-        storedToken.ReasonRevoked = "Token rotation";
-
-        // Generate new tokens
-        var newAccessToken = GenerateJwtToken(storedToken.User, config);
-        var newRefreshToken = GenerateRefreshToken();
-
-        // Save new refresh token
-        var newRefreshTokenEntity = new RefreshToken(storedToken.User, newRefreshToken,
-            DateTime.UtcNow.AddDays(config.GetValue<int>("Jwt:RefreshTokenTTL")));
-        _context.RefreshTokens.Add(newRefreshTokenEntity);
-
-        // Save changes
-        await _context.SaveChangesAsync();
-
-        return new
-        {
-            accessToken = newAccessToken,
-            refreshToken = newRefreshToken,
-            user = new
-            {
-                storedToken.User.Id,
-                storedToken.User.UserName,
-                storedToken.User.Email,
-                storedToken.User.IsAdmin,
-            }
-        };
     }
 }

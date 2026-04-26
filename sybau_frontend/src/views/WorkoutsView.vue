@@ -19,8 +19,8 @@
             <span class="stat-value">{{ todayReps }} Wiederholungen</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">Diese Woche</span>
-            <span class="stat-value">1,832 Wiederholungen</span>
+            <span class="stat-label">Gesamt</span>
+            <span class="stat-value">{{ totalExercises}} Wiederholungen</span>
           </div>
           <div class="stat-card">
             <span class="stat-label">XP Heute</span>
@@ -307,7 +307,7 @@ import WorkoutCard from '@/components/WorkoutCard.vue';
 import ExerciseModal from '@/components/WorkoutPopup.vue';
 import FooterComponent from '@/components/FooterComponent.vue';
 import MessagePopup from '@/components/MessagePopup.vue';
-import { workoutService } from '@/services/api';
+import { workoutService, achievementService } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
 
 const { refreshProfile } = useAuth();
@@ -359,6 +359,7 @@ interface ExerciseLocal {
 const exercises = ref<ExerciseLocal[]>([]);
 const workouts = ref<any[]>([]);
 const showCreateWorkout = ref(false);
+const totalExercises = ref(0);
 const expandedWorkout = ref<number | null>(null);
 const workoutSession = ref<any>(null);
 const newWorkout = ref({
@@ -371,7 +372,17 @@ const newWorkout = ref({
 onMounted(async () => {
   await loadExercises();
   await loadWorkouts();
+  await loadProfileStats();
 });
+
+async function loadProfileStats() {
+  try {
+    const res = await achievementService.getProfileStats();
+    totalExercises.value = res.data?.totalExercises ?? 0;
+  } catch (e) {
+    console.error('Fehler beim Laden der Profil-Stats', e);
+  }
+}
 
 // Stats berechnen
 const todayReps = computed(() => exercises.value.reduce((sum, e) => sum + e.todayCount, 0));

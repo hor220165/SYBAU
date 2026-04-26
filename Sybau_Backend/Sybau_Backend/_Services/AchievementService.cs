@@ -97,13 +97,15 @@ public class AchievementService
     {
         var (longestStreak, currentStreak) = await _userService.GetStreaksAsync(userId);
 
-        // Alle Exercise-Logs mit der Kategorie laden
+        // Alle Exercise-Logs mit der Kategorie laden (Include MUSS vor Select kommen!)
         var logs = await _context.UserExerciseLogs
+            .Include(l => l.Exercise)
             .Where(l => l.UserId == userId)
             .Select(l => new { l.Reps, l.Date, l.Exercise.Category })
             .ToListAsync();
 
         var totalWorkouts = logs.Select(l => l.Date).Distinct().Count();
+        var totalExercises = logs.Sum(l => l.Reps);
 
         // Trainingszeit schätzen: ~2 Minuten pro Exercise-Eintrag
         var trainingMinutes = logs.Count * 2.0;
@@ -115,6 +117,7 @@ public class AchievementService
         return new ProfileStatsDto
         {
             TotalWorkouts = totalWorkouts,
+            TotalExercises = totalExercises,
             TrainingHours = trainingHours,
             CaloriesBurned = caloriesBurned,
             LongestStreak = longestStreak,

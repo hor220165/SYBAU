@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Sybau_Backend._Services;
 using Sybau_Backend.DTOs;
-using Sybau_Backend.Models;
 
 namespace Sybau_Backend.Controllers
 {
@@ -34,19 +33,6 @@ namespace Sybau_Backend.Controllers
             }
         }
 
-        [HttpPost("refresh-token")]
-        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenDto dto)
-        {
-            try
-            {
-                var result = await _authService.RefreshTokenAsync(dto.RefreshToken, _config);
-                return Ok(result);
-            }
-            catch (Exception e)
-            {
-                return Unauthorized("Ungültiger Refresh Token.");
-            }
-        }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)

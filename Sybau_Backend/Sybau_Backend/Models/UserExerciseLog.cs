@@ -12,8 +12,7 @@ public class UserExerciseLog : BaseEntity<int>
         User = user ?? throw new ArgumentNullException(nameof(user));
         Exercise = exercise ?? throw new ArgumentNullException(nameof(exercise));
         Reps = reps;
-        var cetZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
-        Date = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, cetZone));
+        Date = DateOnly.FromDateTime(DateTime.UtcNow);
     }
 
     public int UserId { get; set; }

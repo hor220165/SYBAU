@@ -14,6 +14,7 @@ public class AchievementDto
 public class ProfileStatsDto
 {
     public int TotalWorkouts { get; set; }
+    public int TotalExercises { get; set; }
     public double TrainingHours { get; set; }
     public int CaloriesBurned { get; set; }
     public int LongestStreak { get; set; }

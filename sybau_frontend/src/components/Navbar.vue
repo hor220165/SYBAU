@@ -1,51 +1,44 @@
 <template>
-  <!-- Navigation -->
-  <nav class="navbar">
-    <button class="nav-item"
-            :class="{ active: isActiveRoute('/home') }"
-            @click="navigateTo('/home')">
+  <button class="mobile-menu-btn" :class="{ 'below-header': headerVisible }" @click="mobileMenuOpen = !mobileMenuOpen">
+    <span class="hamburger-icon">☰</span>
+  </button>
+
+  <nav class="navbar" :class="{ 'mobile-open': mobileMenuOpen }">
+    <button class="nav-item" :class="{ active: isActiveRoute('/dashboard') }" @click="navigateAndClose('/dashboard')">
       <span class="nav-icon">🎯</span>
       <span>Dashboard</span>
     </button>
-    <button class="nav-item"
-            :class="{ active: isActiveRoute('/workouts') }"
-            @click="navigateTo('/workouts')">
+    <button class="nav-item" :class="{ active: isActiveRoute('/workouts') }" @click="navigateAndClose('/workouts')">
       <span class="nav-icon">🏋️</span>
       <span>Workouts</span>
     </button>
-    <button class="nav-item"
-            :class="{ active: isActiveRoute('/quests') }"
-            @click="navigateTo('/quests')">
+    <button class="nav-item" :class="{ active: isActiveRoute('/quests') }" @click="navigateAndClose('/quests')">
       <span class="nav-icon">🏆</span>
       <span>Quests</span>
     </button>
-    <button class="nav-item"
-            :class="{ active: isActiveRoute('/avatar') }"
-            @click="navigateTo('/avatar')">
+    <button class="nav-item" :class="{ active: isActiveRoute('/avatar') }" @click="navigateAndClose('/avatar')">
       <span class="nav-icon">👤</span>
       <span>Avatar</span>
     </button>
-    <button class="nav-item"
-            :class="{ active: isActiveRoute('/shop') }"
-            @click="navigateTo('/shop')">
+    <button class="nav-item" :class="{ active: isActiveRoute('/shop') }" @click="navigateAndClose('/shop')">
       <span class="nav-icon">🛒</span>
       <span>Shop</span>
     </button>
-    <button class="nav-item"
-            :class="{ active: isActiveRoute('/leaderboard') }"
-            @click="navigateTo('/leaderboard')">
+    <button class="nav-item" :class="{ active: isActiveRoute('/friends') }" @click="navigateAndClose('/friends')">
+      <span class="nav-icon">🤝</span>
+      <span>Friends</span>
+    </button>
+    <button class="nav-item" :class="{ active: isActiveRoute('/leaderboard') }"
+      @click="navigateAndClose('/leaderboard')">
       <span class="nav-icon">👥</span>
       <span>Leaderboard</span>
     </button>
-    <button class="nav-item"
-            :class="{ active: isActiveRoute('/profile') }"
-            @click="navigateTo('/profile')">
+    <button class="nav-item" :class="{ active: isActiveRoute('/profile') }" @click="navigateAndClose('/profile')">
       <span class="nav-icon">⚡</span>
       <span>Profile</span>
     </button>
-    <button v-if="isAdmin" class="nav-item admin-btn"
-            :class="{ active: isActiveRoute('/admin') }"
-            @click="navigateTo('/admin')">
+    <button v-if="isAdmin" class="nav-item admin-btn" :class="{ active: isActiveRoute('/admin') }"
+      @click="navigateAndClose('/admin')">
       <span class="nav-icon">🔐</span>
       <span>Admin</span>
     </button>
@@ -53,11 +46,18 @@
 </template>
 
 <script setup lang="ts">
-import {useNavigation} from "@/composables/useNavigation.ts";
+import { useNavigation } from "@/composables/useNavigation.ts";
 import { ref, onMounted } from 'vue';
 
-const {navigateTo, isActiveRoute} = useNavigation()
+const { navigateTo, isActiveRoute } = useNavigation();
 const isAdmin = ref(false);
+const mobileMenuOpen = ref(false);
+const headerVisible = ref(true);
+
+const navigateAndClose = (path: string) => {
+  navigateTo(path);
+  mobileMenuOpen.value = false;
+};
 
 onMounted(() => {
   const user = localStorage.getItem('user');
@@ -69,15 +69,54 @@ onMounted(() => {
       isAdmin.value = false;
     }
   }
+
+  const header = document.querySelector('header');
+  if (header) {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry) {
+          headerVisible.value = entry.isIntersecting;
+        }
+      },
+      { threshold: 0 }
+    );
+    observer.observe(header);
+  }
 });
 </script>
+
 <style scoped>
-/* Navigation */
+.mobile-menu-btn {
+  display: none;
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 2000;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: none;
+  background: rgba(30, 41, 59, 0.9);
+  backdrop-filter: blur(10px);
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  transition: top 0.3s ease, background 0.3s ease;
+}
+
+.mobile-menu-btn.below-header {
+  top: 72px;
+}
+
+.mobile-menu-btn:hover {
+  background: rgba(236, 72, 153, 0.3);
+}
+
 .navbar {
   display: flex;
   justify-content: center;
   gap: 8px;
-  padding: 0px 40px;
+  padding: 0 40px;
   height: 60px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: sticky;
@@ -93,10 +132,10 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0px 24px;
+  padding: 0 24px;
   background: transparent;
   border: none;
-  border-radius: 0px;
+  border-radius: 0;
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   font-size: 16px;
@@ -117,23 +156,15 @@ onMounted(() => {
 .nav-item.active::after {
   content: '';
   position: absolute;
-  bottom: 0px;
+  bottom: 0;
   left: 0;
   right: 0;
   height: 2px;
   background: linear-gradient(90deg, #ec4899, #f43f5e);
 }
 
-.nav-item:after {
-  transition: opacity 0.3s ease, transform 0.3 ease;
-}
-
 .nav-icon {
   font-size: 20px;
-}
-
-.nav-item:focus:not(:focus-visible) {
-  outline: none;
 }
 
 .admin-btn {
@@ -153,63 +184,56 @@ onMounted(() => {
   background: linear-gradient(90deg, #ffd700, #ffed4e);
 }
 
-/* ============================================
-   Mobile bottom tab bar
-   ============================================ */
-@media (max-width: 768px) {
-  .navbar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    top: auto;
-    height: auto;
-    padding: 8px 4px;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-    gap: 0;
-    justify-content: space-around;
-    border-bottom: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(15, 12, 41, 0.95);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-  }
-
-  .nav-item {
-    flex-direction: column;
-    gap: 2px;
-    padding: 6px 4px;
-    height: auto;
-    font-size: 10px;
-    min-width: 0;
-    flex: 1;
+@media (max-width: 1024px) {
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
     justify-content: center;
   }
 
-  .nav-item span:not(.nav-icon) {
-    font-size: 10px;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 56px;
-    text-align: center;
+  .navbar {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 280px;
+    height: 100vh;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0;
+    padding: 80px 0 0 0;
+    background: rgba(15, 23, 42, 0.98);
+    backdrop-filter: blur(20px);
+    border-bottom: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    transition: right 0.3s ease;
+    z-index: 1500;
   }
 
-  .nav-icon {
-    font-size: 22px;
+  .navbar.mobile-open {
+    right: 0;
+  }
+
+  .nav-item {
+    width: 100%;
+    height: 56px;
+    padding: 0 24px;
+    justify-content: flex-start;
+    border-radius: 0;
   }
 
   .nav-item.active::after {
-    bottom: auto;
+    width: 4px;
+    height: 100%;
+    left: 0;
+    right: auto;
     top: 0;
-    height: 2px;
-    border-radius: 0 0 2px 2px;
+    bottom: 0;
   }
 
   .admin-btn {
     border-left: none;
-    border-top: 1px solid rgba(255, 215, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    margin-top: auto;
   }
 }
-</style>
+</style>

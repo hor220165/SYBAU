@@ -24,7 +24,6 @@ export default defineConfig(({ mode }) => {
     : 'http://localhost:5243/'
 
   return {
-    base: './',
     plugins: [vue()],
     resolve: {
       alias: {

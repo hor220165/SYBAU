@@ -174,7 +174,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { workoutService } from '@/services/api';
+import { adminService, workoutService } from '@/services/api';
 
 type Difficulty = 'Easy' | 'Medium' | 'Hard';
 
@@ -355,7 +355,7 @@ const submitExercise = async () => {
   savingExercise.value = true;
 
   try {
-    await workoutService.createExercise({
+    await adminService.createExercise({
       name: exerciseForm.value.name,
       description: exerciseForm.value.description || undefined,
       category: categoryToEnumValue(exerciseForm.value.category),
