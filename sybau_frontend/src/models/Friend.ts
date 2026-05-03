@@ -2,6 +2,7 @@ export interface FriendshipDto {
     id: number;
     friendId: number;
     friendUserName: string;
+    friendProfileImageUrl?: string;
     friendLevel: number;
     friendExperience: number;
     friendBodyStage: string;
@@ -12,7 +13,17 @@ export interface FriendRequestDto {
     id: number;
     fromUserId: number;
     fromUserName: string;
+    fromUserProfileImageUrl?: string;
     fromUserLevel: number;
+    sentAt: string;
+}
+
+export interface SentFriendRequestDto {
+    id: number;
+    toUserId: number;
+    toUserName: string;
+    toUserProfileImageUrl?: string;
+    toUserLevel: number;
     sentAt: string;
 }
 

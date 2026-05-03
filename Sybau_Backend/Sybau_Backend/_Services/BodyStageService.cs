@@ -6,7 +6,7 @@ public class BodyStageService
 {
     public BodyStage GetBodyStage(int lvl)
     {
-        if (lvl >= 70)
+        if (lvl >= 50)
             return BodyStage.Bodybuilder;
         if (lvl >= 20)
             return BodyStage.Defined;

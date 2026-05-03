@@ -7,28 +7,60 @@
 
   <!-- Main Content -->
   <main class="workouts-content">
-    <!-- Stats Header -->
-    <div class="stats-header">
-      <div class="stats-header-content">
-        <h1 class="page-title">Deine Übungen</h1>
-        <p class="page-subtitle">Wähle eine Übung und trage deine Wiederholungen ein!</p>
+    <section class="page-heading">
+      <span class="page-kicker">Workouts</span>
+      <h1 class="page-title">Deine Übungen</h1>
+      <p class="page-subtitle">Wähle eine Übung und trage deine Wiederholungen ein.</p>
+    </section>
 
-        <div class="stats-grid">
-          <div class="stat-card">
+    <section class="mobile-stats-panel">
+      <div class="stats-grid">
+        <article class="stat-card">
+          <span class="stat-icon stat-icon-blue">
+            <CalendarDays :size="24" />
+          </span>
+          <span class="stat-copy">
             <span class="stat-label">Heute</span>
-            <span class="stat-value">{{ todayReps }} Wiederholungen</span>
-          </div>
-          <div class="stat-card">
+            <span class="stat-value">{{ formatNumber(todayReps) }} Reps</span>
+          </span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-icon stat-icon-purple">
+            <BarChart3 :size="24" />
+          </span>
+          <span class="stat-copy">
             <span class="stat-label">Gesamt</span>
-            <span class="stat-value">{{ totalExercises}} Wiederholungen</span>
-          </div>
-          <div class="stat-card">
+            <span class="stat-value">{{ formatNumber(totalExercises) }} Reps</span>
+          </span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-icon stat-icon-yellow">
+            <Zap :size="24" />
+          </span>
+          <span class="stat-copy">
             <span class="stat-label">XP Heute</span>
-            <span class="stat-value">+{{ todayXp }} XP</span>
-          </div>
-        </div>
+            <span class="stat-value">+{{ formatNumber(todayXp) }} XP</span>
+          </span>
+        </article>
       </div>
-    </div>
+    </section>
+
+    <section class="health-grid">
+      <article class="health-card">
+        <Flame class="health-flame" :size="30" />
+        <div>
+          <span class="health-label">Schritte heute</span>
+          <strong>{{ todayActivity.steps.toLocaleString('de-DE') }}</strong>
+        </div>
+      </article>
+      <article class="health-card">
+        <Flame class="health-flame" :size="30" />
+        <div>
+          <span class="health-label">Kilometer heute</span>
+          <strong>{{ Number(todayActivity.kilometers || 0).toFixed(1) }} km</strong>
+        </div>
+      </article>
+    </section>
 
     <!-- Filter Buttons -->
     <div class="filter-section">
@@ -84,7 +116,10 @@
             <p v-if="wo.description" class="workout-plan-desc">{{ wo.description }}</p>
           </div>
           <div class="workout-plan-meta">
-            <span>💪 {{ wo.exercises?.length ?? 0 }} Übungen</span>
+            <span class="asset-meta">
+              <img src="../assets/Pixel_Hantel.png" alt="" />
+              {{ wo.exercises?.length ?? 0 }} Übungen
+            </span>
             <span class="expand-icon">{{ expandedWorkout === wo.id ? '▲' : '▼' }}</span>
           </div>
           <div v-if="expandedWorkout === wo.id" class="workout-exercises-list">
@@ -93,7 +128,7 @@
               <span class="exercise-meta-label">{{ mapDifficulty(ex.difficulty) }} · Limit: {{ ex.dailyLimit }}</span>
             </div>
             <button class="start-workout-btn" @click.stop="startWorkoutSession(wo)">
-              🏋️ Workout starten
+              Workout starten
             </button>
           </div>
         </div>
@@ -168,18 +203,24 @@
       <!-- ===== ABSCHLUSS-SCREEN ===== -->
       <template v-if="sessionFinished">
         <div class="session-finish-screen">
-          <div class="finish-icon">🎉</div>
+          <div class="finish-icon">
+            <img src="../assets/Star_Pixel.png" alt="" />
+          </div>
           <h2 class="finish-title">Workout abgeschlossen!</h2>
           <p class="finish-subtitle">{{ workoutSession.name }}</p>
 
           <div class="finish-stats">
             <div class="finish-stat">
-              <span class="finish-stat-icon">⭐</span>
+              <span class="finish-stat-icon">
+                <img src="../assets/XP_Pixel.png" alt="" />
+              </span>
               <span class="finish-stat-value">+{{ sessionTotalXp }}</span>
               <span class="finish-stat-label">XP verdient</span>
             </div>
             <div class="finish-stat">
-              <span class="finish-stat-icon">💰</span>
+              <span class="finish-stat-icon">
+                <img src="../assets/SYBAU_Coin.png" alt="" />
+              </span>
               <span class="finish-stat-value">+{{ sessionTotalCoins }}</span>
               <span class="finish-stat-label">Coins verdient</span>
             </div>
@@ -187,11 +228,11 @@
 
           <div class="finish-details">
             <div class="finish-detail-row">
-              <span>✅ Übungen abgeschlossen</span>
+              <span>Übungen abgeschlossen</span>
               <span>{{ sessionActiveCount }}</span>
             </div>
             <div v-if="sessionSkippedCount > 0" class="finish-detail-row finish-detail-skipped">
-              <span>⏭️ Übersprungen (Limit erreicht)</span>
+              <span>Übersprungen (Limit erreicht)</span>
               <span>{{ sessionSkippedCount }}</span>
             </div>
           </div>
@@ -204,7 +245,7 @@
                 <span class="finish-ex-skipped">Limit erreicht</span>
               </template>
               <template v-else>
-                <span class="finish-ex-reward">{{ ex.repsLogged }} Reps · +{{ ex.xpEarned }} XP · +{{ ex.coinsEarned }} 💰</span>
+                <span class="finish-ex-reward">{{ ex.repsLogged }} Reps · +{{ ex.xpEarned }} XP · +{{ ex.coinsEarned }} Coins</span>
               </template>
             </div>
           </div>
@@ -238,12 +279,12 @@
             <div class="session-exercise-action">
               <!-- Limit erreicht -->
               <template v-if="ex.skipped">
-                <span class="session-limit-badge">🚫 Limit erreicht</span>
+                <span class="session-limit-badge">Limit erreicht</span>
               </template>
               <!-- Bereits geloggt -->
               <template v-else-if="ex.logged">
-                <span class="session-check">✅ {{ ex.repsLogged }} Reps</span>
-                <span class="session-reward">+{{ ex.xpEarned }} XP · +{{ ex.coinsEarned }} 💰</span>
+                <span class="session-check">{{ ex.repsLogged }} Reps</span>
+                <span class="session-reward">+{{ ex.xpEarned }} XP · +{{ ex.coinsEarned }} Coins</span>
               </template>
               <!-- Noch offen -->
               <template v-else>
@@ -270,11 +311,11 @@
             <div class="session-progress-fill" :style="{ width: sessionProgressPercent + '%' }"></div>
           </div>
           <div class="session-summary-row">
-            <span>⭐ Gesamt XP</span>
+            <span>Gesamt XP</span>
             <span class="session-total-xp">+{{ sessionTotalXp }}</span>
           </div>
           <div class="session-summary-row">
-            <span>💰 Gesamt Coins</span>
+            <span>Gesamt Coins</span>
             <span class="session-total-coins">+{{ sessionTotalCoins }}</span>
           </div>
         </div>
@@ -282,7 +323,7 @@
         <div class="modal-actions-cw">
           <button class="btn-cancel-cw" @click="closeWorkoutSession">Schließen</button>
           <button v-if="sessionCompletedCount === workoutSession.exercises.length" class="btn-create-cw" @click="finishWorkoutSession">
-            🎉 Workout abgeschlossen!
+            Workout abgeschlossen
           </button>
         </div>
       </template>
@@ -307,8 +348,9 @@ import WorkoutCard from '@/components/WorkoutCard.vue';
 import ExerciseModal from '@/components/WorkoutPopup.vue';
 import FooterComponent from '@/components/FooterComponent.vue';
 import MessagePopup from '@/components/MessagePopup.vue';
-import { workoutService, achievementService } from '@/services/api';
+import { workoutService, achievementService, questService } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
+import { BarChart3, CalendarDays, Flame, Zap } from 'lucide-vue-next';
 
 const { refreshProfile } = useAuth();
 
@@ -321,14 +363,6 @@ const popupMessage = ref('');
 const popupType = ref<'success' | 'error'>('success');
 
 const filters = ['Alle', 'Cardio', 'Strength', 'Core', 'Flexibility'];
-
-// Kategorie → Icon Mapping
-const categoryIcons: Record<string, string> = {
-  Strength: '💪',
-  Core: '🔥',
-  Cardio: '⚡',
-  Flexibility: '🧘'
-};
 
 // Difficulty → XP pro Wiederholung
 const difficultyXp: Record<string, number> = {
@@ -360,6 +394,7 @@ const exercises = ref<ExerciseLocal[]>([]);
 const workouts = ref<any[]>([]);
 const showCreateWorkout = ref(false);
 const totalExercises = ref(0);
+const todayActivity = ref({ steps: 0, kilometers: 0 });
 const expandedWorkout = ref<number | null>(null);
 const workoutSession = ref<any>(null);
 const newWorkout = ref({
@@ -370,9 +405,7 @@ const newWorkout = ref({
 });
 
 onMounted(async () => {
-  await loadExercises();
-  await loadWorkouts();
-  await loadProfileStats();
+  await Promise.all([loadExercises(), loadWorkouts(), loadProfileStats(), loadTodayActivity()]);
 });
 
 async function loadProfileStats() {
@@ -382,6 +415,32 @@ async function loadProfileStats() {
   } catch (e) {
     console.error('Fehler beim Laden der Profil-Stats', e);
   }
+}
+
+async function loadTodayActivity() {
+  try {
+    const res = await questService.getTodayActivity();
+    todayActivity.value = {
+      steps: Number(res.data?.steps ?? 0),
+      kilometers: Number(res.data?.kilometers ?? 0)
+    };
+  } catch (e) {
+    console.error('Fehler beim Laden der Health-Stats', e);
+  }
+}
+
+function formatNumber(value: number) {
+  if (Math.abs(value) < 10000) return value.toLocaleString('de-DE');
+  const units = [
+    { amount: 1_000_000_000, suffix: 'B' },
+    { amount: 1_000_000, suffix: 'M' },
+    { amount: 1_000, suffix: 'K' }
+  ];
+  const unit = units.find((u) => Math.abs(value) >= u.amount);
+  if (!unit) return value.toLocaleString('de-DE');
+  const compact = value / unit.amount;
+  const digits = compact >= 100 || Number.isInteger(compact) ? 0 : 1;
+  return `${compact.toFixed(digits).replace('.', ',')}${unit.suffix}`;
 }
 
 // Stats berechnen
@@ -401,7 +460,7 @@ async function loadExercises() {
         name: e.name,
         description: e.description ?? '',
         category: cat,
-        icon: categoryIcons[cat] ?? '🏋️',
+        icon: '',
         xpPerRep: e.xpPerRep ?? difficultyXp[diff] ?? 2,
         dailyLimit: e.dailyLimit ?? difficultyDailyLimit[diff] ?? 200,
         todayCount: e.todayCount ?? 0,
@@ -610,118 +669,144 @@ const handleExerciseSubmit = async (data: any) => {
   margin: 0 auto;
 }
 
-/* Stats Header - Mehr Farbe */
-.stats-header {
-  position: relative;
-  background: linear-gradient(135deg, 
-    rgba(236, 72, 153, 0.25) 0%, 
-    rgba(168, 85, 247, 0.2) 50%, 
-    rgba(59, 130, 246, 0.15) 100%
-  );
-  border: 2px solid rgba(236, 72, 153, 0.5);
-  border-radius: 24px;
-  padding: 40px;
-  margin-bottom: 40px;
-  overflow: hidden;
-  backdrop-filter: blur(20px);
-  box-shadow: 
-    0 0 40px rgba(236, 72, 153, 0.3),
-    0 8px 32px rgba(0, 0, 0, 0.3);
+.page-heading {
+  margin-bottom: 24px;
 }
 
-/* Animated Gradient Overlay */
-.stats-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(236, 72, 153, 0.3) 0%, 
-    rgba(168, 85, 247, 0.25) 50%, 
-    rgba(59, 130, 246, 0.2) 100%
-  );
-  opacity: 0.6;
-  pointer-events: none;
-  z-index: 0;
-  animation: pulse 8s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 0.8; }
-}
-
-.stats-header-content {
-  position: relative;
-  z-index: 1;
+.page-kicker {
+  display: inline-flex;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: #f9a8d4;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 14px;
 }
 
 .page-title {
-  font-size: 36px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1;
+  font-weight: 900;
+  margin: 0;
   color: white;
-  text-shadow: 0 2px 20px rgba(236, 72, 153, 0.6);
+  text-shadow: none;
 }
 
 .page-subtitle {
   font-size: 16px;
-  margin: 0 0 32px 0;
-  color: rgba(255, 255, 255, 0.9);
+  margin: 16px 0 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.mobile-stats-panel {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 18px;
+  margin-bottom: 24px;
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 18px;
 }
 
-/* Stat Cards - Bessere Sichtbarkeit, kein Hover */
 .stat-card {
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(10px);
-  border: 2px solid rgba(236, 72, 153, 0.5);
-  border-radius: 16px;
-  padding: 20px;
+  min-height: 148px;
+  background: rgba(2, 6, 23, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 22px;
+  padding: 22px 20px;
   display: flex;
-  align-items: center;
-  gap: 16px;
-  box-shadow: 
-    0 4px 16px rgba(0, 0, 0, 0.3),
-    0 0 20px rgba(236, 72, 153, 0.2);
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 12px;
 }
 
 .stat-icon {
-  width: 48px;
-  height: 48px;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3));
-  border-radius: 12px;
-  color: #ec4899;
-  border: 1px solid rgba(236, 72, 153, 0.4);
 }
 
-.stat-info {
+.stat-icon-blue {
+  color: #60a5fa;
+}
+
+.stat-icon-purple {
+  color: #a855f7;
+}
+
+.stat-icon-yellow {
+  color: #fbbf24;
+}
+
+.stat-copy {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
 .stat-label {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-  font-weight: 500;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.66);
+  font-weight: 700;
 }
 
 .stat-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: white;
+  text-shadow: none;
+}
+
+.health-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.health-card {
+  position: relative;
+  min-height: 176px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 18px;
+  padding: 28px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+}
+
+.health-flame {
+  color: #ff6b1a;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 0 8px rgba(255, 107, 26, 0.25));
+}
+
+.health-label {
+  display: block;
+  color: rgba(255, 255, 255, 0.66);
   font-size: 20px;
   font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.health-card strong {
   color: white;
-  text-shadow: 0 2px 10px rgba(236, 72, 153, 0.5);
+  font-size: 32px;
+  font-weight: 800;
 }
 
 /* Filter Section */
@@ -827,30 +912,22 @@ const handleExerciseSubmit = async (data: any) => {
     padding: 32px 24px;
   }
 
-  .stats-header {
-    padding: 32px;
-  }
-
   .page-title {
     font-size: 32px;
   }
 
   .stats-grid {
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    gap: 14px;
   }
 
   .stat-card {
-    padding: 16px;
-  }
-
-  .stat-icon {
-    width: 44px;
-    height: 44px;
+    min-height: 128px;
+    padding: 18px;
   }
 
   .stat-value {
-    font-size: 18px;
+    font-size: 22px;
   }
 
   .workouts-grid {
@@ -862,10 +939,6 @@ const handleExerciseSubmit = async (data: any) => {
 @media (max-width: 768px) {
   .workouts-content {
     padding: 24px 16px;
-  }
-
-  .stats-header {
-    padding: 24px;
   }
 
   .page-title {
@@ -881,21 +954,16 @@ const handleExerciseSubmit = async (data: any) => {
     gap: 12px;
   }
 
-  .stat-card {
-    padding: 16px;
-  }
-
-  .stat-icon {
-    width: 40px;
-    height: 40px;
+  .health-grid {
+    grid-template-columns: 1fr;
   }
 
   .stat-label {
-    font-size: 12px;
+    font-size: 15px;
   }
 
   .stat-value {
-    font-size: 16px;
+    font-size: 22px;
   }
 
   .filter-section {
@@ -935,27 +1003,17 @@ const handleExerciseSubmit = async (data: any) => {
     padding: 20px 12px;
   }
 
-  .stats-header {
-    padding: 20px;
-    border-radius: 20px;
-  }
-
   .page-title {
     font-size: 24px;
   }
 
   .page-subtitle {
     font-size: 13px;
-    margin-bottom: 24px;
   }
 
   .stat-card {
+    min-height: 116px;
     padding: 14px;
-  }
-
-  .stat-icon {
-    width: 36px;
-    height: 36px;
   }
 
   .filter-btn {
@@ -1028,6 +1086,18 @@ const handleExerciseSubmit = async (data: any) => {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.7);
   margin-top: 8px;
+}
+
+.asset-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.asset-meta img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
 
 .expand-icon {
@@ -1446,9 +1516,19 @@ const handleExerciseSubmit = async (data: any) => {
 }
 
 .finish-icon {
-  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  margin-inline: auto;
   margin-bottom: 8px;
   animation: finishBounce 0.6s ease;
+}
+
+.finish-icon img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
 }
 
 @keyframes finishBounce {
@@ -1489,8 +1569,10 @@ const handleExerciseSubmit = async (data: any) => {
   min-width: 120px;
 }
 
-.finish-stat-icon {
-  font-size: 28px;
+.finish-stat-icon img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 
 .finish-stat-value {

@@ -36,6 +36,7 @@ public class AuthService
                 user.Id,
                 user.UserName,
                 user.Email,
+                user.ProfileImageUrl,
                 user.IsAdmin,
             }
         };
@@ -101,7 +102,7 @@ public class AuthService
             issuer: config["Jwt:Issuer"],
             audience: config["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddHours(24),
+            expires: DateTime.UtcNow.AddDays(30),
             signingCredentials: creds
         );
 

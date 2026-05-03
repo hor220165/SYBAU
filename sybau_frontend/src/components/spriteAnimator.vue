@@ -31,12 +31,12 @@ export default defineComponent({
       const sprite = new Image();
 
       const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const stage = user.avatar?.bodyStage;
+      const stage = String(user.avatar?.bodyStage ?? '').trim().toLowerCase();
 
       const stageToSprite: Record<string, string> = {
-        Skinny: "./src/assets/Spritesheet_Bodybuilder.png",
-        Defined: "./src/assets/Spritesheet_Normal.png",
-        Bodybuilder: "./src/assets/Spritesheet_Bodybuilder.png"
+        skinny: "./src/assets/Spritesheet_Skinny.png",
+        defined: "./src/assets/Spritesheet_Normal.png",
+        bodybuilder: "./src/assets/Spritesheet_Bodybuilder.png"
       };
 
       sprite.src = stageToSprite[stage] || "./src/assets/Spritesheet_Skinny.png";

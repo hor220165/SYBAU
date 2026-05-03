@@ -82,13 +82,12 @@ namespace Sybau_Backend.Controllers
         }
 
         [HttpDelete("users/{id}")]
-        public IActionResult DeleteUser(int id)
+        public async Task<IActionResult> DeleteUser(int id)
         {
-            var user = _context.Users.Find(id);
-            if (user == null) return NotFound();
+            var userExists = await _context.Users.AnyAsync(u => u.Id == id);
+            if (!userExists) return NotFound();
 
-            _context.Users.Remove(user);
-            _context.SaveChanges();
+            await _userService.DeleteUserAsync(id);
             return NoContent();
         }
 

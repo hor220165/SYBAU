@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Crown, Medal, BadgeCheck, Sparkles } from 'lucide-vue-next';
+import { Crown, Medal, Sparkles, Star } from 'lucide-vue-next';
 import type { LeaderboardDisplayEntry } from '@/models/LeaderboardDisplayEntry';
+import { resolveMediaUrl } from '@/services/api';
+import noProfilePicture from '@/assets/Nopfp.png';
 
 const props = defineProps<{
   player: LeaderboardDisplayEntry;
+}>();
+
+const emit = defineEmits<{
+  openProfile: [id: number];
 }>();
 
 const rankType = computed(() => {
@@ -13,6 +19,8 @@ const rankType = computed(() => {
   if (props.player.Rank === 3) return 'bronze';
   return 'plain';
 });
+
+const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImageUrl));
 </script>
 
 <template>
@@ -23,15 +31,23 @@ const rankType = computed(() => {
       <span v-else>#{{ player.Rank }}</span>
     </div>
 
-    <div class="avatar-pill">{{ player.initials }}</div>
+    <button
+      class="avatar-pill"
+      :class="{ 'has-image': !!profileImageUrl, 'is-empty': !profileImageUrl }"
+      type="button"
+      @click="emit('openProfile', player.Id)"
+    >
+      <img
+        :src="profileImageUrl || noProfilePicture"
+        :alt="player.UserName"
+        class="avatar-image"
+      />
+    </button>
 
     <div class="player-main">
       <div class="player-title-row">
         <h4>{{ player.UserName }}</h4>
-        <span v-if="player.isCurrentUser" class="current-user-pill">
-          <BadgeCheck :size="14" />
-          Du
-        </span>
+        <Star v-if="player.isCurrentUser" class="current-user-star" :size="16" />
       </div>
       <div class="player-subline">
         <span class="level-pill">Level {{ player.Level }}</span>
@@ -39,7 +55,7 @@ const rankType = computed(() => {
     </div>
 
     <div class="player-score">
-      <span class="xp-value">{{ player.Experience.toLocaleString() }} XP</span>
+      <span class="xp-value">{{ player.TotalXp.toLocaleString() }} XP</span>
       <span class="xp-caption">
         <Sparkles :size="14" />
         Gesamtfortschritt
@@ -101,13 +117,36 @@ const rankType = computed(() => {
 .avatar-pill {
   width: 56px;
   height: 56px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.86), rgba(236, 72, 153, 0.86));
+  border-radius: 999px;
+  padding: 0;
+  border: 0;
   display: grid;
   place-items: center;
   color: white;
   font-weight: 800;
   letter-spacing: 0.05em;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.avatar-pill:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.65);
+  outline-offset: 2px;
+}
+
+.avatar-pill.is-empty {
+  background: rgba(30, 41, 59, 0.92);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.avatar-pill.has-image {
+  background: rgba(30, 41, 59, 0.92);
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .player-main {
@@ -129,7 +168,6 @@ const rankType = computed(() => {
   word-break: break-word;
 }
 
-.current-user-pill,
 .level-pill {
   display: inline-flex;
   align-items: center;
@@ -140,10 +178,10 @@ const rankType = computed(() => {
   font-weight: 700;
 }
 
-.current-user-pill {
-  color: #f5d0fe;
-  background: rgba(236, 72, 153, 0.14);
-  border: 1px solid rgba(236, 72, 153, 0.28);
+.current-user-star {
+  flex: 0 0 auto;
+  color: #fbbf24;
+  fill: rgba(251, 191, 36, 0.22);
 }
 
 .player-subline {
@@ -198,7 +236,7 @@ const rankType = computed(() => {
   .avatar-pill {
     width: 48px;
     height: 48px;
-    border-radius: 14px;
+    border-radius: 999px;
   }
 }
 

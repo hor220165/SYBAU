@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { BadgeCheck, Crown } from 'lucide-vue-next';
+import { Crown, Star } from 'lucide-vue-next';
 import type { LeaderboardDisplayEntry } from '@/models/LeaderboardDisplayEntry';
+import { resolveMediaUrl } from '@/services/api';
+import noProfilePicture from '@/assets/Nopfp.png';
 
 const props = defineProps<{
   player: LeaderboardDisplayEntry;
   place: 1 | 2 | 3;
+}>();
+
+const emit = defineEmits<{
+  openProfile: [id: number];
 }>();
 
 const cardClass = computed(() => {
@@ -15,6 +21,7 @@ const cardClass = computed(() => {
 });
 
 const badgeLabel = computed(() => `#${props.place}`);
+const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImageUrl));
 </script>
 
 <template>
@@ -22,21 +29,26 @@ const badgeLabel = computed(() => `#${props.place}`);
     <div class="podium-glow"></div>
     <Crown v-if="place === 1" class="crown-icon" />
 
-    <div class="avatar-shell">
-      <div class="avatar-core">{{ player.initials }}</div>
-    </div>
+    <button class="avatar-shell" type="button" @click="emit('openProfile', player.Id)">
+      <div class="avatar-core">
+        <img
+          :src="profileImageUrl || noProfilePicture"
+          :alt="player.UserName"
+          class="avatar-image"
+        />
+      </div>
+    </button>
 
     <div class="badge-row">
       <span class="place-badge">{{ badgeLabel }}</span>
-      <span v-if="player.isCurrentUser" class="me-badge">
-        <BadgeCheck :size="14" />
-        Du
-      </span>
     </div>
 
-    <h3 class="player-name">{{ player.UserName }}</h3>
+    <h3 class="player-name">
+      <span>{{ player.UserName }}</span>
+      <Star v-if="player.isCurrentUser" class="current-user-star" :size="16" />
+    </h3>
     <p class="player-meta">Level {{ player.Level }}</p>
-    <p class="player-xp">{{ player.Experience.toLocaleString() }} XP</p>
+    <p class="player-xp">{{ player.TotalXp.toLocaleString() }} XP</p>
   </article>
 </template>
 
@@ -103,11 +115,18 @@ const badgeLabel = computed(() => `#${props.place}`);
   height: 96px;
   border-radius: 999px;
   padding: 4px;
+  border: 0;
   display: grid;
   place-items: center;
   margin-top: 18px;
   background: linear-gradient(135deg, rgba(236, 72, 153, 0.9), rgba(59, 130, 246, 0.9));
   box-shadow: 0 18px 34px rgba(76, 29, 149, 0.32);
+  cursor: pointer;
+}
+
+.avatar-shell:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.7);
+  outline-offset: 3px;
 }
 
 .avatar-core {
@@ -121,6 +140,18 @@ const badgeLabel = computed(() => `#${props.place}`);
   font-size: 1.6rem;
   font-weight: 800;
   letter-spacing: 0.04em;
+  overflow: hidden;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.avatar-fallback-icon {
+  color: rgba(255, 255, 255, 0.74);
 }
 
 .badge-row {
@@ -132,8 +163,7 @@ const badgeLabel = computed(() => `#${props.place}`);
   justify-content: center;
 }
 
-.place-badge,
-.me-badge {
+.place-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -148,17 +178,28 @@ const badgeLabel = computed(() => `#${props.place}`);
   color: white;
 }
 
-.me-badge {
-  background: rgba(168, 85, 247, 0.16);
-  color: #e9d5ff;
-  border: 1px solid rgba(168, 85, 247, 0.3);
-}
-
 .player-name {
   margin: 14px 0 4px;
   color: white;
   font-size: 1.1rem;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.player-name span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.current-user-star {
+  flex: 0 0 auto;
+  color: #fbbf24;
+  fill: rgba(251, 191, 36, 0.22);
 }
 
 .player-meta {

@@ -2,6 +2,7 @@ using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
@@ -9,7 +10,20 @@ using Sybau_Backend._Services;
 using Sybau_Backend.Data;
 using Sybau_Backend.Hubs;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateEmptyBuilder(
+    new WebApplicationOptions
+    {
+        Args = args,
+        ContentRootPath = Directory.GetCurrentDirectory()
+    }
+);
+builder.WebHost.UseKestrel();
+builder.WebHost.UseUrls("http://0.0.0.0:5243");
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false)
+    .AddEnvironmentVariables()
+    .AddCommandLine(args);
 
 // Add services to the container.
 builder.Services.AddSignalR();
@@ -120,6 +134,7 @@ builder.Services.AddDbContext<FitnessDbContext>(options =>
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads", "profile-images"));
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -143,12 +158,20 @@ app.UseExceptionHandler(errorApp =>
 
 // CORS muss VOR Auth und MapControllers stehen
 app.UseCors("Default");
+var staticFileContentTypes = new FileExtensionContentTypeProvider();
+staticFileContentTypes.Mappings[".heic"] = "image/heic";
+staticFileContentTypes.Mappings[".heif"] = "image/heif";
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = staticFileContentTypes
+});
 
 app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGet("/health", () => Results.Ok(new { status = "ok", app = "sybau" }));
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
 

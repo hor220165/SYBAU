@@ -5,41 +5,41 @@
 
   <nav class="navbar" :class="{ 'mobile-open': mobileMenuOpen }">
     <button class="nav-item" :class="{ active: isActiveRoute('/dashboard') }" @click="navigateAndClose('/dashboard')">
-      <span class="nav-icon">🎯</span>
+      <LayoutDashboard class="nav-icon" :size="20" />
       <span>Dashboard</span>
     </button>
     <button class="nav-item" :class="{ active: isActiveRoute('/workouts') }" @click="navigateAndClose('/workouts')">
-      <span class="nav-icon">🏋️</span>
+      <Dumbbell class="nav-icon" :size="20" />
       <span>Workouts</span>
     </button>
     <button class="nav-item" :class="{ active: isActiveRoute('/quests') }" @click="navigateAndClose('/quests')">
-      <span class="nav-icon">🏆</span>
+      <Flag class="nav-icon" :size="20" />
       <span>Quests</span>
     </button>
     <button class="nav-item" :class="{ active: isActiveRoute('/avatar') }" @click="navigateAndClose('/avatar')">
-      <span class="nav-icon">👤</span>
+      <Accessibility class="nav-icon" :size="20" />
       <span>Avatar</span>
     </button>
     <button class="nav-item" :class="{ active: isActiveRoute('/shop') }" @click="navigateAndClose('/shop')">
-      <span class="nav-icon">🛒</span>
+      <Store class="nav-icon" :size="20" />
       <span>Shop</span>
     </button>
     <button class="nav-item" :class="{ active: isActiveRoute('/friends') }" @click="navigateAndClose('/friends')">
-      <span class="nav-icon">🤝</span>
+      <Users class="nav-icon" :size="20" />
       <span>Friends</span>
     </button>
     <button class="nav-item" :class="{ active: isActiveRoute('/leaderboard') }"
       @click="navigateAndClose('/leaderboard')">
-      <span class="nav-icon">👥</span>
+      <Trophy class="nav-icon" :size="20" />
       <span>Leaderboard</span>
     </button>
     <button class="nav-item" :class="{ active: isActiveRoute('/profile') }" @click="navigateAndClose('/profile')">
-      <span class="nav-icon">⚡</span>
+      <User class="nav-icon" :size="20" />
       <span>Profile</span>
     </button>
     <button v-if="isAdmin" class="nav-item admin-btn" :class="{ active: isActiveRoute('/admin') }"
       @click="navigateAndClose('/admin')">
-      <span class="nav-icon">🔐</span>
+      <ShieldCheck class="nav-icon" :size="20" />
       <span>Admin</span>
     </button>
   </nav>
@@ -48,6 +48,17 @@
 <script setup lang="ts">
 import { useNavigation } from "@/composables/useNavigation.ts";
 import { ref, onMounted } from 'vue';
+import {
+  Accessibility,
+  Dumbbell,
+  Flag,
+  LayoutDashboard,
+  ShieldCheck,
+  Store,
+  Trophy,
+  User,
+  Users,
+} from 'lucide-vue-next';
 
 const { navigateTo, isActiveRoute } = useNavigation();
 const isAdmin = ref(false);
@@ -164,7 +175,8 @@ onMounted(() => {
 }
 
 .nav-icon {
-  font-size: 20px;
+  flex: 0 0 auto;
+  stroke-width: 2.4;
 }
 
 .admin-btn {
@@ -186,54 +198,60 @@ onMounted(() => {
 
 @media (max-width: 1024px) {
   .mobile-menu-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: none;
   }
 
   .navbar {
-    position: fixed;
+    position: sticky;
     top: 0;
-    right: -100%;
-    width: 280px;
-    height: 100vh;
-    flex-direction: column;
+    right: auto;
+    width: 100%;
+    height: 60px;
+    flex-direction: row;
     justify-content: flex-start;
-    gap: 0;
-    padding: 80px 0 0 0;
-    background: rgba(15, 23, 42, 0.98);
+    gap: 8px;
+    padding: 0 16px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: rgba(5, 7, 20, 0.72);
     backdrop-filter: blur(20px);
-    border-bottom: none;
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
-    transition: right 0.3s ease;
-    z-index: 1500;
-  }
-
-  .navbar.mobile-open {
-    right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: none;
+    transition: none;
+    z-index: 1000;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   .nav-item {
-    width: 100%;
-    height: 56px;
-    padding: 0 24px;
-    justify-content: flex-start;
+    width: auto;
+    height: 100%;
+    flex: 0 0 auto;
+    padding: 0 18px;
+    justify-content: center;
     border-radius: 0;
+    white-space: nowrap;
   }
 
   .nav-item.active::after {
-    width: 4px;
-    height: 100%;
+    width: auto;
+    height: 2px;
     left: 0;
-    right: auto;
-    top: 0;
+    right: 0;
+    top: auto;
     bottom: 0;
   }
 
   .admin-btn {
-    border-left: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-    margin-top: auto;
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+    border-top: none;
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 1024px) {
+  .navbar::-webkit-scrollbar {
+    display: none;
   }
 }
 </style>

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { Coins, Package, Sparkles, Target, Zap } from 'lucide-vue-next';
+import { Package, Sparkles } from 'lucide-vue-next';
 import Navbar from '@/components/Navbar.vue';
 import Header from '@/components/Header.vue';
 import ShopItemCard from '@/components/ShopItemCard.vue';
 import ShopFeatureCard from '@/components/ShopFeatureCard.vue';
+import coinIcon from '@/assets/SYBAU_Coin.png';
 import { ItemType } from '@/models/ItemType';
 import type { item } from '@/models/Item';
 import type { ShopDisplayItem } from '@/models/ShopDisplayItem';
@@ -275,13 +276,6 @@ onMounted(loadPageData);
           </p>
         </div>
 
-        <div class="wallet-box">
-          <span class="wallet-label">Deine Coins</span>
-          <div class="wallet-value-row">
-            <Coins :size="22" />
-            <strong>{{ currentCoins.toLocaleString() }}</strong>
-          </div>
-        </div>
       </section>
 
       <div v-if="loading" class="state-box">Lade Shop-Items…</div>
@@ -297,7 +291,6 @@ onMounted(loadPageData);
               </div>
               <p>Die stärksten oder seltensten Shop-Items aus deinem aktuellen Backend.</p>
             </div>
-            <span class="mini-pill">Live aus dem echten Shop</span>
           </div>
 
           <div class="feature-grid">
@@ -336,25 +329,25 @@ onMounted(loadPageData);
               Alle
             </button>
             <button
-              class="filter-chip"
-              :class="{ active: activeFilter === 'chest' }"
-              @click="activeFilter = 'chest'"
-            >
-              📦 Chests
+            class="filter-chip"
+            :class="{ active: activeFilter === 'chest' }"
+            @click="activeFilter = 'chest'"
+          >
+              Chests
             </button>
             <button
               class="filter-chip"
               :class="{ active: activeFilter === 'boost' }"
               @click="activeFilter = 'boost'"
             >
-              ⚡ Boosts
+              Boosts
             </button>
             <button
               class="filter-chip"
               :class="{ active: activeFilter === 'item' }"
               @click="activeFilter = 'item'"
             >
-              🛡️ Items
+              Items
             </button>
           </div>
 
@@ -376,26 +369,31 @@ onMounted(loadPageData);
 
         <section class="section-card earn-card">
           <div class="earn-copy">
-            <div class="title-with-icon">
-              <Target :size="20" />
-              <h2>Mehr Coins verdienen</h2>
+            <div class="earn-title">
+              <div>
+                <h2>Coins verdienen</h2>
+                <p>Schließe Aktivitäten ab. Die Coins werden danach automatisch deinem Konto gutgeschrieben.</p>
+              </div>
             </div>
-            <p>Workouts und Quests sind weiterhin dein schnellster Weg, um dir neue Shop-Items zu holen.</p>
           </div>
 
           <div class="earn-stats">
             <article class="earn-pill">
-              <Zap :size="18" />
               <div>
-                <span>Pro Workout</span>
-                <strong>50–150 Coins</strong>
+                <span>Workout abschließen</span>
+                <strong>
+                  <img :src="coinIcon" alt="" class="earn-coin" />
+                  50–150
+                </strong>
               </div>
             </article>
             <article class="earn-pill">
-              <Sparkles :size="18" />
               <div>
-                <span>Pro Quest</span>
-                <strong>100–500 Coins</strong>
+                <span>Quest erledigen</span>
+                <strong>
+                  <img :src="coinIcon" alt="" class="earn-coin" />
+                  100–500
+                </strong>
               </div>
             </article>
           </div>
@@ -421,33 +419,29 @@ onMounted(loadPageData);
   gap: 24px;
 }
 
-.shop-hero-card,
 .section-card,
 .state-box,
 .empty-box {
-  border-radius: 28px;
+  border-radius: 22px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(15, 23, 42, 0.56);
+  background: rgba(15, 23, 42, 0.62);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 24px 50px rgba(2, 6, 23, 0.22);
+  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.24);
 }
 
 .shop-hero-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.5fr);
-  gap: 24px;
-  align-items: center;
-  padding: clamp(24px, 3vw, 36px);
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
+  display: block;
+  padding: 0;
+  background: transparent;
 }
 
 .hero-kicker {
   display: inline-flex;
-  border-radius: 999px;
-  padding: 7px 12px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fef3c7;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: #f9a8d4;
   font-size: 0.82rem;
   font-weight: 700;
   margin-bottom: 14px;
@@ -464,32 +458,6 @@ onMounted(loadPageData);
   color: rgba(255, 255, 255, 0.84);
   max-width: 58ch;
   line-height: 1.65;
-}
-
-.wallet-box {
-  justify-self: end;
-  width: min(100%, 280px);
-  padding: 22px;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.wallet-label {
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 0.86rem;
-}
-
-.wallet-value-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 10px;
-  color: #facc15;
-}
-
-.wallet-value-row strong {
-  font-size: clamp(1.35rem, 3vw, 2rem);
 }
 
 .section-card {
@@ -555,16 +523,16 @@ onMounted(loadPageData);
 }
 
 .filter-chip {
-  border: 1px solid rgba(139, 92, 246, 0.24);
+  border: 1px solid rgba(236, 72, 153, 0.22);
   border-radius: 999px;
   padding: 11px 14px;
-  color: #ddd6fe;
+  color: #f9a8d4;
   background: rgba(15, 23, 42, 0.44);
   font-weight: 700;
 }
 
 .filter-chip.active {
-  background: linear-gradient(90deg, #a855f7, #ec4899);
+  background: linear-gradient(90deg, #ec4899, #f43f5e);
   color: white;
   border-color: transparent;
 }
@@ -586,41 +554,67 @@ onMounted(loadPageData);
   align-items: center;
 }
 
-.earn-copy p {
-  margin: 12px 0 0;
+.earn-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.earn-title-coin {
+  width: 42px;
+  height: 42px;
+  image-rendering: pixelated;
+  flex: 0 0 auto;
+}
+
+.earn-title h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.earn-title p {
+  margin: 8px 0 0;
   color: #cbd5e1;
+  line-height: 1.5;
 }
 
 .earn-stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(180px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(2, minmax(170px, 1fr));
+  gap: 12px;
 }
 
 .earn-pill {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 18px;
-  border-radius: 20px;
-  background: rgba(15, 23, 42, 0.44);
-  border: 1px solid rgba(139, 92, 246, 0.18);
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(2, 6, 23, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.075);
 }
 
-.earn-pill svg {
-  color: #facc15;
+.earn-coin {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+  flex: 0 0 auto;
 }
 
 .earn-pill span {
   display: block;
-  color: #cbd5e1;
+  color: rgba(255, 255, 255, 0.62);
   font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .earn-pill strong {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin-top: 4px;
   color: white;
+  font-size: 1.05rem;
 }
 
 .state-box,
@@ -650,7 +644,6 @@ onMounted(loadPageData);
 }
 
 @media (max-width: 980px) {
-  .shop-hero-card,
   .earn-card,
   .section-heading-spread {
     grid-template-columns: 1fr;
@@ -660,10 +653,6 @@ onMounted(loadPageData);
     align-items: flex-start;
   }
 
-  .wallet-box {
-    justify-self: stretch;
-    width: 100%;
-  }
 }
 
 @media (max-width: 760px) {
@@ -685,7 +674,6 @@ onMounted(loadPageData);
     gap: 18px;
   }
 
-  .shop-hero-card,
   .section-card,
   .state-box,
   .empty-box {

@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import {
-  Users, UserPlus, Swords, Trophy, Crown, Send, Check, X,
-  Search, Clock, Sparkles, Shield, Trash2, Plus
+  Users, UserPlus, Swords, Trophy, Check, X,
+  Search, Clock, Sparkles, Trash2, Plus
 } from 'lucide-vue-next';
 import Navbar from '@/components/Navbar.vue';
 import Header from '@/components/Header.vue';
 import FooterComponent from '@/components/FooterComponent.vue';
 import MessagePopup from '@/components/MessagePopup.vue';
-import LeaderboardRow from '@/components/LeaderboardRow.vue';
-import { friendService } from '@/services/api';
+import PublicProfileSheet from '@/components/PublicProfileSheet.vue';
+import { friendService, resolveMediaUrl, userService } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
 import { useNotifications } from '@/composables/useNotifications';
-import type { FriendshipDto, FriendRequestDto, FriendChallengeDto, CreateFriendChallengeDto } from '@/models/Friend';
+import type { FriendshipDto, FriendRequestDto, SentFriendRequestDto, FriendChallengeDto, CreateFriendChallengeDto } from '@/models/Friend';
 
 const { refreshProfile } = useAuth();
 const { onSignalREvent, offSignalREvent } = useNotifications();
@@ -26,8 +26,6 @@ const handleSignalR = async (type: string) => {
     await loadFriends();
   }
 };
-import type { LeaderboardDisplayEntry } from '@/models/LeaderboardDisplayEntry';
-
 // ───── Popup ─────
 const popupMessage = ref('');
 const popupType = ref<'success' | 'error'>('success');
@@ -41,16 +39,16 @@ const showPopup = (msg: string, type: 'success' | 'error' = 'success') => {
 };
 
 // ───── State ─────
-const activeTab = ref<'friends' | 'requests' | 'challenges' | 'leaderboard'>('friends');
+const activeTab = ref<'friends' | 'requests' | 'challenges'>('friends');
 const loading = ref(false);
 
 const friends = ref<FriendshipDto[]>([]);
 const pendingRequests = ref<FriendRequestDto[]>([]);
+const sentRequests = ref<SentFriendRequestDto[]>([]);
 const challenges = ref<FriendChallengeDto[]>([]);
-const leaderboard = ref<any[]>([]);
+const userDirectory = ref<any[]>([]);
 
 const searchQuery = ref('');
-const friendRequestName = ref('');
 
 // Challenge erstellen
 const showChallengeModal = ref(false);
@@ -73,12 +71,28 @@ const progressChallengeCurrent = ref(0);
 
 const currentUserName = ref('');
 const currentUserId = ref(0);
+const viewedProfileId = ref<number | null>(null);
+const showProfileSheet = ref(false);
+const brokenProfileImages = ref<Set<string>>(new Set());
 
 // ───── Computed ─────
-const filteredFriends = computed(() => {
-  if (!searchQuery.value) return friends.value;
-  const q = searchQuery.value.toLowerCase();
-  return friends.value.filter(f => f.friendUserName.toLowerCase().includes(q));
+const friendNames = computed(() => new Set(
+  friends.value.map((friend) => friend.friendUserName.toLowerCase()).filter(Boolean)
+));
+
+const sentRequestNames = computed(() => new Set(
+  sentRequests.value.map((request) => request.toUserName.toLowerCase()).filter(Boolean)
+));
+
+const searchResults = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+  if (!query) return [];
+  return userDirectory.value
+    .filter((user) => {
+      const userName = String(user.userName ?? user.UserName ?? user.username ?? '').toLowerCase();
+      return userName.includes(query) && userName !== currentUserName.value.toLowerCase() && !friendNames.value.has(userName);
+    })
+    .slice(0, 8);
 });
 
 const activeChallenges = computed(() =>
@@ -91,21 +105,46 @@ const completedChallenges = computed(() =>
   challenges.value.filter(c => c.status === 'Completed' || c.status === 'Expired' || c.status === 'Declined')
 );
 
-const leaderboardEntries = computed<LeaderboardDisplayEntry[]>(() =>
-  leaderboard.value.map((player: any) => ({
-    Id: player.id ?? player.Id,
-    Rank: player.rank ?? player.Rank,
-    UserName: player.userName ?? player.UserName,
-    Experience: player.experience ?? player.Experience,
-    Level: player.level ?? player.Level,
-    initials: getInitials(player.userName ?? player.UserName ?? ''),
-    isCurrentUser: (player.userName ?? player.UserName ?? '').toLowerCase() === currentUserName.value.toLowerCase(),
-  }))
-);
-
 // ───── Helpers ─────
 const getInitials = (name: string) =>
   name.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]?.toUpperCase() ?? '').join('') || 'SB';
+
+const getUserName = (user: any) => String(user.userName ?? user.UserName ?? user.username ?? '');
+const getUserId = (user: any) => Number(user.id ?? user.Id ?? 0);
+const getUserLevel = (user: any) => Number(user.level ?? user.Level ?? 0);
+const getUserXp = (user: any) => Number(user.totalXp ?? user.TotalXp ?? user.experience ?? user.Experience ?? 0);
+const getUserImage = (user: any) => resolveMediaUrl(user.profileImageUrl ?? user.ProfileImageUrl ?? '');
+const getFriendImage = (friend: any) => resolveMediaUrl(friend.friendProfileImageUrl ?? friend.FriendProfileImageUrl ?? '');
+const getRequestImage = (request: any, direction: 'from' | 'to') => {
+  if (direction === 'from') return resolveMediaUrl(request.fromUserProfileImageUrl ?? request.FromUserProfileImageUrl ?? '');
+  return resolveMediaUrl(request.toUserProfileImageUrl ?? request.ToUserProfileImageUrl ?? '');
+};
+
+const openUserProfile = (userId: number) => {
+  if (!userId) return;
+  viewedProfileId.value = userId;
+  showProfileSheet.value = true;
+};
+
+const markProfileImageBroken = (key: string) => {
+  brokenProfileImages.value = new Set([...brokenProfileImages.value, key]);
+};
+
+const canShowProfileImage = (key: string, url: string) => Boolean(url) && !brokenProfileImages.value.has(key);
+
+const formatCompact = (value: number) => {
+  if (Math.abs(value) < 10000) return value.toLocaleString('de-DE');
+  const units = [
+    { amount: 1_000_000_000, suffix: 'B' },
+    { amount: 1_000_000, suffix: 'M' },
+    { amount: 1_000, suffix: 'K' },
+  ];
+  const unit = units.find((item) => Math.abs(value) >= item.amount);
+  if (!unit) return value.toLocaleString('de-DE');
+  const compact = value / unit.amount;
+  const digits = compact >= 100 || Number.isInteger(compact) ? 0 : 1;
+  return `${compact.toFixed(digits).replace('.', ',')}${unit.suffix}`;
+};
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '–';
@@ -129,7 +168,7 @@ const statusColor = (status: string) => {
   switch (status) {
     case 'Accepted': return '#22c55e';
     case 'Pending': return '#f59e0b';
-    case 'Completed': return '#8b5cf6';
+    case 'Completed': return '#ec4899';
     case 'Expired': return '#6b7280';
     case 'Declined': return '#ef4444';
     default: return '#94a3b8';
@@ -155,6 +194,21 @@ const loadFriends = async () => {
   try {
     const { data } = await friendService.getFriends();
     friends.value = data;
+    const enriched = await Promise.all(
+      data.map(async (friend: any) => {
+        try {
+          const { data: profile } = await userService.getPublicProfile(friend.friendId ?? friend.FriendId);
+          return {
+            ...friend,
+            friendProfileImageUrl: profile.profileImageUrl ?? profile.ProfileImageUrl ?? friend.friendProfileImageUrl,
+            FriendProfileImageUrl: profile.profileImageUrl ?? profile.ProfileImageUrl ?? friend.FriendProfileImageUrl,
+          };
+        } catch {
+          return friend;
+        }
+      }),
+    );
+    friends.value = enriched;
   } catch (e) { console.error('Fehler beim Laden der Freunde', e); }
 };
 
@@ -165,6 +219,13 @@ const loadRequests = async () => {
   } catch (e) { console.error('Fehler beim Laden der Anfragen', e); }
 };
 
+const loadSentRequests = async () => {
+  try {
+    const { data } = await friendService.getSentRequests();
+    sentRequests.value = data;
+  } catch (e) { console.error('Fehler beim Laden der gesendeten Anfragen', e); }
+};
+
 const loadChallenges = async () => {
   try {
     const { data } = await friendService.getChallenges();
@@ -172,26 +233,26 @@ const loadChallenges = async () => {
   } catch (e) { console.error('Fehler beim Laden der Challenges', e); }
 };
 
-const loadLeaderboard = async () => {
+const loadUserDirectory = async () => {
   try {
-    const { data } = await friendService.getFriendsLeaderboard();
-    leaderboard.value = Array.isArray(data) ? data : [];
-  } catch (e) { console.error('Fehler beim Laden der Bestenliste', e); }
+    const { data } = await userService.getLeaderboard();
+    userDirectory.value = Array.isArray(data) ? data : [];
+  } catch (e) { console.error('Fehler beim Laden der Nutzersuche', e); }
 };
 
 const loadAll = async () => {
   loading.value = true;
-  await Promise.all([loadFriends(), loadRequests(), loadChallenges(), loadLeaderboard()]);
+  await Promise.all([loadFriends(), loadRequests(), loadSentRequests(), loadChallenges(), loadUserDirectory()]);
   loading.value = false;
 };
 
 // ───── Actions ─────
-const sendFriendRequest = async () => {
-  if (!friendRequestName.value.trim()) return;
+const sendFriendRequest = async (userName = searchQuery.value.trim()) => {
+  if (!userName.trim()) return;
   try {
-    const { data } = await friendService.sendFriendRequest(friendRequestName.value.trim());
+    const { data } = await friendService.sendFriendRequest(userName.trim());
     showPopup(data.message, 'success');
-    friendRequestName.value = '';
+    await loadSentRequests();
   } catch (e: any) {
     showPopup(e.response?.data?.message || 'Fehler beim Senden der Anfrage.', 'error');
   }
@@ -201,7 +262,7 @@ const acceptRequest = async (id: number) => {
   try {
     const { data } = await friendService.acceptRequest(id);
     showPopup(data.message || 'Anfrage angenommen!', 'success');
-    await Promise.all([loadRequests(), loadFriends(), loadLeaderboard()]);
+    await Promise.all([loadRequests(), loadFriends(), loadUserDirectory()]);
   } catch (e: any) {
     showPopup(e.response?.data?.message || 'Fehler beim Annehmen.', 'error');
   }
@@ -211,7 +272,7 @@ const declineRequest = async (id: number) => {
   try {
     const { data } = await friendService.declineRequest(id);
     showPopup(data.message || 'Anfrage abgelehnt.', 'success');
-    await loadRequests();
+    await Promise.all([loadRequests(), loadUserDirectory()]);
   } catch (e: any) {
     showPopup(e.response?.data?.message || 'Fehler beim Ablehnen.', 'error');
   }
@@ -222,7 +283,7 @@ const removeFriend = async (id: number) => {
   try {
     const { data } = await friendService.removeFriend(id);
     showPopup(data.message || 'Freundschaft entfernt.', 'success');
-    await Promise.all([loadFriends(), loadLeaderboard()]);
+    await Promise.all([loadFriends(), loadUserDirectory()]);
   } catch (e: any) {
     showPopup(e.response?.data?.message || 'Fehler beim Entfernen.', 'error');
   }
@@ -323,29 +384,6 @@ onUnmounted(() => {
     <Navbar />
 
     <main class="friends-page">
-      <!-- Hero -->
-      <section class="hero-card">
-        <div class="hero-copy">
-          <span class="hero-kicker">Freunde</span>
-          <h1>Dein Netzwerk</h1>
-          <p>Fordere deine Freunde heraus, sammle Belohnungen und klettere in der Freundes-Bestenliste nach oben!</p>
-        </div>
-        <div class="hero-stats">
-          <article class="hero-stat-box">
-            <span class="hero-stat-label">Freunde</span>
-            <strong>{{ friends.length }}</strong>
-          </article>
-          <article class="hero-stat-box">
-            <span class="hero-stat-label">Aktive Challenges</span>
-            <strong>{{ activeChallenges.length }}</strong>
-          </article>
-          <article class="hero-stat-box">
-            <span class="hero-stat-label">Anfragen</span>
-            <strong>{{ pendingRequests.length }}</strong>
-          </article>
-        </div>
-      </section>
-
       <!-- Tabs -->
       <div class="tab-bar">
         <button class="tab-btn" :class="{ active: activeTab === 'friends' }" @click="activeTab = 'friends'">
@@ -356,10 +394,7 @@ onUnmounted(() => {
           <span v-if="pendingRequests.length" class="badge">{{ pendingRequests.length }}</span>
         </button>
         <button class="tab-btn" :class="{ active: activeTab === 'challenges' }" @click="activeTab = 'challenges'">
-          <Swords :size="16" /> Challenges
-        </button>
-        <button class="tab-btn" :class="{ active: activeTab === 'leaderboard' }" @click="activeTab = 'leaderboard'">
-          <Crown :size="16" /> Bestenliste
+          <Trophy :size="16" /> Challenges
         </button>
       </div>
 
@@ -369,40 +404,81 @@ onUnmounted(() => {
       <!-- ═══ TAB: FREUNDE ═══ -->
       <template v-if="!loading && activeTab === 'friends'">
         <section class="section-card">
-          <div class="section-heading">
-            <div class="title-with-icon">
-              <Users :size="20" />
-              <h2>Meine Freunde</h2>
-            </div>
-          </div>
+          <h2 class="mobile-section-title">Freunde finden</h2>
 
-          <!-- Suche -->
           <div class="search-bar">
             <Search :size="18" />
-            <input v-model="searchQuery" placeholder="Freund suchen…" />
+            <input v-model="searchQuery" placeholder="Benutzername suchen..." />
           </div>
 
-          <div v-if="filteredFriends.length" class="friends-list">
-            <div v-for="f in filteredFriends" :key="f.id" class="friend-card">
-              <div class="friend-avatar">{{ getInitials(f.friendUserName) }}</div>
+          <p v-if="searchQuery.trim() && !searchResults.length" class="inline-empty">Keine passenden Nutzer gefunden.</p>
+
+          <div v-if="searchResults.length" class="friends-list search-results">
+            <div v-for="user in searchResults" :key="getUserName(user)" class="friend-card">
+              <div class="friend-avatar">
+                <button class="avatar-button" type="button" @click="openUserProfile(getUserId(user))">
+                  <img
+                    v-if="canShowProfileImage(`search-${getUserId(user)}`, getUserImage(user))"
+                    :src="getUserImage(user)"
+                    alt=""
+                    @error="markProfileImageBroken(`search-${getUserId(user)}`)"
+                  />
+                  <span v-else>{{ getInitials(getUserName(user)) }}</span>
+                </button>
+              </div>
               <div class="friend-info">
-                <span class="friend-name">{{ f.friendUserName }}</span>
-                <span class="friend-meta">Level {{ f.friendLevel }} · {{ f.friendExperience }} XP · {{ f.friendBodyStage }}</span>
-                <span class="friend-since">Freunde seit {{ formatDate(f.friendsSince) }}</span>
+                <span class="friend-name">{{ getUserName(user) }}</span>
+                <span class="friend-meta">Lv {{ getUserLevel(user) }} · {{ formatCompact(getUserXp(user)) }} XP</span>
               </div>
               <div class="friend-actions">
-                <button class="action-btn challenge-btn" @click="openChallengeModal(f.friendId)" title="Herausfordern">
-                  <Swords :size="16" />
+                <button
+                  v-if="sentRequestNames.has(getUserName(user).toLowerCase())"
+                  class="sent-pill"
+                  disabled
+                >
+                  Sent
                 </button>
-                <button class="action-btn remove-btn" @click="removeFriend(f.id)" title="Entfernen">
-                  <Trash2 :size="16" />
+                <button v-else class="send-request-btn" @click="sendFriendRequest(getUserName(user))">
+                  Senden
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-card">
+          <h2 class="mobile-section-title">Friends</h2>
+
+          <div v-if="friends.length" class="friends-list">
+            <div v-for="f in friends" :key="f.id" class="friend-card">
+              <div class="friend-avatar">
+                <button class="avatar-button" type="button" @click="openUserProfile(f.friendId)">
+                  <img
+                    v-if="canShowProfileImage(`friend-${f.friendId}`, getFriendImage(f))"
+                    :src="getFriendImage(f)"
+                    alt=""
+                    @error="markProfileImageBroken(`friend-${f.friendId}`)"
+                  />
+                  <span v-else>{{ getInitials(f.friendUserName) }}</span>
+                </button>
+              </div>
+              <div class="friend-info">
+                <span class="friend-name">{{ f.friendUserName }}</span>
+                <span class="friend-meta">Lv {{ f.friendLevel }} · {{ formatCompact(f.friendExperience) }} XP</span>
+              </div>
+              <div class="friend-actions">
+                <button class="icon-action-btn challenge-btn" @click="openChallengeModal(f.friendId)" title="Herausfordern">
+                  <Trophy :size="18" />
+                </button>
+                <button class="icon-action-btn remove-btn" @click="removeFriend(f.id)" title="Entfernen">
+                  <Trash2 :size="18" />
                 </button>
               </div>
             </div>
           </div>
           <div v-else class="empty-box">
             <Users :size="18" />
-            {{ searchQuery ? 'Kein Freund gefunden.' : 'Noch keine Freunde. Sende eine Anfrage!' }}
+            Noch keine Freunde.
           </div>
         </section>
       </template>
@@ -410,46 +486,57 @@ onUnmounted(() => {
       <!-- ═══ TAB: ANFRAGEN ═══ -->
       <template v-if="!loading && activeTab === 'requests'">
         <section class="section-card">
-          <div class="section-heading">
-            <div class="title-with-icon">
-              <Send :size="20" />
-              <h2>Freund hinzufügen</h2>
-            </div>
-          </div>
+          <h2 class="mobile-section-title">Eingehende Anfragen</h2>
 
-          <div class="request-form">
-            <input v-model="friendRequestName" placeholder="Benutzername eingeben…" @keyup.enter="sendFriendRequest" />
-            <button class="primary-btn" @click="sendFriendRequest">
-              <UserPlus :size="16" /> Anfrage senden
-            </button>
-          </div>
-        </section>
-
-        <section class="section-card" v-if="pendingRequests.length">
-          <div class="section-heading">
-            <div class="title-with-icon">
-              <UserPlus :size="20" />
-              <h2>Eingehende Anfragen</h2>
-            </div>
-          </div>
-
-          <div class="requests-list">
+          <div v-if="pendingRequests.length" class="requests-list">
             <div v-for="req in pendingRequests" :key="req.id" class="request-card">
-              <div class="friend-avatar">{{ getInitials(req.fromUserName) }}</div>
+              <div class="friend-avatar">
+                <button class="avatar-button" type="button" @click="openUserProfile(req.fromUserId)">
+                  <img
+                    v-if="canShowProfileImage(`from-${req.fromUserId}`, getRequestImage(req, 'from'))"
+                    :src="getRequestImage(req, 'from')"
+                    alt=""
+                    @error="markProfileImageBroken(`from-${req.fromUserId}`)"
+                  />
+                  <span v-else>{{ getInitials(req.fromUserName) }}</span>
+                </button>
+              </div>
               <div class="friend-info">
                 <span class="friend-name">{{ req.fromUserName }}</span>
-                <span class="friend-meta">Level {{ req.fromUserLevel }} · {{ formatDate(req.sentAt) }}</span>
+                <span class="friend-meta">Level {{ req.fromUserLevel }}</span>
               </div>
               <div class="friend-actions">
-                <button class="action-btn accept-btn" @click="acceptRequest(req.id)">
-                  <Check :size="16" />
-                </button>
-                <button class="action-btn decline-btn" @click="declineRequest(req.id)">
-                  <X :size="16" />
-                </button>
+                <button class="text-action-btn accept-btn" @click="acceptRequest(req.id)">Accept</button>
+                <button class="text-action-btn decline-btn" @click="declineRequest(req.id)">Decline</button>
               </div>
             </div>
           </div>
+          <p v-else class="inline-empty">Keine offenen Anfragen.</p>
+        </section>
+
+        <section class="section-card">
+          <h2 class="mobile-section-title">Gesendet</h2>
+
+          <div v-if="sentRequests.length" class="requests-list">
+            <div v-for="req in sentRequests" :key="req.id" class="request-card">
+              <div class="friend-avatar">
+                <button class="avatar-button" type="button" @click="openUserProfile(req.toUserId)">
+                  <img
+                    v-if="canShowProfileImage(`to-${req.toUserId}`, getRequestImage(req, 'to'))"
+                    :src="getRequestImage(req, 'to')"
+                    alt=""
+                    @error="markProfileImageBroken(`to-${req.toUserId}`)"
+                  />
+                  <span v-else>{{ getInitials(req.toUserName) }}</span>
+                </button>
+              </div>
+              <div class="friend-info">
+                <span class="friend-name">{{ req.toUserName }}</span>
+                <span class="friend-meta">Sent</span>
+              </div>
+            </div>
+          </div>
+          <p v-else class="inline-empty">Keine gesendeten offenen Anfragen.</p>
         </section>
       </template>
 
@@ -458,10 +545,7 @@ onUnmounted(() => {
         <!-- Ausstehende Challenge-Einladungen -->
         <section v-if="pendingChallenges.length" class="section-card">
           <div class="section-heading">
-            <div class="title-with-icon">
-              <Shield :size="20" />
-              <h2>Challenge-Einladungen</h2>
-            </div>
+            <h2 class="mobile-section-title">Challenge-Einladungen</h2>
           </div>
 
           <div class="challenges-list">
@@ -489,10 +573,7 @@ onUnmounted(() => {
         <!-- Aktive Challenges -->
         <section class="section-card">
           <div class="section-heading">
-            <div class="title-with-icon">
-              <Swords :size="20" />
-              <h2>Aktive Challenges</h2>
-            </div>
+            <h2 class="mobile-section-title">Aktive Challenges</h2>
           </div>
 
           <div v-if="activeChallenges.length" class="challenges-list">
@@ -540,10 +621,7 @@ onUnmounted(() => {
         <!-- Vergangene Challenges -->
         <section v-if="completedChallenges.length" class="section-card">
           <div class="section-heading">
-            <div class="title-with-icon">
-              <Trophy :size="20" />
-              <h2>Vergangene Challenges</h2>
-            </div>
+            <h2 class="mobile-section-title">Vergangene Challenges</h2>
           </div>
           <div class="challenges-list">
             <div v-for="ch in completedChallenges" :key="ch.id" class="challenge-card past">
@@ -577,29 +655,6 @@ onUnmounted(() => {
         </section>
       </template>
 
-      <!-- ═══ TAB: BESTENLISTE ═══ -->
-      <template v-if="!loading && activeTab === 'leaderboard'">
-        <section class="section-card">
-          <div class="section-heading">
-            <div class="title-with-icon">
-              <Crown :size="20" />
-              <h2>Freundes-Bestenliste</h2>
-            </div>
-            <p>Ranking unter deinen Freunden nach Erfahrungspunkten.</p>
-          </div>
-
-          <div v-if="leaderboardEntries.length" class="leaderboard-list">
-            <LeaderboardRow
-              v-for="player in leaderboardEntries"
-              :key="player.Id"
-              :player="player"
-            />
-          </div>
-          <div v-else class="empty-box">
-            <Crown :size="18" /> Füge Freunde hinzu, um die Bestenliste zu sehen.
-          </div>
-        </section>
-      </template>
     </main>
 
     <!-- ───── MODAL: Challenge erstellen ───── -->
@@ -672,6 +727,11 @@ onUnmounted(() => {
     </Teleport>
 
     <FooterComponent />
+    <PublicProfileSheet
+      :visible="showProfileSheet"
+      :user-id="viewedProfileId"
+      @close="showProfileSheet = false"
+    />
   </div>
 </template>
 
@@ -684,80 +744,20 @@ onUnmounted(() => {
 .friends-page {
   width: min(1280px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 32px 0 48px;
+  padding: 24px 0 48px;
   display: grid;
-  gap: 24px;
+  gap: 14px;
 }
 
-/* ───── Hero ───── */
-.hero-card,
 .section-card,
 .state-box,
 .empty-box {
-  border-radius: 28px;
+  border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(15, 23, 42, 0.56);
+  background: rgba(15, 23, 42, 0.44);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 24px 50px rgba(2, 6, 23, 0.22);
-}
-
-.hero-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.9fr);
-  gap: 24px;
-  padding: clamp(24px, 3vw, 36px);
-  background: linear-gradient(135deg, #8b5cf6, #6366f1);
-}
-
-.hero-kicker {
-  display: inline-flex;
-  border-radius: 999px;
-  padding: 7px 12px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #e0e7ff;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  margin-bottom: 14px;
-}
-
-.hero-copy h1 {
-  font-size: clamp(2rem, 4vw, 3.4rem);
-  line-height: 1;
-  margin: 0;
-}
-
-.hero-copy p {
-  margin: 16px 0 0;
-  max-width: 56ch;
-  color: rgba(255, 255, 255, 0.85);
-  line-height: 1.65;
-}
-
-.hero-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  align-self: end;
-}
-
-.hero-stat-box {
-  padding: 18px;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.hero-stat-label {
-  display: block;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.85rem;
-  margin-bottom: 10px;
-}
-
-.hero-stat-box strong {
-  font-size: clamp(1.15rem, 2vw, 1.5rem);
+  box-shadow: none;
 }
 
 /* ───── Tabs ───── */
@@ -765,19 +765,19 @@ onUnmounted(() => {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding: 4px 0;
+  padding: 4px 0 10px;
 }
 
 .tab-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 20px;
+  padding: 10px 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  background: rgba(15, 23, 42, 0.5);
-  color: #94a3b8;
-  font-weight: 600;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 800;
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -785,14 +785,14 @@ onUnmounted(() => {
 }
 
 .tab-btn:hover {
-  background: rgba(99, 102, 241, 0.15);
-  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(236, 72, 153, 0.12);
+  border-color: rgba(236, 72, 153, 0.26);
   color: white;
 }
 
 .tab-btn.active {
-  background: linear-gradient(135deg, #8b5cf6, #6366f1);
-  border-color: transparent;
+  background: rgba(236, 72, 153, 0.26);
+  border-color: rgba(236, 72, 153, 0.55);
   color: white;
 }
 
@@ -807,7 +807,14 @@ onUnmounted(() => {
 
 /* ───── Section Card ───── */
 .section-card {
-  padding: clamp(22px, 3vw, 30px);
+  padding: 22px;
+}
+
+.mobile-section-title {
+  margin: 0 0 18px;
+  color: white;
+  font-size: 1.35rem;
+  font-weight: 800;
 }
 
 .section-heading {
@@ -834,7 +841,7 @@ onUnmounted(() => {
 }
 
 .title-with-icon svg {
-  color: #a78bfa;
+  color: #f9a8d4;
 }
 
 /* ───── Search ───── */
@@ -842,11 +849,11 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.06);
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  margin-bottom: 18px;
+  margin-bottom: 10px;
 }
 
 .search-bar svg { color: #64748b; }
@@ -865,36 +872,67 @@ onUnmounted(() => {
 /* ───── Friend Cards ───── */
 .friends-list, .requests-list, .challenges-list {
   display: grid;
-  gap: 12px;
+  gap: 10px;
+}
+
+.search-results {
+  margin-top: 8px;
 }
 
 .friend-card, .request-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  border-radius: 18px;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   transition: all 0.2s;
 }
 
 .friend-card:hover, .request-card:hover {
   background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(139, 92, 246, 0.2);
+  border-color: rgba(236, 72, 153, 0.2);
 }
 
 .friend-avatar {
-  width: 48px;
-  height: 48px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 0.9rem;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar-button {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.avatar-button:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.65);
+  outline-offset: 2px;
+}
+
+.friend-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .friend-info {
@@ -905,17 +943,12 @@ onUnmounted(() => {
 }
 
 .friend-name {
-  font-weight: 700;
+  font-weight: 800;
   font-size: 1rem;
 }
 
 .friend-meta {
-  color: #94a3b8;
-  font-size: 0.85rem;
-}
-
-.friend-since {
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.58);
   font-size: 0.78rem;
 }
 
@@ -924,28 +957,57 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-.action-btn {
+.action-btn,
+.icon-action-btn,
+.text-action-btn,
+.send-request-btn,
+.sent-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 10px 14px;
+  min-height: 38px;
+  padding: 9px 12px;
   border-radius: 14px;
   border: none;
-  font-weight: 600;
+  font-weight: 800;
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.2s;
   color: white;
 }
 
-.challenge-btn { background: rgba(139, 92, 246, 0.2); }
-.challenge-btn:hover { background: rgba(139, 92, 246, 0.4); }
-.accept-btn { background: rgba(34, 197, 94, 0.2); }
+.icon-action-btn {
+  width: 38px;
+  padding: 0;
+}
+
+.send-request-btn {
+  min-width: 86px;
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
+}
+
+.sent-pill {
+  min-width: 72px;
+  color: white;
+  background: rgba(148, 163, 184, 0.22);
+  cursor: default;
+}
+
+.challenge-btn { background: rgba(236, 72, 153, 0.16); }
+.challenge-btn:hover { background: rgba(236, 72, 153, 0.28); }
+.accept-btn { background: rgba(34, 197, 94, 0.18); }
 .accept-btn:hover { background: rgba(34, 197, 94, 0.4); }
-.decline-btn { background: rgba(239, 68, 68, 0.2); }
+.decline-btn { background: rgba(239, 68, 68, 0.18); }
 .decline-btn:hover { background: rgba(239, 68, 68, 0.4); }
 .remove-btn { background: rgba(239, 68, 68, 0.1); }
 .remove-btn:hover { background: rgba(239, 68, 68, 0.25); }
+
+.inline-empty {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.86rem;
+}
 
 /* ───── Challenge Cards ───── */
 .challenge-card {
@@ -1043,7 +1105,7 @@ onUnmounted(() => {
 }
 
 .progress-bar-fill.challenger {
-  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+  background: linear-gradient(90deg, #ec4899, #f9a8d4);
 }
 
 .progress-bar-fill.opponent {
@@ -1057,29 +1119,6 @@ onUnmounted(() => {
 }
 
 /* ───── Request Form ───── */
-.request-form {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.request-form input {
-  flex: 1;
-  padding: 12px 16px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.06);
-  color: white;
-  font-size: 0.95rem;
-  outline: none;
-}
-
-.request-form input::placeholder { color: #64748b; }
-
-.request-form input:focus {
-  border-color: rgba(139, 92, 246, 0.4);
-}
-
 /* ───── Buttons ───── */
 .primary-btn {
   display: inline-flex;
@@ -1088,7 +1127,7 @@ onUnmounted(() => {
   padding: 12px 20px;
   border-radius: 14px;
   border: none;
-  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
   color: white;
   font-weight: 700;
   font-size: 0.9rem;
@@ -1116,12 +1155,6 @@ onUnmounted(() => {
 
 .secondary-btn:hover { background: rgba(255, 255, 255, 0.06); }
 
-/* ───── Leaderboard ───── */
-.leaderboard-list {
-  display: grid;
-  gap: 14px;
-}
-
 /* ───── Empty / State ───── */
 .state-box, .empty-box {
   display: flex;
@@ -1139,7 +1172,7 @@ onUnmounted(() => {
 }
 
 .modal-progress-info strong {
-  color: #a78bfa;
+  color: #f9a8d4;
 }
 
 /* ───── Modals ───── */
@@ -1197,7 +1230,7 @@ onUnmounted(() => {
 
 .form-group input:focus,
 .form-group textarea:focus {
-  border-color: rgba(139, 92, 246, 0.4);
+  border-color: rgba(236, 72, 153, 0.42);
 }
 
 .form-group input[type="range"] {
@@ -1211,7 +1244,7 @@ onUnmounted(() => {
   text-align: center;
   font-size: 1.2rem;
   font-weight: 700;
-  color: #a78bfa;
+  color: #f9a8d4;
   margin-top: 6px;
 }
 
@@ -1229,16 +1262,11 @@ onUnmounted(() => {
 }
 
 /* ───── Responsive ───── */
-@media (max-width: 1080px) {
-  .hero-card { grid-template-columns: 1fr; }
-}
-
 @media (max-width: 860px) {
   .friends-page {
     width: min(100%, calc(100% - 24px));
     padding-top: 24px;
   }
-  .hero-stats { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
   .progress-row { grid-template-columns: 80px 1fr 40px; }
 }
@@ -1248,12 +1276,11 @@ onUnmounted(() => {
     width: min(100%, calc(100% - 16px));
     gap: 18px;
   }
-  .hero-card, .section-card, .state-box, .empty-box { border-radius: 22px; }
+  .section-card, .state-box, .empty-box { border-radius: 18px; }
   .tab-bar { gap: 4px; }
   .tab-btn { padding: 10px 14px; font-size: 0.82rem; }
-  .friend-card, .request-card { flex-direction: column; text-align: center; }
+  .friend-card, .request-card { align-items: center; }
   .friend-actions { justify-content: center; }
-  .request-form { flex-direction: column; }
   .challenge-header { flex-direction: column; align-items: flex-start; }
 }
 </style>

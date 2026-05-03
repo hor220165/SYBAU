@@ -82,6 +82,60 @@ public class QuestService
         return (true, $"Belohnung erhalten: +{uq.Quest.XpReward} XP, +{uq.Quest.CoinReward} Coins!", uq.Quest.XpReward, uq.Quest.CoinReward);
     }
 
+    public async Task<(int xpEarned, int coinsEarned, List<string> questNames)> ClaimCompletedActivityRewardsAsync(int userId, ActivityType activityType)
+    {
+        var targetType = activityType switch
+        {
+            ActivityType.Steps => QuestTargetType.Steps,
+            ActivityType.Kilometers => QuestTargetType.Kilometers,
+            _ => (QuestTargetType?)null
+        };
+
+        if (targetType == null)
+            return (0, 0, new List<string>());
+
+        var userQuests = await _context.UserQuests
+            .Include(uq => uq.Quest)
+            .Where(uq =>
+                uq.UserId == userId &&
+                uq.IsCompleted &&
+                !uq.IsRewardClaimed &&
+                uq.Quest.TargetType == targetType)
+            .ToListAsync();
+
+        if (userQuests.Count == 0)
+            return (0, 0, new List<string>());
+
+        var user = await _context.Users
+            .Include(u => u.Avatar)
+            .SingleAsync(u => u.Id == userId);
+
+        var xpEarned = 0;
+        var coinsEarned = 0;
+        var questNames = new List<string>();
+
+        foreach (var uq in userQuests)
+        {
+            uq.IsRewardClaimed = true;
+            questNames.Add(uq.Quest.Name);
+
+            if (uq.Quest.XpReward > 0)
+            {
+                await _userService.AddXpAndHandleLevelUp(user, uq.Quest.XpReward);
+                xpEarned += uq.Quest.XpReward;
+            }
+
+            if (uq.Quest.CoinReward > 0)
+            {
+                await _userService.AddCoinsAsync(user, uq.Quest.CoinReward, $"Quest: {uq.Quest.Name}");
+                coinsEarned += uq.Quest.CoinReward;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return (xpEarned, coinsEarned, questNames);
+    }
+
     /// <summary>
     /// Nach einem Exercise-Log den Fortschritt ALLER aktiven Quests des Users aktualisieren.
     /// </summary>

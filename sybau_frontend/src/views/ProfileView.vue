@@ -3,12 +3,51 @@
   <Navbar></Navbar>
 
   <main class="profile-content">
-    <div class="profile-header">
-      <h1 class="profile-title">Mein Profil</h1>
-      <button class="settings-btn" @click="openSettings">
-  <div v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z'/><circle cx='12' cy='12' r='3'/></svg>`"></div>
-</button>
-    </div>
+    <section class="profile-summary-card">
+      <div class="profile-summary-main">
+        <div class="profile-avatar-wrap">
+          <div class="profile-avatar">
+            <img
+              :src="profileImageUrl || noProfilePicture"
+              :alt="currentUsername"
+              class="profile-avatar-image"
+            />
+          </div>
+          <button class="avatar-edit-btn" @click="toggleImageActions" type="button" aria-label="Profilbild bearbeiten">
+            <Pencil :size="14" />
+          </button>
+          <div v-if="showImageActions" class="avatar-action-menu">
+            <button type="button" @click="openImagePicker">Foto auswählen</button>
+            <button
+              v-if="profileImageUrl"
+              type="button"
+              class="danger"
+              @click="removeProfileImage"
+            >
+              Aktuelles Foto entfernen
+            </button>
+          </div>
+          <input
+            ref="profileImageInput"
+            type="file"
+            accept="image/*"
+            class="hidden-file-input"
+            @change="onProfileImageChange"
+          />
+        </div>
+
+        <div class="profile-summary-copy">
+          <p class="profile-eyebrow">Mein Profil</p>
+          <h1 class="profile-title">{{ currentUsername || 'Benutzer' }}</h1>
+          <p class="profile-email">{{ currentEmail }}</p>
+        </div>
+      </div>
+
+      <button class="settings-btn" @click="openSettings" type="button">
+        <div v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z'/><circle cx='12' cy='12' r='3'/></svg>`"></div>
+        <span>Einstellungen</span>
+      </button>
+    </section>
 
     <div class="stats-overview">
       <StatCard
@@ -110,7 +149,7 @@
           <h2>Letzte Aktivitäten</h2>
         </div>
       </div>
-      <div class="activities-list">
+      <div v-if="recentActivities.length" class="activities-list">
         <ActivityItem
           v-for="activity in recentActivities"
           :key="activity.id"
@@ -121,6 +160,7 @@
           :type="activity.type"
         />
       </div>
+      <p v-else class="empty-activity-text">Noch keine letzten Aktivitäten vorhanden.</p>
     </section>
   </main>
 
@@ -181,10 +221,25 @@
               <button class="btn-primary" @click="changePassword" :disabled="changingPassword">Passwort ändern</button>
             </section>
 
-            <section class="settings-section danger-zone">
-              <h3>Gefahrenzone</h3>
-              <p>Diese Aktion ist endgültig und kann nicht rückgängig gemacht werden.</p>
-              <button class="btn-danger" @click="deleteAccount">Account löschen</button>
+            <section class="settings-section">
+              <h3>Account</h3>
+              <div class="account-actions">
+                <button class="account-action-btn" @click="handleLogout" type="button">
+                  <div class="account-action-icon logout-icon">↪</div>
+                  <div class="account-action-copy">
+                    <strong>Abmelden</strong>
+                    <span>Du wirst in diesem Browser ausgeloggt.</span>
+                  </div>
+                </button>
+
+                <button class="account-action-btn account-action-danger" @click="deleteAccount" type="button">
+                  <div class="account-action-icon delete-icon">×</div>
+                  <div class="account-action-copy">
+                    <strong>Account löschen</strong>
+                    <span>Diese Aktion kann nicht rückgängig gemacht werden.</span>
+                  </div>
+                </button>
+              </div>
             </section>
           </div>
         </div>
@@ -214,13 +269,15 @@ import AchievementCard from '@/components/AchievementCard.vue';
 import ActivityItem from '@/components/ActivityItem.vue';
 import { useAuth } from '@/composables/useAuth';
 import { useLeaderboard } from '@/composables/useLeaderboard';
-import { userService, achievementService } from '@/services/api';
+import { userService, achievementService, resolveMediaUrl } from '@/services/api';
 import FooterComponent from '@/components/FooterComponent.vue';
 import MessagePopup from '@/components/MessagePopup.vue';
 import type { Achievement, ProfileStats } from '@/models/Achievement';
+import noProfilePicture from '@/assets/Nopfp.png';
+import { Pencil } from 'lucide-vue-next';
 
 const router = useRouter();
-const { user, logout } = useAuth();
+const { user, logout, refreshProfile } = useAuth();
 const { sortedLeaderboard, loadLeaderboard } = useLeaderboard();
 
 const longestStreak = ref(0);
@@ -240,19 +297,21 @@ function openSettings() {
 
 const popupMessage = ref('');
 const popupType = ref<'success' | 'error'>('success');
+const profileImageInput = ref<HTMLInputElement | null>(null);
+const showImageActions = ref(false);
 
 const usernameUnchanged = computed(() => {
   return editingUsername.value.trim() === currentUsername.value;
 });
 
+const currentEmail = computed(() => user.value?.email ?? user.value?.Email ?? 'Keine E-Mail');
+const profileImageUrl = computed(() => resolveMediaUrl(user.value?.profileImageUrl ?? user.value?.ProfileImageUrl ?? ''));
+
 async function saveProfile() {
   savingProfile.value = true;
   try {
     await userService.updateProfile({ UserName: editingUsername.value });
-    const u = { ...user.value };
-    u.userName = editingUsername.value;
-    user.value = u;
-    localStorage.setItem('user', JSON.stringify(u));
+    await refreshProfile();
     popupType.value = 'success';
     popupMessage.value = 'Profil gespeichert!';
   } catch (err: any) {
@@ -267,6 +326,50 @@ async function saveProfile() {
     }
   } finally {
     savingProfile.value = false;
+  }
+}
+
+function openImagePicker() {
+  showImageActions.value = false;
+  profileImageInput.value?.click();
+}
+
+function toggleImageActions() {
+  showImageActions.value = !showImageActions.value;
+}
+
+async function onProfileImageChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  try {
+    await userService.uploadProfileImage(file);
+    await refreshProfile();
+    await loadLeaderboard();
+    popupType.value = 'success';
+    popupMessage.value = 'Profilbild aktualisiert!';
+  } catch (err: any) {
+    popupType.value = 'error';
+    popupMessage.value = err.response?.data?.message || err.message || 'Profilbild konnte nicht gespeichert werden.';
+  } finally {
+    if (input) input.value = '';
+  }
+}
+
+async function removeProfileImage() {
+  if (!confirm('Profilbild entfernen? Danach wird wieder das Standardbild angezeigt.')) return;
+
+  try {
+    showImageActions.value = false;
+    await userService.removeProfileImage();
+    await refreshProfile();
+    await loadLeaderboard();
+    popupType.value = 'success';
+    popupMessage.value = 'Profilbild entfernt!';
+  } catch (err: any) {
+    popupType.value = 'error';
+    popupMessage.value = err.response?.data?.message || err.message || 'Profilbild konnte nicht entfernt werden.';
   }
 }
 
@@ -332,6 +435,11 @@ async function deleteAccount() {
     popupType.value = 'error';
     popupMessage.value = 'Fehler beim Löschen: ' + (err.response?.data?.message || err.message);
   }
+}
+
+function handleLogout() {
+  logout();
+  router.push('/auth');
 }
 
 // Responsive visible count
@@ -527,11 +635,125 @@ onMounted(async () => {
 }
 
 /* ── Header ── */
-.profile-header {
+.profile-summary-card {
+  position: relative;
+  z-index: 30;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 40px;
+  gap: 18px;
+  margin-bottom: 24px;
+  padding: 22px 24px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.76), rgba(15, 23, 42, 0.5));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 22px 48px rgba(2, 6, 23, 0.22);
+  overflow: visible;
+}
+
+.profile-summary-main {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+.profile-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.profile-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 999px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: rgba(30, 41, 59, 0.92);
+  box-shadow: 0 18px 34px rgba(236, 72, 153, 0.16);
+}
+
+.profile-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-edit-btn {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: #ec4899;
+  color: white;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: 0 10px 18px rgba(236, 72, 153, 0.28);
+}
+
+.avatar-action-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 12px);
+  width: 220px;
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 44px rgba(2, 6, 23, 0.42);
+  z-index: 10050;
+}
+
+.avatar-action-menu button {
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 12px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.86);
+  cursor: pointer;
+  text-align: left;
+  font-weight: 700;
+}
+
+.avatar-action-menu button:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.avatar-action-menu .danger {
+  color: #fca5a5;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.profile-summary-copy {
+  min-width: 0;
+}
+
+.profile-eyebrow {
+  margin: 0 0 4px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.profile-email {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.98rem;
 }
 
 .profile-title {
@@ -542,28 +764,41 @@ onMounted(async () => {
 }
 
 .settings-btn {
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.5);
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.78);
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  gap: 10px;
   transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.settings-btn span {
+  font-weight: 700;
 }
 
 .settings-btn:hover {
   color: white;
-  transform: rotate(45deg);
-  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.4));
+  border-color: rgba(236, 72, 153, 0.32);
+  background: rgba(236, 72, 153, 0.08);
+}
+
+.avatar-edit-btn:hover {
+  filter: brightness(1.04);
 }
 
 /* ── Stats Overview ── */
 .stats-overview {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-  margin-bottom: 48px;
+  gap: 16px;
+  margin-bottom: 32px;
 }
 
 /* ── Sections ── */
@@ -611,12 +846,12 @@ onMounted(async () => {
 
 .achievement-count {
   padding: 8px 16px;
-  background: rgba(168, 85, 247, 0.2);
-  border: 1px solid rgba(168, 85, 247, 0.4);
+  background: rgba(236, 72, 153, 0.14);
+  border: 1px solid rgba(236, 72, 153, 0.3);
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
-  color: #a855f7;
+  color: #f9a8d4;
   white-space: nowrap;
 }
 
@@ -809,7 +1044,12 @@ onMounted(async () => {
 .activities-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
+}
+
+.empty-activity-text {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* ── Settings Sidebar ── */
@@ -819,7 +1059,7 @@ onMounted(async () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(2, 6, 23, 0.74);
   backdrop-filter: blur(8px);
   z-index: 10000;
   display: flex;
@@ -829,7 +1069,7 @@ onMounted(async () => {
 .settings-sidebar {
   width: 100%;
   max-width: 500px;
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  background: linear-gradient(180deg, #111827, #0b1120);
   box-shadow: -8px 0 40px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
@@ -838,29 +1078,27 @@ onMounted(async () => {
 }
 
 .settings-header {
-  padding: 28px 32px;
-  background: rgba(30, 41, 59, 0.8);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 28px 28px 18px;
+  background: transparent;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .settings-header h2 {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: white;
   margin: 0;
 }
 
 .close-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.75);
   font-size: 20px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -870,61 +1108,54 @@ onMounted(async () => {
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .settings-content {
   flex: 1;
   overflow-y: auto;
-  padding: 32px;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 1) 100%);
+  padding: 0 28px 28px;
+  background: transparent;
 }
 
 .settings-section {
-  margin-bottom: 32px;
-  padding: 24px;
-  background: rgba(30, 41, 59, 0.5);
+  margin-bottom: 16px;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.72);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 18px;
 }
 
 .settings-section:last-child { margin-bottom: 0; }
 
 .settings-section h3 {
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 700;
   color: white;
-  margin: 0 0 20px 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  margin: 0 0 14px 0;
 }
 
 .settings-section h3::before {
-  content: '';
-  width: 4px;
-  height: 20px;
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
-  border-radius: 999px;
+  content: none;
 }
 
-.field { margin-bottom: 20px; }
+.field { margin-bottom: 12px; }
 
 .field label {
   display: block;
-  font-size: 14px;
-  color: #93c5fd;
-  margin-bottom: 10px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.74);
+  margin-bottom: 8px;
   font-weight: 600;
 }
 
 .field input {
   width: 100%;
-  padding: 14px 18px;
+  padding: 14px 16px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.04);
   color: white;
   font-size: 15px;
   transition: all 0.3s ease;
@@ -958,22 +1189,18 @@ onMounted(async () => {
 
 .stat-row:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(236, 72, 153, 0.3);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .stat-label { color: rgba(255, 255, 255, 0.7); font-size: 14px; font-weight: 500; }
 
 .stat-value {
-  color: white;
+  color: #f8fafc;
   font-weight: 700;
   font-size: 16px;
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
-.btn-primary, .btn-danger {
+.btn-primary {
   width: 100%;
   padding: 14px 24px;
   border-radius: 12px;
@@ -982,7 +1209,7 @@ onMounted(async () => {
   font-size: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
-  margin-top: 20px;
+  margin-top: 14px;
 }
 
 .btn-primary {
@@ -998,29 +1225,70 @@ onMounted(async () => {
 
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-.btn-danger {
-  background: linear-gradient(135deg, #ef4444, #b91c1c);
+.account-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.account-action-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
   color: white;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.25s ease;
 }
 
-.btn-danger:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+.account-action-btn:hover {
+  border-color: rgba(236, 72, 153, 0.24);
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.danger-zone {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+.account-action-danger:hover {
+  border-color: rgba(239, 68, 68, 0.24);
 }
 
-.danger-zone h3::before { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+.account-action-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
 
-.danger-zone p {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
-  margin: 0 0 16px 0;
-  line-height: 1.6;
+.logout-icon {
+  background: rgba(236, 72, 153, 0.14);
+  color: #fda4af;
+}
+
+.delete-icon {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+}
+
+.account-action-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.account-action-copy strong {
+  font-size: 15px;
+}
+
+.account-action-copy span {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 12px;
 }
 
 /* ── Transitions ── */
@@ -1076,15 +1344,19 @@ onMounted(async () => {
 @media (max-width: 768px) {
   .profile-content { padding: 20px; }
 
-  .profile-header {
+  .profile-summary-card {
     flex-direction: column;
     gap: 12px;
     align-items: stretch;
   }
 
+  .profile-summary-main {
+    width: 100%;
+  }
+
   .profile-title { font-size: 26px; }
 
-  .settings-btn { justify-content: center; }
+  .settings-btn { justify-content: center; width: 100%; }
 
   .stats-overview {
     grid-template-columns: repeat(2, 1fr);
@@ -1161,6 +1433,16 @@ onMounted(async () => {
   .profile-content { padding: 16px; }
 
   .profile-title { font-size: 22px; }
+
+  .profile-summary-card {
+    padding: 18px;
+  }
+
+  .profile-avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 1.2rem;
+  }
 
   .stats-overview {
     grid-template-columns: 1fr 1fr;

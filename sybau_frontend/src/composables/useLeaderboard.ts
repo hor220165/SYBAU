@@ -24,7 +24,9 @@ export async function loadLeaderboard() {
         Id: item.Id ?? item.id,
         Rank: Number(item.Rank ?? item.rank ?? 0),
         UserName: item.UserName ?? item.userName ?? item.username ?? '',
+        ProfileImageUrl: item.ProfileImageUrl ?? item.profileImageUrl ?? '',
         Experience: Number(item.Experience ?? item.experience ?? 0),
+        TotalXp: Number(item.TotalXp ?? item.totalXp ?? item.Experience ?? item.experience ?? 0),
         Level: Number(item.Level ?? item.level ?? 0)
       })) as LeaderBoard[];
     } else {

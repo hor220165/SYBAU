@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar.vue';
 import Header from '@/components/Header.vue';
 import LeaderboardPodiumCard from '@/components/LeaderboardPodiumCard.vue';
 import LeaderboardRow from '@/components/LeaderboardRow.vue';
+import PublicProfileSheet from '@/components/PublicProfileSheet.vue';
 import { useLeaderboard } from '@/composables/useLeaderboard';
 import { userService } from '@/services/api';
 import type { LeaderboardDisplayEntry } from '@/models/LeaderboardDisplayEntry';
@@ -12,6 +13,8 @@ import FooterComponent from '@/components/FooterComponent.vue';
 
 const { sortedLeaderboard, loading, error, loadLeaderboard } = useLeaderboard();
 const currentUserName = ref('');
+const viewedProfileId = ref<number | null>(null);
+const showProfileSheet = ref(false);
 
 const getInitials = (name: string) => {
   return name
@@ -35,18 +38,13 @@ const isCurrentUser = (name: string) => {
 const leaderboardEntries = computed<LeaderboardDisplayEntry[]>(() =>
   sortedLeaderboard.value.map((player) => ({
     ...player,
+    ProfileImageUrl: player.ProfileImageUrl,
     initials: getInitials(player.UserName),
     isCurrentUser: isCurrentUser(player.UserName),
   })),
 );
 
 const podiumPlayers = computed(() => leaderboardEntries.value.slice(0, 3));
-const currentUserEntry = computed(() => leaderboardEntries.value.find((entry) => entry.isCurrentUser) ?? null);
-const topFiveBorderXp = computed(() => leaderboardEntries.value[4]?.Experience ?? 0);
-const xpToTopFive = computed(() => {
-  if (!currentUserEntry.value || currentUserEntry.value.Rank <= 5) return 0;
-  return Math.max(0, topFiveBorderXp.value - currentUserEntry.value.Experience);
-});
 
 const loadPageData = async () => {
   syncCurrentUser();
@@ -60,6 +58,12 @@ const loadPageData = async () => {
   }
 
   await loadLeaderboard();
+};
+
+const openUserProfile = (userId: number) => {
+  if (!userId) return;
+  viewedProfileId.value = userId;
+  showProfileSheet.value = true;
 };
 
 onMounted(loadPageData);
@@ -81,20 +85,6 @@ onMounted(loadPageData);
           </p>
         </div>
 
-        <div class="hero-stats">
-          <article class="hero-stat-box">
-            <span class="hero-stat-label">Dein Rang</span>
-            <strong>{{ currentUserEntry ? `#${currentUserEntry.Rank}` : '—' }}</strong>
-          </article>
-          <article class="hero-stat-box">
-            <span class="hero-stat-label">Spieler gesamt</span>
-            <strong>{{ leaderboardEntries.length }}</strong>
-          </article>
-          <article class="hero-stat-box">
-            <span class="hero-stat-label">Bis Top 5</span>
-            <strong>{{ xpToTopFive.toLocaleString() }} XP</strong>
-          </article>
-        </div>
       </section>
 
       <div v-if="loading" class="state-box">Lade Leaderboard…</div>
@@ -114,9 +104,9 @@ onMounted(loadPageData);
           </div>
 
           <div class="podium-grid" :class="{ 'podium-grid-compact': podiumPlayers.length < 3 }">
-            <LeaderboardPodiumCard v-if="podiumPlayers[1]" :player="podiumPlayers[1]" :place="2" />
-            <LeaderboardPodiumCard v-if="podiumPlayers[0]" :player="podiumPlayers[0]" :place="1" />
-            <LeaderboardPodiumCard v-if="podiumPlayers[2]" :player="podiumPlayers[2]" :place="3" />
+            <LeaderboardPodiumCard v-if="podiumPlayers[1]" :player="podiumPlayers[1]" :place="2" @open-profile="openUserProfile" />
+            <LeaderboardPodiumCard v-if="podiumPlayers[0]" :player="podiumPlayers[0]" :place="1" @open-profile="openUserProfile" />
+            <LeaderboardPodiumCard v-if="podiumPlayers[2]" :player="podiumPlayers[2]" :place="3" @open-profile="openUserProfile" />
           </div>
         </section>
 
@@ -141,6 +131,7 @@ onMounted(loadPageData);
               v-for="player in leaderboardEntries"
               :key="player.Id"
               :player="player"
+              @open-profile="openUserProfile"
             />
           </div>
           <div v-else class="empty-box">
@@ -152,6 +143,11 @@ onMounted(loadPageData);
     </main>
      <!-- Footer -->
     <FooterComponent />
+    <PublicProfileSheet
+      :visible="showProfileSheet"
+      :user-id="viewedProfileId"
+      @close="showProfileSheet = false"
+    />
   </div>
 </template>
 
@@ -169,32 +165,29 @@ onMounted(loadPageData);
   gap: 24px;
 }
 
-.hero-card,
 .section-card,
 .state-box,
 .empty-box {
-  border-radius: 28px;
+  border-radius: 22px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(15, 23, 42, 0.56);
+  background: rgba(15, 23, 42, 0.62);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 24px 50px rgba(2, 6, 23, 0.22);
+  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.24);
 }
 
 .hero-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
-  gap: 24px;
-  padding: clamp(24px, 3vw, 36px);
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
+  display: block;
+  padding: 0;
+  background: transparent;
 }
 
 .hero-kicker {
   display: inline-flex;
-  border-radius: 999px;
-  padding: 7px 12px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #f5d0fe;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: #f9a8d4;
   font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -212,31 +205,6 @@ onMounted(loadPageData);
   max-width: 56ch;
   color: rgba(255, 255, 255, 0.85);
   line-height: 1.65;
-}
-
-.hero-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  align-self: end;
-}
-
-.hero-stat-box {
-  padding: 18px;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.hero-stat-label {
-  display: block;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.85rem;
-  margin-bottom: 10px;
-}
-
-.hero-stat-box strong {
-  font-size: clamp(1.15rem, 2vw, 1.5rem);
 }
 
 .section-card {
@@ -295,9 +263,9 @@ onMounted(loadPageData);
   gap: 8px;
   border-radius: 999px;
   padding: 10px 14px;
-  background: rgba(168, 85, 247, 0.12);
-  border: 1px solid rgba(168, 85, 247, 0.2);
-  color: #ddd6fe;
+  background: rgba(236, 72, 153, 0.12);
+  border: 1px solid rgba(236, 72, 153, 0.22);
+  color: #f9a8d4;
   white-space: nowrap;
 }
 
@@ -324,20 +292,10 @@ onMounted(loadPageData);
   font-weight: 700;
 }
 
-@media (max-width: 1080px) {
-  .hero-card {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 860px) {
   .leaderboard-page {
     width: min(100%, calc(100% - 24px));
     padding-top: 24px;
-  }
-
-  .hero-stats {
-    grid-template-columns: 1fr;
   }
 
   .section-heading-spread {
@@ -357,7 +315,6 @@ onMounted(loadPageData);
     gap: 18px;
   }
 
-  .hero-card,
   .section-card,
   .state-box,
   .empty-box {

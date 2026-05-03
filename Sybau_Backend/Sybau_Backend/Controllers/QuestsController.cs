@@ -66,7 +66,7 @@ public class QuestsController : ControllerBase
     }
 
     /// <summary>
-    /// Manuelle Aktivität loggen (Schritte oder Kilometer).
+    /// Manuelle Aktivität loggen (Schritte, Kilometer oder Kalorien).
     /// </summary>
     [HttpPost("activity")]
     public async Task<IActionResult> LogActivity([FromBody] LogActivityRequest request)
@@ -78,7 +78,7 @@ public class QuestsController : ControllerBase
             return BadRequest(new { message = "Wert muss größer als 0 sein." });
 
         if (!Enum.TryParse<ActivityType>(request.Type, true, out var activityType))
-            return BadRequest(new { message = "Ungültiger Aktivitätstyp. Erlaubt: Steps, Kilometers" });
+            return BadRequest(new { message = "Ungültiger Aktivitätstyp. Erlaubt: Steps, Kilometers, Calories" });
 
         var log = new ActivityLog(userId.Value, activityType, request.Value);
         _context.ActivityLogs.Add(log);
@@ -86,9 +86,26 @@ public class QuestsController : ControllerBase
 
         // Quest-Fortschritt aktualisieren
         await _questService.UpdateQuestProgressAsync(userId.Value);
+        var (xpEarned, coinsEarned, rewardedQuests) =
+            await _questService.ClaimCompletedActivityRewardsAsync(userId.Value, activityType);
 
-        var unit = activityType == ActivityType.Steps ? "Schritte" : "km";
-        return Ok(new { message = $"{request.Value:N0} {unit} erfolgreich eingetragen!" });
+        var unit = activityType switch
+        {
+            ActivityType.Steps => "Schritte",
+            ActivityType.Calories => "kcal",
+            _ => "km"
+        };
+        var rewardText = xpEarned > 0 || coinsEarned > 0
+            ? $" Belohnung: +{xpEarned} XP, +{coinsEarned} Coins."
+            : "";
+
+        return Ok(new
+        {
+            message = $"{request.Value:N0} {unit} erfolgreich eingetragen!{rewardText}",
+            xpEarned,
+            coinsEarned,
+            rewardedQuests
+        });
     }
 
     /// <summary>
@@ -107,8 +124,9 @@ public class QuestsController : ControllerBase
 
         var steps = (int)logs.Where(a => a.Type == ActivityType.Steps).Sum(a => a.Value);
         var km = logs.Where(a => a.Type == ActivityType.Kilometers).Sum(a => a.Value);
+        var calories = logs.Where(a => a.Type == ActivityType.Calories).Sum(a => a.Value);
 
-        return Ok(new { steps, kilometers = Math.Round(km, 2) });
+        return Ok(new { steps, kilometers = Math.Round(km, 2), calories = Math.Round(calories) });
     }
 
     private int? GetUserId()

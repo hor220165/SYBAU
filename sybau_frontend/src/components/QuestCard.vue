@@ -7,7 +7,6 @@
 
     <!-- Time Left -->
     <div class="time-badge">
-      <span class="icon">⏱</span>
       {{ timeLeft }}
     </div>
 
@@ -30,11 +29,11 @@
     <div class="reward-section">
       <div class="rewards">
         <div class="xp-reward">
-          <span class="icon">⭐</span>
+          <img src="../assets/XP_Pixel.png" alt="" />
           <span>+{{ xpReward }} XP</span>
         </div>
         <div class="coin-reward" v-if="coinReward > 0">
-          <span class="icon">🪙</span>
+          <img src="../assets/SYBAU_Coin.png" alt="" />
           <span>+{{ coinReward }}</span>
         </div>
       </div>
@@ -47,7 +46,7 @@
       >
         Einfordern
       </button>
-      <span v-else-if="isRewardClaimed" class="claimed-badge">✅ Erhalten</span>
+      <span v-else-if="isRewardClaimed" class="claimed-badge">Erhalten</span>
     </div>
   </div>
 </template>
@@ -235,6 +234,13 @@ const progressPercent = computed(() => {
   font-size: 16px;
   font-weight: 700;
   color: #fbbf24;
+}
+
+.xp-reward img,
+.coin-reward img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
 
 .coin-reward {

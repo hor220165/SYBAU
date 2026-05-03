@@ -16,14 +16,23 @@ namespace Sybau_Backend.Controllers
     public class UsersController : ControllerBase
     {
         private readonly UserService _userService;
+        private readonly AchievementService _achievementService;
         private readonly BodyStageService _bodyStageService;
         private readonly AvatarService _avatarService;
+        private readonly IWebHostEnvironment _environment;
 
-        public UsersController(UserService userService, BodyStageService bodyStageService, AvatarService avatarService)
+        public UsersController(
+            UserService userService,
+            AchievementService achievementService,
+            BodyStageService bodyStageService,
+            AvatarService avatarService,
+            IWebHostEnvironment environment)
         {
             _userService = userService;
+            _achievementService = achievementService;
             _bodyStageService = bodyStageService;
             _avatarService = avatarService;
+            _environment = environment;
         }
         
         // GET /users/profile
@@ -59,9 +68,91 @@ namespace Sybau_Backend.Controllers
                 Id = user.Id,
                 UserName = user.UserName,
                 Email = user.Email,
+                ProfileImageUrl = user.ProfileImageUrl,
                 Coins = user.Coins,
+                TotalXp = CalculateTotalXp(user.Avatar.Level, user.Avatar.Experience),
                 Avatar = avatarDto,
                 IsAdmin = user.IsAdmin,
+            });
+        }
+
+        // GET /users/{id}/profile
+        [Authorize]
+        [HttpGet("{id:int}/profile")]
+        public async Task<IActionResult> GetPublicProfile(int id)
+        {
+            var user = await _userService.GetUserById(id);
+            if (user == null || user.IsAdmin) return NotFound();
+
+            var avatarDto = new AvatarDto
+            {
+                Id = user.Avatar.Id,
+                Level = user.Avatar.Level,
+                Experience = user.Avatar.Experience,
+                BodyStage = _bodyStageService.GetBodyStage(user.Avatar.Level),
+                XpForNextLevel = _avatarService.XpForNextLevel(user.Avatar.Level),
+                Boost1 = user.Avatar.Boost1,
+                Boost2 = user.Avatar.Boost2,
+                Boost3 = user.Avatar.Boost3,
+                Boost4 = user.Avatar.Boost4
+            };
+
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var monday = today.AddDays(-(int)today.DayOfWeek + (today.DayOfWeek == DayOfWeek.Sunday ? -6 : 1));
+            var sunday = monday.AddDays(6);
+
+            ProfileStatsDto stats;
+            List<AchievementDto> achievements;
+            List<WeeklyActivityDto> weeklyActivity;
+            List<RecentActivityDto> recentActivities;
+
+            try
+            {
+                stats = await _achievementService.GetProfileStatsAsync(id);
+            }
+            catch
+            {
+                stats = new ProfileStatsDto();
+            }
+
+            try
+            {
+                achievements = await _achievementService.GetUserAchievementsReadOnlyAsync(id);
+            }
+            catch
+            {
+                achievements = new List<AchievementDto>();
+            }
+
+            try
+            {
+                weeklyActivity = await _userService.GetWeeklyActivityAsync(id, monday, sunday);
+            }
+            catch
+            {
+                weeklyActivity = new List<WeeklyActivityDto>();
+            }
+
+            try
+            {
+                recentActivities = await _userService.GetRecentActivitiesAsync(id, 8);
+            }
+            catch
+            {
+                recentActivities = new List<RecentActivityDto>();
+            }
+
+            return Ok(new PublicUserProfileDto
+            {
+                Id = user.Id,
+                UserName = user.UserName,
+                ProfileImageUrl = user.ProfileImageUrl,
+                Avatar = avatarDto,
+                TotalXp = CalculateTotalXp(user.Avatar.Level, user.Avatar.Experience),
+                Stats = stats,
+                Achievements = achievements,
+                WeeklyActivity = weeklyActivity,
+                RecentActivities = recentActivities
             });
         }
         
@@ -81,6 +172,124 @@ namespace Sybau_Backend.Controllers
                 user.UserName = dto.Username;
 
             await _userService.UpdateUserAsync(user);
+
+            return NoContent();
+        }
+
+        private static int CalculateTotalXp(int level, int experience)
+        {
+            var total = 0;
+            for (var lvl = 1; lvl < level; lvl++)
+            {
+                total += 100 + lvl * lvl * 20;
+            }
+
+            return total + experience;
+        }
+
+        // POST /users/profile/image
+        [Authorize]
+        [HttpPost("profile/image")]
+        [RequestSizeLimit(10_000_000)]
+        public async Task<IActionResult> UploadProfileImage([FromForm] IFormFile image)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            if (image == null || image.Length == 0)
+                return BadRequest("Kein Bild hochgeladen.");
+
+            var extension = Path.GetExtension(image.FileName);
+            var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".webp",
+                ".heic",
+                ".heif"
+            };
+            var hasImageContentType =
+                !string.IsNullOrWhiteSpace(image.ContentType) &&
+                image.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+            var hasAllowedExtension =
+                !string.IsNullOrWhiteSpace(extension) &&
+                allowedExtensions.Contains(extension);
+
+            if (!hasImageContentType && !hasAllowedExtension)
+                return BadRequest("Nur Bilddateien sind erlaubt.");
+
+            var userId = int.Parse(userIdClaim);
+            var user = await _userService.GetUserById(userId);
+            if (user == null) return NotFound();
+
+            var uploadsRoot = Path.Combine(
+                _environment.ContentRootPath,
+                "wwwroot",
+                "uploads",
+                "profile-images");
+            Directory.CreateDirectory(uploadsRoot);
+
+            if (!string.IsNullOrWhiteSpace(user.ProfileImageUrl))
+            {
+                var existingRelativePath = user.ProfileImageUrl.TrimStart('/')
+                    .Replace('/', Path.DirectorySeparatorChar);
+                var existingFullPath = Path.Combine(_environment.ContentRootPath, "wwwroot", existingRelativePath);
+                if (System.IO.File.Exists(existingFullPath))
+                {
+                    System.IO.File.Delete(existingFullPath);
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(extension))
+            {
+                extension = (image.ContentType ?? string.Empty).ToLowerInvariant() switch
+                {
+                    "image/png" => ".png",
+                    "image/webp" => ".webp",
+                    "image/heic" => ".heic",
+                    "image/heif" => ".heif",
+                    _ => ".jpg"
+                };
+            }
+
+            var fileName = $"user-{user.Id}-{Guid.NewGuid():N}{extension}";
+            var fullPath = Path.Combine(uploadsRoot, fileName);
+            await using (var stream = new FileStream(fullPath, FileMode.Create))
+            {
+                await image.CopyToAsync(stream);
+            }
+
+            var profileImageUrl = $"/uploads/profile-images/{fileName}";
+            await _userService.SetProfileImageUrlAsync(user.Id, profileImageUrl);
+
+            return Ok(new { profileImageUrl });
+        }
+
+        // DELETE /users/profile/image
+        [Authorize]
+        [HttpDelete("profile/image")]
+        public async Task<IActionResult> RemoveProfileImage()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            var userId = int.Parse(userIdClaim);
+            var user = await _userService.GetUserById(userId);
+            if (user == null) return NotFound();
+
+            if (!string.IsNullOrWhiteSpace(user.ProfileImageUrl))
+            {
+                var existingRelativePath = user.ProfileImageUrl.TrimStart('/')
+                    .Replace('/', Path.DirectorySeparatorChar);
+                var existingFullPath = Path.Combine(_environment.ContentRootPath, "wwwroot", existingRelativePath);
+                if (System.IO.File.Exists(existingFullPath))
+                {
+                    System.IO.File.Delete(existingFullPath);
+                }
+            }
+
+            await _userService.SetProfileImageUrlAsync(user.Id, null);
 
             return NoContent();
         }
@@ -195,6 +404,7 @@ namespace Sybau_Backend.Controllers
                 Id = u.Id,
                 UserName = u.UserName,
                 Email = u.Email,
+                ProfileImageUrl = u.ProfileImageUrl,
                 Coins = u.Coins,
                 IsAdmin = u.IsAdmin,
                 Avatar = new AvatarDto
@@ -240,6 +450,7 @@ namespace Sybau_Backend.Controllers
                 Id = user.Id,
                 UserName = user.UserName,
                 Email = user.Email,
+                ProfileImageUrl = user.ProfileImageUrl,
                 Coins = user.Coins,
                 Avatar = avatarDto,
                 IsAdmin = user.IsAdmin
@@ -300,4 +511,3 @@ namespace Sybau_Backend.Controllers
         }
     }
 }
-

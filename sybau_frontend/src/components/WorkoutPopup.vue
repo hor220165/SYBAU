@@ -4,7 +4,9 @@
       <!-- Header -->
       <div class="modal-header">
         <div class="workout-info">
-          <div class="workout-icon">{{ icon }}</div>
+          <div class="workout-icon">
+            <img src="../assets/Pixel_Hantel.png" alt="" />
+          </div>
           <h2 class="workout-title">{{ exerciseName }}</h2>
         </div>
         <button class="close-btn" @click="$emit('close')">Zurück</button>
@@ -30,9 +32,7 @@
       <div class="xp-preview">
         <span>XP-Gewinn</span>
         <div class="xp-amount">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-          </svg>
+          <img src="../assets/XP_Pixel.png" alt="" />
           +{{ xpGain }}
         </div>
       </div>
@@ -41,7 +41,8 @@
       <div class="xp-preview coin-preview">
         <span>Münzen-Gewinn</span>
         <div class="xp-amount coin-amount">
-          💰 +{{ coinGain }}
+          <img src="../assets/SYBAU_Coin.png" alt="" />
+          +{{ coinGain }}
         </div>
       </div>
 
@@ -151,7 +152,19 @@ watch(() => props.isOpen, (isOpen) => {
 }
 
 .workout-icon {
-  font-size: 32px;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(168, 85, 247, 0.14);
+  border: 1px solid rgba(168, 85, 247, 0.24);
+}
+
+.workout-icon img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 
 .workout-title {
@@ -271,8 +284,10 @@ watch(() => props.isOpen, (isOpen) => {
   color: #fbbf24;
 }
 
-.xp-amount svg {
-  color: #fbbf24;
+.xp-amount img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
 }
 
 .coin-preview {

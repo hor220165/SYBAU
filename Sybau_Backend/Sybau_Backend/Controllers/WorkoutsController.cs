@@ -48,6 +48,30 @@ public class WorkoutsController : ControllerBase
         }
     }
 
+    [Authorize(Policy = "AdminOnly")]
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateWorkout(int id, [FromBody] CreateWorkoutDto dto)
+    {
+        try
+        {
+            var workout = await _workoutService.UpdateWorkoutAsync(id, dto);
+            if (workout == null) return NotFound();
+            return Ok(workout);
+        }
+        catch (ArgumentException e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [Authorize(Policy = "AdminOnly")]
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteWorkout(int id)
+    {
+        var deleted = await _workoutService.DeleteWorkoutAsync(id);
+        return deleted ? NoContent() : NotFound();
+    }
+
     [HttpGet("exercises")]
     public async Task<IActionResult> GetExercises([FromQuery] WorkoutCategory? category)
     {

@@ -21,7 +21,9 @@ export function useAuth() {
         id: res.data.id,
         userName: res.data.userName,
         email: res.data.email,
+        profileImageUrl: res.data.profileImageUrl,
         coins: res.data.coins,
+        totalXp: res.data.totalXp ?? res.data.TotalXp,
         isAdmin: res.data.isAdmin,
         avatar: {
           bodyStage: res.data.avatar?.bodyStage,
@@ -47,7 +49,9 @@ export function useAuth() {
         id: u.id,
         userName: u.userName,
         email: u.email,
+        profileImageUrl: u.profileImageUrl,
         coins: u.coins ?? u.Coins ?? 0,
+        totalXp: u.totalXp ?? u.TotalXp ?? 0,
         avatar: { bodyStage: u.avatar?.bodyStage }
       };
       console.log('User to store:', userToStore); // DEBUG

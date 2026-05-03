@@ -25,6 +25,11 @@ public class AchievementService
         // Erst prüfen ob neue Achievements freigeschaltet werden
         await CheckAndUnlockAsync(userId);
 
+        return await GetUserAchievementsReadOnlyAsync(userId);
+    }
+
+    public async Task<List<AchievementDto>> GetUserAchievementsReadOnlyAsync(int userId)
+    {
         var achievements = await _context.Achievements
             .OrderBy(a => a.Id)
             .ToListAsync();
@@ -111,8 +116,11 @@ public class AchievementService
         var trainingMinutes = logs.Count * 2.0;
         var trainingHours = Math.Round(trainingMinutes / 60.0, 1);
 
-        // Kalorien schätzen basierend auf Kategorie
-        var caloriesBurned = logs.Sum(l => EstimateCalories(l.Category, l.Reps));
+        // Kalorien schätzen basierend auf Kategorie plus importierte Health-Daten
+        var healthCalories = await _context.ActivityLogs
+            .Where(a => a.UserId == userId && a.Type == ActivityType.Calories)
+            .SumAsync(a => (double?)a.Value) ?? 0;
+        var caloriesBurned = logs.Sum(l => EstimateCalories(l.Category, l.Reps)) + (int)Math.Round(healthCalories);
 
         return new ProfileStatsDto
         {

@@ -25,53 +25,40 @@ defineProps<{
 .activity-item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
-
-.activity-item:hover {
-  background: rgba(30, 41, 59, 0.8);
-  border-color: rgba(236, 72, 153, 0.3);
-  transform: translateX(4px);
+  gap: 10px;
+  padding: 0 0 10px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
 .activity-icon {
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fda4af;
 }
 
 .icon-workout {
-  background: rgba(59, 130, 246, 0.2);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  color: #3b82f6;
+  color: #fda4af;
 }
 
 .icon-quest {
-  background: rgba(168, 85, 247, 0.2);
-  border: 1px solid rgba(168, 85, 247, 0.4);
-  color: #a855f7;
+  color: #fda4af;
 }
 
 .icon-achievement {
-  background: rgba(251, 191, 36, 0.2);
-  border: 1px solid rgba(251, 191, 36, 0.4);
-  color: #fbbf24;
+  color: #fda4af;
 }
 
 .icon-level {
-  background: rgba(34, 197, 94, 0.2);
-  border: 1px solid rgba(34, 197, 94, 0.4);
-  color: #22c55e;
+  color: #fda4af;
 }
 
 .activity-info {
@@ -83,24 +70,24 @@ defineProps<{
 
 .activity-title {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   color: white;
   margin: 0;
 }
 
 .activity-time {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.56);
 }
 
 .activity-xp {
-  padding: 6px 12px;
-  background: rgba(251, 191, 36, 0.2);
-  border: 1px solid rgba(251, 191, 36, 0.4);
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #fbbf24;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #fde047;
   flex-shrink: 0;
 }
 </style>

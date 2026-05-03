@@ -148,6 +148,7 @@ public class FriendService
                 Id = f.Id,
                 FriendId = friend.Id,
                 FriendUserName = friend.UserName,
+                FriendProfileImageUrl = friend.ProfileImageUrl,
                 FriendLevel = friend.Avatar.Level,
                 FriendExperience = friend.Avatar.Experience,
                 FriendBodyStage = _bodyStageService.GetBodyStage(friend.Avatar.Level).ToString(),
@@ -169,7 +170,27 @@ public class FriendService
             Id = f.Id,
             FromUserId = f.Requester.Id,
             FromUserName = f.Requester.UserName,
+            FromUserProfileImageUrl = f.Requester.ProfileImageUrl,
             FromUserLevel = f.Requester.Avatar.Level,
+            SentAt = f.CreatedAt
+        });
+    }
+
+    // Ausgehende offene Anfragen abrufen
+    public async Task<IEnumerable<SentFriendRequestDto>> GetSentRequestsAsync(int userId)
+    {
+        var requests = await _context.Friendships
+            .Include(f => f.Addressee).ThenInclude(u => u.Avatar)
+            .Where(f => f.RequesterId == userId && f.Status == FriendshipStatus.Pending)
+            .ToListAsync();
+
+        return requests.Select(f => new SentFriendRequestDto
+        {
+            Id = f.Id,
+            ToUserId = f.Addressee.Id,
+            ToUserName = f.Addressee.UserName,
+            ToUserProfileImageUrl = f.Addressee.ProfileImageUrl,
+            ToUserLevel = f.Addressee.Avatar.Level,
             SentAt = f.CreatedAt
         });
     }
@@ -198,6 +219,7 @@ public class FriendService
             Id = u.Id,
             Rank = index + 1,
             UserName = u.UserName,
+            ProfileImageUrl = u.ProfileImageUrl,
             Experience = u.Avatar.Experience,
             Level = u.Avatar.Level
         });

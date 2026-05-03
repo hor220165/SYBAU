@@ -124,7 +124,6 @@
       <div class="inventory-panel">
         <div class="section-header">
           <div class="section-title">
-            <Sparkles :size="22" class="section-icon" />
             <h2>Inventar</h2>
           </div>
           <span class="inventory-count">{{ inventory.reduce((sum, b) => sum + b.quantity, 0) }} Booster ({{ inventory.length }} verschiedene)</span>
@@ -137,7 +136,7 @@
           <button class="shop-btn" @click="$router.push('/shop')">Zum Shop</button>
         </div>
 
-        <div v-else class="booster-list">
+        <div v-else class="booster-list inventory-grid">
           <div
             v-for="booster in inventory"
             :key="booster.id"
@@ -149,10 +148,10 @@
           >
             <div class="booster-glow"></div>
             <div class="booster-card-inner">
+              <span class="booster-qty-badge">{{ remainingCount(booster) }}/{{ booster.quantity }}</span>
               <div class="booster-card-top">
                 <div class="booster-icon-wrapper" :class="'rarity-icon-' + booster.rarity">
                   <span class="booster-icon">{{ booster.icon }}</span>
-                  <span v-if="booster.quantity > 1" class="booster-qty-badge">{{ booster.quantity }}x</span>
                 </div>
                 <div class="booster-meta">
                   <h3>{{ booster.name }}</h3>
@@ -173,28 +172,16 @@
                 </div>
               </div>
 
-              <!-- Quantity Anzeige -->
-              <div v-if="booster.quantity > 1" class="booster-qty-row">
-                <span class="booster-qty-label">{{ equippedCount(booster.id) }}/{{ booster.quantity }} ausgerüstet</span>
-              </div>
-
               <div class="booster-card-footer">
-                <span v-if="isEquipped(booster.id)" class="equipped-badge">
-                  <Shield :size="12" /> {{ equippedCount(booster.id) }}x Ausgerüstet
-                </span>
                 <button
-                  v-if="canEquipMore(booster)"
                   class="equip-btn"
+                  :class="{ disabled: !canEquipMore(booster) }"
+                  :disabled="!canEquipMore(booster)"
                   @click="startEquip(booster)"
                 >
-                  <Zap :size="14" /> Ausrüsten
-                </button>
-                <button
-                  v-if="isEquipped(booster.id)"
-                  class="unequip-btn"
-                  @click="unequipBoosterById(booster.id)"
-                >
-                  Ablegen
+                  <Zap v-if="canEquipMore(booster)" :size="14" />
+                  <Shield v-else :size="14" />
+                  {{ canEquipMore(booster) ? 'Ausrüsten' : 'Ausgerüstet' }}
                 </button>
               </div>
             </div>
@@ -211,7 +198,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { Zap, TrendingUp, CircleDollarSign, Sparkles, ShoppingBag, Shield } from 'lucide-vue-next';
+import { Zap, TrendingUp, CircleDollarSign, ShoppingBag, Shield } from 'lucide-vue-next';
 import Header from '@/components/Header.vue';
 import Navbar from '@/components/Navbar.vue';
 import SpriteAnimator from '@/components/spriteAnimator.vue';
@@ -304,6 +291,10 @@ function canEquipMore(booster: BoosterItem): boolean {
   return booster.quantity > equippedCount(booster.id);
 }
 
+function remainingCount(booster: BoosterItem): number {
+  return Math.max(booster.quantity - equippedCount(booster.id), 0);
+}
+
 const startEquip = (booster: BoosterItem) => {
   selectingSlotFor.value = booster;
 };
@@ -319,14 +310,6 @@ const handleSlotClick = async (slotIndex: number) => {
   } else if (equipSlots.value[slotIndex]!.item) {
     // Slot leeren
     equipSlots.value[slotIndex]!.item = null;
-    await saveSlots();
-  }
-};
-
-const unequipBoosterById = async (id: number) => {
-  const slot = equipSlots.value.find(s => s.item?.id === id);
-  if (slot) {
-    slot.item = null;
     await saveSlots();
   }
 };
@@ -769,8 +752,6 @@ onMounted(() => loadProfile());
   gap: 12px;
 }
 
-.section-icon { color: #ec4899; }
-
 .section-title h2 {
   font-size: 22px;
   font-weight: 700;
@@ -779,13 +760,13 @@ onMounted(() => loadProfile());
 }
 
 .inventory-count {
-  padding: 6px 14px;
-  background: rgba(168, 85, 247, 0.15);
-  border: 1px solid rgba(168, 85, 247, 0.3);
-  border-radius: 10px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   font-size: 13px;
-  font-weight: 600;
-  color: #a855f7;
+  font-weight: 700;
+  color: #c084fc;
 }
 
 /* Empty State */
@@ -835,35 +816,62 @@ onMounted(() => loadProfile());
 }
 
 /* ══════════════════════════════
-   BOOSTER CARDS — VERTICAL LIST
+   BOOSTER INVENTORY — GAME GRID
 ══════════════════════════════ */
-.booster-list {
-  display: flex;
-  flex-direction: column;
+.booster-list,
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
 .booster-card {
   position: relative;
-  border-radius: 18px;
+  border-radius: 14px;
   overflow: hidden;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 278px;
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.rarity-common {
+  --rarity-color: #cbd5e1;
+  --rarity-bg: rgba(148, 163, 184, 0.16);
+  --rarity-border: rgba(148, 163, 184, 0.34);
+}
+
+.rarity-rare {
+  --rarity-color: #5eead4;
+  --rarity-bg: rgba(20, 184, 166, 0.17);
+  --rarity-border: rgba(20, 184, 166, 0.38);
+}
+
+.rarity-epic {
+  --rarity-color: #d946ef;
+  --rarity-bg: rgba(217, 70, 239, 0.18);
+  --rarity-border: rgba(217, 70, 239, 0.42);
+}
+
+.rarity-legendary {
+  --rarity-color: #fbbf24;
+  --rarity-bg: rgba(245, 158, 11, 0.18);
+  --rarity-border: rgba(245, 158, 11, 0.42);
 }
 
 .booster-card:hover {
   transform: translateY(-2px);
+  filter: brightness(1.08);
 }
 
 .booster-glow {
   position: absolute;
   inset: -2px;
-  border-radius: 20px;
+  border-radius: 16px;
   z-index: 0;
-  opacity: 0;
+  opacity: 0.08;
   transition: opacity 0.35s ease;
 }
 
-.booster-card:hover .booster-glow { opacity: 1; }
+.booster-card:hover .booster-glow { opacity: 0.18; }
 
 .rarity-common .booster-glow {
   background: linear-gradient(135deg, rgba(148, 163, 184, 0.4), rgba(100, 116, 139, 0.2));
@@ -887,27 +895,30 @@ onMounted(() => loadProfile());
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 20px;
-  border-radius: 18px;
-  backdrop-filter: blur(16px);
+  gap: 14px;
+  height: 278px;
+  padding: 24px;
+  border-radius: 22px;
+  background: rgba(2, 6, 23, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  backdrop-filter: blur(14px);
 }
 
 .rarity-common .booster-card-inner {
-  background: linear-gradient(160deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.9));
-  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(2, 6, 23, 0.42);
+  border-color: rgba(255, 255, 255, 0.075);
 }
 .rarity-rare .booster-card-inner {
-  background: linear-gradient(160deg, rgba(30, 58, 95, 0.7), rgba(15, 23, 42, 0.9));
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(2, 6, 23, 0.42);
+  border-color: rgba(255, 255, 255, 0.075);
 }
 .rarity-epic .booster-card-inner {
-  background: linear-gradient(160deg, rgba(55, 30, 80, 0.7), rgba(15, 23, 42, 0.9));
-  border: 1px solid rgba(168, 85, 247, 0.35);
+  background: rgba(2, 6, 23, 0.42);
+  border-color: rgba(255, 255, 255, 0.075);
 }
 .rarity-legendary .booster-card-inner {
-  background: linear-gradient(160deg, rgba(80, 50, 15, 0.6), rgba(15, 23, 42, 0.9));
-  border: 1px solid rgba(245, 158, 11, 0.4);
+  background: rgba(2, 6, 23, 0.42);
+  border-color: rgba(255, 255, 255, 0.075);
 }
 
 .booster-card.is-equipped .booster-card-inner {
@@ -917,110 +928,138 @@ onMounted(() => loadProfile());
 /* Card Top */
 .booster-card-top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
 }
 
 .booster-icon-wrapper {
   position: relative;
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 76px;
+  height: 76px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.04),
+    inset 0 -10px 18px rgba(0, 0, 0, 0.22);
 }
 
-.booster-icon { font-size: 24px; }
+.booster-icon-wrapper::before,
+.booster-icon-wrapper::after {
+  content: '';
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  pointer-events: none;
+}
+
+.booster-icon-wrapper::before {
+  left: 6px;
+  top: 6px;
+  border-left: 1px solid rgba(255, 255, 255, 0.26);
+  border-top: 1px solid rgba(255, 255, 255, 0.26);
+}
+
+.booster-icon-wrapper::after {
+  right: 6px;
+  bottom: 6px;
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.booster-icon {
+  font-size: 42px;
+  line-height: 1;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
+}
 
 .rarity-icon-common {
-  background: rgba(148, 163, 184, 0.12);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: var(--rarity-bg);
+  border: 1px solid var(--rarity-border);
 }
 .rarity-icon-rare {
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: var(--rarity-bg);
+  border: 1px solid var(--rarity-border);
   box-shadow: 0 0 16px rgba(59, 130, 246, 0.15);
 }
 .rarity-icon-epic {
-  background: rgba(168, 85, 247, 0.15);
-  border: 1px solid rgba(168, 85, 247, 0.3);
+  background: var(--rarity-bg);
+  border: 1px solid var(--rarity-border);
   box-shadow: 0 0 16px rgba(168, 85, 247, 0.15);
 }
 .rarity-icon-legendary {
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: var(--rarity-bg);
+  border: 1px solid var(--rarity-border);
   box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);
 }
 
 .booster-meta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
+  padding-top: 2px;
 }
 
 .booster-meta h3 {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.18;
+  font-weight: 800;
   color: white;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .booster-rarity-tag {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 5px;
-  font-size: 9px;
+  padding: 0;
+  border-radius: 0;
+  font-size: 8px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.2px;
   width: fit-content;
+  background: transparent;
+  color: var(--rarity-color);
+  border: 0;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--rarity-color) 45%, transparent);
 }
 
-.tag-common {
-  background: rgba(148, 163, 184, 0.15);
-  color: #94a3b8;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-}
-.tag-rare {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-}
-.tag-epic {
-  background: rgba(168, 85, 247, 0.15);
-  color: #c084fc;
-  border: 1px solid rgba(168, 85, 247, 0.3);
-}
-.tag-legendary {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.35);
-}
+.tag-common { color: #cbd5e1; }
+.tag-rare { color: #5eead4; }
+.tag-epic { color: #d946ef; }
+.tag-legendary { color: #fbbf24; }
 
 .booster-desc {
-  font-size: 13px;
+  min-height: 34px;
+  font-size: 12px;
   color: rgba(255, 255, 255, 0.4);
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .booster-stat-row {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   flex-wrap: wrap;
+  min-height: 28px;
 }
 
 .booster-stat {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .booster-stat.xp {
@@ -1040,42 +1079,25 @@ onMounted(() => loadProfile());
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding-top: 8px;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 9px;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-.equipped-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  background: rgba(168, 85, 247, 0.15);
-  border: 1px solid rgba(168, 85, 247, 0.35);
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #a855f7;
-}
-
-.equip-btn,
-.unequip-btn {
-  padding: 9px 18px;
-  border-radius: 10px;
+.equip-btn {
+  min-height: 34px;
+  padding: 0 11px;
+  border-radius: 9px;
   border: none;
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: 800;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 6px;
   margin-left: auto;
-}
-
-.equip-btn {
   background: linear-gradient(135deg, #ec4899, #f43f5e);
   color: white;
   box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
@@ -1086,45 +1108,36 @@ onMounted(() => loadProfile());
   box-shadow: 0 6px 18px rgba(236, 72, 153, 0.4);
 }
 
-.unequip-btn {
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+.equip-btn.disabled,
+.equip-btn:disabled {
+  background: rgba(71, 85, 105, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  color: rgba(255, 255, 255, 0.46);
+  box-shadow: none;
+  cursor: default;
 }
 
-.unequip-btn:hover {
-  background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.35);
-  color: #f87171;
+.equip-btn.disabled:hover,
+.equip-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .booster-qty-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
-  color: white;
-  font-size: 10px;
+  top: 22px;
+  right: 24px;
+  z-index: 2;
+  background: transparent;
+  border: 0;
+  color: #f9a8d4;
+  font-size: 13px;
   font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 999px;
+  min-width: 0;
+  padding: 0;
+  border-radius: 0;
   line-height: 1.2;
-  box-shadow: 0 2px 6px rgba(236, 72, 153, 0.4);
-}
-
-.booster-qty-row {
-  margin-top: 6px;
-  margin-bottom: 2px;
-}
-
-.booster-qty-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(168, 85, 247, 0.8);
-  background: rgba(168, 85, 247, 0.1);
-  padding: 3px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(168, 85, 247, 0.2);
+  box-shadow: none;
 }
 
 /* ══════════════════════════════
@@ -1269,6 +1282,10 @@ onMounted(() => loadProfile());
     padding: 14px;
   }
 
+  .inventory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .booster-meta h3 {
     font-size: 14px;
   }
@@ -1277,7 +1294,7 @@ onMounted(() => loadProfile());
     font-size: 12px;
   }
 
-  .equip-btn, .unequip-btn {
+  .equip-btn {
     padding: 8px 14px;
     font-size: 12px;
   }

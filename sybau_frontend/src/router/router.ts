@@ -74,7 +74,7 @@ export const router = createRouter({
 })
 
 // Route Guard für Admin-Schutz
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   if (to.meta.requiresAdmin) {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (user.isAdmin) {

@@ -23,28 +23,38 @@ defineProps<{
 
 <style scoped>
 .stat-card {
-  background: rgba(15, 23, 42, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 16px;
-  padding: 24px;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
+  min-height: 132px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0.48));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 18px;
+  backdrop-filter: blur(14px);
+  transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.56));
+  box-shadow: 0 18px 36px rgba(2, 6, 23, 0.22);
 }
 
 .stat-card-icon {
-  width: 56px;
-  height: 56px;
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
   transition: transform 0.3s ease;
+}
+
+.stat-card-icon :deep(svg) {
+  width: 34px;
+  height: 34px;
 }
 
 .stat-card:hover .stat-card-icon {
@@ -116,16 +126,21 @@ defineProps<{
 }
 
 .stat-card-label {
-  font-size: 14px;
+  font-size: 13px;
   color: rgba(255, 255, 255, 0.5);
   margin: 0;
+  line-height: 1.2;
 }
 
 .stat-card-value {
-  font-size: 24px;
-  font-weight: 700;
+  width: fit-content;
+  max-width: 100%;
+  font-size: clamp(20px, 2.2vw, 24px);
+  font-weight: 800;
   color: white;
   margin: 0;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
 }
 
 .stat-card-trend {

@@ -273,6 +273,33 @@ export const useAdmin = () => {
     }
   };
 
+  const updateWorkout = async (id: number, data: CreateWorkoutDto) => {
+    isLoading.value = true;
+    error.value = '';
+    try {
+      const response = await API.put(`/workouts/${id}`, data);
+      return response.data;
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Fehler beim Aktualisieren des Workouts';
+      throw new Error(error.value);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const deleteWorkout = async (id: number) => {
+    isLoading.value = true;
+    error.value = '';
+    try {
+      await API.delete(`/workouts/${id}`);
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Fehler beim Löschen des Workouts';
+      throw new Error(error.value);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   // ===== USER STATISTICS =====
   const getUserStats = async (userId: number) => {
     isLoading.value = true;
@@ -312,6 +339,8 @@ export const useAdmin = () => {
     createExercise,
     // Workouts
     getAllWorkouts,
-    createWorkout
+    createWorkout,
+    updateWorkout,
+    deleteWorkout
   };
 };

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Coins, ShoppingBag } from 'lucide-vue-next';
+import coinIcon from '@/assets/SYBAU_Coin.png';
 import type { ShopDisplayItem } from '@/models/ShopDisplayItem';
 
 const props = defineProps<{
@@ -33,18 +33,17 @@ const canBuy = computed(() => canAfford.value && !limitReached.value);
     <p class="feature-description">{{ item.description }}</p>
 
     <div class="feature-price-row">
-      <div class="feature-price">
-        <Coins :size="18" />
-        <span>{{ item.price }}</span>
-      </div>
       <button
         class="feature-buy-btn"
         :class="{ disabled: !canBuy || busy }"
         :disabled="!canBuy || busy"
         @click="emit('buy', item)"
       >
-        <ShoppingBag :size="16" />
-        {{ busy ? 'Kaufe...' : limitReached ? 'Max erreicht' : canAfford ? 'Jetzt kaufen' : 'Zu teuer' }}
+        <span v-if="busy || limitReached">{{ busy ? '...' : 'Max' }}</span>
+        <span v-else class="button-price">
+          <img :src="coinIcon" alt="" class="coin-icon" />
+          {{ item.price }}
+        </span>
       </button>
     </div>
   </article>
@@ -126,31 +125,40 @@ const canBuy = computed(() => canAfford.value && !limitReached.value);
 .feature-price-row {
   margin-top: 24px;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: 12px;
 }
 
-.feature-price {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: #facc15;
-  font-weight: 800;
-  font-size: 1.1rem;
+.coin-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  flex: 0 0 auto;
 }
 
 .feature-buy-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   border: none;
   border-radius: 14px;
   padding: 12px 16px;
-  background: linear-gradient(90deg, #f59e0b, #f97316);
+  min-width: 96px;
+  background: linear-gradient(90deg, #15803d, #16a34a);
   color: white;
-  font-weight: 700;
-  box-shadow: 0 14px 28px rgba(249, 115, 22, 0.22);
+  font-weight: 900;
+  box-shadow: 0 14px 28px rgba(21, 128, 61, 0.24);
+}
+
+.button-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 900;
+  font-size: 1rem;
 }
 
 .feature-buy-btn:hover:not(:disabled) {
@@ -160,7 +168,8 @@ const canBuy = computed(() => canAfford.value && !limitReached.value);
 
 .feature-buy-btn.disabled,
 .feature-buy-btn:disabled {
-  background: rgba(71, 85, 105, 0.82);
+  background: rgba(22, 101, 52, 0.58);
+  color: rgba(255, 255, 255, 0.62);
   box-shadow: none;
 }
 

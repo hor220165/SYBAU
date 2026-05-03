@@ -17,9 +17,7 @@
         {{ difficulty }}
       </span>
       <span class="xp">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-        </svg>
+        <img src="../assets/XP_Pixel.png" alt="" />
         +{{ xp }} XP
       </span>
     </div>
@@ -161,8 +159,10 @@ defineEmits<{
   color: rgba(255, 255, 255, 0.7);
 }
 
-.xp svg {
-  color: #fbbf24;
+.xp img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
 }
 
 /* Button */

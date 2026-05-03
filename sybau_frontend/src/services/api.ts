@@ -7,6 +7,14 @@ const API = axios.create({
     }
 });
 
+export function resolveMediaUrl(path?: string | null) {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    const base = String(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${base}${normalizedPath}`;
+}
+
 // Attach token from localStorage (if exists)
 API.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
@@ -41,14 +49,16 @@ export const authService = {
 
 export const userService = {
     // Hole User aus localStorage statt API (falls bereits vorhanden)
-   getProfile: async () => {
+    getProfile: async () => {
     const { data } = await API.get('/users/profile');  // holt alles vom Backend
     // Wichtige Userinfos in LocalStorage speichern
     localStorage.setItem('user', JSON.stringify({ 
         id: data.id, 
         userName: data.userName, 
         email: data.email,
+        profileImageUrl: data.profileImageUrl,
         coins: data.coins,
+        totalXp: data.totalXp ?? data.TotalXp,
         isAdmin: data.isAdmin,
         avatar: { 
           bodyStage: data.avatar?.bodyStage,
@@ -58,6 +68,8 @@ export const userService = {
     }));
     return { data };
     },
+    getPublicProfile: (id: number) =>
+        API.get(`/users/${id}/profile`),
     getLeaderboard: () => API.get('/users/leaderboard'),
     updateProfile: (data: { UserName?: string}) => {
         // Aktualisiere in localStorage UND Backend
@@ -66,13 +78,22 @@ export const userService = {
         localStorage.setItem('user', JSON.stringify(updated));
        return API.put('/users/profile', data);
     },
+    uploadProfileImage: (file: File) => {
+        const formData = new FormData();
+        formData.append('image', file);
+        return API.post('/users/profile/image', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+    },
+    removeProfileImage: () =>
+        API.delete('/users/profile/image'),
     changePassword: (oldPassword: string, newPassword: string) =>
         API.post("/users/profile/change-password", {
         OldPassword: oldPassword,
         NewPassword: newPassword
 }),
     deleteAccount: () =>
-        API.delete('/users/account'),
+        API.delete('/users/profile'),
     updateBoostSlots: (slots: Array<number | null>) =>
         API.put('/users/boosts/slots', { slots }),
     getUserBoosters: () =>
@@ -115,7 +136,8 @@ export const adminService = {
     getUserStats: (id: number) => API.get(`/admin/users/${id}/stats`),
     updateUserRole: (id: number, data: any) => API.put(`/admin/users/${id}/role`, data),
     updateUser: (id: number, data: any) => API.put(`/admin/users/${id}`, data),
-    deleteUser: (id: number) => API.delete(`/admin/users/${id}`)
+    deleteUser: (id: number) => API.delete(`/admin/users/${id}`),
+    createExercise: (data: any) => API.post('/workouts/exercises', data)
 };
 
 export const workoutService = {
@@ -123,6 +145,8 @@ export const workoutService = {
     getWorkouts: (category?: string) => API.get('/workouts', { params: category ? { category } : {} }),
     getWorkoutById: (id: number) => API.get(`/workouts/${id}`),
     createWorkout: (data: any) => API.post('/workouts', data),
+    updateWorkout: (id: number, data: any) => API.put(`/workouts/${id}`, data),
+    deleteWorkout: (id: number) => API.delete(`/workouts/${id}`),
     createExercise: (data: any) => API.post('/workouts/exercises', data),
     logExercise: (exerciseId: number, reps: number) => API.post('/workouts/exercises/log', { exerciseId, reps })
 };
@@ -144,6 +168,7 @@ export const friendService = {
     // Freundschaften
     getFriends: () => API.get('/friends'),
     getPendingRequests: () => API.get('/friends/requests'),
+    getSentRequests: () => API.get('/friends/requests/sent'),
     sendFriendRequest: (userName: string) => API.post('/friends/request', { userName }),
     acceptRequest: (id: number) => API.post(`/friends/requests/${id}/accept`),
     declineRequest: (id: number) => API.post(`/friends/requests/${id}/decline`),

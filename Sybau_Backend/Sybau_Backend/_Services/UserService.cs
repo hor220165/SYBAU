@@ -32,27 +32,44 @@ public class UserService
     //Leaderboard Top10
     public async Task<IEnumerable<LeaderBoardDto>> GetLeaderboard()
     {
-        // Schritt 1: Daten aus der DB holen
         var users = await _context.Users
             .Include(u => u.Avatar)
             .Where(u => u.IsAdmin == false)
-            .OrderByDescending(u => u.Avatar.Level)
-            .Take(10)
-            .ToListAsync(); // Daten kommen jetzt in den Speicher
+            .ToListAsync();
 
-        // Schritt 2: Clientseitig den Rank berechnen
         var leaderboard = users
+            .Select(u => new
+            {
+                User = u,
+                TotalXp = CalculateTotalXp(u.Avatar.Level, u.Avatar.Experience)
+            })
+            .OrderByDescending(entry => entry.TotalXp)
+            .ThenByDescending(entry => entry.User.Avatar.Level)
+            .Take(10)
             .Select((u, index) => new LeaderBoardDto
             {
-                Id = u.Id,
+                Id = u.User.Id,
                 Rank = index + 1,
-                UserName = u.UserName,
-                Experience = u.Avatar.Experience,
-                Level = u.Avatar.Level
+                UserName = u.User.UserName,
+                ProfileImageUrl = u.User.ProfileImageUrl,
+                Experience = u.User.Avatar.Experience,
+                TotalXp = u.TotalXp,
+                Level = u.User.Avatar.Level
             })
             .ToList();
 
         return leaderboard;
+    }
+
+    private static int CalculateTotalXp(int level, int experience)
+    {
+        var total = 0;
+        for (var lvl = 1; lvl < level; lvl++)
+        {
+            total += 100 + lvl * lvl * 20;
+        }
+
+        return total + experience;
     }
 
     
@@ -308,6 +325,16 @@ public class UserService
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
     }
+
+    public async Task SetProfileImageUrlAsync(int userId, string? profileImageUrl)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+            throw new Exception("User nicht gefunden");
+
+        user.ProfileImageUrl = profileImageUrl;
+        await _context.SaveChangesAsync();
+    }
     
     //Für AdminUse
     public async Task<User> UpdateUserAsync(User user, UpdateUserDto dto)
@@ -340,22 +367,63 @@ public class UserService
 
     public async Task DeleteUserAsync(int userId)
     {
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
         var user = await _context.Users
             .Include(u => u.Avatar)
-            .Include(u => u.UserChallenges)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user == null) return;
 
-        // Optional: Alles löschen, was zum User gehört
-        if (user.Avatar != null)
-            _context.Avatars.Remove(user.Avatar);
+        var friendships = await _context.Friendships
+            .Where(f => f.RequesterId == userId || f.AddresseeId == userId)
+            .ToListAsync();
+        var friendChallenges = await _context.FriendChallenges
+            .Where(fc =>
+                fc.ChallengerId == userId ||
+                fc.OpponentId == userId ||
+                fc.WinnerId == userId)
+            .ToListAsync();
+        var activityLogs = await _context.ActivityLogs
+            .Where(a => a.UserId == userId)
+            .ToListAsync();
+        var exerciseLogs = await _context.UserExerciseLogs
+            .Where(l => l.UserId == userId)
+            .ToListAsync();
+        var userItems = await _context.UserItems
+            .Where(ui => EF.Property<int>(ui, "UserId") == userId)
+            .ToListAsync();
+        var userCoins = await _context.UserCoins
+            .Where(uc => uc.UserId == userId)
+            .ToListAsync();
+        var userChallenges = await _context.UserChallenges
+            .Where(uc => EF.Property<int>(uc, "UserId") == userId)
+            .ToListAsync();
+        var userQuests = await _context.UserQuests
+            .Where(uq => uq.UserId == userId)
+            .ToListAsync();
+        var userAchievements = await _context.UserAchievements
+            .Where(ua => ua.UserId == userId)
+            .ToListAsync();
 
-        if (user.UserChallenges != null)
-            _context.UserChallenges.RemoveRange(user.UserChallenges);
+        _context.FriendChallenges.RemoveRange(friendChallenges);
+        _context.Friendships.RemoveRange(friendships);
+        _context.ActivityLogs.RemoveRange(activityLogs);
+        _context.UserExerciseLogs.RemoveRange(exerciseLogs);
+        _context.UserItems.RemoveRange(userItems);
+        _context.UserCoins.RemoveRange(userCoins);
+        _context.UserChallenges.RemoveRange(userChallenges);
+        _context.UserQuests.RemoveRange(userQuests);
+        _context.UserAchievements.RemoveRange(userAchievements);
+
+        if (user.Avatar != null)
+        {
+            _context.Avatars.Remove(user.Avatar);
+        }
 
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
     }
 
     // Gekaufte Booster-Items eines Users abrufen (mit Quantity, aggregiert)

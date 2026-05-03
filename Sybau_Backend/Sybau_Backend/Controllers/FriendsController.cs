@@ -50,6 +50,17 @@ public class FriendsController : ControllerBase
         return Ok(requests);
     }
 
+    // GET /friends/requests/sent
+    [HttpGet("requests/sent")]
+    public async Task<IActionResult> GetSentRequests()
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var requests = await _friendService.GetSentRequestsAsync(userId.Value);
+        return Ok(requests);
+    }
+
     // POST /friends/request
     [HttpPost("request")]
     public async Task<IActionResult> SendFriendRequest([FromBody] SendFriendRequestDto dto)

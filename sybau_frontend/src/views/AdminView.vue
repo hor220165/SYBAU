@@ -7,7 +7,7 @@
     <!-- Admin Content -->
     <main class="admin-main">
       <div class="admin-header">
-        <h1>🔐 Admin Dashboard</h1>
+        <h1>Admin Dashboard</h1>
         <p class="subtitle">Verwalte Challenges, Shop-Items und Benutzer</p>
       </div>
 
@@ -17,31 +17,36 @@
           :class="['tab-btn', { active: activeTab === 'challenges' }]"
           @click="activeTab = 'challenges'"
         >
-          🎯 Challenges
+          <Target :size="18" />
+          Challenges
         </button>
         <button 
           :class="['tab-btn', { active: activeTab === 'shop' }]"
           @click="activeTab = 'shop'"
         >
-          🛍️ Shop
+          <ShoppingBag :size="18" />
+          Shop
         </button>
         <button 
           :class="['tab-btn', { active: activeTab === 'users' }]"
           @click="activeTab = 'users'"
         >
-          👥 Benutzer
+          <Users :size="18" />
+          Benutzer
         </button>
         <button 
           :class="['tab-btn', { active: activeTab === 'exercises' }]"
           @click="activeTab = 'exercises'"
         >
-          💪 Übungen
+          <Dumbbell :size="18" />
+          Übungen
         </button>
         <button 
           :class="['tab-btn', { active: activeTab === 'workouts' }]"
           @click="activeTab = 'workouts'"
         >
-          🏋️ Workouts
+          <Activity :size="18" />
+          Workouts
         </button>
       </div>
 
@@ -51,7 +56,10 @@
         <div v-if="activeTab === 'challenges'" class="tab-panel">
           <div class="section-header">
             <h2>Challenge Management</h2>
-            <button class="btn-primary" @click="openChallengeForm">+ Neue Challenge</button>
+            <button class="btn-primary" @click="openChallengeForm">
+              <Plus :size="18" />
+              Neue Challenge
+            </button>
           </div>
 
           <!-- Challenge Form -->
@@ -97,15 +105,19 @@
                 <div class="card-header">
                   <h4>{{ challenge.name }}</h4>
                   <div class="actions">
-                    <button class="btn-icon" @click="editChallenge(challenge)" title="Bearbeiten">✏️</button>
-                    <button class="btn-icon btn-danger" @click="deleteChallenge(challenge.id)" title="Löschen">🗑️</button>
+                    <button class="btn-icon" @click="editChallenge(challenge)" aria-label="Bearbeiten" data-tooltip="Bearbeiten">
+                      <Pencil :size="18" />
+                    </button>
+                    <button class="btn-icon btn-danger" @click="deleteChallenge(challenge.id)" aria-label="Löschen" data-tooltip="Löschen">
+                      <Trash2 :size="18" />
+                    </button>
                   </div>
                 </div>
                 <p class="description">{{ challenge.description }}</p>
                 <div class="card-stats">
-                  <span>⭐ {{ challenge.xpReward }} XP</span>
-                  <span>💰 {{ challenge.coinReward }} Coins</span>
-                  <span>📊 Level {{ challenge.requiredLevel }}+</span>
+                  <span><img src="../assets/XP_Pixel.png" alt="" class="pixel-icon" /> {{ challenge.xpReward }} XP</span>
+                  <span><img src="../assets/SYBAU_Coin.png" alt="" class="pixel-icon" /> {{ challenge.coinReward }} Coins</span>
+                  <span><Star :size="15" /> Level {{ challenge.requiredLevel }}+</span>
                 </div>
               </div>
             </div>
@@ -152,23 +164,27 @@
                   <button 
                     class="btn-icon"
                     @click="toggleAdminStatus(user)"
-                    :title="user.isAdmin ? 'Admin-Rechte entfernen' : 'Admin-Rechte geben'"
+                    :aria-label="user.isAdmin ? 'Admin-Rechte entfernen' : 'Admin-Rechte geben'"
+                    :data-tooltip="user.isAdmin ? 'Admin entfernen' : 'Admin geben'"
                   >
-                    {{ user.isAdmin ? '👑' : '⭐' }}
+                    <Crown v-if="user.isAdmin" :size="18" />
+                    <Star v-else :size="18" />
                   </button>
                   <button 
                     class="btn-icon"
                     @click="openEditUserForm(user)"
-                    title="Bearbeiten"
+                    aria-label="Bearbeiten"
+                    data-tooltip="Bearbeiten"
                   >
-                    ✏️
+                    <Pencil :size="18" />
                   </button>
                   <button 
                     class="btn-icon btn-danger"
                     @click="deleteUser(user.id)"
-                    title="Löschen"
+                    aria-label="Löschen"
+                    data-tooltip="Löschen"
                   >
-                    🗑️
+                    <Trash2 :size="18" />
                   </button>
                 </div>
               </div>
@@ -212,7 +228,10 @@
         <div v-if="activeTab === 'shop'" class="tab-panel">
           <div class="section-header">
             <h2>Shop Item Management</h2>
-            <button class="btn-primary" @click="openShopForm">+ Neues Item</button>
+            <button class="btn-primary" @click="openShopForm">
+              <Plus :size="18" />
+              Neues Item
+            </button>
           </div>
 
           <!-- Shop Item Form -->
@@ -269,16 +288,20 @@
                 <div class="card-header">
                   <h4>{{ item.name }}</h4>
                   <div class="actions">
-                    <button class="btn-icon" @click="editShopItem(item)" title="Bearbeiten">✏️</button>
-                    <button class="btn-icon btn-danger" @click="deleteShopItem(item.id)" title="Löschen">🗑️</button>
+                    <button class="btn-icon" @click="editShopItem(item)" aria-label="Bearbeiten" data-tooltip="Bearbeiten">
+                      <Pencil :size="18" />
+                    </button>
+                    <button class="btn-icon btn-danger" @click="deleteShopItem(item.id)" aria-label="Löschen" data-tooltip="Löschen">
+                      <Trash2 :size="18" />
+                    </button>
                   </div>
                 </div>
                 <p class="description">{{ item.description }}</p>
                 <div class="card-stats">
-                  <span>💰 {{ item.price }} Münzen</span>
-                  <span>📦 {{ item.type }}</span>
-                  <span v-if="item.xpBoostPercentage > 0">⚡ +{{ item.xpBoostPercentage }}% XP</span>
-                  <span v-if="item.coinBoostPercentage > 0">💎 +{{ item.coinBoostPercentage }}% Coins</span>
+                  <span><img src="../assets/SYBAU_Coin.png" alt="" class="pixel-icon" /> {{ item.price }} Münzen</span>
+                  <span><Package :size="15" /> {{ item.type }}</span>
+                  <span v-if="item.xpBoostPercentage > 0"><Zap :size="15" /> +{{ item.xpBoostPercentage }}% XP</span>
+                  <span v-if="item.coinBoostPercentage > 0"><img src="../assets/SYBAU_Coin.png" alt="" class="pixel-icon" /> +{{ item.coinBoostPercentage }}% Coins</span>
                 </div>
               </div>
             </div>
@@ -289,7 +312,10 @@
         <div v-if="activeTab === 'exercises'" class="tab-panel">
           <div class="section-header">
             <h2>Übungen Management</h2>
-            <button class="btn-primary" @click="openExerciseForm">+ Neue Übung</button>
+            <button class="btn-primary" @click="openExerciseForm">
+              <Plus :size="18" />
+              Neue Übung
+            </button>
           </div>
 
           <!-- Exercise Form -->
@@ -352,10 +378,10 @@
                 </div>
                 <p class="description">{{ ex.description }}</p>
                 <div class="card-stats">
-                  <span>📂 {{ categoryLabels[ex.category] ?? ex.category }}</span>
-                  <span>📊 {{ difficultyLabels[ex.difficulty] ?? ex.difficulty }}</span>
-                  <span>⭐ {{ ex.xpPerRep }} XP/Rep</span>
-                  <span>🔄 Limit: {{ ex.dailyLimit }}/Tag</span>
+                  <span><Layers :size="15" /> {{ categoryLabels[ex.category] ?? ex.category }}</span>
+                  <span><Activity :size="15" /> {{ difficultyLabels[ex.difficulty] ?? ex.difficulty }}</span>
+                  <span><img src="../assets/XP_Pixel.png" alt="" class="pixel-icon" /> {{ ex.xpPerRep }} XP/Rep</span>
+                  <span><RotateCcw :size="15" /> Limit: {{ ex.dailyLimit }}/Tag</span>
                 </div>
               </div>
             </div>
@@ -366,12 +392,15 @@
         <div v-if="activeTab === 'workouts'" class="tab-panel">
           <div class="section-header">
             <h2>Workout Management</h2>
-            <button class="btn-primary" @click="openWorkoutForm">+ Neues Workout</button>
+            <button class="btn-primary" @click="openWorkoutForm">
+              <Plus :size="18" />
+              Neues Workout
+            </button>
           </div>
 
           <!-- Workout Form -->
           <div v-if="showWorkoutForm" class="form-container">
-            <h3>Neues Workout erstellen</h3>
+            <h3>{{ editingWorkout ? 'Workout bearbeiten' : 'Neues Workout erstellen' }}</h3>
             <form @submit.prevent="saveWorkout">
               <div class="form-group">
                 <label>Name</label>
@@ -401,14 +430,19 @@
                     <option v-for="ex in exercises" :key="ex.id" :value="ex.id">{{ ex.name }}</option>
                   </select>
                   <input v-model.number="we.dailyLimit" type="number" min="1" placeholder="Limit" class="small-input">
-                  <button type="button" class="btn-icon btn-danger" @click="workoutForm.exercises.splice(index, 1)">🗑️</button>
+                  <button type="button" class="btn-icon btn-danger" @click="workoutForm.exercises.splice(index, 1)" aria-label="Entfernen" data-tooltip="Entfernen">
+                    <Trash2 :size="18" />
+                  </button>
                 </div>
-                <button type="button" class="btn-secondary" @click="workoutForm.exercises.push({ exerciseId: 0, dailyLimit: 50 })">+ Übung hinzufügen</button>
+                <button type="button" class="btn-secondary" @click="workoutForm.exercises.push({ exerciseId: 0, dailyLimit: 50 })">
+                  <Plus :size="18" />
+                  Übung hinzufügen
+                </button>
               </div>
 
               <div class="form-actions">
                 <button type="submit" class="btn-primary">Speichern</button>
-                <button type="button" class="btn-secondary" @click="showWorkoutForm = false">Abbrechen</button>
+                <button type="button" class="btn-secondary" @click="closeWorkoutForm">Abbrechen</button>
               </div>
             </form>
           </div>
@@ -419,14 +453,22 @@
               <p>Keine Workouts vorhanden</p>
             </div>
             <div v-else class="items-grid">
-              <div v-for="wo in workouts" :key="wo.id" class="card workout-card">
+              <div v-for="wo in workouts" :key="wo.id ?? wo.Id" class="card workout-card">
                 <div class="card-header">
-                  <h4>{{ wo.name }}</h4>
+                  <h4>{{ wo.name ?? wo.Name }}</h4>
+                  <div class="actions">
+                    <button class="btn-icon" @click="editWorkout(wo)" aria-label="Bearbeiten" data-tooltip="Bearbeiten">
+                      <Pencil :size="18" />
+                    </button>
+                    <button class="btn-icon btn-danger" @click="deleteWorkout(wo.id ?? wo.Id)" aria-label="Löschen" data-tooltip="Löschen">
+                      <Trash2 :size="18" />
+                    </button>
+                  </div>
                 </div>
-                <p class="description">{{ wo.description }}</p>
+                <p class="description">{{ wo.description ?? wo.Description }}</p>
                 <div class="card-stats">
-                  <span>📂 {{ categoryLabels[wo.category] ?? wo.category }}</span>
-                  <span>💪 {{ wo.exercises?.length ?? 0 }} Übungen</span>
+                  <span><Layers :size="15" /> {{ categoryLabels[wo.category ?? wo.Category] ?? wo.category ?? wo.Category }}</span>
+                  <span><Dumbbell :size="15" /> {{ (wo.exercises ?? wo.Exercises)?.length ?? 0 }} Übungen</span>
                 </div>
               </div>
             </div>
@@ -434,9 +476,11 @@
         </div>
 
       <!-- Status Messages -->
-      <div v-if="statusMessage" :class="['status-message', statusType]">
-        {{ statusMessage }}
-      </div>
+      <MessagePopup
+        :message="statusMessage"
+        :type="statusType"
+        @close="statusMessage = ''"
+      />
     </main>
      <!-- Footer -->
     <FooterComponent />
@@ -447,7 +491,25 @@
 import { ref, computed, onMounted } from 'vue';
 import Header from '@/components/Header.vue';
 import Navbar from '@/components/Navbar.vue';
+import FooterComponent from '@/components/FooterComponent.vue';
+import MessagePopup from '@/components/MessagePopup.vue';
 import { useAdmin } from '@/composables/useAdmin';
+import {
+  Activity,
+  Crown,
+  Dumbbell,
+  Layers,
+  Package,
+  Pencil,
+  Plus,
+  RotateCcw,
+  ShoppingBag,
+  Star,
+  Target,
+  Trash2,
+  Users,
+  Zap
+} from 'lucide-vue-next';
 import type { Challange } from '@/models/Challange';
 import type { item } from '@/models/Item';
 import type { user } from '@/models/User';
@@ -498,6 +560,7 @@ const exercises = ref<any[]>([]);
 
 // Workout Management
 const showWorkoutForm = ref(false);
+const editingWorkout = ref<any | null>(null);
 const workoutForm = ref({
   name: '',
   description: '',
@@ -541,7 +604,9 @@ const {
   getAllExercises,
   createExercise,
   getAllWorkouts,
-  createWorkout
+  createWorkout,
+  updateWorkout,
+  deleteWorkout: deleteWorkoutApi
 } = useAdmin();
 
 const showMessage = (message: string, type: 'success' | 'error' = 'success') => {
@@ -772,12 +837,40 @@ const loadExercises = async () => {
 
 // ===== WORKOUTS =====
 const openWorkoutForm = () => {
+  editingWorkout.value = null;
   workoutForm.value = {
     name: '',
     description: '',
     category: '',
     exercises: [{ exerciseId: 0, dailyLimit: 50 }]
   };
+  showWorkoutForm.value = true;
+};
+
+const closeWorkoutForm = () => {
+  showWorkoutForm.value = false;
+  editingWorkout.value = null;
+};
+
+const normalizeWorkoutExercises = (workout: any) => {
+  const list = workout.exercises ?? workout.Exercises ?? [];
+  return list.map((entry: any) => ({
+    exerciseId: Number(entry.exerciseId ?? entry.ExerciseId ?? entry.id ?? entry.Id ?? 0),
+    dailyLimit: Number(entry.dailyLimit ?? entry.DailyLimit ?? 50)
+  })).filter((entry: { exerciseId: number; dailyLimit: number }) => entry.exerciseId > 0);
+};
+
+const editWorkout = (workout: any) => {
+  editingWorkout.value = workout;
+  workoutForm.value = {
+    name: workout.name ?? workout.Name ?? '',
+    description: workout.description ?? workout.Description ?? '',
+    category: workout.category ?? workout.Category ?? '',
+    exercises: normalizeWorkoutExercises(workout)
+  };
+  if (workoutForm.value.exercises.length === 0) {
+    workoutForm.value.exercises = [{ exerciseId: 0, dailyLimit: 50 }];
+  }
   showWorkoutForm.value = true;
 };
 
@@ -788,15 +881,33 @@ const saveWorkout = async () => {
       showMessage('Bitte mindestens eine Übung hinzufügen', 'error');
       return;
     }
-    await createWorkout({
+    const payload = {
       ...workoutForm.value,
       exercises: validExercises
-    } as any);
-    showMessage('Workout erstellt! ✓');
-    showWorkoutForm.value = false;
+    } as any;
+    if (editingWorkout.value) {
+      await updateWorkout(editingWorkout.value.id ?? editingWorkout.value.Id, payload);
+      showMessage('Workout aktualisiert! ✓');
+    } else {
+      await createWorkout(payload);
+      showMessage('Workout erstellt! ✓');
+    }
+    closeWorkoutForm();
     await loadWorkouts();
   } catch (err: any) {
-    showMessage(err.message || 'Fehler beim Erstellen', 'error');
+    showMessage(err.message || 'Fehler beim Speichern', 'error');
+  }
+};
+
+const deleteWorkout = async (id: number) => {
+  if (confirm('Workout wirklich löschen?')) {
+    try {
+      await deleteWorkoutApi(id);
+      showMessage('Workout gelöscht! ✓');
+      await loadWorkouts();
+    } catch (err: any) {
+      showMessage(err.message || 'Fehler beim Löschen', 'error');
+    }
   }
 };
 
@@ -823,412 +934,510 @@ onMounted(async () => {
 .admin-container {
   width: 100%;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background:
+    radial-gradient(circle at top left, rgba(236, 72, 153, 0.14), transparent 34%),
+    radial-gradient(circle at top right, rgba(244, 63, 94, 0.12), transparent 32%),
+    #020617;
+  color: #f8fafc;
 }
 
 .admin-main {
-  padding: 40px 20px;
+  padding: 36px 28px 52px;
   max-width: 1400px;
   margin: 0 auto;
 }
 
 .admin-header {
-  text-align: center;
-  margin-bottom: 50px;
-  color: white;
+  margin-bottom: 26px;
 }
 
 .admin-header h1 {
-  font-size: 2.5em;
+  font-size: clamp(2rem, 4vw, 3.3rem);
   margin: 0;
-  font-weight: bold;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  font-weight: 900;
+  letter-spacing: 0;
 }
 
 .subtitle {
-  font-size: 1.1em;
-  opacity: 0.95;
-  margin: 10px 0 0 0;
+  font-size: 1rem;
+  color: #a8b3c7;
+  margin: 8px 0 0;
 }
 
-/* Tab Navigation */
 .tab-navigation {
   display: flex;
-  gap: 15px;
-  margin-bottom: 30px;
-  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
 .tab-btn {
-  padding: 12px 28px;
-  font-size: 1em;
-  border: none;
-  border-radius: 25px;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 18px;
+  font-size: 0.98rem;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #a8b3c7;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 500;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+  font-weight: 800;
 }
 
 .tab-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
+  border-color: rgba(236, 72, 153, 0.45);
+  color: #f8fafc;
+  transform: translateY(-1px);
 }
 
 .tab-btn.active {
-  background: white;
-  color: #667eea;
-  font-weight: 600;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.95), rgba(244, 63, 94, 0.9));
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  box-shadow: 0 16px 32px rgba(236, 72, 153, 0.24);
 }
 
-/* Tab Content */
 .tab-panel {
-  background: white;
-  border-radius: 15px;
-  padding: 30px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 28px;
+  padding: clamp(18px, 3vw, 30px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(18px);
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
-  gap: 20px;
+  gap: 14px;
 }
 
 .section-header h2 {
   margin: 0;
-  color: #333;
-  font-size: 1.8em;
+  color: #f8fafc;
+  font-size: clamp(1.35rem, 2vw, 1.85rem);
+  font-weight: 900;
 }
 
 .search-input {
-  padding: 10px 20px;
-  border: 2px solid #e0e0e0;
-  border-radius: 20px;
-  font-size: 1em;
-  width: 300px;
-  max-width: 100%;
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 14px;
+  font-size: 0.95rem;
+  width: min(360px, 100%);
+  background: rgba(2, 6, 23, 0.48);
+  color: #f8fafc;
 }
 
-/* Form Styles */
+.search-input::placeholder {
+  color: #64748b;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: rgba(236, 72, 153, 0.65);
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.14);
+}
+
 .form-container {
-  background: #f8f9fa;
-  border: 2px solid #e0e0e0;
-  border-radius: 10px;
-  padding: 25px;
-  margin-bottom: 30px;
+  background: rgba(2, 6, 23, 0.38);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 22px;
+  padding: clamp(18px, 2.4vw, 26px);
+  margin-bottom: 28px;
 }
 
-.form-container h3 {
-  margin-top: 0;
-  color: #333;
+.form-container h3,
+.modal-content h3 {
+  margin: 0 0 18px;
+  color: #f8fafc;
+  font-size: 1.2rem;
+  font-weight: 900;
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  font-weight: 600;
-  color: #333;
+  font-weight: 800;
+  color: #a8b3c7;
+  font-size: 0.88rem;
 }
 
 .form-group input,
 .form-group textarea,
-.form-group select {
+.form-group select,
+.workout-exercise-row select,
+.workout-exercise-row .small-input {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #d0d0d0;
-  border-radius: 8px;
-  font-size: 1em;
+  min-height: 46px;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 14px;
+  font-size: 0.95rem;
   font-family: inherit;
-  transition: border-color 0.3s ease;
+  color: #f8fafc;
+  background: rgba(15, 23, 42, 0.78);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #64748b;
 }
 
 .form-group input:focus,
 .form-group textarea:focus,
-.form-group select:focus {
+.form-group select:focus,
+.workout-exercise-row select:focus,
+.workout-exercise-row .small-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: rgba(236, 72, 153, 0.7);
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.14);
+  background: rgba(15, 23, 42, 0.96);
 }
 
 .form-group textarea {
   resize: vertical;
-  min-height: 100px;
+  min-height: 104px;
 }
 
 .form-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 18px;
 }
 
 .form-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 20px;
 }
 
 .btn-primary,
 .btn-secondary {
-  padding: 12px 28px;
-  border: none;
-  border-radius: 8px;
-  font-size: 1em;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 14px;
+  font-size: 0.96rem;
+  font-weight: 900;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
   color: white;
+  box-shadow: 0 14px 30px rgba(236, 72, 153, 0.24);
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 18px 36px rgba(236, 72, 153, 0.34);
 }
 
 .btn-secondary {
-  background: #e0e0e0;
-  color: #333;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(30, 41, 59, 0.86);
+  color: #fce7f3;
 }
 
 .btn-secondary:hover {
-  background: #d0d0d0;
+  border-color: rgba(236, 72, 153, 0.42);
+  transform: translateY(-1px);
 }
 
-/* Items Grid */
 .items-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  gap: 18px;
 }
 
 .card {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
+  background: rgba(30, 41, 59, 0.68);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 18px;
   padding: 20px;
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
 .card:hover {
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-  transform: translateY(-5px);
+  border-color: rgba(236, 72, 153, 0.38);
+  background: rgba(30, 41, 59, 0.86);
+  transform: translateY(-2px);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
-  align-items: start;
+  align-items: flex-start;
+  gap: 14px;
   margin-bottom: 12px;
 }
 
 .card-header h4 {
   margin: 0;
-  color: #333;
+  color: #f8fafc;
   flex: 1;
+  min-width: 0;
+  font-size: 1.08rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
 }
 
-.actions {
+.actions,
+.col-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  justify-content: flex-start;
 }
 
 .btn-icon {
-  background: none;
-  border: none;
-  font-size: 1.2em;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #fce7f3;
   cursor: pointer;
-  transition: transform 0.3s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.btn-icon::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 10px);
+  z-index: 25;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.96);
+  border: 1px solid rgba(236, 72, 153, 0.34);
+  color: #fce7f3;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.btn-icon:hover::after,
+.btn-icon:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.btn-icon svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  color: inherit;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  flex: 0 0 auto;
 }
 
 .btn-icon:hover {
-  transform: scale(1.2);
+  border-color: rgba(236, 72, 153, 0.45);
+  background: rgba(236, 72, 153, 0.16);
+  transform: translateY(-1px);
+}
+
+.btn-icon.btn-danger {
+  color: #fb7185;
 }
 
 .btn-icon.btn-danger:hover {
-  filter: brightness(1.2);
+  border-color: rgba(251, 113, 133, 0.45);
+  background: rgba(190, 18, 60, 0.18);
 }
 
 .description {
-  color: #666;
-  margin: 10px 0;
-  font-size: 0.95em;
+  color: #a8b3c7;
+  margin: 10px 0 16px;
+  font-size: 0.95rem;
+  line-height: 1.55;
 }
 
 .card-stats {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 8px;
-  font-size: 0.9em;
+  font-size: 0.86rem;
 }
 
 .card-stats span {
-  padding: 6px 12px;
-  background: #f0f0f0;
-  border-radius: 6px;
-  color: #555;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 999px;
+  color: #fce7f3;
+  font-weight: 800;
 }
 
-/* Users Table */
+.pixel-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  flex: 0 0 auto;
+}
+
 .users-container {
-  background: white;
-  color: #333;
+  color: #f8fafc;
 }
 
 .users-table {
   overflow-x: auto;
 }
 
-.table-header {
+.table-header,
+.table-row {
   display: grid;
-  grid-template-columns: 2fr 2fr 1fr 1fr 1fr 2fr;
-  gap: 15px;
-  padding: 15px;
-  background: #f0f0f0;
-  border-radius: 8px;
-  font-weight: 600;
-  color: #333;
+  grid-template-columns: minmax(150px, 1.3fr) minmax(220px, 1.7fr) minmax(70px, 0.6fr) minmax(90px, 0.7fr) minmax(110px, 0.8fr) minmax(150px, 1fr);
+  gap: 14px;
+  align-items: center;
+  min-width: 900px;
+}
+
+.table-header {
+  padding: 14px 16px;
+  background: rgba(2, 6, 23, 0.42);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 16px;
+  font-weight: 900;
+  color: #a8b3c7;
   margin-bottom: 10px;
+  font-size: 0.84rem;
 }
 
 .table-row {
-  display: grid;
-  grid-template-columns: 2fr 2fr 1fr 1fr 1fr 2fr;
-  gap: 15px;
-  padding: 15px;
-  border-bottom: 1px solid #e0e0e0;
-  align-items: center;
-  color: #333;
+  padding: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 16px;
+  background: rgba(30, 41, 59, 0.54);
+  color: #f8fafc;
+  margin-bottom: 10px;
 }
 
 .table-row:hover {
-  background: #f9f9f9;
+  border-color: rgba(236, 72, 153, 0.32);
 }
 
-.col-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-start;
+.col-email {
+  color: #a8b3c7;
+  overflow-wrap: anywhere;
 }
 
 .status-badge {
-  display: inline-block;
-  padding: 6px 12px;
-  border-radius: 20px;
-  background: #e0e0e0;
-  color: #333;
-  font-size: 0.85em;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(236, 72, 153, 0.14);
+  border: 1px solid rgba(236, 72, 153, 0.28);
+  color: #fbcfe8;
+  font-size: 0.82rem;
+  font-weight: 900;
 }
 
 .status-badge.status-admin {
-  background: #ffd700;
-  color: #333;
+  background: rgba(250, 204, 21, 0.14);
+  border-color: rgba(250, 204, 21, 0.32);
+  color: #fde68a;
 }
 
-/* Modal */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(2, 6, 23, 0.74);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 3200;
+  padding: 18px;
+  backdrop-filter: blur(12px);
 }
 
 .modal-content {
-  background: white;
-  border-radius: 15px;
-  padding: 30px;
-  max-width: 500px;
-  width: 90%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.modal-content h3 {
-  margin-top: 0;
-  color: #333;
+  background: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 22px;
+  padding: 26px;
+  max-width: 540px;
+  width: min(540px, 100%);
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.38);
 }
 
 .modal-actions {
   justify-content: flex-end;
 }
 
-/* Status Messages */
-.status-message {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  padding: 16px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  z-index: 2000;
-  animation: slideIn 0.3s ease-out;
-}
-
-.status-message.success {
-  background: #4caf50;
-  color: white;
-}
-
-.status-message.error {
-  background: #f44336;
-  color: white;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(400px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
 .empty-state {
   text-align: center;
-  padding: 60px 20px;
-  color: #999;
-  font-size: 1.1em;
+  padding: 52px 20px;
+  color: #94a3b8;
+  font-size: 1rem;
+  background: rgba(2, 6, 23, 0.3);
+  border: 1px dashed rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .admin-header h1 {
-    font-size: 1.8em;
+.workout-exercise-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 900px) {
+  .admin-main {
+    padding: 28px 20px 44px;
   }
 
   .tab-navigation {
-    flex-direction: column;
-  }
-
-  .tab-btn {
-    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .section-header {
-    flex-direction: column;
     align-items: stretch;
   }
 
+  .section-header .btn-primary,
   .search-input {
     width: 100%;
   }
@@ -1236,46 +1445,64 @@ onMounted(async () => {
   .items-grid {
     grid-template-columns: 1fr;
   }
+}
+
+@media (max-width: 640px) {
+  .admin-main {
+    padding: 22px 14px 38px;
+  }
+
+  .tab-navigation {
+    grid-template-columns: 1fr;
+  }
+
+  .tab-btn {
+    justify-content: flex-start;
+    padding: 0 16px;
+  }
 
   .form-row {
     grid-template-columns: 1fr;
   }
 
-  .table-header,
+  .form-actions,
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+  }
+
+  .table-header {
+    display: none;
+  }
+
   .table-row {
+    min-width: 0;
     grid-template-columns: 1fr;
     gap: 10px;
   }
 
-  .col-username::before { content: "Benutzername: "; font-weight: 600; }
-  .col-email::before { content: "Email: "; font-weight: 600; }
-  .col-level::before { content: "Level: "; font-weight: 600; }
-  .col-coins::before { content: "Münzen: "; font-weight: 600; }
-  .col-status::before { content: "Status: "; font-weight: 600; }
-  .col-actions::before { content: "Aktionen: "; font-weight: 600; }
-}
+  .col-username::before { content: "Benutzername: "; font-weight: 900; color: #94a3b8; }
+  .col-email::before { content: "Email: "; font-weight: 900; color: #94a3b8; }
+  .col-level::before { content: "Level: "; font-weight: 900; color: #94a3b8; }
+  .col-coins::before { content: "Münzen: "; font-weight: 900; color: #94a3b8; }
+  .col-status::before { content: "Status: "; font-weight: 900; color: #94a3b8; }
+  .col-actions::before { content: "Aktionen: "; font-weight: 900; color: #94a3b8; align-self: center; }
 
-.workout-exercise-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 10px;
-}
+  .workout-exercise-row {
+    grid-template-columns: 1fr;
+  }
 
-.workout-exercise-row select {
-  flex: 2;
-  padding: 10px;
-  border: 1px solid #d0d0d0;
-  border-radius: 8px;
-  font-size: 1em;
-}
+  .workout-exercise-row .btn-icon {
+    width: 44px;
+  }
 
-.workout-exercise-row .small-input {
-  flex: 1;
-  max-width: 100px;
-  padding: 10px;
-  border: 1px solid #d0d0d0;
-  border-radius: 8px;
-  font-size: 1em;
+  .workout-exercise-row .small-input {
+    max-width: none;
+  }
+
 }
 </style>

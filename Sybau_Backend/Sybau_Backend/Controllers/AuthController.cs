@@ -44,7 +44,8 @@ namespace Sybau_Backend.Controllers
                 {
                     user.Id,
                     user.UserName,
-                    user.Email
+                    user.Email,
+                    user.ProfileImageUrl
                 });
             }
             catch (Exception ex)

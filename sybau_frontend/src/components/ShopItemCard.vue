@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Coins, ShoppingBag, Sparkles, Package, Zap, Shirt } from 'lucide-vue-next';
+import { Sparkles, Package, Zap, Shirt } from 'lucide-vue-next';
+import coinIcon from '@/assets/SYBAU_Coin.png';
 import type { ShopDisplayItem } from '@/models/ShopDisplayItem';
 
 const props = defineProps<{
@@ -61,19 +62,17 @@ const categoryIcon = computed(() => {
       </ul>
 
       <div class="item-footer">
-        <div class="price-block">
-          <Coins :size="18" />
-          <span>{{ item.price }}</span>
-        </div>
-
         <button
           class="buy-button"
           :class="{ disabled: !canBuy || busy }"
           :disabled="!canBuy || busy"
           @click="emit('buy', item)"
         >
-          <ShoppingBag :size="16" />
-          {{ busy ? 'Kaufe...' : limitReached ? 'Max erreicht' : canAfford ? 'Kaufen' : 'Zu teuer' }}
+          <span v-if="busy || limitReached">{{ busy ? '...' : 'Max' }}</span>
+          <span v-else class="button-price">
+            <img :src="coinIcon" alt="" class="coin-icon" />
+            {{ item.price }}
+          </span>
         </button>
       </div>
     </div>
@@ -241,19 +240,18 @@ const categoryIcon = computed(() => {
   margin-top: auto;
   padding-top: 20px;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   align-items: center;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.price-block {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: #facc15;
-  font-size: 1.18rem;
-  font-weight: 800;
+.coin-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  flex: 0 0 auto;
 }
 
 .buy-button {
@@ -264,11 +262,19 @@ const categoryIcon = computed(() => {
   border: none;
   border-radius: 14px;
   padding: 12px 16px;
-  min-width: 132px;
-  background: linear-gradient(90deg, #a855f7, #ec4899);
+  min-width: 96px;
+  background: linear-gradient(90deg, #15803d, #16a34a);
   color: white;
-  font-weight: 700;
-  box-shadow: 0 16px 30px rgba(168, 85, 247, 0.22);
+  font-weight: 900;
+  box-shadow: 0 16px 30px rgba(21, 128, 61, 0.24);
+}
+
+.button-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 900;
+  font-size: 1rem;
 }
 
 .buy-button:hover:not(:disabled) {
@@ -278,7 +284,8 @@ const categoryIcon = computed(() => {
 
 .buy-button.disabled,
 .buy-button:disabled {
-  background: rgba(71, 85, 105, 0.82);
+  background: rgba(22, 101, 52, 0.58);
+  color: rgba(255, 255, 255, 0.62);
   box-shadow: none;
 }
 

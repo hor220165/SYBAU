@@ -12,8 +12,16 @@ const { user } = useAuth();
 const { formatCoins } = useCoins();
 const { connect } = useNotifications();
 
+function calculateTotalXp(level: number, experience: number) {
+  let total = 0;
+  for (let lvl = 1; lvl < level; lvl += 1) {
+    total += 100 + lvl * lvl * 20;
+  }
+  return total + experience;
+}
+
 onMounted(async () => {
-  if (!user.value?.avatar) {
+  if (!user.value?.avatar || user.value?.totalXp === undefined || user.value?.totalXp === null) {
     try {
       await userService.getProfile();
       user.value = JSON.parse(localStorage.getItem('user') || '{}');
@@ -25,7 +33,13 @@ onMounted(async () => {
 });
 
 const userLevel = computed(() => user.value?.avatar?.level ?? user.value?.Avatar?.level ?? 0);
-const userXP = computed(() => user.value?.avatar?.experience ?? user.value?.Avatar?.experience ?? 0);
+const userXP = computed(() => {
+  const storedTotalXp = user.value?.totalXp ?? user.value?.TotalXp;
+  if (storedTotalXp !== undefined && storedTotalXp !== null) return Number(storedTotalXp);
+
+  const avatar = user.value?.avatar ?? user.value?.Avatar ?? {};
+  return calculateTotalXp(Number(avatar.level ?? avatar.Level ?? 0), Number(avatar.experience ?? avatar.Experience ?? 0));
+});
 const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 </script>
 
@@ -33,7 +47,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   <!-- Header -->
   <header class="header">
     <div class="logo-section">
-      <img src="../assets/Sybau_Logo_White.png" alt="Sybau_Logo" class="logo-img" />
+      <img src="../assets/Sybau_logo_short.png" alt="Sybau_Logo" class="logo-img" />
     </div>
 
     <!-- Stats header -->
@@ -52,7 +66,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
         <img src="../assets/XP_Pixel.png" alt="XP" class="stat-icon xp-icon">
         <div class="stat-info">
           <span class="stat-label">XP</span>
-          <span class="stat-value">{{ userXP }}</span>
+          <span class="stat-value">{{ formatCoins(userXP) }}</span>
         </div>
       </div>
 
@@ -60,7 +74,10 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 
       <div class="stat-item coins">
         <img src="../assets/SYBAU_Coin.png" alt="Coins" class="stat-icon coin-icon">
-        <span class="stat-value">{{ formatCoins(userCoins) }}</span>
+        <div class="stat-info">
+          <span class="stat-label">Coins</span>
+          <span class="stat-value">{{ formatCoins(userCoins) }}</span>
+        </div>
       </div>
 
       <NotificationBell />
@@ -93,7 +110,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 }
 
 .logo-img {
-  height: 36px;
+  height: 50px;
   width: auto;
   object-fit: contain;
 }
@@ -157,18 +174,15 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 
 /* Stat Colors */
 .stat-item.level .stat-value {
-  color: #fbbf24;
-  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+  color: white;
 }
 
 .stat-item.xp .stat-value {
-  color: #60a5fa;
-  text-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+  color: white;
 }
 
 .stat-item.coins .stat-value {
-  color: #fbbf24;
-  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+  color: white;
 }
 
 /* Divider */
