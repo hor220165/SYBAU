@@ -41,7 +41,6 @@
       <button
         v-if="isCompleted && !isRewardClaimed"
         class="claim-btn"
-        :class="`claim-${rarity.toLowerCase()}`"
         @click.stop="$emit('claim')"
       >
         Einfordern
@@ -269,38 +268,23 @@ const progressPercent = computed(() => {
 /* Claim Button */
 .claim-btn {
   padding: 8px 20px;
-  border: none;
+  border: 1px solid rgba(74, 222, 128, 0.42);
   border-radius: 12px;
+  background:
+    linear-gradient(135deg, rgba(34, 197, 94, 0.24), rgba(20, 83, 45, 0.9)),
+    rgba(6, 78, 59, 0.74);
+  color: white;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 900;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 10px 22px rgba(22, 163, 74, 0.18), inset 0 0 18px rgba(34, 197, 94, 0.08);
   animation: claimPulse 2s ease-in-out infinite;
-}
-
-.claim-common {
-  background: linear-gradient(135deg, #9ca3af, #6b7280);
-  color: white;
-}
-
-.claim-rare {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: white;
-}
-
-.claim-epic {
-  background: linear-gradient(135deg, #a855f7, #7c3aed);
-  color: white;
-}
-
-.claim-legendary {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: #1e293b;
 }
 
 .claim-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 12px 26px rgba(22, 163, 74, 0.24), inset 0 0 18px rgba(34, 197, 94, 0.1);
 }
 
 @keyframes claimPulse {

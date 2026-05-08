@@ -21,6 +21,9 @@ API.interceptors.request.use((config) => {
     if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
     }
+    if (config.data instanceof FormData && config.headers) {
+        delete config.headers['Content-Type'];
+    }
     return config;
 });
 
@@ -108,9 +111,12 @@ export const userService = {
 
 export const itemService = {
     getShopItems: () => API.get('/shop/items'),
+    getChests: () => API.get('/shop/chests'),
     getUserItems: () => API.get('/users/items'),
     getBoosts: () => API.get('/boosts'),
-    buyItem: (itemId: number) => API.post(`/shop/buy-item/${itemId}`)
+    buyItem: (itemId: number) => API.post(`/shop/buy-item/${itemId}`),
+    sellItem: (itemId: number) => API.post(`/shop/sell-item/${itemId}`),
+    openChest: (chestId: number) => API.post(`/shop/chests/${chestId}/open`)
 };
 
 export const boostService = {
@@ -127,9 +133,17 @@ export const adminService = {
     
     // Items (Shop)
     getItems: () => API.get('/admin/items'),
-    createShopItem: (data: any) => API.post('/admin/items', data),
-    updateShopItem: (id: number, data: any) => API.put(`/admin/items/${id}`, data),
-    deleteShopItem: (id: number) => API.delete(`/admin/items/${id}`),
+    createShopItem: (data: any) => API.post('/shop/items/add', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+    updateShopItem: (id: number, data: any) => API.post(`/shop/items/${id}/update`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+    deleteShopItem: (id: number) => API.delete(`/shop/items/${id}`),
+    createChest: (data: any) => API.post('/shop/chests/add', data),
+    updateChest: (id: number, data: any) => API.post(`/shop/chests/${id}/update`, data),
+    deleteChest: (id: number) => API.delete(`/shop/chests/${id}`),
+    getChests: () => API.get('/shop/chests'),
     
     // Users
     getAllUsers: () => API.get('/admin/users'),
@@ -137,7 +151,10 @@ export const adminService = {
     updateUserRole: (id: number, data: any) => API.put(`/admin/users/${id}/role`, data),
     updateUser: (id: number, data: any) => API.put(`/admin/users/${id}`, data),
     deleteUser: (id: number) => API.delete(`/admin/users/${id}`),
-    createExercise: (data: any) => API.post('/workouts/exercises', data)
+    createExercise: (data: any) => API.post('/workouts/exercises', data),
+    updateExercise: (id: number, data: any) => API.put(`/workouts/exercises/${id}`, data),
+    updateExerciseUnit: (id: number, unit: string) => API.put(`/workouts/exercises/${id}/unit`, { unit }),
+    deleteExercise: (id: number) => API.delete(`/workouts/exercises/${id}`)
 };
 
 export const workoutService = {
@@ -148,6 +165,9 @@ export const workoutService = {
     updateWorkout: (id: number, data: any) => API.put(`/workouts/${id}`, data),
     deleteWorkout: (id: number) => API.delete(`/workouts/${id}`),
     createExercise: (data: any) => API.post('/workouts/exercises', data),
+    updateExercise: (id: number, data: any) => API.put(`/workouts/exercises/${id}`, data),
+    updateExerciseUnit: (id: number, unit: string) => API.put(`/workouts/exercises/${id}/unit`, { unit }),
+    deleteExercise: (id: number) => API.delete(`/workouts/exercises/${id}`),
     logExercise: (exerciseId: number, reps: number) => API.post('/workouts/exercises/log', { exerciseId, reps })
 };
 

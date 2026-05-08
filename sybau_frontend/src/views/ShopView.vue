@@ -5,22 +5,29 @@ import Navbar from '@/components/Navbar.vue';
 import Header from '@/components/Header.vue';
 import ShopItemCard from '@/components/ShopItemCard.vue';
 import ShopFeatureCard from '@/components/ShopFeatureCard.vue';
+import ShopChestCard from '@/components/ShopChestCard.vue';
 import coinIcon from '@/assets/SYBAU_Coin.png';
 import { ItemType } from '@/models/ItemType';
 import type { item } from '@/models/Item';
 import type { ShopDisplayItem } from '@/models/ShopDisplayItem';
-import { itemService, userService } from '@/services/api';
+import type { Chest } from '@/models/Chest';
+import { itemService, resolveMediaUrl, userService } from '@/services/api';
 import FooterComponent from '@/components/FooterComponent.vue';
 import { useAuth } from '@/composables/useAuth';
 import MessagePopup from '@/components/MessagePopup.vue';
 
 const items = ref<ShopDisplayItem[]>([]);
+const chests = ref<Chest[]>([]);
 const ownedItems = ref<Record<number, number>>({});
 const currentCoins = ref(0);
 const loading = ref(false);
 const error = ref('');
 const successMessage = ref('');
 const buyingItemId = ref<number | null>(null);
+const openingChestId = ref<number | null>(null);
+const chestOpening = ref<Chest | null>(null);
+const openedReward = ref<any | null>(null);
+const pendingPurchase = ref<{ type: 'item'; item: ShopDisplayItem } | { type: 'chest'; chest: Chest } | null>(null);
 const activeFilter = ref<'all' | 'chest' | 'boost' | 'item'>('all');
 const { refreshUser } = useAuth();
 
@@ -38,6 +45,24 @@ const normalizeTypeValue = (value: unknown) => {
   return 'Cosmetic';
 };
 
+const getXpBoostValue = (shopItem: item) =>
+  Number(
+    shopItem.xpBoostPercentage ??
+    (shopItem as any).xpBoostPercent ??
+    (shopItem as any).XpBoostPercentage ??
+    (shopItem as any).XpBoostPercent ??
+    0,
+  );
+
+const getCoinBoostValue = (shopItem: item) =>
+  Number(
+    shopItem.coinBoostPercentage ??
+    (shopItem as any).coinBoostPercent ??
+    (shopItem as any).CoinBoostPercentage ??
+    (shopItem as any).CoinBoostPercent ??
+    0,
+  );
+
 const getCategory = (shopItem: item): ShopDisplayItem['category'] => {
   const searchBase = `${shopItem.name} ${shopItem.description}`.toLowerCase();
 
@@ -47,7 +72,8 @@ const getCategory = (shopItem: item): ShopDisplayItem['category'] => {
 
   if (
     normalizeTypeValue(shopItem.type) === 'Booster' ||
-    Number(shopItem.xpBoostPercentage) > 0 ||
+    getXpBoostValue(shopItem) > 0 ||
+    getCoinBoostValue(shopItem) > 0 ||
     /boost|xp|potion|luck/.test(searchBase)
   ) {
     return 'boost';
@@ -58,17 +84,22 @@ const getCategory = (shopItem: item): ShopDisplayItem['category'] => {
 
 const getRarity = (shopItem: item): ShopDisplayItem['rarity'] => {
   // Rarity aus Backend nutzen wenn vorhanden
-  if (shopItem.rarity) return shopItem.rarity;
+  if (shopItem.rarity) {
+    const rarity = String(shopItem.rarity).toLowerCase();
+    if (rarity === 'rare' || rarity === 'epic' || rarity === 'legendary') return rarity;
+    return 'common';
+  }
 
   const searchBase = `${shopItem.name} ${shopItem.description}`.toLowerCase();
+  const xpBoost = getXpBoostValue(shopItem);
 
-  if (/legend|legendary|mythic/.test(searchBase) || shopItem.price >= 1200 || shopItem.xpBoostPercentage >= 100) {
+  if (/legend|legendary|mythic/.test(searchBase) || shopItem.price >= 1200 || xpBoost >= 100) {
     return 'legendary';
   }
-  if (/epic|gold|premium/.test(searchBase) || shopItem.price >= 700 || shopItem.xpBoostPercentage >= 60) {
+  if (/epic|gold|premium/.test(searchBase) || shopItem.price >= 700 || xpBoost >= 60) {
     return 'epic';
   }
-  if (/rare|silver/.test(searchBase) || shopItem.price >= 350 || shopItem.xpBoostPercentage >= 25) {
+  if (/rare|silver/.test(searchBase) || shopItem.price >= 350 || xpBoost >= 25) {
     return 'rare';
   }
   return 'common';
@@ -94,9 +125,10 @@ const getIcon = (category: ShopDisplayItem['category'], rarity: ShopDisplayItem[
 
 const buildHighlights = (shopItem: item, category: ShopDisplayItem['category']) => {
   const highlights: string[] = [];
+  const xpBoost = getXpBoostValue(shopItem);
 
-  if (shopItem.xpBoostPercentage > 0) {
-    highlights.push(`+${shopItem.xpBoostPercentage}% XP Boost`);
+  if (xpBoost > 0) {
+    highlights.push(`+${xpBoost}% XP Boost`);
   }
 
   if (category === 'chest') {
@@ -120,6 +152,8 @@ const buildHighlights = (shopItem: item, category: ShopDisplayItem['category']) 
 const toDisplayItem = (shopItem: item): ShopDisplayItem => {
   const category = getCategory(shopItem);
   const rarity = getRarity(shopItem);
+  const xpBoostPercentage = getXpBoostValue(shopItem);
+  const coinBoostPercentage = getCoinBoostValue(shopItem);
 
   return {
     id: shopItem.id,
@@ -127,11 +161,13 @@ const toDisplayItem = (shopItem: item): ShopDisplayItem => {
     description: shopItem.description,
     price: Number(shopItem.price ?? 0),
     type: shopItem.type,
-    xpBoostPercentage: Number(shopItem.xpBoostPercentage ?? 0),
+    xpBoostPercentage,
+    coinBoostPercentage,
     category,
     categoryLabel: category === 'chest' ? 'Chest' : category === 'boost' ? 'Boost' : 'Item',
     rarity,
     icon: getIcon(category, rarity),
+    imageUrl: resolveMediaUrl(shopItem.imageUrl ?? (shopItem as any).ImageUrl ?? ''),
     highlights: buildHighlights(shopItem, category),
     ownedQuantity: ownedItems.value[shopItem.id] ?? 0,
     maxQuantity: (shopItem as any).maxQuantity ?? 5,
@@ -157,7 +193,13 @@ const featuredItems = computed(() =>
 
 const filteredItems = computed(() => {
   if (activeFilter.value === 'all') return items.value;
+  if (activeFilter.value === 'chest') return [];
   return items.value.filter((shopItem) => shopItem.category === activeFilter.value);
+});
+
+const filteredChests = computed(() => {
+  if (activeFilter.value === 'all' || activeFilter.value === 'chest') return chests.value;
+  return [];
 });
 
 const activeFilterLabel = computed(() => {
@@ -198,7 +240,68 @@ const loadShopItems = async () => {
   }
 };
 
+const toDisplayChest = (raw: any): Chest => ({
+  id: Number(raw.id ?? raw.Id ?? 0),
+  name: String(raw.name ?? raw.Name ?? ''),
+  price: Number(raw.price ?? raw.Price ?? 0),
+  imageUrl: resolveMediaUrl(raw.imageUrl ?? raw.ImageUrl ?? ''),
+  commonChance: Number(raw.commonChance ?? raw.CommonChance ?? 0),
+  rareChance: Number(raw.rareChance ?? raw.RareChance ?? 0),
+  epicChance: Number(raw.epicChance ?? raw.EpicChance ?? 0),
+  legendaryChance: Number(raw.legendaryChance ?? raw.LegendaryChance ?? 0),
+  items: (raw.items ?? raw.Items ?? []).map((item: any) => ({
+    ...item,
+    id: item.id ?? item.Id,
+    name: item.name ?? item.Name,
+    imageUrl: item.imageUrl ?? item.ImageUrl,
+  })),
+});
+
+const loadChests = async () => {
+  try {
+    const response = await itemService.getChests();
+    chests.value = (Array.isArray(response.data) ? response.data : []).map(toDisplayChest);
+  } catch (chestError) {
+    console.error('Fehler beim Laden der Chests:', chestError);
+  }
+};
+
+const closeChestOpening = () => {
+  if (!openedReward.value && openingChestId.value) return;
+  chestOpening.value = null;
+  openedReward.value = null;
+};
+
+const openChest = async (chest: Chest) => {
+  pendingPurchase.value = null;
+  openingChestId.value = chest.id;
+  chestOpening.value = chest;
+  openedReward.value = null;
+
+  try {
+    const response = await itemService.openChest(chest.id);
+    openedReward.value = response.data?.item ?? response.data?.Item ?? null;
+    const remainingCoins = response.data?.remainingCoins ?? response.data?.RemainingCoins;
+    if (remainingCoins !== undefined) currentCoins.value = Number(remainingCoins);
+    await loadProfile();
+    await loadOwnedItems();
+    await loadShopItems();
+  } catch (openError: any) {
+    chestOpening.value = null;
+    popupType.value = 'error';
+    popupMessage.value = openError.response?.data?.message || openError.response?.data || 'Chest konnte nicht geöffnet werden';
+  } finally {
+    openingChestId.value = null;
+  }
+};
+
+const requestOpenChest = (chest: Chest) => {
+  if (openingChestId.value !== null) return;
+  pendingPurchase.value = { type: 'chest', chest };
+};
+
 const buyItem = async (shopItem: ShopDisplayItem) => {
+  pendingPurchase.value = null;
   buyingItemId.value = shopItem.id;
   error.value = '';
   successMessage.value = '';
@@ -228,6 +331,40 @@ const buyItem = async (shopItem: ShopDisplayItem) => {
 
 };
 
+const requestBuyItem = (shopItem: ShopDisplayItem) => {
+  if (buyingItemId.value !== null) return;
+  pendingPurchase.value = { type: 'item', item: shopItem };
+};
+
+const confirmPurchase = () => {
+  if (!pendingPurchase.value) return;
+  if (pendingPurchase.value.type === 'item') {
+    buyItem(pendingPurchase.value.item);
+  } else {
+    openChest(pendingPurchase.value.chest);
+  }
+};
+
+const pendingPurchaseName = computed(() => {
+  if (!pendingPurchase.value) return '';
+  return pendingPurchase.value.type === 'item'
+    ? pendingPurchase.value.item.name
+    : pendingPurchase.value.chest.name;
+});
+
+const pendingPurchasePrice = computed(() => {
+  if (!pendingPurchase.value) return 0;
+  return pendingPurchase.value.type === 'item'
+    ? pendingPurchase.value.item.price
+    : pendingPurchase.value.chest.price;
+});
+
+const rewardRarity = computed(() => {
+  const raw = String(openedReward.value?.rarity ?? openedReward.value?.Rarity ?? 'common').toLowerCase();
+  if (raw === 'rare' || raw === 'epic' || raw === 'legendary') return raw;
+  return 'common';
+});
+
 const loadOwnedItems = async () => {
   try {
     const res = await userService.getUserBoosters();
@@ -246,7 +383,7 @@ const loadPageData = async () => {
   syncCoinsFromStorage();
   await loadProfile();
   await loadOwnedItems();
-  await loadShopItems();
+  await Promise.all([loadShopItems(), loadChests()]);
 };
 
 onMounted(loadPageData);
@@ -295,13 +432,12 @@ onMounted(loadPageData);
 
           <div class="feature-grid">
             <ShopFeatureCard
-              v-for="(shopItem, index) in featuredItems"
+              v-for="shopItem in featuredItems"
               :key="`featured-${shopItem.id}`"
               :item="shopItem"
               :current-coins="currentCoins"
               :busy="buyingItemId === shopItem.id"
-              :badge-text="index === 0 ? 'Top Pick' : index === 1 ? 'Beliebt' : 'Neu im Fokus'"
-              @buy="buyItem"
+              @buy="requestBuyItem"
             />
           </div>
         </section>
@@ -351,6 +487,17 @@ onMounted(loadPageData);
             </button>
           </div>
 
+          <div v-if="filteredChests.length" class="items-grid chest-grid">
+            <ShopChestCard
+              v-for="chest in filteredChests"
+              :key="`chest-${chest.id}`"
+              :chest="chest"
+              :current-coins="currentCoins"
+              :busy="openingChestId === chest.id"
+              @open="requestOpenChest"
+            />
+          </div>
+
           <div v-if="filteredItems.length" class="items-grid">
             <ShopItemCard
               v-for="shopItem in filteredItems"
@@ -358,10 +505,10 @@ onMounted(loadPageData);
               :item="shopItem"
               :current-coins="currentCoins"
               :busy="buyingItemId === shopItem.id"
-              @buy="buyItem"
+              @buy="requestBuyItem"
             />
           </div>
-          <div v-else class="empty-box">
+          <div v-if="!filteredItems.length && !filteredChests.length" class="empty-box">
             <Sparkles :size="18" />
             Für diesen Filter gibt es aktuell keine Items.
           </div>
@@ -402,6 +549,52 @@ onMounted(loadPageData);
     </main>
      <!-- Footer -->
     <FooterComponent />
+
+    <Teleport to="body">
+      <Transition name="confirm-pop">
+        <div v-if="pendingPurchase" class="confirm-overlay" @click.self="pendingPurchase = null">
+          <div class="confirm-dialog">
+            <h3>Sind Sie sicher?</h3>
+            <p>{{ pendingPurchaseName }} kaufen</p>
+            <div class="confirm-price">
+              <span>Kosten</span>
+              <strong>
+                <img :src="coinIcon" alt="" />
+                {{ pendingPurchasePrice }}
+              </strong>
+            </div>
+            <div class="confirm-actions">
+              <button class="confirm-cancel" type="button" @click="pendingPurchase = null">Abbrechen</button>
+              <button class="confirm-buy" type="button" @click="confirmPurchase">Kaufen</button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+
+      <Transition name="chest-open">
+        <div v-if="chestOpening" class="chest-open-overlay" @click.self="closeChestOpening">
+          <div class="chest-open-stage" :class="{ revealed: openedReward }">
+            <button v-if="openedReward" class="chest-open-close" type="button" @click="closeChestOpening">&times;</button>
+            <img v-if="!openedReward" :src="chestOpening.imageUrl" alt="" class="opening-chest-image" />
+            <div v-if="!openedReward" class="opening-text">Öffnet...</div>
+            <div v-else class="reward-card">
+              <div class="reward-burst"></div>
+              <div class="reward-image">
+                <img
+                  v-if="resolveMediaUrl(openedReward.imageUrl ?? openedReward.ImageUrl ?? '')"
+                  :src="resolveMediaUrl(openedReward.imageUrl ?? openedReward.ImageUrl ?? '')"
+                  alt=""
+                />
+                <span v-else>✨</span>
+              </div>
+              <span class="reward-kicker">Du hast erhalten</span>
+              <h3>{{ openedReward.name ?? openedReward.Name }}</h3>
+              <p :class="`reward-rarity-${rewardRarity}`">{{ rewardRarity }}</p>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -545,6 +738,316 @@ onMounted(loadPageData);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
+}
+
+.chest-grid {
+  margin-bottom: 18px;
+}
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.68);
+  backdrop-filter: blur(8px);
+}
+
+.confirm-dialog {
+  width: min(360px, 92vw);
+  padding: 22px;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(236, 72, 153, 0.28);
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.42);
+}
+
+.confirm-dialog h3 {
+  margin: 0;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.confirm-dialog p {
+  margin: 8px 0 16px;
+  color: rgba(255, 255, 255, 0.68);
+  font-weight: 800;
+}
+
+.confirm-price {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.confirm-price span {
+  color: rgba(255, 255, 255, 0.58);
+  font-weight: 800;
+}
+
+.confirm-price strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #f8fafc;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.confirm-price img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.confirm-actions button {
+  min-height: 44px;
+  border-radius: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.confirm-cancel {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(30, 41, 59, 0.76);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.confirm-buy {
+  border: 1px solid rgba(74, 222, 128, 0.42);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.24), rgba(20, 83, 45, 0.86));
+  color: white;
+}
+
+.confirm-pop-enter-active,
+.confirm-pop-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.confirm-pop-enter-active .confirm-dialog,
+.confirm-pop-leave-active .confirm-dialog {
+  transition: transform 0.18s ease;
+}
+
+.confirm-pop-enter-from,
+.confirm-pop-leave-to {
+  opacity: 0;
+}
+
+.confirm-pop-enter-from .confirm-dialog,
+.confirm-pop-leave-to .confirm-dialog {
+  transform: translateY(12px) scale(0.96);
+}
+
+.chest-open-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(236, 72, 153, 0.16), transparent 34%),
+    rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.chest-open-stage {
+  position: relative;
+  width: min(520px, 92vw);
+  min-height: min(520px, 78vh);
+  display: grid;
+  place-items: center;
+  background: transparent;
+}
+
+.chest-open-close {
+  position: fixed;
+  top: clamp(18px, 4vw, 34px);
+  right: clamp(18px, 4vw, 38px);
+  z-index: 3;
+  border: 0;
+  background: transparent;
+  color: white;
+  font-size: 44px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.92;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.chest-open-close:hover {
+  transform: scale(1.08);
+  opacity: 1;
+}
+
+.opening-chest-image {
+  width: clamp(210px, 28vw, 340px);
+  height: clamp(210px, 28vw, 340px);
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 28px 42px rgba(0, 0, 0, 0.54));
+  animation: chestOpenPulse 1.05s ease-in-out infinite;
+}
+
+.opening-text {
+  position: absolute;
+  bottom: 44px;
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reward-card {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+  animation: rewardReveal 0.62s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.reward-burst {
+  position: absolute;
+  top: -50px;
+  width: 260px;
+  height: 260px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(250, 204, 21, 0.2), rgba(236, 72, 153, 0.14) 34%, transparent 68%);
+  filter: blur(2px);
+  animation: rewardGlow 1.4s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.reward-image {
+  position: relative;
+  z-index: 1;
+  width: clamp(170px, 22vw, 250px);
+  height: clamp(170px, 22vw, 250px);
+  display: grid;
+  place-items: center;
+}
+
+.reward-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 24px 34px rgba(0, 0, 0, 0.55));
+  animation: rewardFloat 1.9s ease-in-out infinite;
+}
+
+.reward-image span {
+  font-size: clamp(5rem, 12vw, 8rem);
+  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.45));
+}
+
+.reward-kicker {
+  position: relative;
+  z-index: 1;
+  color: #f9a8d4;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.86rem;
+}
+
+.reward-card h3 {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: white;
+  font-size: clamp(2.6rem, 7vw, 5rem);
+  font-weight: 900;
+  line-height: 0.95;
+  text-shadow: 0 18px 34px rgba(0, 0, 0, 0.4);
+}
+
+.reward-card p {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: var(--reward-rarity-color, #cbd5e1);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--reward-rarity-color, #cbd5e1) 45%, transparent);
+}
+
+.reward-rarity-common {
+  --reward-rarity-color: #cbd5e1;
+}
+
+.reward-rarity-rare {
+  --reward-rarity-color: #60a5fa;
+}
+
+.reward-rarity-epic {
+  --reward-rarity-color: #c084fc;
+}
+
+.reward-rarity-legendary {
+  --reward-rarity-color: #fbbf24;
+}
+
+.chest-open-enter-active,
+.chest-open-leave-active {
+  transition: opacity 0.22s ease;
+}
+
+.chest-open-enter-from,
+.chest-open-leave-to {
+  opacity: 0;
+}
+
+@keyframes chestOpenPulse {
+  0%, 100% {
+    transform: translateY(0) scale(1) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.12) rotate(1deg);
+  }
+}
+
+@keyframes rewardReveal {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.72);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes rewardFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.03); }
+}
+
+@keyframes rewardGlow {
+  from { transform: scale(0.92); opacity: 0.72; }
+  to { transform: scale(1.08); opacity: 1; }
 }
 
 .earn-card {

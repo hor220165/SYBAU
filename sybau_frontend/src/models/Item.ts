@@ -10,6 +10,6 @@ export interface item{
     coinBoostPercentage: number,
     rarity?: 'common' | 'rare' | 'epic' | 'legendary',
     quantity?: number,
-    maxQuantity?: number
+    maxQuantity?: number,
+    imageUrl?: string
 }
-

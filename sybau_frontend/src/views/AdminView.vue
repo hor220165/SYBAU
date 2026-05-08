@@ -122,6 +122,7 @@
               </div>
             </div>
           </div>
+
         </div>
 
         <!-- Users Tab -->
@@ -243,8 +244,21 @@
                 <input v-model="shopItemForm.name" type="text" required placeholder="z.B. Iron Boots">
               </div>
               <div class="form-group">
-                <label>Beschreibung</label>
-                <textarea v-model="shopItemForm.description" required placeholder="Beschreibe das Item..."></textarea>
+                <label>Item Bild {{ editingShopItem ? '(optional ändern)' : '(Pflicht)' }}</label>
+                <div class="image-upload-row">
+                  <label class="image-picker">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      :required="!editingShopItem"
+                      @change="handleShopImageChange"
+                    >
+                    <span>{{ shopItemImageFile ? 'Bild ausgewählt' : editingShopItem ? 'Neues Bild wählen' : 'Bild wählen' }}</span>
+                  </label>
+                  <div v-if="shopItemImagePreview" class="image-preview">
+                    <img :src="shopItemImagePreview" alt="">
+                  </div>
+                </div>
               </div>
               <div class="form-row">
                 <div class="form-group">
@@ -255,20 +269,35 @@
                   <label>Item Typ</label>
                   <select v-model="shopItemForm.type" required>
                     <option value="">-- Wähle einen Typ --</option>
-                    <option value="armor">Rüstung</option>
-                    <option value="boots">Stiefel</option>
-                    <option value="weapon">Waffe</option>
-                    <option value="accessory">Zubehör</option>
-                    <option value="booster">Booster</option>
+                    <option value="Cosmetic">Cosmetic</option>
+                    <option value="Booster">Booster</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>XP Boost % (optional)</label>
-                  <input v-model.number="shopItemForm.xpBoostPercentage" type="number" min="0" max="100">
+                  <label>Rarity</label>
+                  <select v-model="shopItemForm.rarity" required>
+                    <option value="Common">Common</option>
+                    <option value="Rare">Rare</option>
+                    <option value="Epic">Epic</option>
+                    <option value="Legendary">Legendary</option>
+                  </select>
                 </div>
                 <div class="form-group">
-                  <label>Coin Boost % (optional)</label>
-                  <input v-model.number="shopItemForm.coinBoostPercentage" type="number" min="0" max="100">
+                  <label>Max. Anzahl</label>
+                  <input v-model.number="shopItemForm.maxQuantity" type="number" required min="1">
+                </div>
+                <div class="form-group boost-form-group">
+                  <label>Boosts (optional)</label>
+                  <div class="boost-input-row">
+                    <div>
+                      <label>XP Boost %</label>
+                      <input v-model.number="shopItemForm.xpBoostPercentage" type="number" min="0" max="100">
+                    </div>
+                    <div>
+                      <label>Coin Boost %</label>
+                      <input v-model.number="shopItemForm.coinBoostPercentage" type="number" min="0" max="100">
+                    </div>
+                  </div>
                 </div>
               </div>
               <div class="form-actions">
@@ -286,7 +315,13 @@
             <div v-else class="items-grid">
               <div v-for="item in shopItems" :key="item.id" class="card shop-card">
                 <div class="card-header">
-                  <h4>{{ item.name }}</h4>
+                  <div class="shop-card-title">
+                    <div class="shop-card-image">
+                      <img v-if="getShopImage(item)" :src="getShopImage(item)" alt="">
+                      <Package v-else :size="26" />
+                    </div>
+                    <h4>{{ item.name }}</h4>
+                  </div>
                   <div class="actions">
                     <button class="btn-icon" @click="editShopItem(item)" aria-label="Bearbeiten" data-tooltip="Bearbeiten">
                       <Pencil :size="18" />
@@ -296,12 +331,132 @@
                     </button>
                   </div>
                 </div>
-                <p class="description">{{ item.description }}</p>
                 <div class="card-stats">
                   <span><img src="../assets/SYBAU_Coin.png" alt="" class="pixel-icon" /> {{ item.price }} Münzen</span>
                   <span><Package :size="15" /> {{ item.type }}</span>
-                  <span v-if="item.xpBoostPercentage > 0"><Zap :size="15" /> +{{ item.xpBoostPercentage }}% XP</span>
+                  <span v-if="item.xpBoostPercentage > 0"><img src="../assets/XP_Pixel.png" alt="" class="pixel-icon" /> +{{ item.xpBoostPercentage }}% XP</span>
                   <span v-if="item.coinBoostPercentage > 0"><img src="../assets/SYBAU_Coin.png" alt="" class="pixel-icon" /> +{{ item.coinBoostPercentage }}% Coins</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-header section-header-secondary">
+            <h2>Chest Management</h2>
+            <button class="btn-primary" @click="openChestForm">
+              <Plus :size="18" />
+              Neue Chest
+            </button>
+          </div>
+
+          <div v-if="showChestForm" class="form-container">
+            <h3>{{ editingChest ? 'Chest bearbeiten' : 'Neue Chest erstellen' }}</h3>
+            <form @submit.prevent="saveChest">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Name</label>
+                  <input v-model="chestForm.name" type="text" required placeholder="z.B. Starter Chest">
+                </div>
+                <div class="form-group">
+                  <label>Preis (Münzen)</label>
+                  <input v-model.number="chestForm.price" type="number" required min="1">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Chest Bild {{ editingChest ? '(optional ändern)' : '(Pflicht)' }}</label>
+                <div class="image-upload-row">
+                  <label class="image-picker">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      :required="!editingChest"
+                      @change="handleChestImageChange"
+                    >
+                    <span>{{ chestImageFile ? 'Bild ausgewählt' : editingChest ? 'Neues Bild wählen' : 'Bild wählen' }}</span>
+                  </label>
+                  <div v-if="chestImagePreview" class="image-preview">
+                    <img :src="chestImagePreview" alt="">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Rarity Prozentzahlen (Summe: {{ chestChanceTotal }}%)</label>
+                <div class="rarity-rate-grid">
+                  <div>
+                    <label>Common</label>
+                    <input v-model.number="chestForm.commonChance" type="number" min="0" max="100">
+                  </div>
+                  <div>
+                    <label>Rare</label>
+                    <input v-model.number="chestForm.rareChance" type="number" min="0" max="100">
+                  </div>
+                  <div>
+                    <label>Epic</label>
+                    <input v-model.number="chestForm.epicChance" type="number" min="0" max="100">
+                  </div>
+                  <div>
+                    <label>Legendary</label>
+                    <input v-model.number="chestForm.legendaryChance" type="number" min="0" max="100">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Items in dieser Chest</label>
+                <div class="chest-item-picker">
+                  <label v-for="item in shopItems" :key="item.id" class="chest-item-option">
+                    <input v-model="chestForm.itemIds" type="checkbox" :value="item.id">
+                    <span class="chest-option-image">
+                      <img v-if="getShopImage(item)" :src="getShopImage(item)" alt="">
+                      <Package v-else :size="18" />
+                    </span>
+                    <span>
+                      <strong>{{ item.name }}</strong>
+                      <small>{{ normalizeRarity(item.rarity) }}</small>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-primary">Speichern</button>
+                <button type="button" class="btn-secondary" @click="closeChestForm">Abbrechen</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="list-container">
+            <div v-if="chests.length === 0" class="empty-state">
+              <p>Keine Chests vorhanden</p>
+            </div>
+            <div v-else class="items-grid">
+              <div v-for="chest in chests" :key="chest.id" class="card shop-card chest-admin-card">
+                <div class="card-header">
+                  <div class="shop-card-title">
+                    <div class="shop-card-image">
+                      <img v-if="getChestImage(chest)" :src="getChestImage(chest)" alt="">
+                      <Package v-else :size="26" />
+                    </div>
+                    <h4>{{ chest.name }}</h4>
+                  </div>
+                  <div class="actions">
+                    <button class="btn-icon" @click="editChest(chest)" aria-label="Bearbeiten" data-tooltip="Bearbeiten">
+                      <Pencil :size="18" />
+                    </button>
+                    <button class="btn-icon btn-danger" @click="deleteChest(chest.id)" aria-label="Löschen" data-tooltip="Löschen">
+                      <Trash2 :size="18" />
+                    </button>
+                  </div>
+                </div>
+                <div class="card-stats">
+                  <span><img src="../assets/SYBAU_Coin.png" alt="" class="pixel-icon" /> {{ chest.price }} Münzen</span>
+                  <span><Package :size="15" /> {{ getChestItems(chest).length }} Items</span>
+                  <span>Common {{ chest.commonChance ?? chest.CommonChance }}%</span>
+                  <span>Rare {{ chest.rareChance ?? chest.RareChance }}%</span>
+                  <span>Epic {{ chest.epicChance ?? chest.EpicChance }}%</span>
+                  <span>Legendary {{ chest.legendaryChance ?? chest.LegendaryChance }}%</span>
                 </div>
               </div>
             </div>
@@ -320,7 +475,7 @@
 
           <!-- Exercise Form -->
           <div v-if="showExerciseForm" class="form-container">
-            <h3>Neue Übung erstellen</h3>
+            <h3>{{ editingExercise ? 'Übung bearbeiten' : 'Neue Übung erstellen' }}</h3>
             <form @submit.prevent="saveExercise">
               <div class="form-group">
                 <label>Name</label>
@@ -351,17 +506,25 @@
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>XP pro Rep</label>
+                  <label>Einheit</label>
+                  <select v-model="exerciseForm.unit" required>
+                    <option value="Reps">Reps</option>
+                    <option value="Time">Time</option>
+                    <option value="Distance">Distance</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>XP pro {{ unitSingularLabels[normalizeUnitValue(exerciseForm.unit)] ?? 'Einheit' }}</label>
                   <input v-model.number="exerciseForm.xpPerRep" type="number" required min="0" step="0.1">
                 </div>
                 <div class="form-group">
-                  <label>Tägliches Limit</label>
+                  <label>Tägliches Limit ({{ unitLimitHints[normalizeUnitValue(exerciseForm.unit)] ?? 'Anzahl' }})</label>
                   <input v-model.number="exerciseForm.dailyLimit" type="number" required min="1">
                 </div>
               </div>
               <div class="form-actions">
                 <button type="submit" class="btn-primary">Speichern</button>
-                <button type="button" class="btn-secondary" @click="showExerciseForm = false">Abbrechen</button>
+                <button type="button" class="btn-secondary" @click="closeExerciseForm">Abbrechen</button>
               </div>
             </form>
           </div>
@@ -375,13 +538,22 @@
               <div v-for="ex in exercises" :key="ex.id" class="card exercise-card">
                 <div class="card-header">
                   <h4>{{ ex.name }}</h4>
+                  <div class="actions">
+                    <button class="btn-icon" @click="editExercise(ex)" aria-label="Bearbeiten" data-tooltip="Bearbeiten">
+                      <Pencil :size="18" />
+                    </button>
+                    <button class="btn-icon btn-danger" @click="deleteExercise(ex.id)" aria-label="Löschen" data-tooltip="Löschen">
+                      <Trash2 :size="18" />
+                    </button>
+                  </div>
                 </div>
                 <p class="description">{{ ex.description }}</p>
                 <div class="card-stats">
                   <span><Layers :size="15" /> {{ categoryLabels[ex.category] ?? ex.category }}</span>
                   <span><Activity :size="15" /> {{ difficultyLabels[ex.difficulty] ?? ex.difficulty }}</span>
-                  <span><img src="../assets/XP_Pixel.png" alt="" class="pixel-icon" /> {{ ex.xpPerRep }} XP/Rep</span>
-                  <span><RotateCcw :size="15" /> Limit: {{ ex.dailyLimit }}/Tag</span>
+                  <span><RotateCcw :size="15" /> {{ unitLabels[normalizeUnitValue(ex.unit ?? ex.Unit)] }}</span>
+                  <span><img src="../assets/XP_Pixel.png" alt="" class="pixel-icon" /> {{ ex.xpPerRep }} XP/{{ unitShortLabels[normalizeUnitValue(ex.unit ?? ex.Unit)] }}</span>
+                  <span><RotateCcw :size="15" /> Limit: {{ formatExerciseLimit(ex.dailyLimit, ex.unit ?? ex.Unit) }}/Tag</span>
                 </div>
               </div>
             </div>
@@ -494,6 +666,7 @@ import Navbar from '@/components/Navbar.vue';
 import FooterComponent from '@/components/FooterComponent.vue';
 import MessagePopup from '@/components/MessagePopup.vue';
 import { useAdmin } from '@/composables/useAdmin';
+import { resolveMediaUrl } from '@/services/api';
 import {
   Activity,
   Crown,
@@ -507,8 +680,7 @@ import {
   Star,
   Target,
   Trash2,
-  Users,
-  Zap
+  Users
 } from 'lucide-vue-next';
 import type { Challange } from '@/models/Challange';
 import type { item } from '@/models/Item';
@@ -542,17 +714,43 @@ const shopItemForm = ref({
   price: 0,
   type: '',
   xpBoostPercentage: 0,
-  coinBoostPercentage: 0
+  coinBoostPercentage: 0,
+  rarity: 'Common',
+  maxQuantity: 5
 });
+const shopItemImageFile = ref<File | null>(null);
+const shopItemImagePreview = ref('');
 const shopItems = ref<item[]>([]);
+const showChestForm = ref(false);
+const editingChest = ref<any | null>(null);
+const chestForm = ref({
+  name: '',
+  price: 0,
+  commonChance: 70,
+  rareChance: 20,
+  epicChance: 8,
+  legendaryChance: 2,
+  itemIds: [] as number[]
+});
+const chestImageFile = ref<File | null>(null);
+const chestImagePreview = ref('');
+const chests = ref<any[]>([]);
+const chestChanceTotal = computed(() =>
+  Number(chestForm.value.commonChance ?? 0) +
+  Number(chestForm.value.rareChance ?? 0) +
+  Number(chestForm.value.epicChance ?? 0) +
+  Number(chestForm.value.legendaryChance ?? 0)
+);
 
 // Exercise Management
 const showExerciseForm = ref(false);
+const editingExercise = ref<any | null>(null);
 const exerciseForm = ref({
   name: '',
   description: '',
   category: '' as number | '',
   difficulty: '' as number | '',
+  unit: 'Reps',
   xpPerRep: 1,
   dailyLimit: 200
 });
@@ -571,6 +769,11 @@ const workouts = ref<any[]>([]);
 
 const categoryLabels: Record<number, string> = { 0: 'Strength', 1: 'Core', 2: 'Cardio', 3: 'Flexibility' };
 const difficultyLabels: Record<number, string> = { 0: 'Easy', 1: 'Medium', 2: 'Hard' };
+type ExerciseUnitKey = 'reps' | 'time' | 'distance';
+const unitLabels: Record<ExerciseUnitKey, string> = { reps: 'Reps', time: 'Time', distance: 'Distance' };
+const unitShortLabels: Record<ExerciseUnitKey, string> = { reps: 'Rep', time: 'Sek', distance: 'm' };
+const unitSingularLabels: Record<ExerciseUnitKey, string> = { reps: 'Rep', time: 'Sekunde', distance: 'Meter' };
+const unitLimitHints: Record<ExerciseUnitKey, string> = { reps: 'Reps', time: 'Sekunden', distance: 'Meter' };
 
 // User Management
 const userSearchQuery = ref('');
@@ -597,12 +800,19 @@ const {
   updateShopItem,
   deleteShopItem: deleteShopItemApi,
   getAllShopItems,
+  createChest: createChestApi,
+  updateChest: updateChestApi,
+  deleteChest: deleteChestApi,
+  getAllChests,
   getAllUsers,
   updateUserRole,
   updateUser,
   deleteUserApi,
   getAllExercises,
   createExercise,
+  updateExercise,
+  updateExerciseUnit,
+  deleteExercise: deleteExerciseApi,
   getAllWorkouts,
   createWorkout,
   updateWorkout,
@@ -682,13 +892,17 @@ const loadChallenges = async () => {
 // ===== SHOP ITEMS =====
 const openShopForm = () => {
   editingShopItem.value = null;
+  shopItemImageFile.value = null;
+  shopItemImagePreview.value = '';
   shopItemForm.value = {
     name: '',
     description: '',
     price: 0,
     type: '',
     xpBoostPercentage: 0,
-    coinBoostPercentage: 0
+    coinBoostPercentage: 0,
+    rarity: 'Common',
+    maxQuantity: 5
   };
   showShopForm.value = true;
 };
@@ -696,21 +910,78 @@ const openShopForm = () => {
 const closeShopForm = () => {
   showShopForm.value = false;
   editingShopItem.value = null;
+  shopItemImageFile.value = null;
+  shopItemImagePreview.value = '';
 };
 
 const editShopItem = (item: any) => {
   editingShopItem.value = item;
-  shopItemForm.value = { ...item };
+  shopItemImageFile.value = null;
+  shopItemImagePreview.value = getShopImage(item);
+  shopItemForm.value = {
+    name: item.name ?? '',
+    description: item.description ?? '',
+    price: Number(item.price ?? 0),
+    type: normalizeItemType(item.type),
+    xpBoostPercentage: Number(item.xpBoostPercentage ?? item.xpBoostPercent ?? 0),
+    coinBoostPercentage: Number(item.coinBoostPercentage ?? item.coinBoostPercent ?? 0),
+    rarity: normalizeRarity(item.rarity),
+    maxQuantity: Number(item.maxQuantity ?? 5)
+  };
   showShopForm.value = true;
+};
+
+const normalizeItemType = (value: unknown) => {
+  if (value === 1 || value === '1' || value === 'Booster' || value === 'booster') return 'Booster';
+  return 'Cosmetic';
+};
+
+const normalizeRarity = (value: unknown) => {
+  const raw = String(value || 'Common').toLowerCase();
+  if (raw === 'rare') return 'Rare';
+  if (raw === 'epic') return 'Epic';
+  if (raw === 'legendary') return 'Legendary';
+  return 'Common';
+};
+
+const getShopImage = (item: any) => resolveMediaUrl(item?.imageUrl ?? item?.ImageUrl ?? '');
+const getChestImage = (chest: any) => resolveMediaUrl(chest?.imageUrl ?? chest?.ImageUrl ?? '');
+const getChestItems = (chest: any) => chest?.items ?? chest?.Items ?? [];
+
+const handleShopImageChange = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0] ?? null;
+  shopItemImageFile.value = file;
+  shopItemImagePreview.value = file ? URL.createObjectURL(file) : getShopImage(editingShopItem.value);
+};
+
+const buildShopItemDescription = () => {
+  const parts = [];
+  if (Number(shopItemForm.value.xpBoostPercentage) > 0) {
+    parts.push(`${shopItemForm.value.xpBoostPercentage}% XP-Boost`);
+  }
+  if (Number(shopItemForm.value.coinBoostPercentage) > 0) {
+    parts.push(`${shopItemForm.value.coinBoostPercentage}% Coin-Boost`);
+  }
+  return parts.length > 0 ? parts.join(' ') : shopItemForm.value.name;
 };
 
 const saveShopItem = async () => {
   try {
+    if (!editingShopItem.value && !shopItemImageFile.value) {
+      showMessage('Bitte ein Bild für das Shop-Item auswählen', 'error');
+      return;
+    }
+    const payload = {
+      ...shopItemForm.value,
+      description: buildShopItemDescription(),
+      imageFile: shopItemImageFile.value
+    };
     if (editingShopItem.value) {
-      await updateShopItem(editingShopItem.value.id, shopItemForm.value);
+      await updateShopItem(editingShopItem.value.id, payload);
       showMessage('Shop-Item aktualisiert! ✓');
     } else {
-      await createShopItem(shopItemForm.value);
+      await createShopItem(payload);
       showMessage('Shop-Item erstellt! ✓');
     }
     closeShopForm();
@@ -739,6 +1010,110 @@ const loadShopItems = async () => {
   } catch (err) {
     console.error('Fehler beim Laden der Shop-Items:', err);
     showMessage('Fehler beim Laden der Shop-Items', 'error');
+  }
+};
+
+// ===== CHESTS =====
+const openChestForm = () => {
+  editingChest.value = null;
+  chestImageFile.value = null;
+  chestImagePreview.value = '';
+  chestForm.value = {
+    name: '',
+    price: 0,
+    commonChance: 70,
+    rareChance: 20,
+    epicChance: 8,
+    legendaryChance: 2,
+    itemIds: []
+  };
+  showChestForm.value = true;
+};
+
+const closeChestForm = () => {
+  showChestForm.value = false;
+  editingChest.value = null;
+  chestImageFile.value = null;
+  chestImagePreview.value = '';
+};
+
+const editChest = (chest: any) => {
+  editingChest.value = chest;
+  chestImageFile.value = null;
+  chestImagePreview.value = getChestImage(chest);
+  chestForm.value = {
+    name: chest.name ?? chest.Name ?? '',
+    price: Number(chest.price ?? chest.Price ?? 0),
+    commonChance: Number(chest.commonChance ?? chest.CommonChance ?? 70),
+    rareChance: Number(chest.rareChance ?? chest.RareChance ?? 20),
+    epicChance: Number(chest.epicChance ?? chest.EpicChance ?? 8),
+    legendaryChance: Number(chest.legendaryChance ?? chest.LegendaryChance ?? 2),
+    itemIds: getChestItems(chest).map((item: any) => Number(item.id ?? item.Id)).filter(Boolean)
+  };
+  showChestForm.value = true;
+};
+
+const handleChestImageChange = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0] ?? null;
+  chestImageFile.value = file;
+  chestImagePreview.value = file ? URL.createObjectURL(file) : getChestImage(editingChest.value);
+};
+
+const saveChest = async () => {
+  try {
+    if (!editingChest.value && !chestImageFile.value) {
+      showMessage('Bitte ein Bild für die Chest auswählen', 'error');
+      return;
+    }
+    if (chestChanceTotal.value !== 100) {
+      showMessage('Die Rarity-Prozentzahlen müssen zusammen 100 ergeben', 'error');
+      return;
+    }
+    if (chestForm.value.itemIds.length === 0) {
+      showMessage('Bitte mindestens ein Item in die Chest legen', 'error');
+      return;
+    }
+
+    const payload = {
+      ...chestForm.value,
+      itemIds: chestForm.value.itemIds.map(Number).filter(Boolean),
+      imageFile: chestImageFile.value
+    };
+
+    if (editingChest.value) {
+      await updateChestApi(editingChest.value.id ?? editingChest.value.Id, payload);
+      showMessage('Chest aktualisiert! ✓');
+    } else {
+      await createChestApi(payload);
+      showMessage('Chest erstellt! ✓');
+    }
+    closeChestForm();
+    await loadChests();
+  } catch (err: any) {
+    showMessage(err.message || 'Fehler beim Speichern der Chest', 'error');
+  }
+};
+
+const deleteChest = async (id: number) => {
+  if (confirm('Chest wirklich löschen?')) {
+    try {
+      await deleteChestApi(id);
+      showMessage('Chest gelöscht! ✓');
+      await loadChests();
+    } catch (err: any) {
+      showMessage(err.message || 'Fehler beim Löschen der Chest', 'error');
+    }
+  }
+};
+
+const loadChests = async () => {
+  try {
+    const res = await getAllChests();
+    chests.value = res.data || res || [];
+  } catch (err) {
+    console.error('Fehler beim Laden der Chests:', err);
+    showMessage('Fehler beim Laden der Chests', 'error');
   }
 };
 
@@ -804,25 +1179,141 @@ const deleteUser = async (id: number) => {
 
 // ===== EXERCISES =====
 const openExerciseForm = () => {
+  editingExercise.value = null;
   exerciseForm.value = {
     name: '',
     description: '',
     category: '',
     difficulty: '',
+    unit: 'Reps',
     xpPerRep: 1,
     dailyLimit: 200
   };
   showExerciseForm.value = true;
 };
 
+const closeExerciseForm = () => {
+  showExerciseForm.value = false;
+  editingExercise.value = null;
+};
+
+const editExercise = (exercise: any) => {
+  editingExercise.value = exercise;
+  exerciseForm.value = {
+    name: exercise.name ?? exercise.Name ?? '',
+    description: exercise.description ?? exercise.Description ?? '',
+    category: exercise.category ?? exercise.Category ?? '',
+    difficulty: exercise.difficulty ?? exercise.Difficulty ?? '',
+    unit: normalizeUnitText(exercise.unit ?? exercise.Unit),
+    xpPerRep: Number(exercise.xpPerRep ?? exercise.XpPerRep ?? 1),
+    dailyLimit: Number(exercise.dailyLimit ?? exercise.DailyLimit ?? 200)
+  };
+  showExerciseForm.value = true;
+};
+
+const normalizeUnitValue = (raw: unknown): ExerciseUnitKey => {
+  if (typeof raw === 'number') {
+    if (raw === 1) return 'time';
+    if (raw === 2) return 'distance';
+    return 'reps';
+  }
+  const value = String(raw ?? '').toLowerCase();
+  if (value === 'time') return 'time';
+  if (value === 'distance') return 'distance';
+  return 'reps';
+};
+
+const normalizeUnitText = (raw: unknown): 'Reps' | 'Time' | 'Distance' => {
+  const normalized = normalizeUnitValue(raw);
+  if (normalized === 'time') return 'Time';
+  if (normalized === 'distance') return 'Distance';
+  return 'Reps';
+};
+
+const normalizeExerciseCategory = (raw: unknown): number => {
+  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+  const value = String(raw ?? '').toLowerCase();
+  if (value === 'core') return 1;
+  if (value === 'cardio') return 2;
+  if (value === 'flexibility') return 3;
+  return 0;
+};
+
+const normalizeExerciseDifficulty = (raw: unknown): number => {
+  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+  const value = String(raw ?? '').toLowerCase();
+  if (value === 'hard') return 2;
+  if (value === 'medium') return 1;
+  return 0;
+};
+
+const buildExercisePayload = () => {
+  const unit = normalizeUnitText(exerciseForm.value.unit);
+  return {
+    name: exerciseForm.value.name,
+    description: exerciseForm.value.description || null,
+    category: normalizeExerciseCategory(exerciseForm.value.category),
+    difficulty: normalizeExerciseDifficulty(exerciseForm.value.difficulty),
+    unit,
+    xpPerRep: Number(exerciseForm.value.xpPerRep ?? 1),
+    dailyLimit: Number(exerciseForm.value.dailyLimit ?? 200)
+  };
+};
+
+const formatExerciseLimit = (rawLimit: unknown, rawUnit: unknown): string => {
+  const limit = Number(rawLimit ?? 0);
+  const unit = normalizeUnitValue(rawUnit);
+  if (unit === 'time') {
+    const hours = Math.floor(limit / 3600);
+    const minutes = Math.floor((limit % 3600) / 60);
+    const seconds = Math.floor(limit % 60);
+    return [hours, minutes, seconds].map((part) => String(part).padStart(2, '0')).join(':');
+  }
+  if (unit === 'distance') {
+    if (limit >= 1000) return `${(limit / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 })} km`;
+    return `${limit.toLocaleString('de-DE')} m`;
+  }
+  return `${limit.toLocaleString('de-DE')} Reps`;
+};
+
 const saveExercise = async () => {
   try {
-    await createExercise(exerciseForm.value as any);
-    showMessage('Übung erstellt! ✓');
-    showExerciseForm.value = false;
+    const payload = buildExercisePayload();
+    let savedExercise: any;
+    if (editingExercise.value) {
+      const exerciseId = editingExercise.value.id ?? editingExercise.value.Id;
+      savedExercise = await updateExercise(exerciseId, payload as any);
+      savedExercise = await updateExerciseUnit(exerciseId, payload.unit);
+      showMessage('Übung aktualisiert! ✓');
+    } else {
+      savedExercise = await createExercise(payload as any);
+      const createdId = savedExercise?.id ?? savedExercise?.Id;
+      if (createdId) {
+        savedExercise = await updateExerciseUnit(createdId, payload.unit);
+      }
+      showMessage('Übung erstellt! ✓');
+    }
+    const serverUnit = normalizeUnitText(savedExercise?.unit ?? savedExercise?.Unit ?? payload.unit);
+    if (serverUnit !== payload.unit) {
+      throw new Error('Einheit wurde vom Server nicht übernommen.');
+    }
+    closeExerciseForm();
     await loadExercises();
   } catch (err: any) {
-    showMessage(err.message || 'Fehler beim Erstellen', 'error');
+    showMessage(err.message || 'Fehler beim Speichern', 'error');
+  }
+};
+
+const deleteExercise = async (id: number) => {
+  if (confirm('Übung wirklich löschen? Sie darf keine gespeicherten Aktivitäten haben.')) {
+    try {
+      await deleteExerciseApi(id);
+      showMessage('Übung gelöscht! ✓');
+      await loadExercises();
+      await loadWorkouts();
+    } catch (err: any) {
+      showMessage(err.message || 'Fehler beim Löschen', 'error');
+    }
   }
 };
 
@@ -924,6 +1415,7 @@ const loadWorkouts = async () => {
 onMounted(async () => {
   await loadChallenges();
   await loadShopItems();
+  await loadChests();
   await loadUsers();
   await loadExercises();
   await loadWorkouts();
@@ -1117,6 +1609,171 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 18px;
+}
+
+.boost-form-group {
+  grid-column: span 2;
+}
+
+.boost-input-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(150px, 1fr));
+  gap: 18px;
+}
+
+.boost-input-row label {
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.section-header-secondary {
+  margin-top: 32px;
+}
+
+.rarity-rate-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 14px;
+}
+
+.rarity-rate-grid label {
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.chest-item-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  max-height: 310px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.chest-item-option {
+  display: grid;
+  grid-template-columns: 20px 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.58);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  cursor: pointer;
+}
+
+.chest-item-option input {
+  width: 16px;
+  height: 16px;
+}
+
+.chest-option-image {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.45);
+  color: #fce7f3;
+}
+
+.chest-option-image img {
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.chest-item-option strong,
+.chest-item-option small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chest-item-option strong {
+  color: #f8fafc;
+  font-size: 0.9rem;
+}
+
+.chest-item-option small {
+  color: #94a3b8;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+}
+
+.image-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.image-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #f472b6;
+  font-weight: 900;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.image-picker:hover {
+  color: #f9a8d4;
+}
+
+.image-picker input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.image-preview,
+.shop-card-image {
+  display: grid;
+  place-items: center;
+  background: rgba(2, 6, 23, 0.42);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.image-preview {
+  width: 70px;
+  height: 70px;
+  border-radius: 16px;
+}
+
+.image-preview img,
+.shop-card-image img {
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.shop-card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.shop-card-image {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  color: #fce7f3;
+  flex: 0 0 auto;
 }
 
 .form-actions {

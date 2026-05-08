@@ -12,7 +12,7 @@
     <div class="boost-stats">
       <div class="boost-card">
         <div class="boost-icon-wrap xp-boost">
-          <TrendingUp :size="20" />
+          <img :src="xpIcon" alt="" />
         </div>
         <div class="boost-info">
           <span class="boost-label">XP Boost</span>
@@ -24,7 +24,7 @@
       </div>
       <div class="boost-card">
         <div class="boost-icon-wrap coin-boost">
-          <CircleDollarSign :size="20" />
+          <img :src="coinIcon" alt="" />
         </div>
         <div class="boost-info">
           <span class="boost-label">Coin Boost</span>
@@ -61,8 +61,11 @@
                   <div class="equip-icon" v-if="!slot.item">
                     <Zap :size="22" />
                   </div>
-                  <div class="equip-item-icon" v-else>{{ slot.item.icon }}</div>
-                  <span class="equip-name">{{ slot.item ? slot.item.name : slot.label }}</span>
+                  <div class="equip-item-icon" v-else>
+                    <img v-if="slot.item.imageUrl" :src="slot.item.imageUrl" alt="" />
+                    <span v-else>{{ slot.item.icon }}</span>
+                  </div>
+                  <span v-if="!slot.item" class="equip-name">{{ slot.label }}</span>
                   <span class="equip-empty" v-if="!slot.item && selectingSlotFor === null">Leer</span>
                   <span class="equip-select-hint" v-if="!slot.item && selectingSlotFor !== null">Hier</span>
                   <span class="equip-badge" v-if="slot.item">+{{ slot.item.boostValue }}%</span>
@@ -99,8 +102,11 @@
                   <div class="equip-icon" v-if="!slot.item">
                     <Zap :size="22" />
                   </div>
-                  <div class="equip-item-icon" v-else>{{ slot.item.icon }}</div>
-                  <span class="equip-name">{{ slot.item ? slot.item.name : slot.label }}</span>
+                  <div class="equip-item-icon" v-else>
+                    <img v-if="slot.item.imageUrl" :src="slot.item.imageUrl" alt="" />
+                    <span v-else>{{ slot.item.icon }}</span>
+                  </div>
+                  <span v-if="!slot.item" class="equip-name">{{ slot.label }}</span>
                   <span class="equip-empty" v-if="!slot.item && selectingSlotFor === null">Leer</span>
                   <span class="equip-select-hint" v-if="!slot.item && selectingSlotFor !== null">Hier</span>
                   <span class="equip-badge" v-if="slot.item">+{{ slot.item.boostValue }}%</span>
@@ -151,7 +157,8 @@
               <span class="booster-qty-badge">{{ remainingCount(booster) }}/{{ booster.quantity }}</span>
               <div class="booster-card-top">
                 <div class="booster-icon-wrapper" :class="'rarity-icon-' + booster.rarity">
-                  <span class="booster-icon">{{ booster.icon }}</span>
+                  <img v-if="booster.imageUrl" :src="booster.imageUrl" alt="" class="booster-image" />
+                  <span v-else class="booster-icon">{{ booster.icon }}</span>
                 </div>
                 <div class="booster-meta">
                   <h3>{{ booster.name }}</h3>
@@ -159,20 +166,25 @@
                 </div>
               </div>
 
-              <p class="booster-desc">{{ booster.description }}</p>
-
               <div class="booster-stat-row">
                 <div v-if="booster.xpBoost" class="booster-stat xp">
-                  <TrendingUp :size="13" />
+                  <img :src="xpIcon" alt="" />
                   <span>+{{ booster.xpBoost }}% XP</span>
                 </div>
                 <div v-if="booster.coinBoost" class="booster-stat coin">
-                  <CircleDollarSign :size="13" />
+                  <img :src="coinIcon" alt="" />
                   <span>+{{ booster.coinBoost }}% Coins</span>
                 </div>
               </div>
 
               <div class="booster-card-footer">
+                <button
+                  class="sell-inventory-btn"
+                  type="button"
+                  @click="requestSellBooster(booster)"
+                >
+                  Verkauf
+                </button>
                 <button
                   class="equip-btn"
                   :class="{ disabled: !canEquipMore(booster) }"
@@ -190,6 +202,37 @@
       </div>
 
     </div>
+
+    <Transition name="confirm-pop">
+      <div v-if="pendingSell" class="confirm-overlay" @click.self="pendingSell = null">
+        <div class="confirm-dialog">
+          <h3>Sind Sie sicher?</h3>
+          <p>{{ pendingSell.name }} verkaufen</p>
+          <div class="confirm-price">
+            <span>Du bekommst</span>
+            <strong>
+              <img :src="coinIcon" alt="" />
+              {{ pendingSellPrice }}
+            </strong>
+          </div>
+          <div class="confirm-actions">
+            <button class="confirm-cancel" type="button" @click="pendingSell = null">Abbrechen</button>
+            <button class="confirm-sell" type="button" :disabled="sellingBoosterId === pendingSell.id" @click="confirmSellBooster">
+              {{ sellingBoosterId === pendingSell.id ? '...' : 'Verkaufen' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <Teleport to="body">
+      <MessagePopup
+        v-if="popupMessage"
+        :message="popupMessage"
+        :type="popupType"
+        @close="popupMessage = ''"
+      />
+    </Teleport>
   </main>
 
   <!-- Footer -->
@@ -198,13 +241,16 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { Zap, TrendingUp, CircleDollarSign, ShoppingBag, Shield } from 'lucide-vue-next';
+import { Zap, ShoppingBag, Shield } from 'lucide-vue-next';
 import Header from '@/components/Header.vue';
 import Navbar from '@/components/Navbar.vue';
 import SpriteAnimator from '@/components/spriteAnimator.vue';
 import FooterComponent from '@/components/FooterComponent.vue';
-import { userService } from '@/services/api';
+import MessagePopup from '@/components/MessagePopup.vue';
+import { itemService, resolveMediaUrl, userService } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
+import xpIcon from '@/assets/XP_Pixel.png';
+import coinIcon from '@/assets/SYBAU_Coin.png';
 
 const { refreshProfile } = useAuth();
 const userName = ref('');
@@ -213,12 +259,14 @@ interface BoosterItem {
   id: number;
   name: string;
   icon: string;
+  imageUrl: string;
   description: string;
   xpBoost: number;
   coinBoost: number;
   boostValue: number;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   quantity: number;
+  price: number;
 }
 
 interface EquipSlot {
@@ -235,6 +283,10 @@ const equipSlots = ref<EquipSlot[]>([
 
 const selectingSlotFor = ref<BoosterItem | null>(null);
 const inventory = ref<BoosterItem[]>([]);
+const pendingSell = ref<BoosterItem | null>(null);
+const sellingBoosterId = ref<number | null>(null);
+const popupMessage = ref('');
+const popupType = ref<'success' | 'error'>('success');
 
 // Rarity basierend auf Gesamt-Boost ableiten
 function getRarity(xp: number, coin: number): 'common' | 'rare' | 'epic' | 'legendary' {
@@ -254,18 +306,25 @@ function getIcon(xp: number, coin: number): string {
 
 // Backend-Booster in Frontend-Format umwandeln
 function mapBooster(b: any): BoosterItem {
-  const xp = b.xpBoostPercentage ?? 0;
-  const coin = b.coinBoostPercentage ?? 0;
+  const xp = b.xpBoostPercentage ?? b.xpBoostPercent ?? b.XpBoostPercentage ?? b.XpBoostPercent ?? 0;
+  const coin = b.coinBoostPercentage ?? b.coinBoostPercent ?? b.CoinBoostPercentage ?? b.CoinBoostPercent ?? 0;
+  const rawRarity = String(b.rarity ?? b.Rarity ?? '').toLowerCase();
+  const rarity =
+    rawRarity === 'rare' || rawRarity === 'epic' || rawRarity === 'legendary'
+      ? rawRarity
+      : getRarity(xp, coin);
   return {
     id: b.id,
     name: b.name,
     icon: getIcon(xp, coin),
+    imageUrl: resolveMediaUrl(b.imageUrl ?? b.ImageUrl ?? ''),
     description: b.description ?? '',
     xpBoost: xp,
     coinBoost: coin,
     boostValue: xp + coin,
-    rarity: b.rarity ?? getRarity(xp, coin),
-    quantity: b.quantity ?? 1
+    rarity,
+    quantity: b.quantity ?? 1,
+    price: Number(b.price ?? b.Price ?? 0)
   };
 }
 
@@ -294,6 +353,37 @@ function canEquipMore(booster: BoosterItem): boolean {
 function remainingCount(booster: BoosterItem): number {
   return Math.max(booster.quantity - equippedCount(booster.id), 0);
 }
+
+const sellPriceFor = (booster: BoosterItem) => Math.max(1, Math.floor(Number(booster.price ?? 0) * 0.5));
+const pendingSellPrice = computed(() => pendingSell.value ? sellPriceFor(pendingSell.value) : 0);
+
+const requestSellBooster = (booster: BoosterItem) => {
+  pendingSell.value = booster;
+};
+
+const confirmSellBooster = async () => {
+  if (!pendingSell.value) return;
+  const booster = pendingSell.value;
+  sellingBoosterId.value = booster.id;
+
+  try {
+    const response = await itemService.sellItem(booster.id);
+    const sellPrice = Number(response.data?.sellPrice ?? response.data?.SellPrice ?? sellPriceFor(booster));
+    pendingSell.value = null;
+    await loadProfile();
+    await refreshProfile();
+    popupType.value = 'success';
+    popupMessage.value = `${booster.name} verkauft. +${sellPrice} Coins`;
+  } catch (error: any) {
+    console.error('Fehler beim Verkaufen des Boosters', error);
+    popupType.value = 'error';
+    popupMessage.value = error.response?.data?.message
+      ?? error.response?.data
+      ?? 'Item konnte nicht verkauft werden.';
+  } finally {
+    sellingBoosterId.value = null;
+  }
+};
 
 const startEquip = (booster: BoosterItem) => {
   selectingSlotFor.value = booster;
@@ -426,6 +516,13 @@ onMounted(() => loadProfile());
   justify-content: center;
   border-radius: 10px;
   flex-shrink: 0;
+}
+
+.boost-icon-wrap img {
+  width: 25px;
+  height: 25px;
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .boost-icon-wrap.xp-boost {
@@ -582,6 +679,7 @@ onMounted(() => loadProfile());
   border: 1px solid rgba(168, 85, 247, 0.5);
   backdrop-filter: blur(10px);
   box-shadow: 0 0 20px rgba(168, 85, 247, 0.15);
+  gap: 8px;
 }
 
 .equip-slot-inner.equipped:hover {
@@ -624,8 +722,19 @@ onMounted(() => loadProfile());
 }
 
 .equip-item-icon {
-  font-size: 24px;
+  font-size: 34px;
   filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5));
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+}
+
+.equip-item-icon img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .equip-name {
@@ -656,7 +765,7 @@ onMounted(() => loadProfile());
 }
 
 .equip-badge {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   color: #a855f7;
   letter-spacing: 0.5px;
@@ -829,7 +938,7 @@ onMounted(() => loadProfile());
   position: relative;
   border-radius: 14px;
   overflow: hidden;
-  height: 278px;
+  height: 250px;
   transition: transform 0.18s ease, filter 0.18s ease;
 }
 
@@ -840,15 +949,15 @@ onMounted(() => loadProfile());
 }
 
 .rarity-rare {
-  --rarity-color: #5eead4;
-  --rarity-bg: rgba(20, 184, 166, 0.17);
-  --rarity-border: rgba(20, 184, 166, 0.38);
+  --rarity-color: #60a5fa;
+  --rarity-bg: rgba(59, 130, 246, 0.17);
+  --rarity-border: rgba(59, 130, 246, 0.38);
 }
 
 .rarity-epic {
-  --rarity-color: #d946ef;
-  --rarity-bg: rgba(217, 70, 239, 0.18);
-  --rarity-border: rgba(217, 70, 239, 0.42);
+  --rarity-color: #c084fc;
+  --rarity-bg: rgba(168, 85, 247, 0.18);
+  --rarity-border: rgba(168, 85, 247, 0.42);
 }
 
 .rarity-legendary {
@@ -895,9 +1004,9 @@ onMounted(() => loadProfile());
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  height: 278px;
-  padding: 24px;
+  gap: 12px;
+  height: 250px;
+  padding: 22px;
   border-radius: 22px;
   background: rgba(2, 6, 23, 0.42);
   border: 1px solid rgba(255, 255, 255, 0.075);
@@ -976,6 +1085,14 @@ onMounted(() => loadProfile());
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
 }
 
+.booster-image {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.35));
+}
+
 .rarity-icon-common {
   background: var(--rarity-bg);
   border: 1px solid var(--rarity-border);
@@ -1029,21 +1146,9 @@ onMounted(() => loadProfile());
 }
 
 .tag-common { color: #cbd5e1; }
-.tag-rare { color: #5eead4; }
-.tag-epic { color: #d946ef; }
+.tag-rare { color: #60a5fa; }
+.tag-epic { color: #c084fc; }
 .tag-legendary { color: #fbbf24; }
-
-.booster-desc {
-  min-height: 34px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
-  margin: 0;
-  line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
 
 .booster-stat-row {
   display: flex;
@@ -1060,6 +1165,13 @@ onMounted(() => loadProfile());
   border-radius: 7px;
   font-size: 11px;
   font-weight: 800;
+}
+
+.booster-stat img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .booster-stat.xp {
@@ -1083,6 +1195,27 @@ onMounted(() => loadProfile());
   margin-top: auto;
   padding-top: 9px;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.sell-inventory-btn {
+  min-height: 34px;
+  padding: 0 11px;
+  border-radius: 9px;
+  border: 1px solid rgba(248, 113, 113, 0.42);
+  background:
+    linear-gradient(135deg, rgba(248, 113, 113, 0.2), rgba(127, 29, 29, 0.82)),
+    rgba(69, 10, 10, 0.74);
+  color: #fecaca;
+  font-weight: 900;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: inset 0 0 16px rgba(248, 113, 113, 0.07);
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.sell-inventory-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
 }
 
 .equip-btn {
@@ -1121,6 +1254,122 @@ onMounted(() => loadProfile());
 .equip-btn:disabled:hover {
   transform: none;
   box-shadow: none;
+}
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.68);
+  backdrop-filter: blur(8px);
+}
+
+.confirm-dialog {
+  width: min(360px, 92vw);
+  padding: 22px;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.42);
+}
+
+.confirm-dialog h3 {
+  margin: 0;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.confirm-dialog p {
+  margin: 8px 0 16px;
+  color: rgba(255, 255, 255, 0.68);
+  font-weight: 800;
+}
+
+.confirm-price {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.confirm-price span {
+  color: rgba(255, 255, 255, 0.58);
+  font-weight: 800;
+}
+
+.confirm-price strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #f8fafc;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.confirm-price img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.confirm-actions button {
+  min-height: 44px;
+  border-radius: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.confirm-cancel {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(30, 41, 59, 0.76);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.confirm-sell {
+  border: 1px solid rgba(248, 113, 113, 0.42);
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.24), rgba(127, 29, 29, 0.86));
+  color: white;
+}
+
+.confirm-sell:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.confirm-pop-enter-active,
+.confirm-pop-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.confirm-pop-enter-active .confirm-dialog,
+.confirm-pop-leave-active .confirm-dialog {
+  transition: transform 0.18s ease;
+}
+
+.confirm-pop-enter-from,
+.confirm-pop-leave-to {
+  opacity: 0;
+}
+
+.confirm-pop-enter-from .confirm-dialog,
+.confirm-pop-leave-to .confirm-dialog {
+  transform: translateY(12px) scale(0.96);
 }
 
 .booster-qty-badge {
@@ -1288,10 +1537,6 @@ onMounted(() => loadProfile());
 
   .booster-meta h3 {
     font-size: 14px;
-  }
-
-  .booster-desc {
-    font-size: 12px;
   }
 
   .equip-btn {

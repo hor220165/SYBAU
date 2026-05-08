@@ -39,6 +39,15 @@
           </div>
 
           <div class="form-group">
+            <label for="exercise-unit">Einheit</label>
+            <select id="exercise-unit" v-model="exerciseForm.unit" required>
+              <option value="Reps">Reps</option>
+              <option value="Time">Time</option>
+              <option value="Distance">Distance</option>
+            </select>
+          </div>
+
+          <div class="form-group">
             <label for="exercise-description">Beschreibung</label>
             <textarea
               id="exercise-description"
@@ -198,7 +207,8 @@ const exerciseForm = ref({
   name: '',
   description: '',
   category: 'Cardio',
-  difficulty: 'Medium' as Difficulty
+  difficulty: 'Medium' as Difficulty,
+  unit: 'Reps'
 });
 
 const workoutForm = ref({
@@ -329,7 +339,8 @@ const resetExerciseForm = () => {
     name: '',
     description: '',
     category: exerciseForm.value.category,
-    difficulty: 'Medium'
+    difficulty: 'Medium',
+    unit: exerciseForm.value.unit
   };
 };
 
@@ -359,7 +370,8 @@ const submitExercise = async () => {
       name: exerciseForm.value.name,
       description: exerciseForm.value.description || undefined,
       category: categoryToEnumValue(exerciseForm.value.category),
-      difficulty: exerciseForm.value.difficulty
+      difficulty: exerciseForm.value.difficulty,
+      unit: exerciseForm.value.unit
     });
 
     resetExerciseForm();

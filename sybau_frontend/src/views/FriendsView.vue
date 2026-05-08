@@ -113,8 +113,27 @@ const getUserName = (user: any) => String(user.userName ?? user.UserName ?? user
 const getUserId = (user: any) => Number(user.id ?? user.Id ?? 0);
 const getUserLevel = (user: any) => Number(user.level ?? user.Level ?? 0);
 const getUserXp = (user: any) => Number(user.totalXp ?? user.TotalXp ?? user.experience ?? user.Experience ?? 0);
-const getUserImage = (user: any) => resolveMediaUrl(user.profileImageUrl ?? user.ProfileImageUrl ?? '');
-const getFriendImage = (friend: any) => resolveMediaUrl(friend.friendProfileImageUrl ?? friend.FriendProfileImageUrl ?? '');
+const getRawProfileImage = (value: any) =>
+  String(value?.profileImageUrl ?? value?.ProfileImageUrl ?? value?.profileImageURL ?? value?.ProfileImageURL ?? '');
+const getUserImage = (user: any) => resolveMediaUrl(getRawProfileImage(user));
+const getFriendId = (friend: any) => Number(friend.friendId ?? friend.FriendId ?? 0);
+const getFriendName = (friend: any) => String(friend.friendUserName ?? friend.FriendUserName ?? '');
+const getFriendLevel = (friend: any) => Number(friend.friendLevel ?? friend.FriendLevel ?? 0);
+const getFriendXp = (friend: any) => Number(friend.friendExperience ?? friend.FriendExperience ?? friend.totalXp ?? friend.TotalXp ?? 0);
+const getFriendImage = (friend: any) => {
+  const direct = String(
+    friend.friendProfileImageUrl ??
+    friend.FriendProfileImageUrl ??
+    friend.profileImageUrl ??
+    friend.ProfileImageUrl ??
+    '',
+  );
+  if (direct) return resolveMediaUrl(direct);
+
+  const friendId = getFriendId(friend);
+  const directoryUser = userDirectory.value.find((user) => getUserId(user) === friendId);
+  return getUserImage(directoryUser);
+};
 const getRequestImage = (request: any, direction: 'from' | 'to') => {
   if (direction === 'from') return resolveMediaUrl(request.fromUserProfileImageUrl ?? request.FromUserProfileImageUrl ?? '');
   return resolveMediaUrl(request.toUserProfileImageUrl ?? request.ToUserProfileImageUrl ?? '');
@@ -197,11 +216,14 @@ const loadFriends = async () => {
     const enriched = await Promise.all(
       data.map(async (friend: any) => {
         try {
-          const { data: profile } = await userService.getPublicProfile(friend.friendId ?? friend.FriendId);
+          const friendId = getFriendId(friend);
+          const { data: profile } = await userService.getPublicProfile(friendId);
           return {
             ...friend,
-            friendProfileImageUrl: profile.profileImageUrl ?? profile.ProfileImageUrl ?? friend.friendProfileImageUrl,
-            FriendProfileImageUrl: profile.profileImageUrl ?? profile.ProfileImageUrl ?? friend.FriendProfileImageUrl,
+            friendId,
+            friendUserName: getFriendName(friend),
+            friendProfileImageUrl: getRawProfileImage(profile) || friend.friendProfileImageUrl,
+            FriendProfileImageUrl: getRawProfileImage(profile) || friend.FriendProfileImageUrl,
           };
         } catch {
           return friend;
@@ -452,22 +474,22 @@ onUnmounted(() => {
           <div v-if="friends.length" class="friends-list">
             <div v-for="f in friends" :key="f.id" class="friend-card">
               <div class="friend-avatar">
-                <button class="avatar-button" type="button" @click="openUserProfile(f.friendId)">
+                <button class="avatar-button" type="button" @click="openUserProfile(getFriendId(f))">
                   <img
-                    v-if="canShowProfileImage(`friend-${f.friendId}`, getFriendImage(f))"
+                    v-if="canShowProfileImage(`friend-${getFriendId(f)}`, getFriendImage(f))"
                     :src="getFriendImage(f)"
                     alt=""
-                    @error="markProfileImageBroken(`friend-${f.friendId}`)"
+                    @error="markProfileImageBroken(`friend-${getFriendId(f)}`)"
                   />
-                  <span v-else>{{ getInitials(f.friendUserName) }}</span>
+                  <span v-else>{{ getInitials(getFriendName(f)) }}</span>
                 </button>
               </div>
               <div class="friend-info">
-                <span class="friend-name">{{ f.friendUserName }}</span>
-                <span class="friend-meta">Lv {{ f.friendLevel }} · {{ formatCompact(f.friendExperience) }} XP</span>
+                <span class="friend-name">{{ getFriendName(f) }}</span>
+                <span class="friend-meta">Lv {{ getFriendLevel(f) }} · {{ formatCompact(getFriendXp(f)) }} XP</span>
               </div>
               <div class="friend-actions">
-                <button class="icon-action-btn challenge-btn" @click="openChallengeModal(f.friendId)" title="Herausfordern">
+                <button class="icon-action-btn challenge-btn" @click="openChallengeModal(getFriendId(f))" title="Herausfordern">
                   <Trophy :size="18" />
                 </button>
                 <button class="icon-action-btn remove-btn" @click="removeFriend(f.id)" title="Entfernen">

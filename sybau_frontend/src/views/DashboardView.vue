@@ -16,8 +16,10 @@
             <div class="equip-slot" v-for="slotIdx in [0, 1]" :key="slotIdx" @click="router.push('/avatar')">
               <div class="equip-slot-inner" :class="{ empty: !boostSlots[slotIdx], equipped: !!boostSlots[slotIdx] }">
                 <template v-if="boostSlots[slotIdx]">
-                  <div class="equip-item-icon">⚡</div>
-                  <span class="equip-name">{{ boostSlots[slotIdx]!.name }}</span>
+                  <div class="equip-item-icon">
+                    <img v-if="getBoostImage(boostSlots[slotIdx])" :src="getBoostImage(boostSlots[slotIdx])" alt="" />
+                    <span v-else>⚡</span>
+                  </div>
                   <span class="equip-badge">+{{ boostSlots[slotIdx]!.xpBoostPercentage || boostSlots[slotIdx]!.coinBoostPercentage || 0 }}%</span>
                 </template>
                 <template v-else>
@@ -48,8 +50,10 @@
             <div class="equip-slot" v-for="slotIdx in [2, 3]" :key="slotIdx" @click="router.push('/avatar')">
               <div class="equip-slot-inner" :class="{ empty: !boostSlots[slotIdx], equipped: !!boostSlots[slotIdx] }">
                 <template v-if="boostSlots[slotIdx]">
-                  <div class="equip-item-icon">⚡</div>
-                  <span class="equip-name">{{ boostSlots[slotIdx]!.name }}</span>
+                  <div class="equip-item-icon">
+                    <img v-if="getBoostImage(boostSlots[slotIdx])" :src="getBoostImage(boostSlots[slotIdx])" alt="" />
+                    <span v-else>⚡</span>
+                  </div>
                   <span class="equip-badge">+{{ boostSlots[slotIdx]!.xpBoostPercentage || boostSlots[slotIdx]!.coinBoostPercentage || 0 }}%</span>
                 </template>
                 <template v-else>
@@ -199,7 +203,7 @@ import Navbar from "@/components/Navbar.vue";
 import Header from "@/components/Header.vue";
 import { onMounted, ref, computed } from 'vue';
 import type { item } from '@/models/Item';
-import { userService, achievementService, questService } from '@/services/api';
+import { userService, achievementService, questService, resolveMediaUrl } from '@/services/api';
 import FooterComponent from "@/components/FooterComponent.vue";
 import { useLeaderboard } from '@/composables/useLeaderboard';
 import { useRouter } from 'vue-router';
@@ -211,6 +215,8 @@ const level = ref(1);
 const currentXp = ref(0);
 const xpForNextLevel = ref(1000);
 const router = useRouter();
+
+const getBoostImage = (booster: item | null) => resolveMediaUrl(booster?.imageUrl ?? (booster as any)?.ImageUrl ?? '');
 
 // Stats vom Backend
 const currentStreak = ref(0);
@@ -743,6 +749,7 @@ onMounted(async () => {
   background: rgba(168, 85, 247, 0.12);
   border: 1px solid rgba(168, 85, 247, 0.4);
   backdrop-filter: blur(10px);
+  gap: 8px;
 }
 
 .equip-slot-inner.equipped:hover {
@@ -765,12 +772,23 @@ onMounted(async () => {
 }
 
 .equip-item-icon {
-  font-size: 22px;
+  font-size: 34px;
   filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.6));
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+}
+
+.equip-item-icon img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .equip-badge {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   color: rgba(168, 85, 247, 0.95);
   background: rgba(168, 85, 247, 0.15);

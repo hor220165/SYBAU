@@ -7,10 +7,12 @@ export interface ShopDisplayItem {
   price: number;
   type: ItemType | string;
   xpBoostPercentage: number;
+  coinBoostPercentage: number;
   category: 'chest' | 'boost' | 'item';
   categoryLabel: string;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   icon: string;
+  imageUrl?: string;
   highlights: string[];
   ownedQuantity: number;
   maxQuantity: number;
