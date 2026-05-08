@@ -14,7 +14,8 @@ public class Item : BaseEntity<int>
         if(string.IsNullOrWhiteSpace(name)) throw new ArgumentNullException(nameof(name));
         if(string.IsNullOrWhiteSpace(description)) throw new ArgumentNullException(nameof(description));
         if(price  <= 0) throw new ArgumentOutOfRangeException(nameof(price));
-        if(xpBoostPercent <= 0 && coinBoostPercent <= 0) throw new ArgumentException("XP- oder Coin-Boost muss > 0 sein.");
+        if(type == ItemType.Booster && xpBoostPercent <= 0 && coinBoostPercent <= 0)
+            throw new ArgumentException("XP- oder Coin-Boost muss > 0 sein.");
         
         Name = name;
         Description = description;
@@ -34,5 +35,6 @@ public class Item : BaseEntity<int>
     public int CoinBoostPercent { get; set; }
     public ItemRarity Rarity { get; set; } = ItemRarity.Common;
     public int MaxQuantity { get; set; } = 5;
+    public string? ImageUrl { get; set; }
     public ICollection<UserItem> UserItems { get; set; } = new List<UserItem>();
 }

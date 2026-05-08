@@ -8,7 +8,7 @@ public class Exercise : BaseEntity<int>
     protected Exercise() { }
 #pragma warning restore CS8618
 
-    public Exercise(string name, string? description, WorkoutCategory category, ExerciseDifficulty difficulty, double xpPerRep = 1, int dailyLimit = 200)
+    public Exercise(string name, string? description, WorkoutCategory category, ExerciseDifficulty difficulty, double xpPerRep = 1, int dailyLimit = 200, string unit = "Reps")
     {
         if (string.IsNullOrWhiteSpace(name)) throw new ArgumentNullException(nameof(name));
         if (xpPerRep < 0) throw new ArgumentOutOfRangeException(nameof(xpPerRep));
@@ -20,12 +20,14 @@ public class Exercise : BaseEntity<int>
         Difficulty = difficulty;
         XpPerRep = xpPerRep;
         DailyLimit = dailyLimit;
+        Unit = string.IsNullOrWhiteSpace(unit) ? "Reps" : unit;
     }
 
     public string Name { get; set; }
     public string? Description { get; set; }
     public WorkoutCategory Category { get; set; }
     public ExerciseDifficulty Difficulty { get; set; }
+    public string Unit { get; set; } = "Reps";
     public double XpPerRep { get; set; } = 1;
     public int DailyLimit { get; set; } = 200;
 

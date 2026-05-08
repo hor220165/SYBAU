@@ -9,6 +9,8 @@ public class FitnessDbContext:DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Avatar> Avatars => Set<Avatar>();
     public DbSet<Item> Items => Set<Item>();
+    public DbSet<Chest> Chests => Set<Chest>();
+    public DbSet<ChestItem> ChestItems => Set<ChestItem>();
     public DbSet<Exercise> Exercises => Set<Exercise>();
     public DbSet<Workout> Workouts => Set<Workout>();
     public DbSet<WorkoutExercise> WorkoutExercises => Set<WorkoutExercise>();
@@ -65,6 +67,21 @@ public class FitnessDbContext:DbContext
         {
             entity.Property(e => e.Type).HasConversion<string>();
             entity.Property(e => e.Rarity).HasConversion<string>();
+        });
+
+        modelBuilder.Entity<ChestItem>(entity =>
+        {
+            entity.HasOne(ci => ci.Chest)
+                .WithMany(c => c.ChestItems)
+                .HasForeignKey(ci => ci.ChestId)
+                .IsRequired();
+
+            entity.HasOne(ci => ci.Item)
+                .WithMany()
+                .HasForeignKey(ci => ci.ItemId)
+                .IsRequired();
+
+            entity.HasIndex(ci => new { ci.ChestId, ci.ItemId }).IsUnique();
         });
 
         //Workout - Exercise Many-to-Many mit Tageslimit

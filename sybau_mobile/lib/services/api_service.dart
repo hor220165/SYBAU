@@ -657,6 +657,26 @@ class ApiService {
     await _authedPost('/shop/buy-item/$itemId', <String, dynamic>{});
   }
 
+  static Future<List<dynamic>> getChests() async {
+    return _authedGetList('/shop/chests');
+  }
+
+  static Future<Map<String, dynamic>> openChest(int chestId) async {
+    return _authedPostJson('/shop/chests/$chestId/open', <String, dynamic>{});
+  }
+
+  static Future<List<dynamic>> getUserItems() async {
+    try {
+      return await _authedGetList('/users/items');
+    } catch (_) {
+      return _authedGetList('/users/boosts');
+    }
+  }
+
+  static Future<Map<String, dynamic>> sellItem(int itemId) async {
+    return _authedPostJson('/shop/sell-item/$itemId', <String, dynamic>{});
+  }
+
   static Future<List<dynamic>> getWorkouts({String? category}) async {
     final path = category == null || category.isEmpty
         ? '/workouts'

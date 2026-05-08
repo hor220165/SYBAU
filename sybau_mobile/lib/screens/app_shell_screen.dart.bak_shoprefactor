@@ -1192,15 +1192,13 @@ class _DashboardTabState extends State<DashboardTab> {
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(
                   _resolvedImageUrl(booster.imageUrl),
-                  width: 38,
-                  height: 38,
+                  width: 26,
+                  height: 26,
                   fit: BoxFit.contain,
-                  filterQuality: FilterQuality.none,
-                  isAntiAlias: false,
                   errorBuilder: (_, __, ___) => Text(
                     '⚡',
                     style: TextStyle(
-                      fontSize: isEquipped ? 28 : 16,
+                      fontSize: isEquipped ? 20 : 16,
                       color: Color(0xFFC084FC),
                     ),
                   ),
@@ -1210,17 +1208,28 @@ class _DashboardTabState extends State<DashboardTab> {
               Text(
                 isEquipped ? '⚡' : '◈',
                 style: TextStyle(
-                  fontSize: isEquipped ? 28 : 16,
+                  fontSize: isEquipped ? 20 : 16,
                   color: Color(0xFFC084FC),
                 ),
               ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
+            Text(
+              isEquipped ? booster.name : 'Booster',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withOpacity(isEquipped ? 0.95 : 0.65),
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+              ),
+            ),
             Text(
               isEquipped ? '+${booster.bestBoostPercent}%' : 'Leer',
               style: TextStyle(
                 color: isEquipped ? Color(0xFFC084FC) : Colors.white24,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -2114,85 +2123,6 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
         );
   }
 
-  Future<void> _openIosTimePicker(Map<String, dynamic> exercise) async {
-    final id = _toInt(exercise['id']);
-    var selected = Duration(seconds: _parseTime(_timeDraftFor(exercise)));
-
-    await showCupertinoModalPopup<void>(
-      context: context,
-      builder: (BuildContext modalContext) {
-        return CupertinoTheme(
-          data: const CupertinoThemeData(brightness: Brightness.dark),
-          child: Container(
-            height: 320,
-            decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
-            ),
-            child: SafeArea(
-              top: false,
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    child: Row(
-                      children: [
-                        CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () => Navigator.of(modalContext).pop(),
-                          child: const Text(
-                            'Abbrechen',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () {
-                            setState(() {
-                              _timeDraft[id] = _secondsToTime(
-                                selected.inSeconds,
-                              );
-                            });
-                            Navigator.of(modalContext).pop();
-                          },
-                          child: const Text(
-                            'Fertig',
-                            style: TextStyle(
-                              color: Color(0xFFEC4899),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: CupertinoTimerPicker(
-                      mode: CupertinoTimerPickerMode.hms,
-                      initialTimerDuration: selected,
-                      onTimerDurationChanged: (Duration next) {
-                        selected = next;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   double _distanceDraftFor(Map<String, dynamic> exercise) {
     final id = _toInt(exercise['id']);
     final unit = _distanceUnitFor(exercise);
@@ -3023,94 +2953,43 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                             Row(
                               children: [
                                 Expanded(
-                                  child:
-                                      Theme.of(context).platform ==
-                                          TargetPlatform.iOS
-                                      ? GestureDetector(
-                                          onTap: () => _openIosTimePicker(m),
-                                          child: Container(
-                                            height: 46,
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              color: Colors.white.withOpacity(
-                                                0.05,
-                                              ),
-                                              border: Border.all(
-                                                color: Colors.white.withOpacity(
-                                                  0.12,
-                                                ),
-                                              ),
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                const Icon(
-                                                  CupertinoIcons.time,
-                                                  color: Color(0xFF60A5FA),
-                                                  size: 18,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  _timeDraftFor(m),
-                                                  textAlign: TextAlign.center,
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.w800,
-                                                    fontSize: 16,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        )
-                                      : Container(
-                                          height: 46,
-                                          decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            color: Colors.white.withOpacity(
-                                              0.05,
-                                            ),
-                                            border: Border.all(
-                                              color: Colors.white.withOpacity(
-                                                0.12,
-                                              ),
-                                            ),
-                                          ),
-                                          child: TextField(
-                                            controller: TextEditingController(
-                                              text: _timeDraftFor(m),
-                                            ),
-                                            textAlign: TextAlign.center,
-                                            inputFormatters: [
-                                              FilteringTextInputFormatter
-                                                  .digitsOnly,
-                                            ],
-                                            keyboardType: TextInputType.number,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 16,
-                                            ),
-                                            decoration: InputDecoration(
-                                              border: InputBorder.none,
-                                              hintText: '00:00:00',
-                                              hintStyle: TextStyle(
-                                                color: Colors.white.withOpacity(
-                                                  0.3,
-                                                ),
-                                              ),
-                                            ),
-                                            onChanged: (val) {
-                                              final formatted =
-                                                  _formatTimeInput(val);
-                                              final id = _toInt(m['id']);
-                                              _timeDraft[id] = formatted;
-                                            },
-                                          ),
+                                  child: Container(
+                                    height: 46,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      color: Colors.white.withOpacity(0.05),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.12),
+                                      ),
+                                    ),
+                                    child: TextField(
+                                      controller: TextEditingController(
+                                        text: _timeDraftFor(m),
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                      ],
+                                      keyboardType: TextInputType.number,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 16,
+                                      ),
+                                      decoration: InputDecoration(
+                                        border: InputBorder.none,
+                                        hintText: '00:00:00',
+                                        hintStyle: TextStyle(
+                                          color: Colors.white.withOpacity(0.3),
                                         ),
+                                      ),
+                                      onChanged: (val) {
+                                        final formatted = _formatTimeInput(val);
+                                        final id = _toInt(m['id']);
+                                        _timeDraft[id] = formatted;
+                                      },
+                                    ),
+                                  ),
                                 ),
                                 const SizedBox(width: 10),
                                 SizedBox(
@@ -4846,8 +4725,9 @@ class _AvatarTabState extends State<AvatarTab> {
   Widget _buildEquipSlot(int index, {double size = 82}) {
     final item = _slots[index];
     final isFilled = item != null;
-    final iconSize = size * 0.46;
-    final valueSize = size * 0.14;
+    final iconSize = size * 0.24;
+    final titleSize = size * 0.12;
+    final valueSize = size * 0.11;
 
     return GestureDetector(
       onTap: () => _handleSlotTap(index),
@@ -4868,28 +4748,21 @@ class _AvatarTabState extends State<AvatarTab> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (isFilled && item.imageUrl.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  _resolvedImageUrl(item.imageUrl),
-                  width: iconSize,
-                  height: iconSize,
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.none,
-                  isAntiAlias: false,
-                  errorBuilder: (_, __, ___) => Text(
-                    _boosterIcon(item),
-                    style: TextStyle(fontSize: iconSize),
-                  ),
-                ),
-              )
-            else
-              Text(
-                isFilled ? _boosterIcon(item) : '⚡',
-                style: TextStyle(fontSize: iconSize),
-              ),
+            Text(
+              isFilled ? _boosterIcon(item) : '⚡',
+              style: TextStyle(fontSize: iconSize),
+            ),
             SizedBox(height: size * 0.05),
+            Text(
+              isFilled ? item.name : 'Booster',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withOpacity(isFilled ? 0.95 : 0.58),
+                fontSize: titleSize,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             Text(
               isFilled ? '+${item.bestBoostPercent}%' : 'Leer',
               style: TextStyle(
@@ -5532,6 +5405,7 @@ class _ShopTabState extends State<ShopTab> {
   List<dynamic> _chests = <dynamic>[];
   List<dynamic> _ownedItems = <dynamic>[];
   Map<String, dynamic> _profile = <String, dynamic>{};
+  String _activeFilter = 'all';
   int _currentCoins = 0;
   Map<String, dynamic>? _pendingPurchase;
   bool _buying = false;
@@ -5784,6 +5658,18 @@ class _ShopTabState extends State<ShopTab> {
     }).toList(growable: false);
   }
 
+  List<dynamic> get _filteredItems {
+    if (_activeFilter == 'all') {
+      return [..._displayChests.map((c) => {...c, "_isChest": true}), ..._displayItems];
+    }
+    if (_activeFilter == 'chest') {
+      return _displayChests.map((c) => {...c, '_isChest': true}).toList();
+    }
+    return _displayItems
+        .where((i) => i['category'] == _activeFilter)
+        .toList();
+  }
+
   // ---------- Image / placeholder builders ----------
 
   Widget _buildItemImage(String? imageUrl, {double size = 86}) {
@@ -5837,88 +5723,97 @@ class _ShopTabState extends State<ShopTab> {
         ),
         border: Border.all(color: Color(0xFF8B5CF6).withOpacity(0.35)),
       ),
-      child: Stack(
+      padding: const EdgeInsets.all(12),
+      child: Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(14),
+          // Chest image
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF8B5CF6).withOpacity(0.18),
+                  Color(0xFF6D28D9).withOpacity(0.08),
+                ],
+              ),
+              border: Border.all(color: Color(0xFF8B5CF6).withOpacity(0.2)),
+            ),
+            child: Stack(
+              children: [
+                Center(
+                  child: imageUrl.isNotEmpty
+                      ? Image.network(
+                          ApiService.mediaUrl(imageUrl) ?? '',
+                          width: 56,
+                          height: 56,
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.none,
+                          isAntiAlias: false,
+                          errorBuilder: (_, __, ___) => const Text(
+                            '📦',
+                            style: TextStyle(fontSize: 36),
+                          ),
+                        )
+                      : const Text('📦', style: TextStyle(fontSize: 36)),
+                ),
+                Positioned(
+                  top: 2,
+                  right: 2,
+                  child: InkWell(
+                    onTap: () => _showChestRatesDialog(chest),
+                    borderRadius: BorderRadius.circular(999),
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFF0F172A).withOpacity(0.7),
+                      ),
+                      child: Icon(
+                        Icons.info_outline,
+                        color: Color(0xFFF9A8D4),
+                        size: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 84,
-                      height: 84,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0xFF8B5CF6).withOpacity(0.18),
-                            Color(0xFF6D28D9).withOpacity(0.08),
-                          ],
-                        ),
-                        border: Border.all(
-                          color: Color(0xFF8B5CF6).withOpacity(0.2),
-                        ),
-                      ),
-                      child: Center(
-                        child: imageUrl.isNotEmpty
-                            ? Image.network(
-                                ApiService.mediaUrl(imageUrl) ?? '',
-                                width: 66,
-                                height: 66,
-                                fit: BoxFit.contain,
-                                filterQuality: FilterQuality.none,
-                                isAntiAlias: false,
-                                errorBuilder: (_, __, ___) => const Text(
-                                  '📦',
-                                  style: TextStyle(fontSize: 40),
-                                ),
-                              )
-                            : const Text('📦', style: TextStyle(fontSize: 40)),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 4, right: 30),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _string(chest['name']),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              '$itemCount mögliche Items',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.62),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                Text(
+                  _string(chest['name']),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
+                Text(
+                  '$itemCount mögliche Items',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.62),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
-                  height: 38,
+                  height: 36,
                   child: ElevatedButton(
                     onPressed: canAfford && !isOpening
                         ? () => _requestPurchase(chest, isChest: true)
@@ -5929,12 +5824,12 @@ class _ShopTabState extends State<ShopTab> {
                       shadowColor: Colors.transparent,
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                     child: Ink(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                         gradient: canAfford
                             ? const LinearGradient(
                                 colors: [Color(0xFF22C55E), Color(0xFF14532D)],
@@ -5986,30 +5881,6 @@ class _ShopTabState extends State<ShopTab> {
               ],
             ),
           ),
-          Positioned(
-            top: 10,
-            right: 10,
-            child: InkWell(
-              onTap: () => _showChestRatesDialog(chest),
-              borderRadius: BorderRadius.circular(999),
-              child: Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFF0F172A).withOpacity(0.78),
-                  border: Border.all(
-                    color: Color(0xFFF9A8D4).withOpacity(0.22),
-                  ),
-                ),
-                child: Icon(
-                  Icons.info_outline,
-                  color: Color(0xFFF9A8D4),
-                  size: 16,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -6040,8 +5911,9 @@ class _ShopTabState extends State<ShopTab> {
                 ),
               ),
               const SizedBox(height: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   _buildRateChip('Common', _toInt(chest['commonChance']), Color(0xFF94A3B8)),
                   _buildRateChip('Rare', _toInt(chest['rareChance']), Color(0xFF60A5FA)),
@@ -6057,13 +5929,18 @@ class _ShopTabState extends State<ShopTab> {
   }
 
   Widget _buildRateChip(String label, int chance, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: color.withOpacity(0.12),
+        border: Border.all(color: color.withOpacity(0.28)),
+      ),
       child: Text(
         '$label $chance%',
         style: TextStyle(
           color: color,
-          fontSize: 15,
+          fontSize: 12,
           fontWeight: FontWeight.w800,
         ),
       ),
@@ -6092,199 +5969,191 @@ class _ShopTabState extends State<ShopTab> {
         color: Color(0xFF080A1F).withOpacity(0.78),
         border: Border.all(color: accent.withOpacity(0.18)),
       ),
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.all(12),
+      child: Row(
         children: [
-          // Content row: image + text info
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Image section
-              Container(
-                width: 84,
-                height: 84,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: Color(0xFF020617).withOpacity(0.26),
-                  border: Border.all(color: Colors.white.withOpacity(0.06)),
-                ),
-                child: Center(
-                  child: imageUrl.isNotEmpty
-                      ? Image.network(
-                          ApiService.mediaUrl(imageUrl) ?? '',
-                          width: 66,
-                          height: 66,
-                          fit: BoxFit.contain,
-                          filterQuality: FilterQuality.none,
-                          isAntiAlias: false,
-                          errorBuilder: (_, __, ___) => Text(
-                            icon,
-                            style: const TextStyle(fontSize: 40),
-                          ),
-                        )
-                      : Text(icon, style: const TextStyle(fontSize: 40)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Text content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          // Image section
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              color: Color(0xFF020617).withOpacity(0.26),
+              border: Border.all(color: Colors.white.withOpacity(0.06)),
+            ),
+            child: Center(
+              child: imageUrl.isNotEmpty
+                  ? Image.network(
+                      ApiService.mediaUrl(imageUrl) ?? '',
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.none,
+                      isAntiAlias: false,
+                      errorBuilder: (_, __, ___) => Text(
+                        icon,
+                        style: const TextStyle(fontSize: 36),
+                      ),
+                    )
+                  : Text(icon, style: const TextStyle(fontSize: 36)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Content section
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _string(item['name']),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
-                            color: limitReached
-                                ? Color(0xFFEF4444).withOpacity(0.18)
-                                : owned == 0
-                                    ? Color(0xFF94A3B8).withOpacity(0.1)
-                                    : Color(0xFFEC4899).withOpacity(0.18),
-                            border: Border.all(
-                              color: limitReached
-                                  ? Color(0xFFEF4444).withOpacity(0.4)
-                                  : owned == 0
-                                      ? Color(0xFF94A3B8).withOpacity(0.25)
-                                      : Color(0xFFEC4899).withOpacity(0.46),
-                            ),
-                          ),
-                          child: Text(
-                            '$owned/$maxQty',
-                            style: TextStyle(
-                              color: limitReached
-                                  ? Color(0xFFFCA5A5)
-                                  : owned == 0
-                                      ? Color(0xFF94A3B8).withOpacity(0.6)
-                                      : Color(0xFFF9A8D4),
-                              fontWeight: FontWeight.w900,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      rarity.toUpperCase(),
-                      maxLines: 1,
-                      style: TextStyle(
-                        color: accent,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.1,
-                      ),
-                    ),
-                    if (xpBoost > 0 || coinBoost > 0)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Wrap(
-                          spacing: 6,
-                          runSpacing: 4,
-                          children: [
-                            if (xpBoost > 0)
-                              _buildBoostPill(
-                                iconAsset: 'assets/XP_Pixel.png',
-                                label: '+$xpBoost% XP',
-                                textColor: Color(0xFF60A5FA),
-                                borderColor: Color(0xFF3B82F6),
-                                backgroundColor: Color(0xFF2563EB),
-                              ),
-                            if (coinBoost > 0)
-                              _buildBoostPill(
-                                iconAsset: 'assets/SYBAU_Coin.png',
-                                label: '+$coinBoost% Coins',
-                                textColor: Color(0xFFFACC15),
-                                borderColor: Color(0xFFF59E0B),
-                                backgroundColor: Color(0xFFF59E0B),
-                              ),
-                          ],
+                    Expanded(
+                      child: Text(
+                        _string(item['name']),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        color: limitReached
+                            ? Color(0xFFEF4444).withOpacity(0.18)
+                            : owned == 0
+                                ? Color(0xFF94A3B8).withOpacity(0.1)
+                                : Color(0xFFEC4899).withOpacity(0.18),
+                        border: Border.all(
+                          color: limitReached
+                              ? Color(0xFFEF4444).withOpacity(0.4)
+                              : owned == 0
+                                  ? Color(0xFF94A3B8).withOpacity(0.25)
+                                  : Color(0xFFEC4899).withOpacity(0.46),
+                        ),
+                      ),
+                      child: Text(
+                        '$owned/$maxQty',
+                        style: TextStyle(
+                          color: limitReached
+                              ? Color(0xFFFCA5A5)
+                              : owned == 0
+                                  ? Color(0xFF94A3B8).withOpacity(0.6)
+                                  : Color(0xFFF9A8D4),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Buy button below the content
-          SizedBox(
-            width: double.infinity,
-            height: 36,
-            child: ElevatedButton(
-              onPressed: canBuy ? () => _requestPurchase(item) : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                disabledBackgroundColor: Colors.white.withOpacity(0.06),
-                shadowColor: Colors.transparent,
-                padding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: Ink(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  gradient: canBuy
-                      ? const LinearGradient(
-                          colors: [Color(0xFF22C55E), Color(0xFF14532D)],
-                        )
-                      : null,
-                  color: canBuy ? null : Colors.white.withOpacity(0.06),
-                  border: Border.all(
-                    color: canBuy
-                        ? Color(0xFF4ADE80).withOpacity(0.42)
-                        : Color(0xFF94A3B8).withOpacity(0.18),
+                const SizedBox(height: 3),
+                Text(
+                  rarity.toUpperCase(),
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.1,
                   ),
                 ),
-                child: Center(
-                  child: limitReached
-                      ? const Text(
-                          'Max erreicht',
-                          style: TextStyle(
-                            color: Colors.white54,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
+                if (xpBoost > 0 || coinBoost > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        if (xpBoost > 0)
+                          _buildBoostPill(
+                            iconAsset: 'assets/XP_Pixel.png',
+                            label: '+$xpBoost% XP',
+                            textColor: Color(0xFF60A5FA),
+                            borderColor: Color(0xFF3B82F6),
+                            backgroundColor: Color(0xFF2563EB),
                           ),
-                        )
-                      : Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset(
-                              'assets/SYBAU_Coin.png',
-                              width: 16,
-                              height: 16,
-                              fit: BoxFit.contain,
-                              filterQuality: FilterQuality.none,
-                              isAntiAlias: false,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _formatCompactNumber(price),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
+                        if (coinBoost > 0)
+                          _buildBoostPill(
+                            iconAsset: 'assets/SYBAU_Coin.png',
+                            label: '+$coinBoost% Coins',
+                            textColor: Color(0xFFFACC15),
+                            borderColor: Color(0xFFF59E0B),
+                            backgroundColor: Color(0xFFF59E0B),
+                          ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  height: 36,
+                  child: ElevatedButton(
+                    onPressed: canBuy ? () => _requestPurchase(item) : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      disabledBackgroundColor: Colors.white.withOpacity(0.06),
+                      shadowColor: Colors.transparent,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: Ink(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        gradient: canBuy
+                            ? const LinearGradient(
+                                colors: [Color(0xFF22C55E), Color(0xFF14532D)],
+                              )
+                            : null,
+                        color: canBuy ? null : Colors.white.withOpacity(0.06),
+                        border: Border.all(
+                          color: canBuy
+                              ? Color(0xFF4ADE80).withOpacity(0.42)
+                              : Color(0xFF94A3B8).withOpacity(0.18),
                         ),
+                      ),
+                      child: Center(
+                        child: limitReached
+                            ? const Text(
+                                'Max erreicht',
+                                style: TextStyle(
+                                  color: Colors.white54,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              )
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Image.asset(
+                                    'assets/SYBAU_Coin.png',
+                                    width: 16,
+                                    height: 16,
+                                    fit: BoxFit.contain,
+                                    filterQuality: FilterQuality.none,
+                                    isAntiAlias: false,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _formatCompactNumber(price),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
@@ -6300,9 +6169,9 @@ class _ShopTabState extends State<ShopTab> {
     required Color backgroundColor,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(11),
         color: backgroundColor.withOpacity(0.16),
         border: Border.all(color: borderColor.withOpacity(0.38)),
       ),
@@ -6311,13 +6180,13 @@ class _ShopTabState extends State<ShopTab> {
         children: [
           Image.asset(
             iconAsset,
-            width: 15,
-            height: 15,
+            width: 18,
+            height: 18,
             fit: BoxFit.contain,
             filterQuality: FilterQuality.none,
             isAntiAlias: false,
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: 6),
           Flexible(
             child: Text(
               label,
@@ -6325,7 +6194,7 @@ class _ShopTabState extends State<ShopTab> {
               style: TextStyle(
                 color: textColor,
                 fontWeight: FontWeight.w900,
-                fontSize: 10,
+                fontSize: 11,
               ),
             ),
           ),
@@ -6519,138 +6388,136 @@ class _ShopTabState extends State<ShopTab> {
       opacity: _openedReward == null ? 0 : 1,
       duration: const Duration(milliseconds: 220),
       child: Container(
-        color: Colors.black.withOpacity(0.88),
-        child: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 340),
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0, end: 1),
-                  duration: const Duration(milliseconds: 420),
-                  curve: Curves.easeOutCubic,
-                  builder: (_, value, __) {
-                    final imageScale = 0.82 + (value * 0.18);
-                    final imageOffset = 28 * (1 - value);
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          'Du hast erhalten:',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Transform.translate(
-                          offset: Offset(0, imageOffset),
-                          child: Opacity(
-                            opacity: value.clamp(0, 1),
-                            child: Transform.scale(
-                              scale: imageScale,
-                              child: rewardImageUrl.isNotEmpty
-                                  ? Image.network(
-                                      ApiService.mediaUrl(rewardImageUrl) ?? '',
-                                      width: 118,
-                                      height: 118,
-                                      fit: BoxFit.contain,
-                                      filterQuality: FilterQuality.none,
-                                      isAntiAlias: false,
-                                      errorBuilder: (_, __, ___) => Text(
-                                        rarity == 'legendary'
-                                            ? '👑'
-                                            : rarity == 'epic'
-                                                ? '💎'
-                                                : '⭐',
-                                        style: const TextStyle(fontSize: 72),
-                                      ),
-                                    )
-                                  : Text(
-                                      rarity == 'legendary'
-                                          ? '👑'
-                                          : rarity == 'epic'
-                                              ? '💎'
-                                              : '⭐',
-                                      style: const TextStyle(fontSize: 72),
-                                    ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Opacity(
-                          opacity: (value - 0.18).clamp(0, 1),
-                          child: Column(
-                            children: [
-                              Text(
-                                rewardName,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                rarity.toUpperCase(),
-                                style: TextStyle(
-                                  color: accent,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.6,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _closeChestReward,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            child: Ink(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFFEC4899), Color(0xFFF43F5E)],
-                                ),
-                              ),
-                              child: const SizedBox(
-                                height: 50,
-                                child: Center(
-                                  child: Text(
-                                    'Weiter',
-                                    style: TextStyle(
+        color: Colors.black87,
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  accent.withOpacity(0.18),
+                  Color(0xFF0F172A),
+                ],
+              ),
+              border: Border.all(color: accent.withOpacity(0.4)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0.75, end: 1),
+                  duration: const Duration(milliseconds: 340),
+                  curve: Curves.easeOutBack,
+                  builder: (_, scale, child) =>
+                      Transform.scale(scale: scale, child: child),
+                  child: const Text('🎉',
+                      style: TextStyle(fontSize: 48)),
+                ),
+                const SizedBox(height: 12),
+                const Text('Du hast erhalten:',
+                    style:
+                        TextStyle(color: Colors.white70, fontSize: 14)),
+                const SizedBox(height: 10),
+                if (rewardImageUrl.isNotEmpty)
+                  Image.network(
+                    ApiService.mediaUrl(rewardImageUrl) ?? '',
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Text(
+                        rarity == 'legendary'
+                            ? '👑'
+                            : rarity == 'epic'
+                                ? '💎'
+                                : '⭐',
+                        style: const TextStyle(fontSize: 48)),
+                  )
+                else
+                  Text(
+                      rarity == 'legendary'
+                          ? '👑'
+                          : rarity == 'epic'
+                              ? '💎'
+                              : '⭐',
+                      style: const TextStyle(fontSize: 48)),
+                const SizedBox(height: 10),
+                Text(rewardName,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: accent,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800)),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _closeChestReward,
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12))),
+                    child: Ink(
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          gradient: LinearGradient(
+                              colors: [
+                                Color(0xFF8B5CF6),
+                                Color(0xFF6D28D9)
+                              ])),
+                      child: const SizedBox(
+                          height: 46,
+                          child: Center(
+                              child: Text('Cool!',
+                                  style: TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w800,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
+                                      fontSize: 16)))),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // ---------- Filter chips ----------
+
+  Widget _buildFilterChip(String value, String label) {
+    final active = _activeFilter == value;
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: () => setState(() => _activeFilter = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          gradient: active
+              ? const LinearGradient(
+                  colors: [Color(0xFFEC4899), Color(0xFFF43F5E)])
+              : null,
+          color: active
+              ? null
+              : Color(0xFF1E293B).withOpacity(0.44),
+          border: Border.all(
+            color: active
+                ? Colors.transparent
+                : Color(0xFFEC4899).withOpacity(0.22),
+          ),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                color: active ? Colors.white : Color(0xFFF9A8D4),
+                fontWeight: FontWeight.w700,
+                fontSize: 12)),
       ),
     );
   }
@@ -6694,77 +6561,38 @@ class _ShopTabState extends State<ShopTab> {
               ),
               const SizedBox(height: 16),
 
-              // ---- Chests section ----
-              if (_displayChests.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 4,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(2),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text('Chests',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800)),
-                    ],
-                  ),
-                ),
-                ..._displayChests.map((c) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _buildChestCard(c),
-                )),
-                const SizedBox(height: 18),
-              ],
 
-              // ---- Items section ----
-              if (_displayItems.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 4,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(2),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFEC4899), Color(0xFFF43F5E)],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text('Items',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800)),
-                    ],
-                  ),
-                ),
-                ..._displayItems.map((item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _buildShopItemCard(item),
-                )),
-              ],
+              // Filter chips
+              Wrap(spacing: 8, runSpacing: 8, children: [
+                _buildFilterChip('all', 'Alle'),
+                _buildFilterChip('chest', 'Chests'),
+                _buildFilterChip('boost', 'Boosts'),
+                _buildFilterChip('item', 'Items'),
+              ]),
+              const SizedBox(height: 14),
 
-              if (_displayChests.isEmpty && _displayItems.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Text('Keine Items gefunden.',
-                      style: TextStyle(
-                          color: Colors.white.withOpacity(0.68),
-                          fontSize: 14)),
-                ),
+              // Items grid
+              _filteredItems.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Text('Keine Items gefunden.',
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.68),
+                              fontSize: 14)),
+                    )
+                  : ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _filteredItems.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (_, i) {
+                        final item = _filteredItems[i];
+                        if (item['_isChest'] == true) {
+                          return _buildChestCard(item);
+                        }
+                        return _buildShopItemCard(item);
+                      },
+                    ),
 
               // Earn section
               const SizedBox(height: 24),

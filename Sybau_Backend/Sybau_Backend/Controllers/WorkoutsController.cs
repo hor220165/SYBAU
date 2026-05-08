@@ -119,4 +119,44 @@ public class WorkoutsController : ControllerBase
             return BadRequest(e.Message);
         }
     }
+
+    [Authorize(Policy = "AdminOnly")]
+    [HttpPut("exercises/{id}")]
+    public async Task<IActionResult> UpdateExercise(int id, [FromBody] CreateExerciseDto dto)
+    {
+        try
+        {
+            var exercise = await _workoutService.UpdateExerciseAsync(id, dto);
+            if (exercise == null) return NotFound();
+            return Ok(exercise);
+        }
+        catch (ArgumentException e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [Authorize(Policy = "AdminOnly")]
+    [HttpPut("exercises/{id}/unit")]
+    public async Task<IActionResult> UpdateExerciseUnit(int id, [FromBody] UpdateExerciseUnitDto dto)
+    {
+        var exercise = await _workoutService.UpdateExerciseUnitAsync(id, dto.ResolveUnit());
+        if (exercise == null) return NotFound();
+        return Ok(exercise);
+    }
+
+    [Authorize(Policy = "AdminOnly")]
+    [HttpDelete("exercises/{id}")]
+    public async Task<IActionResult> DeleteExercise(int id)
+    {
+        try
+        {
+            var deleted = await _workoutService.DeleteExerciseAsync(id);
+            return deleted ? NoContent() : NotFound();
+        }
+        catch (InvalidOperationException e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
 }

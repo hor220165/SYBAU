@@ -1,10 +1,8 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Sybau_Backend._Services;
 using Sybau_Backend.DTOs;
-using Sybau_Backend.Models;
 
 namespace Sybau_Backend.Controllers
 {
@@ -13,10 +11,12 @@ namespace Sybau_Backend.Controllers
     public class ShopController : ControllerBase
     {
         private readonly ShopService _shopService;
+        private readonly IWebHostEnvironment _environment;
 
-        public ShopController(ShopService shopService)
+        public ShopController(ShopService shopService, IWebHostEnvironment environment)
         {
             _shopService = shopService;
+            _environment = environment;
         }
 
         [HttpGet("items")]
@@ -33,12 +33,189 @@ namespace Sybau_Backend.Controllers
             return Ok(item);
         }
 
+        [HttpGet("chests")]
+        public async Task<IActionResult> GetChests()
+        {
+            var chests = await _shopService.GetChestsAsync();
+            return Ok(chests);
+        }
+
+        [HttpGet("chests/{chestId}")]
+        public async Task<IActionResult> GetChestById(int chestId)
+        {
+            var chest = await _shopService.GetChestAsync(chestId);
+            return chest == null ? NotFound() : Ok(chest);
+        }
+
+        [Authorize]
+        [HttpPost("chests/{chestId}/open")]
+        public async Task<IActionResult> OpenChest(int chestId)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            var userId = int.Parse(userIdClaim);
+            var (error, result) = await _shopService.OpenChestAsync(userId, chestId);
+            if (error != null) return BadRequest(error);
+            return Ok(result);
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost("chests/add")]
+        public async Task<IActionResult> AddChest([FromForm] ChestFormDto dto)
+        {
+            var image = ReadChestImage(dto);
+            if (image == null || image.Length == 0)
+                return BadRequest("Ein Bild ist fuer neue Chests Pflicht.");
+
+            try
+            {
+                dto.ItemIds = ReadChestItemIds(dto);
+                var imageUrl = await SaveShopUploadAsync(image, "chests");
+                var chest = await _shopService.AddChestAsync(dto, imageUrl);
+                return Ok(chest);
+            }
+            catch (ArgumentException e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPut("chests/{chestId}")]
+        public async Task<IActionResult> UpdateChest(int chestId, [FromForm] ChestFormDto dto)
+        {
+            return await UpdateChestFromForm(chestId, dto);
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost("chests/{chestId}/update")]
+        public async Task<IActionResult> UpdateChestPost(int chestId, [FromForm] ChestFormDto dto)
+        {
+            return await UpdateChestFromForm(chestId, dto);
+        }
+
+        private async Task<IActionResult> UpdateChestFromForm(int chestId, ChestFormDto dto)
+        {
+            var existing = await _shopService.GetChestEntityAsync(chestId);
+            if (existing == null) return NotFound();
+            var previousImageUrl = existing.ImageUrl;
+
+            try
+            {
+                dto.ItemIds = ReadChestItemIds(dto);
+                string? imageUrl = null;
+                var image = ReadChestImage(dto);
+                if (image is { Length: > 0 })
+                {
+                    imageUrl = await SaveShopUploadAsync(image, "chests");
+                }
+
+                var chest = await _shopService.UpdateChestAsync(chestId, dto, imageUrl);
+                if (chest == null) return NotFound();
+
+                if (!string.IsNullOrWhiteSpace(imageUrl))
+                {
+                    DeleteLocalUpload(previousImageUrl);
+                }
+
+                return Ok(chest);
+            }
+            catch (ArgumentException e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpDelete("chests/{chestId}")]
+        public async Task<IActionResult> DeleteChest(int chestId)
+        {
+            var existing = await _shopService.GetChestEntityAsync(chestId);
+            if (existing == null) return NotFound();
+
+            var deleted = await _shopService.DeleteChestAsync(chestId);
+            if (!deleted) return NotFound();
+
+            DeleteLocalUpload(existing.ImageUrl);
+            return NoContent();
+        }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost("items/add")]
-        public async Task<IActionResult> AddItem([FromBody] ItemDto dto)
+        public async Task<IActionResult> AddItem([FromForm] ShopItemFormDto dto)
         {
-            var item = await _shopService.AddItemAsync(dto);
-            return Ok(item);
+            if (dto.Image == null || dto.Image.Length == 0)
+                return BadRequest("Ein Bild ist fuer neue Shop-Items Pflicht.");
+
+            try
+            {
+                var imageUrl = await SaveShopUploadAsync(dto.Image, "shop-items");
+                var item = await _shopService.AddItemAsync(ToItemDto(dto, imageUrl));
+                return Ok(item);
+            }
+            catch (ArgumentException e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPut("items/{itemId}")]
+        public async Task<IActionResult> UpdateItem(int itemId, [FromForm] ShopItemFormDto dto)
+        {
+            return await UpdateItemFromForm(itemId, dto);
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost("items/{itemId}/update")]
+        public async Task<IActionResult> UpdateItemPost(int itemId, [FromForm] ShopItemFormDto dto)
+        {
+            return await UpdateItemFromForm(itemId, dto);
+        }
+
+        private async Task<IActionResult> UpdateItemFromForm(int itemId, ShopItemFormDto dto)
+        {
+            var existing = await _shopService.GetItemAsync(itemId);
+            if (existing == null) return NotFound();
+            var previousImageUrl = existing.ImageUrl;
+
+            try
+            {
+                string? imageUrl = null;
+                if (dto.Image is { Length: > 0 })
+                {
+                    imageUrl = await SaveShopUploadAsync(dto.Image, "shop-items");
+                }
+
+                var item = await _shopService.UpdateItemAsync(itemId, ToItemDto(dto, imageUrl));
+                if (item == null) return NotFound();
+
+                if (!string.IsNullOrWhiteSpace(imageUrl))
+                {
+                    DeleteLocalUpload(previousImageUrl);
+                }
+
+                return Ok(item);
+            }
+            catch (ArgumentException e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpDelete("items/{itemId}")]
+        public async Task<IActionResult> DeleteItem(int itemId)
+        {
+            var existing = await _shopService.GetItemAsync(itemId);
+            if (existing == null) return NotFound();
+
+            var deleted = await _shopService.DeleteItemAsync(itemId);
+            if (!deleted) return NotFound();
+
+            DeleteLocalUpload(existing.ImageUrl);
+            return NoContent();
         }
         
         
@@ -56,5 +233,132 @@ namespace Sybau_Backend.Controllers
             return Ok();
         }
 
+        [HttpPost("sell-item/{itemId}")]
+        [Authorize]
+        public async Task<IActionResult> SellItem(int itemId)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            var userId = int.Parse(userIdClaim);
+            var (error, result) = await _shopService.SellItemAsync(userId, itemId);
+
+            if (error != null) return BadRequest(error);
+            return Ok(result);
+        }
+
+        private static ItemDto ToItemDto(ShopItemFormDto form, string? imageUrl)
+        {
+            return new ItemDto
+            {
+                Name = form.Name,
+                Description = form.Description,
+                Type = form.Type,
+                Price = form.Price,
+                XpBoostPercentage = form.XpBoostPercentage,
+                CoinBoostPercentage = form.CoinBoostPercentage,
+                Rarity = form.Rarity,
+                MaxQuantity = form.MaxQuantity,
+                ImageUrl = imageUrl
+            };
+        }
+
+        private async Task<string> SaveShopUploadAsync(IFormFile image, string folderName)
+        {
+            var extension = Path.GetExtension(image.FileName);
+            var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".png",
+                ".jpg",
+                ".jpeg",
+                ".webp",
+                ".gif"
+            };
+
+            var hasImageContentType =
+                !string.IsNullOrWhiteSpace(image.ContentType) &&
+                image.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+            var hasAllowedExtension = allowedExtensions.Contains(extension);
+
+            if (!hasImageContentType && !hasAllowedExtension)
+                throw new ArgumentException("Nur Bilddateien sind erlaubt.");
+
+            if (string.IsNullOrWhiteSpace(extension))
+            {
+                extension = (image.ContentType ?? string.Empty).ToLowerInvariant() switch
+                {
+                    "image/png" => ".png",
+                    "image/jpeg" => ".jpg",
+                    "image/webp" => ".webp",
+                    "image/gif" => ".gif",
+                    _ => ".png"
+                };
+            }
+
+            var uploadDirectory = Path.Combine(
+                _environment.ContentRootPath,
+                "wwwroot",
+                "uploads",
+                folderName);
+            Directory.CreateDirectory(uploadDirectory);
+
+            var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
+            var fullPath = Path.Combine(uploadDirectory, fileName);
+            await using (var stream = System.IO.File.Create(fullPath))
+            {
+                await image.CopyToAsync(stream);
+            }
+
+            return $"/uploads/{folderName}/{fileName}";
+        }
+
+        private List<int> ReadChestItemIds(ChestFormDto dto)
+        {
+            var ids = dto.ItemIds?.Where(id => id > 0).ToList() ?? new List<int>();
+
+            if (!Request.HasFormContentType) return ids.Distinct().ToList();
+
+            foreach (var field in Request.Form)
+            {
+                if (!field.Key.StartsWith("itemIds", StringComparison.OrdinalIgnoreCase) &&
+                    !field.Key.StartsWith("ItemIds", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                foreach (var rawValue in field.Value)
+                {
+                    if (int.TryParse(rawValue, out var id) && id > 0)
+                    {
+                        ids.Add(id);
+                    }
+                }
+            }
+
+            return ids.Distinct().ToList();
+        }
+
+        private IFormFile? ReadChestImage(ChestFormDto dto)
+        {
+            if (dto.Image is { Length: > 0 }) return dto.Image;
+            if (!Request.HasFormContentType) return null;
+
+            return Request.Form.Files.FirstOrDefault(file =>
+                file.Length > 0 &&
+                (file.Name.Equals("image", StringComparison.OrdinalIgnoreCase) ||
+                 file.Name.Equals("Image", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        private void DeleteLocalUpload(string? imageUrl)
+        {
+            if (string.IsNullOrWhiteSpace(imageUrl)) return;
+            var relativePath = imageUrl.TrimStart('/')
+                .Replace('/', Path.DirectorySeparatorChar);
+            var fullPath = Path.Combine(_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot"), relativePath);
+            if (System.IO.File.Exists(fullPath))
+            {
+                System.IO.File.Delete(fullPath);
+            }
+        }
     }
 }

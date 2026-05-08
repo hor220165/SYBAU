@@ -135,6 +135,8 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads", "profile-images"));
+Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads", "shop-items"));
+Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads", "chests"));
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

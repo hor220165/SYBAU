@@ -446,7 +446,8 @@ public class UserService
                 XpBoostPercentage = g.First().Item.XpBoostPercent,
                 CoinBoostPercentage = g.First().Item.CoinBoostPercent,
                 Rarity = g.First().Item.Rarity,
-                Quantity = g.Sum(ui => ui.Quantity)
+                Quantity = g.Sum(ui => ui.Quantity),
+                ImageUrl = g.First().Item.ImageUrl
             })
             .ToList();
     }

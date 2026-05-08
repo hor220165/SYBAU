@@ -25,7 +25,8 @@ public class WorkoutService
     {
         if (dto == null) throw new ArgumentNullException(nameof(dto));
 
-        var exercise = new Exercise(dto.Name, dto.Description, dto.Category, dto.Difficulty, dto.XpPerRep, dto.DailyLimit);
+        var exerciseUnit = NormalizeExerciseUnit(dto.ResolveUnit());
+        var exercise = new Exercise(dto.Name, dto.Description, dto.Category, dto.Difficulty, dto.XpPerRep, dto.DailyLimit, exerciseUnit);
         _context.Exercises.Add(exercise);
         await _context.SaveChangesAsync();
 
@@ -36,10 +37,82 @@ public class WorkoutService
             Description = exercise.Description,
             Category = exercise.Category,
             Difficulty = exercise.Difficulty,
+            Unit = exercise.Unit,
             XpPerRep = exercise.XpPerRep,
             DailyLimit = exercise.DailyLimit,
             TodayCount = 0
         };
+    }
+
+    public async Task<ExerciseDto?> UpdateExerciseAsync(int id, CreateExerciseDto dto)
+    {
+        if (dto == null) throw new ArgumentNullException(nameof(dto));
+
+        var exercise = await _context.Exercises.FindAsync(id);
+        if (exercise == null) return null;
+
+        exercise.Name = dto.Name;
+        exercise.Description = dto.Description;
+        exercise.Category = dto.Category;
+        exercise.Difficulty = dto.Difficulty;
+        exercise.Unit = NormalizeExerciseUnit(dto.ResolveUnit());
+        exercise.XpPerRep = dto.XpPerRep;
+        exercise.DailyLimit = dto.DailyLimit;
+
+        await _context.SaveChangesAsync();
+
+        return new ExerciseDto
+        {
+            Id = exercise.Id,
+            Name = exercise.Name,
+            Description = exercise.Description,
+            Category = exercise.Category,
+            Difficulty = exercise.Difficulty,
+            Unit = exercise.Unit,
+            XpPerRep = exercise.XpPerRep,
+            DailyLimit = exercise.DailyLimit,
+            TodayCount = 0
+        };
+    }
+
+    public async Task<ExerciseDto?> UpdateExerciseUnitAsync(int id, string? rawUnit)
+    {
+        var exercise = await _context.Exercises.FindAsync(id);
+        if (exercise == null) return null;
+
+        exercise.Unit = NormalizeExerciseUnit(rawUnit);
+        await _context.SaveChangesAsync();
+
+        return new ExerciseDto
+        {
+            Id = exercise.Id,
+            Name = exercise.Name,
+            Description = exercise.Description,
+            Category = exercise.Category,
+            Difficulty = exercise.Difficulty,
+            Unit = exercise.Unit,
+            XpPerRep = exercise.XpPerRep,
+            DailyLimit = exercise.DailyLimit,
+            TodayCount = 0
+        };
+    }
+
+    public async Task<bool> DeleteExerciseAsync(int id)
+    {
+        var exercise = await _context.Exercises
+            .Include(e => e.WorkoutExercises)
+            .FirstOrDefaultAsync(e => e.Id == id);
+
+        if (exercise == null) return false;
+
+        var hasLogs = await _context.UserExerciseLogs.AnyAsync(l => l.ExerciseId == id);
+        if (hasLogs)
+            throw new InvalidOperationException("Diese Uebung hat bereits Aktivitaeten und kann nicht geloescht werden.");
+
+        _context.WorkoutExercises.RemoveRange(exercise.WorkoutExercises);
+        _context.Exercises.Remove(exercise);
+        await _context.SaveChangesAsync();
+        return true;
     }
 
     public async Task<List<ExerciseDto>> GetExercisesAsync(WorkoutCategory? category, int? userId = null)
@@ -62,6 +135,7 @@ public class WorkoutService
                 Description = e.Description,
                 Category = e.Category,
                 Difficulty = e.Difficulty,
+                Unit = e.Unit,
                 XpPerRep = e.XpPerRep,
                 DailyLimit = e.DailyLimit,
                 TodayCount = userId.HasValue
@@ -71,6 +145,11 @@ public class WorkoutService
                     : 0
             })
             .ToListAsync();
+
+        foreach (var exercise in exercises)
+        {
+            exercise.Unit = NormalizeExerciseUnit(exercise.Unit);
+        }
 
         return exercises;
     }
@@ -220,9 +299,21 @@ public class WorkoutService
                     ExerciseName = we.Exercise.Name,
                     ExerciseCategory = we.Exercise.Category,
                     Difficulty = we.Exercise.Difficulty,
+                    Unit = we.Exercise.Unit,
                     DailyLimit = we.DailyLimit
                 })
                 .ToList()
+        };
+    }
+
+    private static string NormalizeExerciseUnit(string? rawUnit)
+    {
+        var value = (rawUnit ?? string.Empty).Trim().ToLowerInvariant();
+        return value switch
+        {
+            "1" or "time" => "Time",
+            "2" or "distance" => "Distance",
+            _ => "Reps"
         };
     }
 
@@ -315,6 +406,7 @@ public class WorkoutService
             Description = exercise.Description,
             Category = exercise.Category,
             Difficulty = exercise.Difficulty,
+            Unit = exercise.Unit,
             XpPerRep = exercise.XpPerRep,
             DailyLimit = exercise.DailyLimit,
             TodayCount = todayTotal + reps,

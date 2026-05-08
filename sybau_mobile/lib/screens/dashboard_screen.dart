@@ -425,28 +425,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Text(
               isEquipped ? '⚡' : '◈',
               style: TextStyle(
-                fontSize: isEquipped ? 20 : 16,
+                fontSize: isEquipped ? 28 : 16,
                 color: const Color(0xFFC084FC),
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              isEquipped ? booster.name : 'Booster',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white.withOpacity(isEquipped ? 0.95 : 0.65),
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.4,
-              ),
-            ),
+            const SizedBox(height: 8),
             Text(
               isEquipped ? '+${booster.bestBoostPercent}%' : 'Leer',
               style: TextStyle(
                 color: isEquipped ? const Color(0xFFC084FC) : Colors.white24,
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],

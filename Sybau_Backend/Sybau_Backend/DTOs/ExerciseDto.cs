@@ -9,6 +9,7 @@ public class ExerciseDto
     public string? Description { get; set; }
     public WorkoutCategory Category { get; set; }
     public ExerciseDifficulty Difficulty { get; set; }
+    public string Unit { get; set; } = "Reps";
     public double XpPerRep { get; set; }
     public int DailyLimit { get; set; }
     public int TodayCount { get; set; }
