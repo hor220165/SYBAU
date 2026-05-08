@@ -537,7 +537,7 @@ const getWeekDays = (offset: number) => {
     const dateDisplay = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}`;
     const reps = activityDates.value.get(toDateString(date)) ?? 0;
     const workoutDone = reps > 0;
-    const duration = workoutDone ? `${reps} Reps` : '–';
+    const duration = workoutDone ? `${reps} Einheiten` : '–';
     weekDays.push({ name: days[i], date: date.toISOString(), dateDisplay, workoutDone, duration, isToday });
   }
   return weekDays;
@@ -1093,22 +1093,22 @@ onMounted(async () => {
 }
 
 .close-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.75);
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: white;
   font-size: 20px;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .settings-content {

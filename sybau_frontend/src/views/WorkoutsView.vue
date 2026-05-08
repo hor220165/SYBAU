@@ -21,7 +21,7 @@
           </span>
           <span class="stat-copy">
             <span class="stat-label">Heute</span>
-            <span class="stat-value">{{ formatNumber(todayReps) }} Reps</span>
+            <span class="stat-value">{{ formatNumber(todayReps) }} Einheiten</span>
           </span>
         </article>
         <article class="stat-card">
@@ -30,7 +30,7 @@
           </span>
           <span class="stat-copy">
             <span class="stat-label">Gesamt</span>
-            <span class="stat-value">{{ formatNumber(totalExercises) }} Reps</span>
+            <span class="stat-value">{{ formatNumber(totalExercises) }} Einheiten</span>
           </span>
         </article>
         <article class="stat-card">
@@ -87,8 +87,22 @@
           :exercises="[exercise.description]"
           :difficulty="exercise.difficulty"
           :xp="exercise.xpPerRep"
+          :unit="exercise.unit"
           :completed="exercise.todayCount >= exercise.dailyLimit"
-          @log="logExercise(exercise)"
+          :editor-open="activeExerciseEditorId === exercise.id"
+          :draft-reps="logAmountFor(exercise)"
+          :draft-time="timeDraftFor(exercise)"
+          :draft-distance="distanceDraftFor(exercise)"
+          :distance-unit="distanceUnitFor(exercise)"
+          :remaining="remainingFor(exercise)"
+          @open-editor="openRepEditor(exercise)"
+          @close-editor="closeRepEditor"
+          @change-draft="changeDraft(exercise, $event)"
+          @set-reps="setRepsDraft(exercise, $event)"
+          @set-time="setTimeDraft(exercise, $event)"
+          @set-distance="setDistanceDraft(exercise, $event)"
+          @set-distance-unit="setDistanceUnit(exercise, $event)"
+          @submit-log="submitInlineExercise(exercise)"
       />
     </div>
 
@@ -136,17 +150,6 @@
     </div>
   </main>
 
-  <!-- Exercise Modal -->
-  <ExerciseModal 
-    :is-open="showModal"
-    :exercise-name="selectedExercise?.name || ''"
-    :icon="selectedExercise?.icon || ''"
-    :xp-per-rep="selectedExercise?.xpPerRep || 0"
-    :daily-limit="selectedExercise?.dailyLimit || 0"
-    :today-count="selectedExercise?.todayCount || 0"
-    @close="showModal = false"
-    @submit="handleExerciseSubmit"
-  />
    <!-- Footer -->
     <FooterComponent />
 
@@ -245,7 +248,7 @@
                 <span class="finish-ex-skipped">Limit erreicht</span>
               </template>
               <template v-else>
-                <span class="finish-ex-reward">{{ ex.repsLogged }} Reps · +{{ ex.xpEarned }} XP · +{{ ex.coinsEarned }} Coins</span>
+                <span class="finish-ex-reward">{{ formatSessionAmount(ex) }} · +{{ ex.xpEarned }} XP · +{{ ex.coinsEarned }} Coins</span>
               </template>
             </div>
           </div>
@@ -273,7 +276,7 @@
               <span class="session-exercise-num">{{ Number(idx) + 1 }}</span>
               <div>
                 <span class="session-exercise-name">{{ ex.exerciseName }}</span>
-                <span class="session-exercise-detail">{{ mapDifficulty(ex.difficulty) }} · Limit: {{ ex.dailyLimit }}</span>
+                <span class="session-exercise-detail">{{ mapDifficulty(ex.difficulty) }} · Limit: {{ formatSessionLimit(ex) }}</span>
               </div>
             </div>
             <div class="session-exercise-action">
@@ -283,19 +286,40 @@
               </template>
               <!-- Bereits geloggt -->
               <template v-else-if="ex.logged">
-                <span class="session-check">{{ ex.repsLogged }} Reps</span>
+                <span class="session-check">{{ formatSessionAmount(ex) }}</span>
                 <span class="session-reward">+{{ ex.xpEarned }} XP · +{{ ex.coinsEarned }} Coins</span>
               </template>
               <!-- Noch offen -->
               <template v-else>
                 <span v-if="ex.remaining < ex.dailyLimit" class="session-remaining-hint">
-                  Noch {{ ex.remaining }} möglich
+                  Noch {{ formatSessionRemaining(ex) }} möglich
                 </span>
-                <input v-model.number="ex.repsInput" type="number" min="1" :max="ex.remaining" 
-                       placeholder="Reps" class="session-reps-input">
-                <button class="session-log-btn" @click="logWorkoutExercise(ex)" :disabled="!ex.repsInput || ex.repsInput < 1">
-                  Eintragen
-                </button>
+                <div v-if="ex.unit === 'Reps'" class="session-input-row">
+                  <input v-model.number="ex.repsInput" type="number" min="1" :max="ex.remaining" 
+                         placeholder="Reps" class="session-reps-input">
+                  <button class="session-log-btn" @click="logWorkoutExercise(ex)" :disabled="!ex.repsInput || ex.repsInput < 1">
+                    Eintragen
+                  </button>
+                </div>
+                <div v-else-if="ex.unit === 'Time'" class="session-input-row">
+                  <input :value="ex.timeInput" inputmode="numeric" maxlength="8" placeholder="00:00:00"
+                         class="session-reps-input session-time-input"
+                         @input="ex.timeInput = formatTimeInput(($event.target as HTMLInputElement).value)">
+                  <button class="session-log-btn" @click="logWorkoutExercise(ex)" :disabled="!ex.timeInput || ex.timeInput === '00:00:00'">
+                    Eintragen
+                  </button>
+                </div>
+                <div v-else class="session-input-row session-distance-row">
+                  <input v-model.number="ex.distanceInput" type="number" min="0" step="0.01"
+                         placeholder="Distanz" class="session-reps-input">
+                  <select v-model="ex.distanceUnit" class="session-distance-select">
+                    <option value="m">m</option>
+                    <option value="km">km</option>
+                  </select>
+                  <button class="session-log-btn" @click="logWorkoutExercise(ex)" :disabled="!ex.distanceInput || ex.distanceInput <= 0">
+                    Eintragen
+                  </button>
+                </div>
               </template>
             </div>
           </div>
@@ -345,7 +369,6 @@ import { ref, computed, onMounted } from 'vue';
 import Header from '@/components/Header.vue';
 import Navbar from '@/components/Navbar.vue';
 import WorkoutCard from '@/components/WorkoutCard.vue';
-import ExerciseModal from '@/components/WorkoutPopup.vue';
 import FooterComponent from '@/components/FooterComponent.vue';
 import MessagePopup from '@/components/MessagePopup.vue';
 import { workoutService, achievementService, questService } from '@/services/api';
@@ -355,8 +378,6 @@ import { BarChart3, CalendarDays, Flame, Zap } from 'lucide-vue-next';
 const { refreshProfile } = useAuth();
 
 const activeFilter = ref('Alle');
-const showModal = ref(false);
-const selectedExercise = ref<any>(null);
 const loading = ref(true);
 
 const popupMessage = ref('');
@@ -388,6 +409,7 @@ interface ExerciseLocal {
   dailyLimit: number;
   todayCount: number;
   difficulty: 'Easy' | 'Medium' | 'Hard';
+  unit: 'Reps' | 'Time' | 'Distance';
 }
 
 const exercises = ref<ExerciseLocal[]>([]);
@@ -397,6 +419,11 @@ const totalExercises = ref(0);
 const todayActivity = ref({ steps: 0, kilometers: 0 });
 const expandedWorkout = ref<number | null>(null);
 const workoutSession = ref<any>(null);
+const activeExerciseEditorId = ref<number | null>(null);
+const repsDrafts = ref<Record<number, number>>({});
+const timeDrafts = ref<Record<number, string>>({});
+const distanceDrafts = ref<Record<number, number>>({});
+const distanceUnits = ref<Record<number, 'm' | 'km'>>({});
 const newWorkout = ref({
   name: '',
   description: '',
@@ -447,6 +474,123 @@ function formatNumber(value: number) {
 const todayReps = computed(() => exercises.value.reduce((sum, e) => sum + e.todayCount, 0));
 const todayXp = computed(() => exercises.value.reduce((sum, e) => sum + (e.todayCount * e.xpPerRep), 0));
 
+function remainingFor(exercise: ExerciseLocal) {
+  return Math.max(0, Number(exercise.dailyLimit ?? 0) - Number(exercise.todayCount ?? 0));
+}
+
+function secondsToTime(value: number) {
+  const seconds = Math.max(0, Math.floor(value));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const rest = seconds % 60;
+  return [hours, minutes, rest].map((part) => String(part).padStart(2, '0')).join(':');
+}
+
+function formatTimeInput(value: string) {
+  const digits = value.replace(/\D/g, '').slice(-6);
+  if (!digits) return '00:00:00';
+
+  const padded = digits.padStart(6, '0');
+  const hours = Number(padded.slice(0, 2));
+  const minutes = Number(padded.slice(2, 4));
+  const seconds = Number(padded.slice(4, 6));
+
+  return secondsToTime(hours * 3600 + minutes * 60 + seconds);
+}
+
+function parseTime(value: string) {
+  const parts = value.trim().split(':').map((part) => Number(part));
+  if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part) || part < 0)) return 0;
+  const hours = parts[0] ?? 0;
+  const minutes = parts[1] ?? 0;
+  const seconds = parts[2] ?? 0;
+  return Math.round(hours * 3600 + minutes * 60 + seconds);
+}
+
+function draftFor(exercise: ExerciseLocal) {
+  const remaining = remainingFor(exercise);
+  if (remaining <= 0) return 0;
+  return repsDrafts.value[exercise.id] ?? Math.min(10, remaining);
+}
+
+function timeDraftFor(exercise: ExerciseLocal) {
+  return timeDrafts.value[exercise.id] ?? secondsToTime(Math.min(60, remainingFor(exercise)));
+}
+
+function distanceDraftFor(exercise: ExerciseLocal) {
+  const unit = distanceUnitFor(exercise);
+  const raw = distanceDrafts.value[exercise.id] ?? Math.min(100, remainingFor(exercise));
+  return unit === 'km' ? Number((raw / 1000).toFixed(2)) : raw;
+}
+
+function distanceUnitFor(exercise: ExerciseLocal): 'm' | 'km' {
+  return distanceUnits.value[exercise.id] ?? 'm';
+}
+
+function logAmountFor(exercise: ExerciseLocal) {
+  if (exercise.unit === 'Time') return parseTime(timeDraftFor(exercise));
+  if (exercise.unit === 'Distance') {
+    const raw = distanceDraftFor(exercise);
+    return Math.round(raw * (distanceUnitFor(exercise) === 'km' ? 1000 : 1));
+  }
+  return draftFor(exercise);
+}
+
+function openRepEditor(exercise: ExerciseLocal) {
+  if (remainingFor(exercise) <= 0) return;
+  activeExerciseEditorId.value = exercise.id;
+  repsDrafts.value = {
+    ...repsDrafts.value,
+    [exercise.id]: draftFor(exercise)
+  };
+  timeDrafts.value = {
+    ...timeDrafts.value,
+    [exercise.id]: timeDraftFor(exercise)
+  };
+  distanceDrafts.value = {
+    ...distanceDrafts.value,
+    [exercise.id]: logAmountFor({ ...exercise, unit: 'Distance' })
+  };
+}
+
+function closeRepEditor() {
+  activeExerciseEditorId.value = null;
+}
+
+function setTimeDraft(exercise: ExerciseLocal, value: string) {
+  timeDrafts.value = { ...timeDrafts.value, [exercise.id]: formatTimeInput(value) };
+}
+
+function setDistanceDraft(exercise: ExerciseLocal, value: number) {
+  const multiplier = distanceUnitFor(exercise) === 'km' ? 1000 : 1;
+  const meters = Math.max(0, Math.round(Number(value || 0) * multiplier));
+  distanceDrafts.value = { ...distanceDrafts.value, [exercise.id]: meters };
+}
+
+function setDistanceUnit(exercise: ExerciseLocal, value: 'm' | 'km') {
+  distanceUnits.value = { ...distanceUnits.value, [exercise.id]: value };
+}
+
+function changeDraft(exercise: ExerciseLocal, delta: number) {
+  const remaining = remainingFor(exercise);
+  if (remaining <= 0) return;
+  const next = Math.min(remaining, Math.max(1, draftFor(exercise) + delta));
+  repsDrafts.value = {
+    ...repsDrafts.value,
+    [exercise.id]: next
+  };
+}
+
+function setRepsDraft(exercise: ExerciseLocal, value: number) {
+  const remaining = remainingFor(exercise);
+  if (remaining <= 0) return;
+  const next = Math.min(remaining, Math.max(1, Math.round(Number(value || 0))));
+  repsDrafts.value = {
+    ...repsDrafts.value,
+    [exercise.id]: next
+  };
+}
+
 async function loadExercises() {
   loading.value = true;
   try {
@@ -464,13 +608,36 @@ async function loadExercises() {
         xpPerRep: e.xpPerRep ?? difficultyXp[diff] ?? 2,
         dailyLimit: e.dailyLimit ?? difficultyDailyLimit[diff] ?? 200,
         todayCount: e.todayCount ?? 0,
-        difficulty: diff
+        difficulty: diff,
+        unit: mapUnit(e.unit ?? e.Unit)
       };
     });
   } catch (e) {
     console.error('Fehler beim Laden der Übungen', e);
   }
   loading.value = false;
+}
+
+function mapUnit(val: any): 'Reps' | 'Time' | 'Distance' {
+  if (typeof val === 'number') {
+    if (val === 1) return 'Time';
+    if (val === 2) return 'Distance';
+    return 'Reps';
+  }
+  const s = String(val ?? '').toLowerCase();
+  if (s === 'time') return 'Time';
+  if (s === 'distance') return 'Distance';
+  return 'Reps';
+}
+
+function formatAmount(value: number, unit: ExerciseLocal['unit']) {
+  if (unit === 'Time') return secondsToTime(value);
+  if (unit === 'Distance') {
+    return value >= 1000
+      ? `${(value / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 })} km`
+      : `${value.toLocaleString('de-DE')} m`;
+  }
+  return `${value.toLocaleString('de-DE')} Reps`;
 }
 
 // Backend gibt Enums als camelCase Strings zurück (z.B. "easy", "strength")
@@ -559,9 +726,14 @@ function startWorkoutSession(wo: any) {
       const limit = localEx?.dailyLimit ?? ex.dailyLimit;
       const remaining = Math.max(0, limit - todayCount);
       const limitReached = remaining === 0;
+      const unit = localEx?.unit ?? mapUnit(ex.unit ?? ex.Unit) ?? 'Reps';
       return {
         ...ex,
-        repsInput: remaining,
+        unit,
+        repsInput: unit === 'Reps' ? remaining : 0,
+        timeInput: unit === 'Time' ? secondsToTime(Math.min(60, remaining)) : '00:00:00',
+        distanceInput: unit === 'Distance' ? (remaining >= 1000 ? Number((remaining / 1000).toFixed(2)) : remaining) : 0,
+        distanceUnit: unit === 'Distance' ? (remaining >= 1000 ? 'km' : 'm') : 'm',
         remaining,
         limitReached,
         logged: false,
@@ -605,18 +777,29 @@ const sessionTotalCoins = computed(() =>
 );
 
 async function logWorkoutExercise(ex: any) {
-  if (!ex.repsInput || ex.repsInput < 1) return;
+  let reps: number;
+  if (ex.unit === 'Time') {
+    reps = parseTime(ex.timeInput);
+    if (reps <= 0) return;
+  } else if (ex.unit === 'Distance') {
+    const multiplier = ex.distanceUnit === 'km' ? 1000 : 1;
+    reps = Math.round(Math.max(1, Number(ex.distanceInput || 0) * multiplier));
+    if (reps <= 0) return;
+  } else {
+    if (!ex.repsInput || ex.repsInput < 1) return;
+    reps = ex.repsInput;
+  }
   try {
-    const res = await workoutService.logExercise(ex.exerciseId, ex.repsInput);
+    const res = await workoutService.logExercise(ex.exerciseId, reps);
     const result = res.data;
     ex.logged = true;
-    ex.repsLogged = ex.repsInput;
+    ex.repsLogged = reps;
     ex.xpEarned = (result.xpEarned ?? 0) + (result.bonusXp ?? 0);
     ex.coinsEarned = (result.coinsEarned ?? 0) + (result.bonusCoins ?? 0);
 
     // Lokalen Exercise-Counter auch updaten
     const localEx = exercises.value.find(e => e.id === ex.exerciseId);
-    if (localEx) localEx.todayCount += ex.repsInput;
+    if (localEx) localEx.todayCount += reps;
 
     await refreshProfile();
   } catch (err: any) {
@@ -625,25 +808,44 @@ async function logWorkoutExercise(ex: any) {
   }
 }
 
-const logExercise = (exercise: any) => {
-  selectedExercise.value = exercise;
-  showModal.value = true;
-};
+function formatSessionAmount(ex: any): string {
+  const reps = ex.repsLogged;
+  const unit = ex.unit ?? 'Reps';
+  return formatAmount(reps, unit);
+}
 
-const handleExerciseSubmit = async (data: any) => {
-  const exercise = exercises.value.find(e => e.name === data.exercise);
-  if (!exercise) return;
+function formatSessionRemaining(ex: any): string {
+  return formatAmount(ex.remaining, ex.unit ?? 'Reps');
+}
+
+function formatSessionLimit(ex: any): string {
+  return formatAmount(ex.dailyLimit, ex.unit ?? 'Reps');
+}
+
+const submitInlineExercise = async (exercise: ExerciseLocal) => {
+  const reps = logAmountFor(exercise);
+  if (reps <= 0) {
+    popupType.value = 'error';
+    popupMessage.value = exercise.unit === 'Time'
+      ? 'Bitte gib die Zeit im Format 00:00:00 ein.'
+      : 'Bitte gib einen gültigen Wert ein.';
+    return;
+  }
 
   try {
-    const res = await workoutService.logExercise(exercise.id, data.reps);
+    const res = await workoutService.logExercise(exercise.id, reps);
     const result = res.data;
 
-    // Update lokalen todayCount
-    exercise.todayCount += data.reps;
+    exercise.todayCount += reps;
+    const remaining = remainingFor(exercise);
+    repsDrafts.value = {
+      ...repsDrafts.value,
+      [exercise.id]: remaining <= 0 ? 0 : Math.min(reps, remaining)
+    };
+    activeExerciseEditorId.value = null;
 
-    // Zeige echte XP/Coin-Ergebnisse vom Backend
-    let msg = `${data.exercise}: ${data.reps} Reps eingetragen!\n`;
-    msg += `+${result.xpEarned ?? data.xp} XP`;
+    let msg = `${exercise.name}: ${formatAmount(reps, exercise.unit)} eingetragen!\n`;
+    msg += `+${result.xpEarned ?? reps * exercise.xpPerRep} XP`;
     if (result.bonusXp > 0) msg += ` (+${result.bonusXp} Bonus, ${result.boostPercent}% Boost)`;
     if (result.coinsEarned > 0) {
       msg += `\n+${result.coinsEarned} Coins`;

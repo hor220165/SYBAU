@@ -214,7 +214,7 @@ watch(
                   <span>{{ day.dateDisplay }}</span>
                   <img v-if="day.workoutDone" :src="starPixel" alt="" />
                   <em v-else>-</em>
-                  <small>{{ day.reps ? `${day.reps} Reps` : '-' }}</small>
+                  <small>{{ day.reps ? `${day.reps} Einheiten` : '-' }}</small>
                 </article>
               </div>
             </section>
@@ -276,15 +276,15 @@ watch(
   top: 14px;
   right: 34px;
   z-index: 4;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border: 0;
-  border-radius: 999px;
   display: grid;
   place-items: center;
   color: white;
-  background: rgba(255, 255, 255, 0.08);
+  background: transparent;
   cursor: pointer;
+  padding: 0;
 }
 
 .profile-head {

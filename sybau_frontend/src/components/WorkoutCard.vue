@@ -1,5 +1,5 @@
 <template>
-  <div class="workout-card" @click="$emit('log')">
+  <div class="workout-card" :class="{ 'is-editing': editorOpen, completed }" @click="!editorOpen && !completed && $emit('openEditor')">
     <!-- Category Badge mit dynamischer Farbe -->
     <div class="category-badge" :class="`category-${category.toLowerCase()}`">
       {{ category }}
@@ -16,38 +16,159 @@
       <span class="difficulty" :class="`difficulty-${difficulty.toLowerCase()}`">
         {{ difficulty }}
       </span>
+      <span class="unit-badge" :class="`unit-${unitLabel.toLowerCase()}`">
+        {{ unitLabel }}
+      </span>
       <span class="xp">
         <img src="../assets/XP_Pixel.png" alt="" />
-        +{{ xp }} XP
+        +{{ xp }} XP / {{ unitSingular }}
       </span>
     </div>
     
-    <!-- Action Button -->
-    <button class="log-btn" @click.stop="$emit('log')">
+    <button v-if="editorOpen" class="inline-close-btn" @click.stop="$emit('closeEditor')" aria-label="Schließen">
+      &times;
+    </button>
+
+    <div v-if="completed || remaining <= 0" class="limit-reached">
+      Tageslimit erreicht
+    </div>
+    <button v-else-if="!editorOpen" class="log-btn" @click.stop="$emit('openEditor')">
       Training eintragen
     </button>
+    <div v-else class="inline-log-panel" @click.stop>
+      <div v-if="unit === 'Reps'" class="rep-stepper">
+        <button type="button" @click="$emit('changeDraft', -1)" aria-label="Weniger Reps">−</button>
+        <label class="rep-value-label">
+          <input
+            :value="draftReps"
+            type="number"
+            min="1"
+            :max="remaining"
+            inputmode="numeric"
+            @input="$emit('setReps', Number(($event.target as HTMLInputElement).value))"
+          />
+          <span>Reps</span>
+        </label>
+        <button type="button" @click="$emit('changeDraft', 1)" aria-label="Mehr Reps">+</button>
+      </div>
+      <input
+        v-else-if="unit === 'Time'"
+        class="amount-input"
+        :value="draftTime"
+        inputmode="numeric"
+        maxlength="8"
+        placeholder="00:00:00"
+        aria-label="Zeit im Format 00:00:00"
+        @input="$emit('setTime', ($event.target as HTMLInputElement).value)"
+      />
+      <div v-else class="distance-entry">
+        <input
+          class="amount-input"
+          :value="draftDistance"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="Distanz"
+          @input="$emit('setDistance', Number(($event.target as HTMLInputElement).value))"
+        />
+        <select :value="distanceUnit" @change="$emit('setDistanceUnit', ($event.target as HTMLSelectElement).value as 'm' | 'km')">
+          <option value="m">m</option>
+          <option value="km">km</option>
+        </select>
+      </div>
+      <button class="submit-log-btn" type="button" :disabled="!canSubmit" @click="$emit('submitLog')">
+        Eintragen
+      </button>
+      <p class="remaining-hint">Noch {{ remainingLabel }} möglich heute</p>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue';
+
+const props = withDefaults(defineProps<{
   category: string;
   title: string;
   exercises: string[];
   difficulty: 'Easy' | 'Medium' | 'Hard';
   xp: number;
+  unit?: 'Reps' | 'Time' | 'Distance';
   completed?: boolean;
+  editorOpen?: boolean;
+  draftReps?: number;
+  draftTime?: string;
+  draftDistance?: number;
+  distanceUnit?: 'm' | 'km';
+  remaining?: number;
   duration?: number;
   calories?: number;
-}>();
+}>(), {
+  unit: 'Reps',
+  completed: false,
+  editorOpen: false,
+  draftReps: 0,
+  draftTime: '00:00:10',
+  draftDistance: 100,
+  distanceUnit: 'm',
+  remaining: 0,
+});
+
+const formatTime = (seconds: number) => {
+  const safe = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  const secs = safe % 60;
+  return [hours, minutes, secs].map((part) => String(part).padStart(2, '0')).join(':');
+};
+
+const unitLabel = computed(() => {
+  if (props.unit === 'Time') return 'Time';
+  if (props.unit === 'Distance') return 'Distance';
+  return 'Reps';
+});
+
+const unitSingular = computed(() => {
+  if (props.unit === 'Time') return 'Sek';
+  if (props.unit === 'Distance') return 'm';
+  return 'Rep';
+});
+
+const remainingLabel = computed(() => {
+  if (props.unit === 'Time') return formatTime(props.remaining);
+  if (props.unit === 'Distance') {
+    return props.remaining >= 1000
+      ? `${(props.remaining / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 })} km`
+      : `${props.remaining.toLocaleString('de-DE')} m`;
+  }
+  return `${props.remaining.toLocaleString('de-DE')} Wiederholungen`;
+});
+
+const canSubmit = computed(() => {
+  if (props.unit === 'Time') {
+    return props.draftTime && props.draftTime !== '00:00:00';
+  }
+  if (props.unit === 'Distance') {
+    return props.draftDistance > 0;
+  }
+  return props.draftReps > 0;
+});
 
 defineEmits<{
-  log: [];
+  openEditor: [];
+  closeEditor: [];
+  changeDraft: [delta: number];
+  setReps: [value: number];
+  setTime: [value: string];
+  setDistance: [value: number];
+  setDistanceUnit: [value: 'm' | 'km'];
+  submitLog: [];
 }>();
 </script>
 
 <style scoped>
 .workout-card {
+  position: relative;
   background: rgba(30, 41, 59, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
@@ -60,10 +181,24 @@ defineEmits<{
   backdrop-filter: blur(10px);
 }
 
+.workout-card.is-editing {
+  border-color: rgba(236, 72, 153, 0.32);
+  background: rgba(30, 41, 59, 0.7);
+}
+
+.workout-card.completed {
+  cursor: default;
+}
+
 .workout-card:hover {
   border-color: rgba(236, 72, 153, 0.3);
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.workout-card.completed:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 /* Category Badge */
@@ -150,6 +285,34 @@ defineEmits<{
 }
 
 /* XP */
+.unit-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.unit-reps {
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: #93c5fd;
+}
+
+.unit-time {
+  background: rgba(234, 179, 8, 0.18);
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  color: #fde047;
+}
+
+.unit-distance {
+  background: rgba(34, 197, 94, 0.18);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #86efac;
+}
+
 .xp {
   display: flex;
   align-items: center;
@@ -189,6 +352,165 @@ defineEmits<{
   transform: translateY(0);
 }
 
+.inline-close-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.inline-close-btn:hover {
+  color: white;
+}
+
+.limit-reached {
+  margin-top: 8px;
+  padding: 14px;
+  border-radius: 12px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 700;
+}
+
+.inline-log-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.rep-stepper {
+  height: 46px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.rep-stepper button {
+  width: 44px;
+  height: 46px;
+  border: 0;
+  background: transparent;
+  color: white;
+  font-size: 26px;
+  font-weight: 800;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  padding: 0 0 2px;
+  font-family: inherit;
+}
+
+.rep-stepper button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.rep-value-label {
+  display: grid;
+  grid-template-columns: minmax(42px, max-content) auto;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  height: 46px;
+  color: white;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.rep-value-label input {
+  width: clamp(42px, 5vw, 74px);
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: white;
+  font: inherit;
+  text-align: center;
+  padding: 0;
+  appearance: textfield;
+}
+
+.rep-value-label input::-webkit-outer-spin-button,
+.rep-value-label input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.rep-value-label span {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.amount-input,
+.distance-entry select {
+  min-height: 46px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font: inherit;
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.amount-input {
+  width: 100%;
+  padding: 0 14px;
+  font-size: 16px;
+}
+
+.distance-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 84px;
+  gap: 8px;
+}
+
+.distance-entry select {
+  padding: 0 10px;
+  font-size: 15px;
+}
+
+.submit-log-btn {
+  height: 46px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
+  color: white;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+}
+
+.submit-log-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+.remaining-hint {
+  grid-column: 1 / -1;
+  margin: -2px 0 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .workout-card {
@@ -197,6 +519,10 @@ defineEmits<{
 
   .workout-title {
     font-size: 20px;
+  }
+
+  .inline-log-panel {
+    grid-template-columns: 1fr;
   }
 }
 </style>
