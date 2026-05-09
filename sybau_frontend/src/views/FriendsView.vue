@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import {
   Users, UserPlus, Swords, Trophy, Check, X,
-  Search, Clock, Sparkles, Trash2, Plus
+  Search, Clock, Trash2, Plus, Target
 } from 'lucide-vue-next';
 import Navbar from '@/components/Navbar.vue';
 import Header from '@/components/Header.vue';
@@ -56,9 +56,9 @@ const challengeForm = ref<CreateFriendChallengeDto>({
   opponentId: 0,
   title: '',
   description: '',
-  xpReward: 50,
-  coinReward: 10,
   goalAmount: 100,
+  goalUnit: 'reps',
+  distanceUnit: 'm',
   durationHours: 24,
 });
 
@@ -68,6 +68,7 @@ const progressChallengeId = ref(0);
 const progressAmount = ref(1);
 const progressChallengeGoal = ref(100);
 const progressChallengeCurrent = ref(0);
+const progressChallengeUnit = ref<CreateFriendChallengeDto['goalUnit']>('reps');
 
 const currentUserName = ref('');
 const currentUserId = ref(0);
@@ -208,6 +209,60 @@ const statusLabel = (status: string) => {
 const progressPercent = (current: number, goal: number) =>
   Math.min(100, Math.round((current / Math.max(goal, 1)) * 100));
 
+const canDeleteChallenge = (status: string) =>
+  status === 'Completed' || status === 'Expired';
+
+const goalUnitLabel = (unit: FriendChallengeDto['goalUnit'] | CreateFriendChallengeDto['goalUnit']) => {
+  switch (unit) {
+    case 'time': return 'Sekunden';
+    case 'distance': return 'Meter';
+    default: return 'Reps';
+  }
+};
+
+const goalUnitShort = (unit: FriendChallengeDto['goalUnit'] | CreateFriendChallengeDto['goalUnit']) => {
+  switch (unit) {
+    case 'time': return 'Sek';
+    case 'distance': return 'm';
+    default: return 'Reps';
+  }
+};
+
+const formatGoalInput = (value: number, unit: CreateFriendChallengeDto['goalUnit']) => {
+  if (unit !== 'time') return String(value || '');
+  const totalSeconds = Math.max(0, Math.floor(value || 0));
+  const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+  const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+  const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
+};
+
+const parseGoalInput = (value: string, unit: CreateFriendChallengeDto['goalUnit']) => {
+  if (unit !== 'time') {
+    return Number(value.replace(/[^\d]/g, '')) || 0;
+  }
+
+  const parts = value.split(':').map((part) => Number(part) || 0);
+  if (parts.length === 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+  if (parts.length === 2) return (parts[0] * 60) + parts[1];
+  if (parts.length === 1) return parts[0];
+  return 0;
+};
+
+const challengeGoalInput = computed({
+  get: () => formatGoalInput(challengeForm.value.goalAmount, challengeForm.value.goalUnit),
+  set: (value: string) => {
+    challengeForm.value.goalAmount = parseGoalInput(value, challengeForm.value.goalUnit);
+  },
+});
+
+const challengeProgressInput = computed({
+  get: () => formatGoalInput(progressAmount.value, progressChallengeUnit.value),
+  set: (value: string) => {
+    progressAmount.value = parseGoalInput(value, progressChallengeUnit.value);
+  },
+});
+
 // ───── API Calls ─────
 const loadFriends = async () => {
   try {
@@ -312,7 +367,15 @@ const removeFriend = async (id: number) => {
 };
 
 const openChallengeModal = (friendId: number) => {
-  challengeForm.value = { opponentId: friendId, title: '', description: '', xpReward: 50, coinReward: 10, goalAmount: 100, durationHours: 24 };
+  challengeForm.value = {
+    opponentId: friendId,
+    title: '',
+    description: '',
+    goalAmount: 100,
+    goalUnit: 'reps',
+    distanceUnit: 'm',
+    durationHours: 24,
+  };
   showChallengeModal.value = true;
 };
 
@@ -322,7 +385,13 @@ const createChallenge = async () => {
     return;
   }
   try {
-    const { data } = await friendService.createChallenge(challengeForm.value);
+    const payload = {
+      ...challengeForm.value,
+      goalAmount: challengeForm.value.goalUnit === 'distance' && challengeForm.value.distanceUnit === 'km'
+        ? Math.round((challengeForm.value.goalAmount || 0) * 1000)
+        : challengeForm.value.goalAmount,
+    };
+    const { data } = await friendService.createChallenge(payload);
     showPopup(data.message || 'Challenge gesendet!', 'success');
     showChallengeModal.value = false;
     await loadChallenges();
@@ -351,10 +420,22 @@ const declineChallenge = async (id: number) => {
   }
 };
 
+const deleteChallenge = async (id: number) => {
+  if (!confirm('Challenge wirklich löschen?')) return;
+  try {
+    const { data } = await friendService.deleteChallenge(id);
+    showPopup(data.message || 'Challenge gelöscht.', 'success');
+    await loadChallenges();
+  } catch (e: any) {
+    showPopup(e.response?.data?.message || 'Fehler beim Löschen.', 'error');
+  }
+};
+
 const openProgressModal = (ch: FriendChallengeDto) => {
   progressChallengeId.value = ch.id;
   progressAmount.value = 1;
   progressChallengeGoal.value = ch.goalAmount;
+  progressChallengeUnit.value = ch.goalUnit;
   progressChallengeCurrent.value = ch.challengerId === currentUserId.value
     ? ch.challengerProgress
     : ch.opponentProgress;
@@ -574,13 +655,13 @@ onUnmounted(() => {
             <div v-for="ch in pendingChallenges" :key="ch.id" class="challenge-card">
               <div class="challenge-header">
                 <h3>{{ ch.title }}</h3>
-                <span class="status-badge" :style="{ background: statusColor(ch.status) }">{{ statusLabel(ch.status) }}</span>
+                <span class="status-text" :style="{ color: statusColor(ch.status), textShadow: `0 0 14px ${statusColor(ch.status)}55` }">{{ statusLabel(ch.status) }}</span>
               </div>
               <p v-if="ch.description" class="challenge-desc">{{ ch.description }}</p>
               <div class="challenge-meta">
-                <span><Sparkles :size="14" /> {{ ch.xpReward }} XP</span>
-                <span>🪙 {{ ch.coinReward }} Coins</span>
-                <span>🎯 Ziel: {{ ch.goalAmount }}</span>
+                <span><img src="../assets/XP_Pixel.png" alt="" class="reward-pixel-icon" /> {{ ch.xpReward }} XP</span>
+                <span><img src="../assets/SYBAU_Coin.png" alt="" class="reward-pixel-icon" /> {{ ch.coinReward }} Coins</span>
+                <span><Target :size="14" /> Ziel: {{ ch.goalAmount }} {{ goalUnitShort(ch.goalUnit) }}</span>
                 <span><Clock :size="14" /> {{ timeRemaining(ch.expiresAt) }}</span>
               </div>
               <p class="challenge-from">Von: <strong>{{ ch.challengerUserName }}</strong></p>
@@ -602,13 +683,13 @@ onUnmounted(() => {
             <div v-for="ch in activeChallenges" :key="ch.id" class="challenge-card">
               <div class="challenge-header">
                 <h3>{{ ch.title }}</h3>
-                <span class="status-badge" :style="{ background: statusColor(ch.status) }">{{ statusLabel(ch.status) }}</span>
+                <span class="status-text" :style="{ color: statusColor(ch.status), textShadow: `0 0 14px ${statusColor(ch.status)}55` }">{{ statusLabel(ch.status) }}</span>
               </div>
               <p v-if="ch.description" class="challenge-desc">{{ ch.description }}</p>
               <div class="challenge-meta">
-                <span><Sparkles :size="14" /> {{ ch.xpReward }} XP</span>
-                <span>🪙 {{ ch.coinReward }} Coins</span>
-                <span>🎯 Ziel: {{ ch.goalAmount }}</span>
+                <span><img src="../assets/XP_Pixel.png" alt="" class="reward-pixel-icon" /> {{ ch.xpReward }} XP</span>
+                <span><img src="../assets/SYBAU_Coin.png" alt="" class="reward-pixel-icon" /> {{ ch.coinReward }} Coins</span>
+                <span><Target :size="14" /> Ziel: {{ ch.goalAmount }} {{ goalUnitShort(ch.goalUnit) }}</span>
                 <span><Clock :size="14" /> {{ timeRemaining(ch.expiresAt) }}</span>
               </div>
 
@@ -649,7 +730,7 @@ onUnmounted(() => {
             <div v-for="ch in completedChallenges" :key="ch.id" class="challenge-card past">
               <div class="challenge-header">
                 <h3>{{ ch.title }}</h3>
-                <span class="status-badge" :style="{ background: statusColor(ch.status) }">{{ statusLabel(ch.status) }}</span>
+                <span class="status-text" :style="{ color: statusColor(ch.status), textShadow: `0 0 14px ${statusColor(ch.status)}55` }">{{ statusLabel(ch.status) }}</span>
               </div>
               <div class="challenge-meta">
                 <span>{{ ch.challengerUserName }} vs {{ ch.opponentUserName }}</span>
@@ -672,6 +753,11 @@ onUnmounted(() => {
                   <span class="progress-pct">{{ ch.opponentProgress }}/{{ ch.goalAmount }}</span>
                 </div>
               </div>
+              <div class="past-actions" v-if="canDeleteChallenge(ch.status)">
+                <button class="delete-challenge-btn" @click="deleteChallenge(ch.id)">
+                  <Trash2 :size="15" /> Löschen
+                </button>
+              </div>
             </div>
           </div>
         </section>
@@ -683,7 +769,7 @@ onUnmounted(() => {
     <Teleport to="body">
       <div v-if="showChallengeModal" class="modal-overlay" @click.self="showChallengeModal = false">
         <div class="modal-card">
-          <h2>⚔️ Challenge erstellen</h2>
+          <h2>Challenge erstellen</h2>
           <div class="form-group">
             <label>Titel</label>
             <input v-model="challengeForm.title" placeholder="z.B. 100 Liegestütze in 24h" />
@@ -693,28 +779,61 @@ onUnmounted(() => {
             <textarea v-model="challengeForm.description" rows="2" placeholder="Was muss gemacht werden?"></textarea>
           </div>
           <div class="form-row">
-            <div class="form-group">
-              <label>XP Belohnung</label>
-              <input type="number" v-model.number="challengeForm.xpReward" min="1" max="500" />
+            <div class="form-group goal-field-group">
+              <label>Ziel (Anzahl)</label>
+              <input
+                v-if="challengeForm.goalUnit === 'reps'"
+                type="number"
+                v-model.number="challengeForm.goalAmount"
+                min="1"
+                max="10000"
+                placeholder="z.B. 100"
+              />
+              <input
+                v-else-if="challengeForm.goalUnit === 'time'"
+                v-model="challengeGoalInput"
+                placeholder="hh:mm:ss"
+                inputmode="numeric"
+              />
+              <div v-else class="distance-input-row">
+                <input
+                  type="number"
+                  v-model.number="challengeForm.goalAmount"
+                  min="1"
+                  max="1000000"
+                  :placeholder="challengeForm.distanceUnit === 'km' ? 'z.B. 5' : 'z.B. 5000'"
+                />
+                <select v-model="challengeForm.distanceUnit" class="distance-unit-select">
+                  <option value="m">m</option>
+                  <option value="km">km</option>
+                </select>
+              </div>
             </div>
-            <div class="form-group">
-              <label>Coin Belohnung</label>
-              <input type="number" v-model.number="challengeForm.coinReward" min="0" max="100" />
+            <div class="form-group unit-field-group">
+              <label>Einheit</label>
+              <select v-model="challengeForm.goalUnit">
+                <option value="reps">Reps</option>
+                <option value="time">Time</option>
+                <option value="distance">Distance</option>
+              </select>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Ziel (Anzahl)</label>
-              <input type="number" v-model.number="challengeForm.goalAmount" min="1" max="10000" placeholder="z.B. 100" />
-            </div>
-            <div class="form-group">
               <label>Dauer (Stunden)</label>
               <input type="number" v-model.number="challengeForm.durationHours" min="1" max="168" />
             </div>
+            <div class="form-group reward-preview-group">
+              <label>Belohnung</label>
+              <div class="reward-preview-inline">
+                <span><img src="../assets/XP_Pixel.png" alt="" class="reward-pixel-icon" /> automatisch</span>
+                <span><img src="../assets/SYBAU_Coin.png" alt="" class="reward-pixel-icon" /> automatisch</span>
+              </div>
+            </div>
           </div>
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showChallengeModal = false">Abbrechen</button>
-            <button class="primary-btn" @click="createChallenge"><Swords :size="16" /> Challenge senden</button>
+            <button class="secondary-btn modal-cancel-btn" @click="showChallengeModal = false">Abbrechen</button>
+            <button class="primary-btn" @click="createChallenge">Challenge senden</button>
           </div>
         </div>
       </div>
@@ -725,10 +844,23 @@ onUnmounted(() => {
       <div v-if="showProgressModal" class="modal-overlay" @click.self="showProgressModal = false">
         <div class="modal-card">
           <h2>📊 Fortschritt melden</h2>
-          <p class="modal-progress-info">Aktuell: <strong>{{ progressChallengeCurrent }}</strong> / {{ progressChallengeGoal }}</p>
+          <p class="modal-progress-info">Aktuell: <strong>{{ formatGoalInput(progressChallengeCurrent, progressChallengeUnit) }}</strong> / {{ formatGoalInput(progressChallengeGoal, progressChallengeUnit) }}</p>
           <div class="form-group">
             <label>Wie viel hast du geschafft?</label>
-            <input type="number" v-model.number="progressAmount" min="1" :max="progressChallengeGoal" placeholder="z.B. 25" />
+            <input
+              v-if="progressChallengeUnit !== 'time'"
+              type="number"
+              v-model.number="progressAmount"
+              min="1"
+              :max="progressChallengeGoal"
+              placeholder="z.B. 25"
+            />
+            <input
+              v-else
+              v-model="challengeProgressInput"
+              placeholder="hh:mm:ss"
+              inputmode="numeric"
+            />
           </div>
           <div class="modal-actions">
             <button class="secondary-btn" @click="showProgressModal = false">Abbrechen</button>
@@ -784,7 +916,7 @@ onUnmounted(() => {
 
 /* ───── Tabs ───── */
 .tab-bar {
-  display: flex;
+  display: grid;
   gap: 8px;
   overflow-x: auto;
   padding: 4px 0 10px;
@@ -840,7 +972,7 @@ onUnmounted(() => {
 }
 
 .section-heading {
-  display: flex;
+  display: grid;
   flex-direction: column;
   gap: 8px;
   margin-bottom: 22px;
@@ -852,7 +984,7 @@ onUnmounted(() => {
 }
 
 .title-with-icon {
-  display: flex;
+  display: grid;
   align-items: center;
   gap: 10px;
 }
@@ -868,7 +1000,7 @@ onUnmounted(() => {
 
 /* ───── Search ───── */
 .search-bar {
-  display: flex;
+  display: grid;
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
@@ -902,7 +1034,7 @@ onUnmounted(() => {
 }
 
 .friend-card, .request-card {
-  display: flex;
+  display: grid;
   align-items: center;
   gap: 10px;
   padding: 12px;
@@ -922,7 +1054,7 @@ onUnmounted(() => {
   height: 46px;
   border-radius: 50%;
   background: linear-gradient(135deg, #ec4899, #f43f5e);
-  display: flex;
+  display: grid;
   align-items: center;
   justify-content: center;
   font-weight: 700;
@@ -959,7 +1091,7 @@ onUnmounted(() => {
 
 .friend-info {
   flex: 1;
-  display: flex;
+  display: grid;
   flex-direction: column;
   gap: 3px;
 }
@@ -975,7 +1107,7 @@ onUnmounted(() => {
 }
 
 .friend-actions {
-  display: flex;
+  display: grid;
   gap: 8px;
 }
 
@@ -1044,7 +1176,7 @@ onUnmounted(() => {
 }
 
 .challenge-header {
-  display: flex;
+  display: grid;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -1056,12 +1188,10 @@ onUnmounted(() => {
   font-size: 1.05rem;
 }
 
-.status-badge {
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: white;
+.status-text {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0;
 }
 
 .challenge-desc {
@@ -1071,7 +1201,7 @@ onUnmounted(() => {
 }
 
 .challenge-meta {
-  display: flex;
+  display: grid;
   flex-wrap: wrap;
   gap: 16px;
   color: #94a3b8;
@@ -1083,6 +1213,13 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.reward-pixel-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .challenge-from {
@@ -1145,6 +1282,8 @@ onUnmounted(() => {
 .primary-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
   gap: 8px;
   padding: 12px 20px;
   border-radius: 14px;
@@ -1156,7 +1295,6 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .primary-btn:hover { opacity: 0.85; transform: translateY(-1px); }
 .primary-btn.sm { padding: 8px 16px; font-size: 0.85rem; }
 
@@ -1179,7 +1317,7 @@ onUnmounted(() => {
 
 /* ───── Empty / State ───── */
 .state-box, .empty-box {
-  display: flex;
+  display: grid;
   align-items: center;
   justify-content: center;
   gap: 12px;
@@ -1202,27 +1340,56 @@ onUnmounted(() => {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(6px);
-  display: flex;
+  background: rgba(2, 6, 23, 0.76);
+  backdrop-filter: blur(8px);
+  display: grid;
   align-items: center;
   justify-content: center;
   padding: 20px;
 }
 
 .modal-card {
-  background: #1e293b;
+  background: #182235;
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 28px;
   width: min(520px, 100%);
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 24px 80px rgba(2, 6, 23, 0.42);
 }
 
 .modal-card h2 {
   margin: 0 0 20px;
   font-size: 1.3rem;
+}
+
+.reward-preview-inline {
+  min-height: 50px;
+  display: grid;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  font-weight: 700;
+  box-sizing: border-box;
+}
+
+.reward-preview-inline span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reward-preview-group {
+  display: grid;
+  flex-direction: column;
 }
 
 .form-group {
@@ -1238,7 +1405,8 @@ onUnmounted(() => {
 }
 
 .form-group input,
-.form-group textarea {
+.form-group textarea,
+.form-group select {
   width: 100%;
   padding: 12px 14px;
   border-radius: 12px;
@@ -1251,7 +1419,8 @@ onUnmounted(() => {
 }
 
 .form-group input:focus,
-.form-group textarea:focus {
+.form-group textarea:focus,
+.form-group select:focus {
   border-color: rgba(236, 72, 153, 0.42);
 }
 
@@ -1272,15 +1441,64 @@ onUnmounted(() => {
 
 .form-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
   gap: 12px;
 }
 
+.goal-field-group {
+  min-width: 0;
+}
+
+.unit-field-group {
+  min-width: 0;
+}
+
 .modal-actions {
-  display: flex;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin-top: 20px;
+  align-items: stretch;
+}
+
+.distance-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) 110px;
+  gap: 10px;
+}
+
+.distance-unit-select {
+  min-width: 0;
+}
+
+.modal-cancel-btn {
+  width: 100%;
+  min-width: unset;
+  justify-content: center;
+  min-height: unset;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.past-actions {  margin-top: 14px;  display: flex;  justify-content: flex-end;}
+.delete-challenge-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(248, 113, 113, 0.24);
+  border-radius: 12px;
+  background: rgba(127, 29, 29, 0.24);
+  color: #fca5a5;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-challenge-btn:hover {
+  background: rgba(127, 29, 29, 0.34);
+  border-color: rgba(248, 113, 113, 0.38);
 }
 
 /* ───── Responsive ───── */
@@ -1298,11 +1516,89 @@ onUnmounted(() => {
     width: min(100%, calc(100% - 16px));
     gap: 18px;
   }
-  .section-card, .state-box, .empty-box { border-radius: 18px; }
+
+  .section-card {
+    padding: 16px;
+  }
+
   .tab-bar { gap: 4px; }
-  .tab-btn { padding: 10px 14px; font-size: 0.82rem; }
-  .friend-card, .request-card { align-items: center; }
-  .friend-actions { justify-content: center; }
-  .challenge-header { flex-direction: column; align-items: flex-start; }
+  .tab-btn { padding: 8px 12px; font-size: 0.82rem; }
+
+  .search-bar {
+    padding: 10px 14px;
+  }
+
+  .friend-card, .request-card {
+    align-items: center;
+    padding: 10px;
+  }
+
+  .friend-avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .friend-name {
+    font-size: 0.88rem;
+  }
+
+  .friend-meta {
+    font-size: 0.68rem;
+  }
+
+  .friend-actions {
+    justify-content: center;
+  }
+
+  .action-btn,
+  .icon-action-btn,
+  .text-action-btn,
+  .send-request-btn,
+  .sent-pill {
+    padding: 6px 10px;
+    min-height: 32px;
+    font-size: 0.78rem;
+  }
+
+  .challenge-card {
+    padding: 14px;
+  }
+
+  .challenge-header h3 {
+    font-size: 0.92rem;
+  }
+
+  .challenge-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .challenge-meta {
+    font-size: 0.76rem;
+  }
+
+  .progress-section {
+    gap: 8px;
+  }
+
+  .progress-row {
+    grid-template-columns: 80px 1fr 42px;
+  }
+
+  .progress-name {
+    font-size: 0.76rem;
+  }
+
+  .progress-bar-track {
+    height: 7px;
+  }
+
+  .progress-pct {
+    font-size: 0.72rem;
+  }
+
+  .status-text {
+    font-size: 0.72rem;
+  }
 }
 </style>

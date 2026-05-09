@@ -214,6 +214,29 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
   font-weight: 600;
 }
 
+@media (max-width: 860px) {
+  .podium-card {
+    padding: 18px 14px;
+  }
+
+  .is-first {
+    min-height: 248px;
+  }
+
+  .is-second {
+    min-height: 218px;
+  }
+
+  .is-third {
+    min-height: 194px;
+  }
+
+  .avatar-shell {
+    width: 76px;
+    height: 76px;
+  }
+}
+
 @media (max-width: 768px) {
   .podium-card,
   .is-first,
@@ -223,9 +246,70 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
   }
 
   .avatar-shell {
-    width: 82px;
-    height: 82px;
+    width: 72px;
+    height: 72px;
     margin-top: 10px;
+  }
+
+  .player-name {
+    font-size: 0.85rem;
+  }
+
+  .player-meta {
+    font-size: 0.78rem;
+  }
+
+  .player-xp {
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .podium-card {
+    padding: 10px 8px;
+    border-radius: 14px;
+  }
+
+  .podium-card,
+  .is-first,
+  .is-second,
+  .is-third {
+    min-height: unset;
+  }
+
+  .avatar-shell {
+    width: 52px;
+    height: 52px;
+    margin-top: 6px;
+  }
+
+  .badge-row {
+    margin-top: 10px;
+  }
+
+  .place-badge {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+  }
+
+  .player-name {
+    margin: 8px 0 2px;
+    font-size: 0.75rem;
+  }
+
+  .player-meta {
+    font-size: 0.68rem;
+  }
+
+  .player-xp {
+    margin: 4px 0 0;
+    font-size: 0.72rem;
+  }
+
+  .crown-icon {
+    width: 20px;
+    height: 20px;
+    top: 10px;
   }
 }
 </style>

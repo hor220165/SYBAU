@@ -35,6 +35,7 @@ export interface FriendChallengeDto {
     coinReward: number;
     status: string;
     goalAmount: number;
+    goalUnit: 'reps' | 'time' | 'distance';
     expiresAt: string;
     createdAt: string;
     completedAt?: string;
@@ -52,8 +53,8 @@ export interface CreateFriendChallengeDto {
     opponentId: number;
     title: string;
     description?: string;
-    xpReward: number;
-    coinReward: number;
     goalAmount: number;
+    goalUnit: 'reps' | 'time' | 'distance';
+    distanceUnit?: 'm' | 'km';
     durationHours: number;
 }

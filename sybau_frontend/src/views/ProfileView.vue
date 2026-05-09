@@ -1463,7 +1463,25 @@ onMounted(async () => {
 
   .achievements-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 8px;
+  }
+
+  .achievement-card {
+    min-height: 120px;
+    padding: 14px 10px;
+  }
+
+  .achievement-title {
+    font-size: 12px;
+  }
+
+  .achievement-description {
+    font-size: 10px;
+  }
+
+  .achievement-icon svg {
+    width: 28px;
+    height: 28px;
   }
 
   .carousel-btn {

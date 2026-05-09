@@ -14,12 +14,13 @@ public class FriendChallenge : BaseEntity<int>
     protected FriendChallenge() { }
 
     public FriendChallenge(User challenger, User opponent, string title, string? description,
-        int xpReward, int coinReward, int goalAmount, DateTime expiresAt)
+        int xpReward, int coinReward, int goalAmount, string goalUnit, DateTime expiresAt)
     {
         Challenger = challenger ?? throw new ArgumentNullException(nameof(challenger));
         Opponent = opponent ?? throw new ArgumentNullException(nameof(opponent));
 
         if (string.IsNullOrWhiteSpace(title)) throw new ArgumentNullException(nameof(title));
+        if (string.IsNullOrWhiteSpace(goalUnit)) throw new ArgumentNullException(nameof(goalUnit));
         if (xpReward < 0) throw new ArgumentOutOfRangeException(nameof(xpReward));
         if (coinReward < 0) throw new ArgumentOutOfRangeException(nameof(coinReward));
         if (goalAmount < 1) throw new ArgumentOutOfRangeException(nameof(goalAmount));
@@ -29,6 +30,7 @@ public class FriendChallenge : BaseEntity<int>
         XpReward = xpReward;
         CoinReward = coinReward;
         GoalAmount = goalAmount;
+        GoalUnit = goalUnit;
         ExpiresAt = expiresAt;
         Status = FriendChallengeStatus.Pending;
     }
@@ -48,6 +50,7 @@ public class FriendChallenge : BaseEntity<int>
 
     // Konkretes Ziel (z.B. 100 Reps)
     public int GoalAmount { get; set; }
+    public string GoalUnit { get; set; } = "reps";
 
     // Wer hat gewonnen?
     public int? WinnerId { get; set; }

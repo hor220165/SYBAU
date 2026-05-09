@@ -67,10 +67,10 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
 <style scoped>
 .leaderboard-row {
   display: grid;
-  grid-template-columns: 58px 56px minmax(0, 1fr) auto;
-  gap: 16px;
+  grid-template-columns: 44px 40px minmax(0, 1fr) auto;
+  gap: 12px;
   align-items: center;
-  padding: 16px 18px;
+  padding: 10px 16px;
   border-radius: 20px;
   background: rgba(15, 23, 42, 0.5);
   border: 1px solid rgba(139, 92, 246, 0.18);
@@ -90,8 +90,8 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
 }
 
 .rank-box {
-  width: 58px;
-  height: 58px;
+  width: 44px;
+  height: 44px;
   border-radius: 18px;
   display: grid;
   place-items: center;
@@ -115,8 +115,8 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
 }
 
 .avatar-pill {
-  width: 56px;
-  height: 56px;
+  width: 40px;
+  height: 40px;
   border-radius: 999px;
   padding: 0;
   border: 0;
@@ -163,7 +163,7 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
 .player-title-row h4 {
   margin: 0;
   color: white;
-  font-size: 1rem;
+  font-size: 0.9rem;
   line-height: 1.2;
   word-break: break-word;
 }
@@ -174,7 +174,7 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
   gap: 6px;
   border-radius: 999px;
   padding: 6px 10px;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 
@@ -185,7 +185,7 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
 }
 
 .player-subline {
-  margin-top: 10px;
+  margin-top: 6px;
 }
 
 .level-pill {
@@ -212,12 +212,12 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
   align-items: center;
   gap: 6px;
   color: #cbd5e1;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
 }
 
 @media (max-width: 860px) {
   .leaderboard-row {
-    grid-template-columns: 52px 48px 1fr;
+    grid-template-columns: 40px 36px 1fr;
     gap: 12px;
   }
 
@@ -229,24 +229,64 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
   }
 
   .rank-box {
-    width: 52px;
-    height: 52px;
+    width: 38px;
+    height: 38px;
   }
 
   .avatar-pill {
-    width: 48px;
-    height: 48px;
+    width: 34px;
+    height: 34px;
     border-radius: 999px;
   }
 }
 
 @media (max-width: 560px) {
   .leaderboard-row {
-    padding: 14px;
+    padding: 8px 12px;
+    gap: 8px;
+    grid-template-columns: 36px 34px 1fr;
+    border-radius: 14px;
+  }
+
+  .rank-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+  }
+
+  .avatar-pill {
+    width: 34px;
+    height: 34px;
   }
 
   .player-title-row {
-    gap: 8px;
+    gap: 6px;
+  }
+
+  .player-title-row h4 {
+    font-size: 0.82rem;
+  }
+
+  .level-pill {
+    padding: 4px 8px;
+    font-size: 0.68rem;
+  }
+
+  .xp-value {
+    font-size: 0.82rem;
+  }
+
+  .xp-caption {
+    font-size: 0.68rem;
+  }
+
+  .player-subline {
+    margin-top: 4px;
+  }
+
+  .player-score {
+    gap: 4px;
   }
 }
 </style>

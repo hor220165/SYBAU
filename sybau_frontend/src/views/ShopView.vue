@@ -28,7 +28,6 @@ const openingChestId = ref<number | null>(null);
 const chestOpening = ref<Chest | null>(null);
 const openedReward = ref<any | null>(null);
 const pendingPurchase = ref<{ type: 'item'; item: ShopDisplayItem } | { type: 'chest'; chest: Chest } | null>(null);
-const activeFilter = ref<'all' | 'chest' | 'boost' | 'item'>('all');
 const { refreshUser } = useAuth();
 
 const popupMessage = ref("");
@@ -190,28 +189,6 @@ const featuredItems = computed(() =>
     })
     .slice(0, 3),
 );
-
-const filteredItems = computed(() => {
-  if (activeFilter.value === 'all') return items.value;
-  if (activeFilter.value === 'chest') return [];
-  return items.value.filter((shopItem) => shopItem.category === activeFilter.value);
-});
-
-const filteredChests = computed(() => {
-  if (activeFilter.value === 'all' || activeFilter.value === 'chest') return chests.value;
-  return [];
-});
-
-const activeFilterLabel = computed(() => {
-  const labels = {
-    all: 'Shop-Items',
-    chest: 'Chests',
-    boost: 'Boosts',
-    item: 'Items',
-  } as const;
-
-  return labels[activeFilter.value];
-});
 
 const loadProfile = async () => {
   try {
@@ -442,54 +419,20 @@ onMounted(loadPageData);
           </div>
         </section>
 
-        <section class="section-card">
+        <section v-if="chests.length" class="section-card">
           <div class="section-heading section-heading-spread">
             <div>
               <div class="title-with-icon">
                 <Package :size="20" />
-                <h2>{{ activeFilterLabel }}</h2>
+                <h2>Chests</h2>
               </div>
-              <p>
-                Die Karten sind als eigene Komponenten gebaut, damit du neue Chests und Booster
-                später nur noch als neue Shop-Items hinzufügen musst.
-              </p>
+              <p>Open chests for a chance at rare and legendary loot.</p>
             </div>
           </div>
 
-          <div class="filter-row">
-            <button
-              class="filter-chip"
-              :class="{ active: activeFilter === 'all' }"
-              @click="activeFilter = 'all'"
-            >
-              Alle
-            </button>
-            <button
-            class="filter-chip"
-            :class="{ active: activeFilter === 'chest' }"
-            @click="activeFilter = 'chest'"
-          >
-              Chests
-            </button>
-            <button
-              class="filter-chip"
-              :class="{ active: activeFilter === 'boost' }"
-              @click="activeFilter = 'boost'"
-            >
-              Boosts
-            </button>
-            <button
-              class="filter-chip"
-              :class="{ active: activeFilter === 'item' }"
-              @click="activeFilter = 'item'"
-            >
-              Items
-            </button>
-          </div>
-
-          <div v-if="filteredChests.length" class="items-grid chest-grid">
+          <div class="items-grid chest-grid">
             <ShopChestCard
-              v-for="chest in filteredChests"
+              v-for="chest in chests"
               :key="`chest-${chest.id}`"
               :chest="chest"
               :current-coins="currentCoins"
@@ -497,20 +440,28 @@ onMounted(loadPageData);
               @open="requestOpenChest"
             />
           </div>
+        </section>
 
-          <div v-if="filteredItems.length" class="items-grid">
+        <section v-if="items.length" class="section-card">
+          <div class="section-heading section-heading-spread">
+            <div>
+              <div class="title-with-icon">
+                <Package :size="20" />
+                <h2>Items</h2>
+              </div>
+              <p>Browse boosts, cosmetics, and other shop items.</p>
+            </div>
+          </div>
+
+          <div class="items-grid">
             <ShopItemCard
-              v-for="shopItem in filteredItems"
+              v-for="shopItem in items"
               :key="shopItem.id"
               :item="shopItem"
               :current-coins="currentCoins"
               :busy="buyingItemId === shopItem.id"
               @buy="requestBuyItem"
             />
-          </div>
-          <div v-if="!filteredItems.length && !filteredChests.length" class="empty-box">
-            <Sparkles :size="18" />
-            Für diesen Filter gibt es aktuell keine Items.
           </div>
         </section>
 
@@ -704,39 +655,13 @@ onMounted(loadPageData);
 
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 18px;
-}
-
-.filter-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 18px;
-}
-
-.filter-chip {
-  border: 1px solid rgba(236, 72, 153, 0.22);
-  border-radius: 999px;
-  padding: 11px 14px;
-  color: #f9a8d4;
-  background: rgba(15, 23, 42, 0.44);
-  font-weight: 700;
-}
-
-.filter-chip.active {
-  background: linear-gradient(90deg, #ec4899, #f43f5e);
-  color: white;
-  border-color: transparent;
-}
-
-.filter-chip:hover {
-  border-color: rgba(236, 72, 153, 0.36);
 }
 
 .items-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 18px;
 }
 
@@ -1139,13 +1064,6 @@ onMounted(loadPageData);
   background: rgba(20, 83, 45, 0.3);
 }
 
-@media (max-width: 1180px) {
-  .feature-grid,
-  .items-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 980px) {
   .earn-card,
   .section-heading-spread {
@@ -1164,8 +1082,6 @@ onMounted(loadPageData);
     padding-top: 24px;
   }
 
-  .feature-grid,
-  .items-grid,
   .earn-stats {
     grid-template-columns: 1fr;
   }

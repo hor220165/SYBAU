@@ -6920,12 +6920,6 @@ class _FriendsTabState extends State<FriendsTab> {
       TextEditingController();
   final TextEditingController _challengeDescriptionController =
       TextEditingController();
-  final TextEditingController _challengeXpController = TextEditingController(
-    text: '50',
-  );
-  final TextEditingController _challengeCoinsController = TextEditingController(
-    text: '10',
-  );
   final TextEditingController _challengeGoalController = TextEditingController(
     text: '100',
   );
@@ -6936,6 +6930,19 @@ class _FriendsTabState extends State<FriendsTab> {
   );
   List<Map<String, dynamic>> _userDirectory = <Map<String, dynamic>>[];
   Map<String, dynamic>? _challengeOpponent;
+  String _challengeGoalUnit = 'reps';
+
+  bool _canDeleteChallenge(String status) =>
+      status == 'Completed' || status == 'Expired';
+
+  String _formatChallengeAmount(int value, String unit) {
+    if (unit.toLowerCase() != 'time') return '$value';
+    final totalSeconds = value.clamp(0, 1 << 30);
+    final hours = (totalSeconds ~/ 3600).toString().padLeft(2, '0');
+    final minutes = ((totalSeconds % 3600) ~/ 60).toString().padLeft(2, '0');
+    final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
+    return '$hours:$minutes:$seconds';
+  }
 
   @override
   void initState() {
@@ -6948,8 +6955,6 @@ class _FriendsTabState extends State<FriendsTab> {
     _requestController.dispose();
     _challengeTitleController.dispose();
     _challengeDescriptionController.dispose();
-    _challengeXpController.dispose();
-    _challengeCoinsController.dispose();
     _challengeGoalController.dispose();
     _challengeDurationController.dispose();
     _progressController.dispose();
@@ -7109,6 +7114,16 @@ class _FriendsTabState extends State<FriendsTab> {
     }
   }
 
+  Future<void> _deleteChallenge(int id) async {
+    try {
+      await ApiService.deleteFriendChallenge(id);
+      widget.showSnack('Challenge geloescht.');
+      await _load();
+    } catch (_) {
+      widget.showSnack('Challenge konnte nicht geloescht werden.');
+    }
+  }
+
   Future<void> _createChallenge() async {
     final opponent = _challengeOpponent;
     final title = _challengeTitleController.text.trim();
@@ -7122,9 +7137,8 @@ class _FriendsTabState extends State<FriendsTab> {
         opponentId: _toInt(opponent['id']),
         title: title,
         description: _challengeDescriptionController.text.trim(),
-        xpReward: int.tryParse(_challengeXpController.text.trim()) ?? 50,
-        coinReward: int.tryParse(_challengeCoinsController.text.trim()) ?? 10,
         goalAmount: int.tryParse(_challengeGoalController.text.trim()) ?? 100,
+        goalUnit: _challengeGoalUnit,
         durationHours:
             int.tryParse(_challengeDurationController.text.trim()) ?? 24,
       );
@@ -7138,7 +7152,10 @@ class _FriendsTabState extends State<FriendsTab> {
   }
 
   Future<void> _updateProgress(Map<String, dynamic> challenge) async {
-    final amount = int.tryParse(_progressController.text.trim()) ?? 0;
+    final goalUnit = _string(challenge['goalUnit'], fallback: 'reps');
+    final amount = goalUnit.toLowerCase() == 'time'
+        ? _parseChallengeTimeToSeconds(_progressController.text.trim())
+        : (int.tryParse(_progressController.text.trim()) ?? 0);
     if (amount <= 0) return;
 
     try {
@@ -7156,6 +7173,14 @@ class _FriendsTabState extends State<FriendsTab> {
     } catch (_) {
       widget.showSnack('Fortschritt konnte nicht gemeldet werden.');
     }
+  }
+
+  int _parseChallengeTimeToSeconds(String raw) {
+    final parts = raw.split(':').map((part) => int.tryParse(part) ?? 0).toList();
+    if (parts.length == 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+    if (parts.length == 2) return (parts[0] * 60) + parts[1];
+    if (parts.length == 1) return parts[0];
+    return 0;
   }
 
   List<Map<String, dynamic>> get _filteredUsers {
@@ -7279,10 +7304,9 @@ class _FriendsTabState extends State<FriendsTab> {
     _challengeOpponent = friend;
     _challengeTitleController.clear();
     _challengeDescriptionController.clear();
-    _challengeXpController.text = '50';
-    _challengeCoinsController.text = '10';
     _challengeGoalController.text = '100';
     _challengeDurationController.text = '24';
+    _challengeGoalUnit = 'reps';
 
     showModalBottomSheet<void>(
       context: context,
@@ -7335,19 +7359,91 @@ class _FriendsTabState extends State<FriendsTab> {
                 ],
               ),
               const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: _settingsTextField(_challengeXpController, 'XP'),
+              DropdownButtonFormField<String>(
+                value: _challengeGoalUnit,
+                dropdownColor: const Color(0xFF0F172A),
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: 'Einheit',
+                  labelStyle: TextStyle(color: Colors.white.withOpacity(0.72)),
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.04),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _settingsTextField(
-                      _challengeCoinsController,
-                      'Coins',
-                    ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
                   ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                    borderSide: BorderSide(color: Color(0xFFEC4899)),
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'reps', child: Text('Reps')),
+                  DropdownMenuItem(value: 'time', child: Text('Time')),
+                  DropdownMenuItem(value: 'distance', child: Text('Distance')),
                 ],
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() => _challengeGoalUnit = value);
+                },
+              ),
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white.withOpacity(0.04),
+                  border: Border.all(color: Colors.white.withOpacity(0.12)),
+                ),
+                child: Wrap(
+                  spacing: 14,
+                  runSpacing: 8,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(
+                          'assets/XP_Pixel.png',
+                          width: 16,
+                          height: 16,
+                          filterQuality: FilterQuality.none,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'XP automatisch',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(
+                          'assets/SYBAU_Coin.png',
+                          width: 16,
+                          height: 16,
+                          filterQuality: FilterQuality.none,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Coins automatisch',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 14),
               SizedBox(
@@ -7366,6 +7462,10 @@ class _FriendsTabState extends State<FriendsTab> {
 
   void _openProgressModal(Map<String, dynamic> challenge) {
     _progressController.text = '1';
+    final goalUnit = _string(challenge['goalUnit'], fallback: 'reps');
+    if (goalUnit.toLowerCase() == 'time') {
+      _progressController.text = '00:01:00';
+    }
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Color(0xFF0F172A),
@@ -7392,7 +7492,13 @@ class _FriendsTabState extends State<FriendsTab> {
               ),
             ),
             const SizedBox(height: 12),
-            _settingsTextField(_progressController, 'Fortschritt'),
+            _settingsTextField(
+              _progressController,
+              'Fortschritt',
+              keyboardType: goalUnit.toLowerCase() == 'time'
+                  ? TextInputType.datetime
+                  : TextInputType.number,
+            ),
             const SizedBox(height: 14),
             SizedBox(
               width: double.infinity,
@@ -7411,13 +7517,15 @@ class _FriendsTabState extends State<FriendsTab> {
     TextEditingController controller,
     String label, {
     int maxLines = 1,
+    TextInputType? keyboardType,
   }) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      keyboardType: label == 'Titel' || label == 'Beschreibung'
+      keyboardType: keyboardType ??
+          (label == 'Titel' || label == 'Beschreibung'
           ? TextInputType.text
-          : TextInputType.number,
+          : TextInputType.number),
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
@@ -7584,6 +7692,10 @@ class _FriendsTabState extends State<FriendsTab> {
         ? _toInt(challenge['opponentProgress'])
         : _toInt(challenge['challengerProgress']);
     final goal = _toInt(challenge['goalAmount'], fallback: 1);
+    final goalUnit = _string(challenge['goalUnit'], fallback: 'reps');
+    final formattedMyProgress = _formatChallengeAmount(myProgress, goalUnit);
+    final formattedOtherProgress = _formatChallengeAmount(otherProgress, goalUnit);
+    final formattedGoal = _formatChallengeAmount(goal, goalUnit);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -7608,7 +7720,7 @@ class _FriendsTabState extends State<FriendsTab> {
                   ),
                 ),
               ),
-              _statusPill(status),
+              _statusText(status),
             ],
           ),
           if (_string(challenge['description']).isNotEmpty) ...[
@@ -7636,12 +7748,70 @@ class _FriendsTabState extends State<FriendsTab> {
             valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFEC4899)),
           ),
           const SizedBox(height: 6),
-          Text(
-            'Du: $myProgress/$goal • Gegner: $otherProgress/$goal • ${_formatCompactNumber(_toInt(challenge['xpReward']))} XP • ${_formatCompactNumber(_toInt(challenge['coinReward']))} Coins',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.58),
-              fontSize: 11,
-            ),
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            children: [
+              Text(
+                'Du: $formattedMyProgress/$formattedGoal',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.58),
+                  fontSize: 11,
+                ),
+              ),
+              Text(
+                'Gegner: $formattedOtherProgress/$formattedGoal',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.58),
+                  fontSize: 11,
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/XP_Pixel.png',
+                    width: 14,
+                    height: 14,
+                    filterQuality: FilterQuality.none,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${_formatCompactNumber(_toInt(challenge['xpReward']))} XP',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.58),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/SYBAU_Coin.png',
+                    width: 14,
+                    height: 14,
+                    filterQuality: FilterQuality.none,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${_formatCompactNumber(_toInt(challenge['coinReward']))} Coins',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.58),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                'Ziel: $formattedGoal ${_challengeUnitShort(goalUnit)}',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.58),
+                  fontSize: 11,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           if (isPendingForMe)
@@ -7669,13 +7839,32 @@ class _FriendsTabState extends State<FriendsTab> {
                 onPressed: () => _openProgressModal(challenge),
                 label: 'Fortschritt melden',
               ),
+            )
+          else if (_canDeleteChallenge(status))
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: id == 0 ? null : () => _deleteChallenge(id),
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Color(0xFFFCA5A5),
+                  size: 18,
+                ),
+                label: const Text(
+                  'Loeschen',
+                  style: TextStyle(
+                    color: Color(0xFFFCA5A5),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ),
         ],
       ),
     );
   }
 
-  Widget _statusPill(String status) {
+  Widget _statusText(String status) {
     final color = switch (status) {
       'Accepted' => Color(0xFF22C55E),
       'Pending' => Color(0xFFF59E0B),
@@ -7683,21 +7872,39 @@ class _FriendsTabState extends State<FriendsTab> {
       'Declined' => Color(0xFFEF4444),
       _ => Color(0xFF94A3B8),
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
-        color: color.withOpacity(0.16),
-      ),
-      child: Text(
-        status,
-        style: TextStyle(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
-        ),
+    return Text(
+      _localizedChallengeStatus(status),
+      style: TextStyle(
+        color: color,
+        fontSize: 11,
+        fontWeight: FontWeight.w800,
+        shadows: [
+          Shadow(
+            color: color.withOpacity(0.55),
+            blurRadius: 14,
+          ),
+        ],
       ),
     );
+  }
+
+  String _localizedChallengeStatus(String status) {
+    return switch (status) {
+      'Accepted' => 'Aktiv',
+      'Pending' => 'Ausstehend',
+      'Completed' => 'Abgeschlossen',
+      'Declined' => 'Abgelehnt',
+      'Expired' => 'Abgelaufen',
+      _ => status,
+    };
+  }
+
+  String _challengeUnitShort(String unit) {
+    return switch (unit.toLowerCase()) {
+      'time' => 'Sek',
+      'distance' => 'm',
+      _ => 'Reps',
+    };
   }
 
   @override

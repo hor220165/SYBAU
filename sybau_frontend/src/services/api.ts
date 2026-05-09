@@ -47,7 +47,9 @@ export const authService = {
     login: (email: string, password: string) =>
         API.post('/auth/login', { email, password }),
     register: (username: string, email: string, password: string) =>
-        API.post('/auth/register', { username, email, password })
+        API.post('/auth/register', { username, email, password }),
+    googleLogin: (idToken: string) =>
+        API.post('/auth/google', { idToken })
 };
 
 export const userService = {
@@ -201,6 +203,7 @@ export const friendService = {
     createChallenge: (data: any) => API.post('/friends/challenges', data),
     acceptChallenge: (id: number) => API.post(`/friends/challenges/${id}/accept`),
     declineChallenge: (id: number) => API.post(`/friends/challenges/${id}/decline`),
+    deleteChallenge: (id: number) => API.delete(`/friends/challenges/${id}`),
     updateProgress: (id: number, amount: number) => API.put(`/friends/challenges/${id}/progress`, { amount })
 };
 

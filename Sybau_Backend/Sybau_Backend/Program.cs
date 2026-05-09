@@ -134,6 +134,13 @@ builder.Services.AddDbContext<FitnessDbContext>(options =>
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<FitnessDbContext>();
+    db.Database.Migrate();
+}
+
 Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads", "profile-images"));
 Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads", "shop-items"));
 Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads", "chests"));

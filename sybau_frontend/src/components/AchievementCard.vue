@@ -116,4 +116,37 @@ defineProps<{
 .achievement-card.locked .achievement-description {
   color: rgba(255, 255, 255, 0.3);
 }
+@media (max-width: 480px) {
+  .achievement-card {
+    min-height: 120px;
+    padding: 14px 10px;
+  }
+
+  .achievement-title {
+    font-size: 12px;
+  }
+
+  .achievement-description {
+    font-size: 10px;
+  }
+
+  .achievement-icon div {
+    font-size: 0;
+  }
+
+  .achievement-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .unlock-badge {
+    width: 22px;
+    height: 22px;
+  }
+
+  .unlock-badge img {
+    width: 12px;
+    height: 12px;
+  }
+}
 </style>

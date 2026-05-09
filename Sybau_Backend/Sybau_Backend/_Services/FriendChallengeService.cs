@@ -7,6 +7,7 @@ namespace Sybau_Backend._Services;
 
 public class FriendChallengeService
 {
+    private const double RewardBoostMultiplier = 1.25;
     private readonly FitnessDbContext _context;
     private readonly FriendService _friendService;
     private readonly UserService _userService;
@@ -32,20 +33,27 @@ public class FriendChallengeService
         if (challenger == null || opponent == null)
             return (false, "Benutzer nicht gefunden.", null);
 
-        if (dto.XpReward < 1 || dto.XpReward > 500)
-            return (false, "XP-Belohnung muss zwischen 1 und 500 liegen.", null);
-        if (dto.CoinReward < 0 || dto.CoinReward > 100)
-            return (false, "Coin-Belohnung muss zwischen 0 und 100 liegen.", null);
         if (dto.DurationHours < 1 || dto.DurationHours > 168) // max 7 Tage
             return (false, "Dauer muss zwischen 1 und 168 Stunden liegen.", null);
-        if (dto.GoalAmount < 1 || dto.GoalAmount > 10000)
+        if (dto.GoalAmount < 1 || dto.GoalAmount > 1000000)
             return (false, "Ziel muss zwischen 1 und 10.000 liegen.", null);
+
+        var normalizedUnit = NormalizeGoalUnit(dto.GoalUnit);
+        if (normalizedUnit == null)
+            return (false, "Einheit muss reps, time oder distance sein.", null);
+
+        var normalizedGoalAmount = NormalizeGoalAmount(dto.GoalAmount, normalizedUnit);
+        if (normalizedGoalAmount < 1)
+            return (false, "Ziel muss mindestens 1 sein.", null);
+
+        var (xpReward, coinReward) = CalculateRewards(normalizedGoalAmount, normalizedUnit);
 
         var friendChallenge = new FriendChallenge(
             challenger, opponent,
             dto.Title, dto.Description,
-            dto.XpReward, dto.CoinReward,
-            dto.GoalAmount,
+            xpReward, coinReward,
+            normalizedGoalAmount,
+            normalizedUnit,
             DateTime.UtcNow.AddHours(dto.DurationHours));
 
         _context.FriendChallenges.Add(friendChallenge);
@@ -192,6 +200,34 @@ public class FriendChallengeService
         return challenges.Select(MapToDto);
     }
 
+    public async Task<(bool success, string message)> DeleteChallengeAsync(int challengeId, int userId)
+    {
+        var challenge = await _context.FriendChallenges
+            .FirstOrDefaultAsync(fc => fc.Id == challengeId);
+
+        if (challenge == null)
+            return (false, "Challenge nicht gefunden.");
+
+        if (challenge.ChallengerId != userId && challenge.OpponentId != userId)
+            return (false, "Du darfst diese Challenge nicht loeschen.");
+
+        if (challenge.Status == FriendChallengeStatus.Accepted && challenge.ExpiresAt < DateTime.UtcNow)
+        {
+            challenge.Status = FriendChallengeStatus.Expired;
+            await _context.SaveChangesAsync();
+        }
+
+        if (challenge.Status != FriendChallengeStatus.Completed &&
+            challenge.Status != FriendChallengeStatus.Expired)
+        {
+            return (false, "Nur abgeschlossene oder abgelaufene Challenges koennen geloescht werden.");
+        }
+
+        _context.FriendChallenges.Remove(challenge);
+        await _context.SaveChangesAsync();
+        return (true, "Challenge geloescht.");
+    }
+
     private static FriendChallengeDto MapToDto(FriendChallenge fc) => new()
     {
         Id = fc.Id,
@@ -201,6 +237,7 @@ public class FriendChallengeService
         CoinReward = fc.CoinReward,
         Status = fc.Status.ToString(),
         GoalAmount = fc.GoalAmount,
+        GoalUnit = fc.GoalUnit,
         ExpiresAt = fc.ExpiresAt,
         CreatedAt = fc.CreatedAt,
         CompletedAt = fc.CompletedAt,
@@ -213,4 +250,43 @@ public class FriendChallengeService
         WinnerId = fc.WinnerId,
         WinnerUserName = fc.Winner?.UserName
     };
+
+    private static string? NormalizeGoalUnit(string? rawUnit)
+    {
+        var normalized = rawUnit?.Trim().ToLowerInvariant();
+        return normalized switch
+        {
+            "reps" or "rep" => "reps",
+            "time" or "seconds" or "sek" or "sec" => "time",
+            "distance" or "meter" or "m" or "km" => "distance",
+            _ => null
+        };
+    }
+
+    private static (int xpReward, int coinReward) CalculateRewards(int goalAmount, string goalUnit)
+    {
+        var baseXp = goalUnit switch
+        {
+            "time" => Math.Max(20, goalAmount / 3),
+            "distance" => Math.Max(25, goalAmount / 12),
+            _ => Math.Max(15, (int)Math.Round(goalAmount * 0.45))
+        };
+
+        var baseCoins = goalUnit switch
+        {
+            "time" => Math.Max(4, goalAmount / 45),
+            "distance" => Math.Max(5, goalAmount / 180),
+            _ => Math.Max(3, (int)Math.Round(goalAmount * 0.09))
+        };
+
+        var boostedXp = (int)Math.Ceiling(baseXp * RewardBoostMultiplier);
+        var boostedCoins = (int)Math.Ceiling(baseCoins * RewardBoostMultiplier);
+
+        return (boostedXp, boostedCoins);
+    }
+
+    private static int NormalizeGoalAmount(int goalAmount, string goalUnit)
+    {
+        return goalAmount;
+    }
 }

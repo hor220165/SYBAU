@@ -53,5 +53,19 @@ namespace Sybau_Backend.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost("google")]
+        public async Task<IActionResult> Google([FromBody] GoogleLoginDto dto)
+        {
+            try
+            {
+                var result = await _authService.LoginWithGoogleTokenAsync(dto.IdToken, _config);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+        }
     }
 }

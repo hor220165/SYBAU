@@ -334,6 +334,35 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>?> googleLogin(String idToken) async {
+    try {
+      final response = await _sendWithReconnect(
+        (serverUrl) => http.post(
+          Uri.parse('$serverUrl/auth/google'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'idToken': idToken}),
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final prefs = await SharedPreferences.getInstance();
+        final token = data['token'] ?? data['accessToken'];
+        if (token != null) {
+          await prefs.setString('token', token as String);
+        }
+        if (data['user'] != null) {
+          await prefs.setString('user', jsonEncode(data['user']));
+        }
+        return data;
+      } else {
+        throw Exception('Google login failed: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error logging in with Google: $e');
+    }
+  }
+
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
@@ -779,18 +808,16 @@ class ApiService {
     required int opponentId,
     required String title,
     String? description,
-    required int xpReward,
-    required int coinReward,
     required int goalAmount,
+    required String goalUnit,
     required int durationHours,
   }) async {
     return _authedPostJson('/friends/challenges', {
       'opponentId': opponentId,
       'title': title,
       'description': description,
-      'xpReward': xpReward,
-      'coinReward': coinReward,
       'goalAmount': goalAmount,
+      'goalUnit': goalUnit,
       'durationHours': durationHours,
     });
   }
@@ -807,6 +834,11 @@ class ApiService {
       '/friends/challenges/$id/decline',
       <String, dynamic>{},
     );
+  }
+
+  static Future<Map<String, dynamic>> deleteFriendChallenge(int id) async {
+    await _authedDelete('/friends/challenges/$id');
+    return <String, dynamic>{'ok': true};
   }
 
   static Future<Map<String, dynamic>> updateFriendChallengeProgress({

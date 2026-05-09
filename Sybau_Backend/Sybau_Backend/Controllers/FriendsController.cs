@@ -199,4 +199,17 @@ public class FriendsController : ControllerBase
 
         return Ok(new { message });
     }
+
+    // DELETE /friends/challenges/{id}
+    [HttpDelete("challenges/{id}")]
+    public async Task<IActionResult> DeleteChallenge(int id)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var (success, message) = await _friendChallengeService.DeleteChallengeAsync(id, userId.Value);
+        if (!success) return BadRequest(new { message });
+
+        return Ok(new { message });
+    }
 }

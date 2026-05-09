@@ -304,8 +304,8 @@ onMounted(loadPageData);
   }
 
   .podium-grid {
-    grid-template-columns: 1fr;
-    align-items: stretch;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
   }
 }
 
@@ -319,6 +319,12 @@ onMounted(loadPageData);
   .state-box,
   .empty-box {
     border-radius: 22px;
+  }
+
+  .podium-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    align-items: stretch;
   }
 }
 </style>

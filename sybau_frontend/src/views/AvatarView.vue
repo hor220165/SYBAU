@@ -571,11 +571,17 @@ onMounted(() => loadProfile());
   grid-template-columns: auto 1fr;
   gap: 40px;
   align-items: start;
+  overflow: hidden;
 }
 
 /* ══════════════════════════════
    LEFT PANEL — AVATAR
 ══════════════════════════════ */
+
+.avatar-panel {
+  min-width: 0;
+  overflow: hidden;
+}
 
 .avatar-section {
   display: flex;
@@ -938,7 +944,7 @@ onMounted(() => loadProfile());
   position: relative;
   border-radius: 14px;
   overflow: hidden;
-  height: 250px;
+  height: auto;
   transition: transform 0.18s ease, filter 0.18s ease;
 }
 
@@ -1005,7 +1011,7 @@ onMounted(() => loadProfile());
   display: flex;
   flex-direction: column;
   gap: 12px;
-  height: 250px;
+  height: auto;
   padding: 22px;
   border-radius: 22px;
   background: rgba(2, 6, 23, 0.42);
@@ -1412,7 +1418,12 @@ onMounted(() => loadProfile());
 
 @media (max-width: 1024px) {
   .equip-layout {
-    gap: 28px;
+    grid-template-columns: minmax(0, 340px) 1fr;
+    gap: 24px;
+  }
+
+  .avatar-panel {
+    max-width: 340px;
   }
 }
 
@@ -1532,7 +1543,7 @@ onMounted(() => loadProfile());
   }
 
   .inventory-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .booster-meta h3 {

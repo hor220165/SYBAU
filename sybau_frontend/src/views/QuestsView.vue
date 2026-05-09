@@ -285,7 +285,7 @@ onMounted(async () => {
 
 /* Stat Cards */
 .stat-card {
-  min-height: 148px;
+  min-height: 120px;
   background: rgba(2, 6, 23, 0.42);
   border: 1px solid rgba(255, 255, 255, 0.075);
   border-radius: 22px;
@@ -332,7 +332,7 @@ onMounted(async () => {
 }
 
 .stat-value {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 800;
   color: white;
   text-shadow: none;
@@ -391,7 +391,7 @@ onMounted(async () => {
 
 .quests-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 24px;
 }
 
@@ -411,7 +411,7 @@ onMounted(async () => {
   }
 
   .stat-card {
-    min-height: 128px;
+    min-height: 110px;
     padding: 18px;
   }
 
@@ -435,7 +435,7 @@ onMounted(async () => {
   }
 
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
   }
 
@@ -447,6 +447,9 @@ onMounted(async () => {
     font-size: 22px;
   }
 
+  .stat-card {
+    padding: 16px;
+  }
   .section-header {
     flex-direction: column;
     align-items: flex-start;
@@ -454,6 +457,13 @@ onMounted(async () => {
   }
 
   .quests-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Responsive - Narrow Mobile */
+@media (max-width: 560px) {
+  .stats-grid {
     grid-template-columns: 1fr;
   }
 }
