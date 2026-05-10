@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Crown, Medal, Sparkles, Star } from 'lucide-vue-next';
+import { Star } from 'lucide-vue-next';
 import type { LeaderboardDisplayEntry } from '@/models/LeaderboardDisplayEntry';
 import { resolveMediaUrl } from '@/services/api';
 import noProfilePicture from '@/assets/Nopfp.png';
@@ -26,9 +26,7 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
 <template>
   <article class="leaderboard-row" :class="[{ 'is-current-user': player.isCurrentUser }, `rank-${rankType}`]">
     <div class="rank-box">
-      <Crown v-if="player.Rank === 1" :size="20" />
-      <Medal v-else-if="player.Rank === 2 || player.Rank === 3" :size="20" />
-      <span v-else>#{{ player.Rank }}</span>
+      <span>{{ player.Rank }}</span>
     </div>
 
     <button
@@ -47,19 +45,15 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
     <div class="player-main">
       <div class="player-title-row">
         <h4>{{ player.UserName }}</h4>
-        <Star v-if="player.isCurrentUser" class="current-user-star" :size="16" />
-      </div>
-      <div class="player-subline">
-        <span class="level-pill">Level {{ player.Level }}</span>
+        <Star v-if="player.isCurrentUser" class="current-user-star" :size="14" />
       </div>
     </div>
 
+    <div class="player-level">lvl {{ player.Level }}</div>
+
     <div class="player-score">
-      <span class="xp-value">{{ player.TotalXp.toLocaleString() }} XP</span>
-      <span class="xp-caption">
-        <Sparkles :size="14" />
-        Gesamtfortschritt
-      </span>
+      <span class="xp-number">{{ player.TotalXp.toLocaleString() }}</span>
+      <span class="xp-unit">XP</span>
     </div>
   </article>
 </template>
@@ -67,80 +61,66 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
 <style scoped>
 .leaderboard-row {
   display: grid;
-  grid-template-columns: 44px 40px minmax(0, 1fr) auto;
-  gap: 12px;
+  grid-template-columns: 28px 42px minmax(0, 1fr) auto auto;
+  gap: 14px;
   align-items: center;
-  padding: 10px 16px;
-  border-radius: 20px;
-  background: rgba(15, 23, 42, 0.5);
-  border: 1px solid rgba(139, 92, 246, 0.18);
-  transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+  padding: 14px 10px;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .leaderboard-row:hover {
-  transform: translateY(-2px);
-  border-color: rgba(236, 72, 153, 0.3);
-  background: rgba(15, 23, 42, 0.64);
+  background: rgba(255, 255, 255, 0.025);
+  border-color: rgba(236, 72, 153, 0.18);
 }
 
 .is-current-user {
-  background: linear-gradient(90deg, rgba(168, 85, 247, 0.18), rgba(236, 72, 153, 0.12));
-  border-color: rgba(236, 72, 153, 0.34);
-  box-shadow: 0 18px 32px rgba(88, 28, 135, 0.18);
+  background: linear-gradient(90deg, rgba(168, 85, 247, 0.12), rgba(236, 72, 153, 0.08));
+  border-color: rgba(236, 72, 153, 0.24);
 }
 
 .rank-box {
-  width: 44px;
-  height: 44px;
-  border-radius: 18px;
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  color: white;
-  background: rgba(30, 41, 59, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .rank-gold .rank-box {
-  color: #facc15;
-  background: rgba(120, 53, 15, 0.25);
+  color: #d4af37;
 }
 
 .rank-silver .rank-box {
-  color: #cbd5e1;
+  color: #c0c7d1;
 }
 
 .rank-bronze .rank-box {
-  color: #fb923c;
+  color: #cd7f32;
 }
 
 .avatar-pill {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 999px;
   padding: 0;
   border: 0;
   display: grid;
   place-items: center;
   color: white;
-  font-weight: 800;
-  letter-spacing: 0.05em;
   overflow: hidden;
   cursor: pointer;
+  background: rgba(30, 41, 59, 0.92);
 }
 
 .avatar-pill:focus-visible {
   outline: 2px solid rgba(236, 72, 153, 0.65);
   outline-offset: 2px;
-}
-
-.avatar-pill.is-empty {
-  background: rgba(30, 41, 59, 0.92);
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.avatar-pill.has-image {
-  background: rgba(30, 41, 59, 0.92);
 }
 
 .avatar-image {
@@ -156,26 +136,18 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
 .player-title-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
 }
 
 .player-title-row h4 {
   margin: 0;
   color: white;
-  font-size: 0.9rem;
+  font-size: 0.98rem;
   line-height: 1.2;
-  word-break: break-word;
-}
-
-.level-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 0.72rem;
-  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .current-user-star {
@@ -184,109 +156,89 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
   fill: rgba(251, 191, 36, 0.22);
 }
 
-.player-subline {
-  margin-top: 6px;
-}
-
-.level-pill {
-  color: #c4b5fd;
-  background: rgba(139, 92, 246, 0.14);
-  border: 1px solid rgba(139, 92, 246, 0.24);
+.player-level {
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 0.95rem;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .player-score {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
   gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
   text-align: right;
 }
 
-.xp-value {
-  color: white;
-  font-weight: 700;
+.xp-number {
+  color: #e2e8f0;
+  font-size: 0.98rem;
+  font-weight: 600;
 }
 
-.xp-caption {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #cbd5e1;
-  font-size: 0.76rem;
+.xp-unit {
+  color: #38bdf8;
+  font-size: 0.92rem;
+  font-weight: 800;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.28);
 }
 
 @media (max-width: 860px) {
   .leaderboard-row {
-    grid-template-columns: 40px 36px 1fr;
-    gap: 12px;
+    grid-template-columns: 24px 38px minmax(0, 1fr) auto auto;
+    gap: 10px;
+    padding: 12px 8px;
   }
 
-  .player-score {
-    grid-column: 1 / -1;
-    align-items: flex-start;
-    text-align: left;
-    padding-left: 0;
-  }
-
-  .rank-box {
+  .avatar-pill {
     width: 38px;
     height: 38px;
   }
 
-  .avatar-pill {
-    width: 34px;
-    height: 34px;
-    border-radius: 999px;
+  .player-title-row h4 {
+    font-size: 0.9rem;
+  }
+
+  .player-level,
+  .xp-number,
+  .xp-unit {
+    font-size: 0.84rem;
   }
 }
 
 @media (max-width: 560px) {
   .leaderboard-row {
-    padding: 8px 12px;
+    grid-template-columns: 20px 34px minmax(0, 1fr) auto auto;
     gap: 8px;
-    grid-template-columns: 36px 34px 1fr;
-    border-radius: 14px;
+    padding: 10px 4px;
   }
 
   .rank-box {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    font-size: 0.72rem;
+    font-size: 0.86rem;
   }
 
   .avatar-pill {
     width: 34px;
     height: 34px;
-  }
-
-  .player-title-row {
-    gap: 6px;
   }
 
   .player-title-row h4 {
     font-size: 0.82rem;
   }
 
-  .level-pill {
-    padding: 4px 8px;
-    font-size: 0.68rem;
+  .player-level {
+    font-size: 0.76rem;
   }
 
-  .xp-value {
-    font-size: 0.82rem;
+  .xp-number {
+    font-size: 0.78rem;
   }
 
-  .xp-caption {
-    font-size: 0.68rem;
-  }
-
-  .player-subline {
-    margin-top: 4px;
-  }
-
-  .player-score {
-    gap: 4px;
+  .xp-unit {
+    font-size: 0.76rem;
   }
 }
 </style>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { Crown, Trophy, Users, Sparkles } from 'lucide-vue-next';
+import { Crown, Trophy, Sparkles } from 'lucide-vue-next';
 import Navbar from '@/components/Navbar.vue';
 import Header from '@/components/Header.vue';
 import LeaderboardPodiumCard from '@/components/LeaderboardPodiumCard.vue';
@@ -111,18 +111,13 @@ onMounted(loadPageData);
         </section>
 
         <section class="section-card">
-          <div class="section-heading section-heading-spread">
+          <div class="section-heading">
             <div>
               <div class="title-with-icon">
                 <Trophy :size="20" />
                 <h2>Globale Rangliste</h2>
               </div>
               <p>Alle Spieler nach Erfahrungspunkten sortiert.</p>
-            </div>
-
-            <div class="mini-insight-pill">
-              <Users :size="16" />
-              {{ leaderboardEntries.length }} aktive Einträge
             </div>
           </div>
 
@@ -223,13 +218,6 @@ onMounted(loadPageData);
   color: #cbd5e1;
 }
 
-.section-heading-spread {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
 .title-with-icon {
   display: flex;
   align-items: center;
@@ -242,7 +230,7 @@ onMounted(loadPageData);
 }
 
 .title-with-icon svg {
-  color: #facc15;
+  color: #d4af37;
 }
 
 .podium-grid {
@@ -254,19 +242,12 @@ onMounted(loadPageData);
 
 .leaderboard-list {
   display: grid;
-  gap: 14px;
+  gap: 0;
+  padding: 4px 0 0;
 }
 
-.mini-insight-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border-radius: 999px;
-  padding: 10px 14px;
-  background: rgba(236, 72, 153, 0.12);
-  border: 1px solid rgba(236, 72, 153, 0.22);
-  color: #f9a8d4;
-  white-space: nowrap;
+.leaderboard-list :deep(.leaderboard-row:last-child) {
+  border-bottom: 0;
 }
 
 .state-box,
@@ -298,11 +279,6 @@ onMounted(loadPageData);
     padding-top: 24px;
   }
 
-  .section-heading-spread {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
   .podium-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
@@ -325,6 +301,21 @@ onMounted(loadPageData);
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
     align-items: stretch;
+  }
+}
+
+@media (max-width: 400px) {
+  .leaderboard-page {
+    gap: 14px;
+  }
+
+  .section-card {
+    padding: clamp(14px, 2.5vw, 20px);
+  }
+
+  .podium-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
   }
 }
 </style>

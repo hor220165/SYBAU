@@ -695,11 +695,7 @@ class ApiService {
   }
 
   static Future<List<dynamic>> getUserItems() async {
-    try {
-      return await _authedGetList('/users/items');
-    } catch (_) {
-      return _authedGetList('/users/boosts');
-    }
+    return _authedGetList('/users/boosts');
   }
 
   static Future<Map<String, dynamic>> sellItem(int itemId) async {

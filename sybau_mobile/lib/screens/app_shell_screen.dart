@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -1075,8 +1076,8 @@ class _DashboardTabState extends State<DashboardTab> {
                                   : Color(0xFFA855F7).withOpacity(0.35),
                             ),
                           ),
-                      child: Row(
-                        children: [
+                          child: Row(
+                            children: [
                               booster.imageUrl.isNotEmpty
                                   ? ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
@@ -1184,9 +1185,12 @@ class _DashboardTabState extends State<DashboardTab> {
                 : Color(0xFFA855F7).withOpacity(0.25),
           ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
             if (isEquipped && booster.imageUrl.isNotEmpty)
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
@@ -1224,6 +1228,7 @@ class _DashboardTabState extends State<DashboardTab> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -2233,7 +2238,8 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
     final remaining = _remainingFor(exercise);
     if (unit == 'Time') return _secondsToTime(remaining);
     if (unit == 'Distance') {
-      if (remaining >= 1000) return '${(remaining / 1000).toStringAsFixed(2)} km';
+      if (remaining >= 1000)
+        return '${(remaining / 1000).toStringAsFixed(2)} km';
       return '$remaining m';
     }
     return '$remaining Wiederholungen';
@@ -2821,15 +2827,16 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                           ),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(999),
-                            color: _normalizeUnit(m['unit'] ?? m['Unit']) ==
-                                    'Time'
+                            color:
+                                _normalizeUnit(m['unit'] ?? m['Unit']) == 'Time'
                                 ? Color(0xFFFBBF24).withOpacity(0.18)
                                 : _normalizeUnit(m['unit'] ?? m['Unit']) ==
                                       'Distance'
                                 ? Color(0xFF22C55E).withOpacity(0.18)
                                 : Color(0xFF3B82F6).withOpacity(0.18),
                             border: Border.all(
-                              color: _normalizeUnit(m['unit'] ?? m['Unit']) ==
+                              color:
+                                  _normalizeUnit(m['unit'] ?? m['Unit']) ==
                                       'Time'
                                   ? Color(0xFFFBBF24).withOpacity(0.35)
                                   : _normalizeUnit(m['unit'] ?? m['Unit']) ==
@@ -2841,7 +2848,8 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                           child: Text(
                             _normalizeUnit(m['unit'] ?? m['Unit']),
                             style: TextStyle(
-                              color: _normalizeUnit(m['unit'] ?? m['Unit']) ==
+                              color:
+                                  _normalizeUnit(m['unit'] ?? m['Unit']) ==
                                       'Time'
                                   ? Color(0xFFFDE047)
                                   : _normalizeUnit(m['unit'] ?? m['Unit']) ==
@@ -2861,7 +2869,11 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '+$xpPerRep XP/${_normalizeUnit(m['unit'] ?? m['Unit']) == 'Time' ? 'Sek' : _normalizeUnit(m['unit'] ?? m['Unit']) == 'Distance' ? 'm' : 'Rep'}',
+                          '+$xpPerRep XP/${_normalizeUnit(m['unit'] ?? m['Unit']) == 'Time'
+                              ? 'Sek'
+                              : _normalizeUnit(m['unit'] ?? m['Unit']) == 'Distance'
+                              ? 'm'
+                              : 'Rep'}',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.75),
                             fontWeight: FontWeight.w600,
@@ -3017,9 +3029,8 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                                 ),
                               ],
                             )
-                          else if (
-                            _normalizeUnit(m['unit'] ?? m['Unit']) == 'Time'
-                          )
+                          else if (_normalizeUnit(m['unit'] ?? m['Unit']) ==
+                              'Time')
                             Row(
                               children: [
                                 Expanded(
@@ -3068,8 +3079,9 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                                       : Container(
                                           height: 46,
                                           decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                             color: Colors.white.withOpacity(
                                               0.05,
                                             ),
@@ -3116,8 +3128,7 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                                 SizedBox(
                                   width: 132,
                                   child: ElevatedButton(
-                                    onPressed:
-                                        _parseTime(_timeDraftFor(m)) > 0
+                                    onPressed: _parseTime(_timeDraftFor(m)) > 0
                                         ? () => _logExerciseWithAmount(
                                             e,
                                             _parseTime(_timeDraftFor(m)),
@@ -3342,9 +3353,7 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               color: Colors.white.withOpacity(0.06),
-              border: Border.all(
-                color: Color(0xFFEC4899).withOpacity(0.35),
-              ),
+              border: Border.all(color: Color(0xFFEC4899).withOpacity(0.35)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -4099,9 +4108,7 @@ class _QuestsTabState extends State<QuestsTab> {
                       minHeight: 8,
                       backgroundColor: Colors.black.withOpacity(0.24),
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        isCompleted
-                            ? Color(0xFF22C55E)
-                            : Color(0xFFEC4899),
+                        isCompleted ? Color(0xFF22C55E) : Color(0xFFEC4899),
                       ),
                     ),
                   ),
@@ -4416,8 +4423,7 @@ class _AvatarTabState extends State<AvatarTab> {
     setState(() => _sellingItem = true);
     try {
       final result = await ApiService.sellItem(booster.id!);
-      final sellPrice =
-          _toInt(_map(result)['sellPrice']) > 0
+      final sellPrice = _toInt(_map(result)['sellPrice']) > 0
           ? _toInt(_map(result)['sellPrice'])
           : _sellPriceForBooster(booster);
       if (!mounted) return;
@@ -4846,7 +4852,7 @@ class _AvatarTabState extends State<AvatarTab> {
   Widget _buildEquipSlot(int index, {double size = 82}) {
     final item = _slots[index];
     final isFilled = item != null;
-    final iconSize = size * 0.46;
+    final iconSize = size * 0.40;
     final valueSize = size * 0.14;
 
     return GestureDetector(
@@ -4865,9 +4871,12 @@ class _AvatarTabState extends State<AvatarTab> {
                 : Color(0xFFA855F7).withOpacity(0.28),
           ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
             if (isFilled && item.imageUrl.isNotEmpty)
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
@@ -4889,7 +4898,7 @@ class _AvatarTabState extends State<AvatarTab> {
                 isFilled ? _boosterIcon(item) : '⚡',
                 style: TextStyle(fontSize: iconSize),
               ),
-            SizedBox(height: size * 0.05),
+            SizedBox(height: size * 0.02),
             Text(
               isFilled ? '+${item.bestBoostPercent}%' : 'Leer',
               style: TextStyle(
@@ -4901,8 +4910,9 @@ class _AvatarTabState extends State<AvatarTab> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -4920,371 +4930,382 @@ class _AvatarTabState extends State<AvatarTab> {
     return Stack(
       children: [
         RefreshIndicator(
-      onRefresh: () async {
-        await _load();
-        await widget.onRefreshHeader();
-      },
-      child: ListView(
-        padding: const EdgeInsets.all(14),
-        children: [
-          Row(
+          onRefresh: () async {
+            await _load();
+            await widget.onRefreshHeader();
+          },
+          child: ListView(
+            padding: const EdgeInsets.all(14),
             children: [
-              Expanded(
-                child: _buildBoostCard(
-                  icon: Icons.trending_up,
-                  label: 'XP Boost',
-                  value: _totalXpBoost,
-                  barGradient: const [Color(0xFF3B82F6), Color(0xFF06B6D4)],
-                  iconColor: Color(0xFF60A5FA),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildBoostCard(
+                      icon: Icons.trending_up,
+                      label: 'XP Boost',
+                      value: _totalXpBoost,
+                      barGradient: const [Color(0xFF3B82F6), Color(0xFF06B6D4)],
+                      iconColor: Color(0xFF60A5FA),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildBoostCard(
+                      icon: Icons.monetization_on,
+                      label: 'Coin Boost',
+                      value: _totalCoinBoost,
+                      barGradient: const [Color(0xFFF59E0B), Color(0xFFFBBF24)],
+                      iconColor: Color(0xFFFBBF24),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _SectionCard(
+                title: 'Avatar & Ausrüstung',
+                child: Column(
+                  children: [
+                    Text(
+                      userName.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.76),
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 3.2,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        const leftRightSlots = 2;
+                        const gap = 10.0;
+                        final availableWidth = constraints.maxWidth;
+                        final isSmall = availableWidth < 410;
+                        final isTablet = availableWidth >= 720;
+
+                        final targetAvatarWidth = isTablet
+                            ? 294.0
+                            : (isSmall ? 176.0 : 242.0);
+                        final targetAvatarHeight = isTablet
+                            ? 322.0
+                            : (isSmall ? 220.0 : 278.0);
+                        final targetSlotSize = isTablet ? 104.0 : 90.0;
+                        final targetSideWidth = targetSlotSize;
+                        final targetSpacing = gap;
+                        final targetTotalWidth =
+                            targetSideWidth * leftRightSlots +
+                            targetAvatarWidth +
+                            targetSpacing * 2;
+                        final scale = targetTotalWidth > availableWidth
+                            ? availableWidth / targetTotalWidth
+                            : 1.0;
+
+                        final slotSize = (targetSlotSize * scale).clamp(
+                          66.0,
+                          targetSlotSize,
+                        );
+                        final avatarWidth = (targetAvatarWidth * scale).clamp(
+                          160.0,
+                          targetAvatarWidth,
+                        );
+                        final avatarHeight = (targetAvatarHeight * scale).clamp(
+                          196.0,
+                          targetAvatarHeight,
+                        );
+                        final horizontalGap = (targetSpacing * scale).clamp(
+                          6.0,
+                          10.0,
+                        );
+                        final baseScale = isTablet
+                            ? 3.72
+                            : (isSmall ? 2.52 : 3.34);
+
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: slotSize,
+                              child: Column(
+                                children: [
+                                  _buildEquipSlot(0, size: slotSize),
+                                  SizedBox(height: horizontalGap),
+                                  _buildEquipSlot(1, size: slotSize),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: horizontalGap),
+                            SizedBox(
+                              width: avatarWidth,
+                              height: avatarHeight + (isTablet ? 54 : 48),
+                              child: Column(
+                                children: [
+                                  SizedBox(
+                                    width: avatarWidth,
+                                    height: avatarHeight + (isTablet ? 26 : 20),
+                                    child: OverflowBox(
+                                      alignment: Alignment(
+                                        0,
+                                        isTablet ? -0.34 : -0.4,
+                                      ),
+                                      minWidth: 0,
+                                      minHeight: 0,
+                                      maxWidth: double.infinity,
+                                      maxHeight: double.infinity,
+                                      child: _SpriteAnimator(
+                                        stage: bodyStage,
+                                        frameWidth: 128,
+                                        frameHeight: 128,
+                                        columns: 2,
+                                        frameCount: 4,
+                                        speed: const Duration(
+                                          milliseconds: 1000,
+                                        ),
+                                        scale: baseScale * scale,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(height: isTablet ? 6 : 4),
+                                  Container(
+                                    width: avatarWidth * 0.62,
+                                    height: isTablet ? 16 : 14,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(999),
+                                      gradient: RadialGradient(
+                                        colors: [
+                                          Color(0xFF2563EB).withOpacity(0.62),
+                                          Color(0xFF2563EB).withOpacity(0.16),
+                                          Colors.transparent,
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: horizontalGap),
+                            SizedBox(
+                              width: slotSize,
+                              child: Column(
+                                children: [
+                                  _buildEquipSlot(2, size: slotSize),
+                                  SizedBox(height: horizontalGap),
+                                  _buildEquipSlot(3, size: slotSize),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    if (_selectingSlotFor != null)
+                      Container(
+                        margin: const EdgeInsets.only(top: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Color(0xFFA855F7).withOpacity(0.16),
+                          border: Border.all(
+                            color: Color(0xFFA855F7).withOpacity(0.38),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.bolt,
+                              size: 15,
+                              color: Color(0xFFC084FC),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Wähle einen Slot für ${_selectingSlotFor!.name}',
+                                style: const TextStyle(
+                                  color: Color(0xFFE9D5FF),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                setState(() => _selectingSlotFor = null);
+                              },
+                              child: const Text(
+                                'Abbrechen',
+                                style: TextStyle(color: Color(0xFFFCA5A5)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildBoostCard(
-                  icon: Icons.monetization_on,
-                  label: 'Coin Boost',
-                  value: _totalCoinBoost,
-                  barGradient: const [Color(0xFFF59E0B), Color(0xFFFBBF24)],
-                  iconColor: Color(0xFFFBBF24),
+              const SizedBox(height: 10),
+              _SectionCard(
+                title: 'Inventar',
+                child: Column(
+                  children: _inventory.isEmpty
+                      ? [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            child: Text(
+                              'Keine Booster vorhanden. Kaufe Booster im Shop.',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.68),
+                              ),
+                            ),
+                          ),
+                        ]
+                      : _inventory
+                            .map((booster) {
+                              final accent = _boosterAccent(booster);
+                              final isEquipped = _equippedCount(booster.id) > 0;
+
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(14),
+                                  color: Colors.white.withOpacity(0.04),
+                                  border: Border.all(
+                                    color: accent.withOpacity(0.14),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            accent.withOpacity(0.16),
+                                            accent.withOpacity(0.05),
+                                          ],
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: booster.imageUrl.isNotEmpty
+                                            ? ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                                child: Image.network(
+                                                  _resolvedImageUrl(
+                                                    booster.imageUrl,
+                                                  ),
+                                                  width: 34,
+                                                  height: 34,
+                                                  fit: BoxFit.contain,
+                                                  errorBuilder: (_, _, _) =>
+                                                      Text(
+                                                        _boosterIcon(booster),
+                                                        style: const TextStyle(
+                                                          fontSize: 18,
+                                                        ),
+                                                      ),
+                                                ),
+                                              )
+                                            : Text(
+                                                _boosterIcon(booster),
+                                                style: const TextStyle(
+                                                  fontSize: 18,
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            booster.name,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            'XP +${booster.xpBoostPercentage}% • Coins +${booster.coinBoostPercentage}% • x${booster.quantity}',
+                                            style: TextStyle(
+                                              color: Colors.white.withOpacity(
+                                                0.6,
+                                              ),
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    if (isEquipped)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 8,
+                                        ),
+                                        child: TextButton(
+                                          onPressed: () =>
+                                              _unequipBoosterById(booster.id),
+                                          child: const Text(
+                                            'Ablegen',
+                                            style: TextStyle(
+                                              color: Color(0xFFFCA5A5),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    InkWell(
+                                      onTap: () => _requestSellBooster(booster),
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                          color: Color(
+                                            0xFFF43F5E,
+                                          ).withOpacity(0.12),
+                                          border: Border.all(
+                                            color: Color(
+                                              0xFFF43F5E,
+                                            ).withOpacity(0.22),
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.sell_rounded,
+                                          color: Color(0xFFF43F5E),
+                                          size: 18,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            })
+                            .toList(growable: false),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          _SectionCard(
-            title: 'Avatar & Ausrüstung',
-            child: Column(
-              children: [
-                Text(
-                  userName.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.76),
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 3.2,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    const leftRightSlots = 2;
-                    const gap = 10.0;
-                    final availableWidth = constraints.maxWidth;
-                    final isSmall = availableWidth < 410;
-                    final isTablet = availableWidth >= 720;
-
-                    final targetAvatarWidth = isTablet
-                        ? 294.0
-                        : (isSmall ? 176.0 : 242.0);
-                    final targetAvatarHeight = isTablet
-                        ? 322.0
-                        : (isSmall ? 220.0 : 278.0);
-                    final targetSlotSize = isTablet ? 104.0 : 90.0;
-                    final targetSideWidth = targetSlotSize;
-                    final targetSpacing = gap;
-                    final targetTotalWidth =
-                        targetSideWidth * leftRightSlots +
-                        targetAvatarWidth +
-                        targetSpacing * 2;
-                    final scale = targetTotalWidth > availableWidth
-                        ? availableWidth / targetTotalWidth
-                        : 1.0;
-
-                    final slotSize = (targetSlotSize * scale).clamp(
-                      66.0,
-                      targetSlotSize,
-                    );
-                    final avatarWidth = (targetAvatarWidth * scale).clamp(
-                      160.0,
-                      targetAvatarWidth,
-                    );
-                    final avatarHeight = (targetAvatarHeight * scale).clamp(
-                      196.0,
-                      targetAvatarHeight,
-                    );
-                    final horizontalGap = (targetSpacing * scale).clamp(
-                      6.0,
-                      10.0,
-                    );
-                    final baseScale = isTablet ? 3.72 : (isSmall ? 2.52 : 3.34);
-
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: slotSize,
-                          child: Column(
-                            children: [
-                              _buildEquipSlot(0, size: slotSize),
-                              SizedBox(height: horizontalGap),
-                              _buildEquipSlot(1, size: slotSize),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: horizontalGap),
-                        SizedBox(
-                          width: avatarWidth,
-                          height: avatarHeight + (isTablet ? 54 : 48),
-                          child: Column(
-                            children: [
-                              SizedBox(
-                                width: avatarWidth,
-                                height: avatarHeight + (isTablet ? 26 : 20),
-                                child: OverflowBox(
-                                  alignment: Alignment(
-                                    0,
-                                    isTablet ? -0.34 : -0.4,
-                                  ),
-                                  minWidth: 0,
-                                  minHeight: 0,
-                                  maxWidth: double.infinity,
-                                  maxHeight: double.infinity,
-                                  child: _SpriteAnimator(
-                                    stage: bodyStage,
-                                    frameWidth: 128,
-                                    frameHeight: 128,
-                                    columns: 2,
-                                    frameCount: 4,
-                                    speed: const Duration(milliseconds: 1000),
-                                    scale: baseScale * scale,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: isTablet ? 6 : 4),
-                              Container(
-                                width: avatarWidth * 0.62,
-                                height: isTablet ? 16 : 14,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(999),
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      Color(0xFF2563EB).withOpacity(0.62),
-                                      Color(0xFF2563EB).withOpacity(0.16),
-                                      Colors.transparent,
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: horizontalGap),
-                        SizedBox(
-                          width: slotSize,
-                          child: Column(
-                            children: [
-                              _buildEquipSlot(2, size: slotSize),
-                              SizedBox(height: horizontalGap),
-                              _buildEquipSlot(3, size: slotSize),
-                            ],
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                if (_selectingSlotFor != null)
-                  Container(
-                    margin: const EdgeInsets.only(top: 12),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 9,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Color(0xFFA855F7).withOpacity(0.16),
-                      border: Border.all(
-                        color: Color(0xFFA855F7).withOpacity(0.38),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.bolt,
-                          size: 15,
-                          color: Color(0xFFC084FC),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Wähle einen Slot für ${_selectingSlotFor!.name}',
-                            style: const TextStyle(
-                              color: Color(0xFFE9D5FF),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() => _selectingSlotFor = null);
-                          },
-                          child: const Text(
-                            'Abbrechen',
-                            style: TextStyle(color: Color(0xFFFCA5A5)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          _SectionCard(
-            title: 'Inventar',
-            child: Column(
-              children: _inventory.isEmpty
-                  ? [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        child: Text(
-                          'Keine Booster vorhanden. Kaufe Booster im Shop.',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.68),
-                          ),
-                        ),
-                      ),
-                    ]
-                  : _inventory
-                        .map((booster) {
-                          final accent = _boosterAccent(booster);
-                          final isEquipped = _equippedCount(booster.id) > 0;
-
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(14),
-                              color: Colors.white.withOpacity(0.04),
-                              border: Border.all(
-                                color: accent.withOpacity(0.14),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        accent.withOpacity(0.16),
-                                        accent.withOpacity(0.05),
-                                      ],
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: booster.imageUrl.isNotEmpty
-                                        ? ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                            child: Image.network(
-                                              _resolvedImageUrl(booster.imageUrl),
-                                              width: 34,
-                                              height: 34,
-                                              fit: BoxFit.contain,
-                                              errorBuilder: (_, _, _) =>
-                                                  Text(
-                                                    _boosterIcon(booster),
-                                                    style: const TextStyle(
-                                                      fontSize: 18,
-                                                    ),
-                                                  ),
-                                            ),
-                                          )
-                                        : Text(
-                                            _boosterIcon(booster),
-                                            style: const TextStyle(
-                                              fontSize: 18,
-                                            ),
-                                          ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        booster.name,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'XP +${booster.xpBoostPercentage}% • Coins +${booster.coinBoostPercentage}% • x${booster.quantity}',
-                                        style: TextStyle(
-                                          color: Colors.white.withOpacity(0.6),
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                if (isEquipped)
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: TextButton(
-                                      onPressed: () =>
-                                          _unequipBoosterById(booster.id),
-                                      child: const Text(
-                                        'Ablegen',
-                                        style: TextStyle(
-                                          color: Color(0xFFFCA5A5),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                InkWell(
-                                  onTap: () => _requestSellBooster(booster),
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(10),
-                                      color: Color(
-                                        0xFFF43F5E,
-                                      ).withOpacity(0.12),
-                                      border: Border.all(
-                                        color: Color(
-                                          0xFFF43F5E,
-                                        ).withOpacity(0.22),
-                                      ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.sell_rounded,
-                                      color: Color(0xFFF43F5E),
-                                      size: 18,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        })
-                        .toList(growable: false),
-            ),
-          ),
-        ],
-      ),
-    ),
-      if (_pendingSellBooster != null) _buildSellConfirmDialog(),
-    ],
+        ),
+        if (_pendingSellBooster != null) _buildSellConfirmDialog(),
+      ],
     );
   }
 
@@ -5295,8 +5316,9 @@ class _AvatarTabState extends State<AvatarTab> {
     final booster = _pendingSellBooster!;
     final sellPrice = _sellPriceForBooster(booster);
     return GestureDetector(
-      onTap:
-          _sellingItem ? null : () => setState(() => _pendingSellBooster = null),
+      onTap: _sellingItem
+          ? null
+          : () => setState(() => _pendingSellBooster = null),
       child: Container(
         color: Colors.black54,
         child: Center(
@@ -5306,9 +5328,7 @@ class _AvatarTabState extends State<AvatarTab> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               color: Color(0xFF0F172A).withOpacity(0.96),
-              border: Border.all(
-                color: Color(0xFFEF4444).withOpacity(0.28),
-              ),
+              border: Border.all(color: Color(0xFFEF4444).withOpacity(0.28)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.42),
@@ -5422,8 +5442,7 @@ class _AvatarTabState extends State<AvatarTab> {
                             ? null
                             : () => setState(() => _pendingSellBooster = null),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Color(0xFF1E293B).withOpacity(0.76),
+                          backgroundColor: Color(0xFF1E293B).withOpacity(0.76),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(11),
                           ),
@@ -5606,14 +5625,22 @@ class _ShopTabState extends State<ShopTab> {
     final isChest = purchase['isChest'] == true;
     final id = _toInt(purchase['id']);
 
+    if (isChest) {
+      // Dismiss the confirm dialog immediately so it doesn't overlap with the reward overlay
+      setState(() {
+        _pendingPurchase = null;
+        _buying = false;
+      });
+      await _openChest(id);
+      await widget.onRefreshHeader();
+      // _load() is deferred to _closeChestReward so the shop stays stable while the reward is visible
+      return;
+    }
+
     setState(() => _buying = true);
     try {
-      if (isChest) {
-        await _openChest(id);
-      } else {
-        await ApiService.buyItem(id);
-        widget.showSnack('${_string(purchase['name'])} gekauft!');
-      }
+      await ApiService.buyItem(id);
+      widget.showSnack('${_string(purchase['name'])} gekauft!');
       setState(() {
         _pendingPurchase = null;
         _buying = false;
@@ -5629,7 +5656,6 @@ class _ShopTabState extends State<ShopTab> {
       widget.showSnack('Kauf fehlgeschlagen.');
     }
   }
-
 
   // ---------- Chest flow ----------
 
@@ -5647,14 +5673,26 @@ class _ShopTabState extends State<ShopTab> {
         _openingChest = false;
       });
       await widget.onRefreshHeader();
-      await _load();
     } catch (e) {
       debugPrint('Chest open error: $e');
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+      String errorMsg = 'Chest konnte nicht geöffnet werden.';
+      if (e is ApiException && e.statusCode == 400) {
+        try {
+          final body = jsonDecode(e.body ?? '');
+          if (body is String) {
+            errorMsg = body;
+          } else if (body is Map) {
+            errorMsg = body['error'] ?? body['message'] ?? body['title'] ?? errorMsg;
+          }
+        } catch (_) {}
+      }
       setState(() {
         _openingChest = false;
         _openingChestId = null;
       });
-      widget.showSnack('Chest konnte nicht geöffnet werden.');
+      widget.showSnack(errorMsg);
     }
   }
 
@@ -5663,6 +5701,7 @@ class _ShopTabState extends State<ShopTab> {
       _openedReward = null;
       _openingChestId = null;
     });
+    unawaited(_load());
   }
 
   // ---------- Classification helpers ----------
@@ -5671,7 +5710,8 @@ class _ShopTabState extends State<ShopTab> {
     final type = _string(item['type']).toLowerCase();
     if (type == 'booster') return 'boost';
     final searchBase =
-        '${_string(item['name'])} ${_string(item['description'])}'.toLowerCase();
+        '${_string(item['name'])} ${_string(item['description'])}'
+            .toLowerCase();
     if (searchBase.contains('chest') ||
         searchBase.contains('crate') ||
         searchBase.contains('box')) {
@@ -5750,10 +5790,12 @@ class _ShopTabState extends State<ShopTab> {
       'description': _string(m['description']),
       'price': _toInt(m['price']),
       'type': _string(m['type']),
-      'xpBoostPercentage':
-          _toInt(m['xpBoostPercentage'] ?? m['xpBoostPercent']),
-      'coinBoostPercentage':
-          _toInt(m['coinBoostPercentage'] ?? m['coinBoostPercent']),
+      'xpBoostPercentage': _toInt(
+        m['xpBoostPercentage'] ?? m['xpBoostPercent'],
+      ),
+      'coinBoostPercentage': _toInt(
+        m['coinBoostPercentage'] ?? m['coinBoostPercent'],
+      ),
       'imageUrl': _string(m['imageUrl'] ?? m['ImageUrl']),
       'rarity': _shopRarity(m),
       'category': _shopCategory(m),
@@ -5763,25 +5805,30 @@ class _ShopTabState extends State<ShopTab> {
   }
 
   List<Map<String, dynamic>> get _displayItems {
-    return _items.map((item) => _buildDisplayItem(_map(item))).toList(growable: false);
+    return _items
+        .map((item) => _buildDisplayItem(_map(item)))
+        .toList(growable: false);
   }
 
   List<Map<String, dynamic>> get _displayChests {
-    return _chests.map((chest) {
-      final m = _map(chest);
-      return <String, dynamic>{
-        'id': _toInt(m['id']),
-        'name': _string(m['name'], fallback: 'Chest'),
-        'price': _toInt(m['price']),
-        'imageUrl': _string(m['imageUrl'] ?? m['ImageUrl']),
-        'commonChance': _toInt(m['commonChance'] ?? m['CommonChance']),
-        'rareChance': _toInt(m['rareChance'] ?? m['RareChance']),
-        'epicChance': _toInt(m['epicChance'] ?? m['EpicChance']),
-        'legendaryChance':
-            _toInt(m['legendaryChance'] ?? m['LegendaryChance']),
-        'items': (m['items'] ?? m['Items'] ?? []) as List<dynamic>,
-      };
-    }).toList(growable: false);
+    return _chests
+        .map((chest) {
+          final m = _map(chest);
+          return <String, dynamic>{
+            'id': _toInt(m['id']),
+            'name': _string(m['name'], fallback: 'Chest'),
+            'price': _toInt(m['price']),
+            'imageUrl': _string(m['imageUrl'] ?? m['ImageUrl']),
+            'commonChance': _toInt(m['commonChance'] ?? m['CommonChance']),
+            'rareChance': _toInt(m['rareChance'] ?? m['RareChance']),
+            'epicChance': _toInt(m['epicChance'] ?? m['EpicChance']),
+            'legendaryChance': _toInt(
+              m['legendaryChance'] ?? m['LegendaryChance'],
+            ),
+            'items': (m['items'] ?? m['Items'] ?? []) as List<dynamic>,
+          };
+        })
+        .toList(growable: false);
   }
 
   // ---------- Image / placeholder builders ----------
@@ -5812,8 +5859,11 @@ class _ShopTabState extends State<ShopTab> {
         color: Colors.white.withOpacity(0.04),
       ),
       child: Center(
-        child: Icon(Icons.inventory_2_rounded,
-            color: Colors.white38, size: size * 0.42),
+        child: Icon(
+          Icons.inventory_2_rounded,
+          color: Colors.white38,
+          size: size * 0.42,
+        ),
       ),
     );
   }
@@ -5825,7 +5875,8 @@ class _ShopTabState extends State<ShopTab> {
     final canAfford = _currentCoins >= price;
     final isOpening = _openingChestId == _toInt(chest['id']);
     final imageUrl = _string(chest['imageUrl']);
-    final itemCount = ((chest['items'] as List<dynamic>?) ?? <dynamic>[]).length;
+    final itemCount =
+        ((chest['items'] as List<dynamic>?) ?? <dynamic>[]).length;
 
     return Container(
       decoration: BoxDecoration(
@@ -5940,7 +5991,9 @@ class _ShopTabState extends State<ShopTab> {
                                 colors: [Color(0xFF22C55E), Color(0xFF14532D)],
                               )
                             : null,
-                        color: canAfford ? null : Colors.white.withOpacity(0.06),
+                        color: canAfford
+                            ? null
+                            : Colors.white.withOpacity(0.06),
                         border: Border.all(
                           color: canAfford
                               ? Color(0xFF4ADE80).withOpacity(0.42)
@@ -6043,10 +6096,26 @@ class _ShopTabState extends State<ShopTab> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildRateChip('Common', _toInt(chest['commonChance']), Color(0xFF94A3B8)),
-                  _buildRateChip('Rare', _toInt(chest['rareChance']), Color(0xFF60A5FA)),
-                  _buildRateChip('Epic', _toInt(chest['epicChance']), Color(0xFFC084FC)),
-                  _buildRateChip('Legendary', _toInt(chest['legendaryChance']), Color(0xFFFBBF24)),
+                  _buildRateChip(
+                    'Common',
+                    _toInt(chest['commonChance']),
+                    Color(0xFF94A3B8),
+                  ),
+                  _buildRateChip(
+                    'Rare',
+                    _toInt(chest['rareChance']),
+                    Color(0xFF60A5FA),
+                  ),
+                  _buildRateChip(
+                    'Epic',
+                    _toInt(chest['epicChance']),
+                    Color(0xFFC084FC),
+                  ),
+                  _buildRateChip(
+                    'Legendary',
+                    _toInt(chest['legendaryChance']),
+                    Color(0xFFFBBF24),
+                  ),
                 ],
               ),
             ],
@@ -6118,10 +6187,8 @@ class _ShopTabState extends State<ShopTab> {
                           fit: BoxFit.contain,
                           filterQuality: FilterQuality.none,
                           isAntiAlias: false,
-                          errorBuilder: (_, __, ___) => Text(
-                            icon,
-                            style: const TextStyle(fontSize: 40),
-                          ),
+                          errorBuilder: (_, __, ___) =>
+                              Text(icon, style: const TextStyle(fontSize: 40)),
                         )
                       : Text(icon, style: const TextStyle(fontSize: 40)),
                 ),
@@ -6148,20 +6215,23 @@ class _ShopTabState extends State<ShopTab> {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(999),
                             color: limitReached
                                 ? Color(0xFFEF4444).withOpacity(0.18)
                                 : owned == 0
-                                    ? Color(0xFF94A3B8).withOpacity(0.1)
-                                    : Color(0xFFEC4899).withOpacity(0.18),
+                                ? Color(0xFF94A3B8).withOpacity(0.1)
+                                : Color(0xFFEC4899).withOpacity(0.18),
                             border: Border.all(
                               color: limitReached
                                   ? Color(0xFFEF4444).withOpacity(0.4)
                                   : owned == 0
-                                      ? Color(0xFF94A3B8).withOpacity(0.25)
-                                      : Color(0xFFEC4899).withOpacity(0.46),
+                                  ? Color(0xFF94A3B8).withOpacity(0.25)
+                                  : Color(0xFFEC4899).withOpacity(0.46),
                             ),
                           ),
                           child: Text(
@@ -6170,8 +6240,8 @@ class _ShopTabState extends State<ShopTab> {
                               color: limitReached
                                   ? Color(0xFFFCA5A5)
                                   : owned == 0
-                                      ? Color(0xFF94A3B8).withOpacity(0.6)
-                                      : Color(0xFFF9A8D4),
+                                  ? Color(0xFF94A3B8).withOpacity(0.6)
+                                  : Color(0xFFF9A8D4),
                               fontWeight: FontWeight.w900,
                               fontSize: 11,
                             ),
@@ -6353,8 +6423,7 @@ class _ShopTabState extends State<ShopTab> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             color: Color(0xFF0F172A).withOpacity(0.96),
-            border: Border.all(
-                color: Color(0xFFEC4899).withOpacity(0.28)),
+            border: Border.all(color: Color(0xFFEC4899).withOpacity(0.28)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.42),
@@ -6369,9 +6438,10 @@ class _ShopTabState extends State<ShopTab> {
               Text(
                 isChest ? 'Chest öffnen?' : 'Kaufen?',
                 style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900),
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -6385,8 +6455,10 @@ class _ShopTabState extends State<ShopTab> {
               const SizedBox(height: 18),
               // Price row
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   color: Color(0xFF020617).withOpacity(0.48),
@@ -6395,21 +6467,29 @@ class _ShopTabState extends State<ShopTab> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Kosten',
-                        style: TextStyle(
-                            color: Colors.white.withOpacity(0.58),
-                            fontWeight: FontWeight.w800)),
+                    Text(
+                      'Kosten',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.58),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                     Row(
                       children: [
-                        Image.asset('assets/SYBAU_Coin.png',
-                            width: 20, height: 20, fit: BoxFit.contain),
+                        Image.asset(
+                          'assets/SYBAU_Coin.png',
+                          width: 20,
+                          height: 20,
+                          fit: BoxFit.contain,
+                        ),
                         const SizedBox(width: 7),
                         Text(
                           _formatCompactNumber(price),
                           style: const TextStyle(
-                              color: Color(0xFFF8FAFC),
-                              fontWeight: FontWeight.w900,
-                              fontSize: 18),
+                            color: Color(0xFFF8FAFC),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 18,
+                          ),
                         ),
                       ],
                     ),
@@ -6419,11 +6499,14 @@ class _ShopTabState extends State<ShopTab> {
               if (!canAfford)
                 Padding(
                   padding: const EdgeInsets.only(top: 10),
-                  child: Text('Nicht genug Coins!',
-                      style: TextStyle(
-                          color: Colors.red.shade300,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600)),
+                  child: Text(
+                    'Nicht genug Coins!',
+                    style: TextStyle(
+                      color: Colors.red.shade300,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               const SizedBox(height: 20),
               // Action buttons
@@ -6433,16 +6516,19 @@ class _ShopTabState extends State<ShopTab> {
                     child: ElevatedButton(
                       onPressed: _cancelPurchase,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            Color(0xFF1E293B).withOpacity(0.76),
+                        backgroundColor: Color(0xFF1E293B).withOpacity(0.76),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(11)),
+                          borderRadius: BorderRadius.circular(11),
+                        ),
                         minimumSize: const Size.fromHeight(44),
                       ),
-                      child: const Text('Abbrechen',
-                          style: TextStyle(
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w700)),
+                      child: const Text(
+                        'Abbrechen',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -6456,14 +6542,15 @@ class _ShopTabState extends State<ShopTab> {
                         shadowColor: Colors.transparent,
                         padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(11)),
+                          borderRadius: BorderRadius.circular(11),
+                        ),
                       ),
                       child: Ink(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(11),
                           border: Border.all(
-                              color: Color(0xFF4ADE80)
-                                  .withOpacity(0.42)),
+                            color: Color(0xFF4ADE80).withOpacity(0.42),
+                          ),
                           gradient: LinearGradient(
                             colors: [
                               Color(0xFF22C55E).withOpacity(0.24),
@@ -6479,13 +6566,16 @@ class _ShopTabState extends State<ShopTab> {
                                     width: 18,
                                     height: 18,
                                     child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white))
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
                                 : Text(
                                     isChest ? 'Öffnen' : 'Kaufen',
                                     style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w800),
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
                           ),
                         ),
@@ -6501,17 +6591,18 @@ class _ShopTabState extends State<ShopTab> {
     );
   }
 
-
   // ---------- Chest reward overlay ----------
 
   Widget _buildChestRewardOverlay() {
     if (_openedReward == null) return const SizedBox.shrink();
     final reward = _openedReward!;
     final rewardItem = _map(reward['item'] ?? reward['Item'] ?? reward);
-    final rewardName =
-        _string(rewardItem['name'] ?? rewardItem['Name'] ?? reward['name']);
-    final rewardImageUrl =
-        _string(rewardItem['imageUrl'] ?? rewardItem['ImageUrl'] ?? reward['imageUrl']);
+    final rewardName = _string(
+      rewardItem['name'] ?? rewardItem['Name'] ?? reward['name'],
+    );
+    final rewardImageUrl = _string(
+      rewardItem['imageUrl'] ?? rewardItem['ImageUrl'] ?? reward['imageUrl'],
+    );
     final rarity = _shopRarity(rewardItem);
     final accent = _rarityAccent(rarity);
 
@@ -6563,8 +6654,8 @@ class _ShopTabState extends State<ShopTab> {
                                         rarity == 'legendary'
                                             ? '👑'
                                             : rarity == 'epic'
-                                                ? '💎'
-                                                : '⭐',
+                                            ? '💎'
+                                            : '⭐',
                                         style: const TextStyle(fontSize: 72),
                                       ),
                                     )
@@ -6572,8 +6663,8 @@ class _ShopTabState extends State<ShopTab> {
                                       rarity == 'legendary'
                                           ? '👑'
                                           : rarity == 'epic'
-                                              ? '💎'
-                                              : '⭐',
+                                          ? '💎'
+                                          : '⭐',
                                       style: const TextStyle(fontSize: 72),
                                     ),
                             ),
@@ -6624,7 +6715,10 @@ class _ShopTabState extends State<ShopTab> {
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(14),
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFFEC4899), Color(0xFFF43F5E)],
+                                  colors: [
+                                    Color(0xFFEC4899),
+                                    Color(0xFFF43F5E),
+                                  ],
                                 ),
                               ),
                               child: const SizedBox(
@@ -6672,24 +6766,31 @@ class _ShopTabState extends State<ShopTab> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Shop',
-                      style: TextStyle(
-                        color: Color(0xFFF9A8D4),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      )),
+                  Text(
+                    'Shop',
+                    style: TextStyle(
+                      color: Color(0xFFF9A8D4),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 6),
-                  const Text('Item Shop',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800)),
+                  const Text(
+                    'Item Shop',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(
-                      'Booster, Chests und mehr.',
-                      style: TextStyle(
-                          color: Colors.white.withOpacity(0.68),
-                          fontSize: 14)),
+                    'Booster, Chests und mehr.',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.68),
+                      fontSize: 14,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -6711,18 +6812,23 @@ class _ShopTabState extends State<ShopTab> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text('Chests',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800)),
+                      const Text(
+                        'Chests',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                ..._displayChests.map((c) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _buildChestCard(c),
-                )),
+                ..._displayChests.map(
+                  (c) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _buildChestCard(c),
+                  ),
+                ),
                 const SizedBox(height: 18),
               ],
 
@@ -6743,27 +6849,35 @@ class _ShopTabState extends State<ShopTab> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text('Items',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800)),
+                      const Text(
+                        'Items',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                ..._displayItems.map((item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _buildShopItemCard(item),
-                )),
+                ..._displayItems.map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _buildShopItemCard(item),
+                  ),
+                ),
               ],
 
               if (_displayChests.isEmpty && _displayItems.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Text('Keine Items gefunden.',
-                      style: TextStyle(
-                          color: Colors.white.withOpacity(0.68),
-                          fontSize: 14)),
+                  child: Text(
+                    'Keine Items gefunden.',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.68),
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
 
               // Earn section
@@ -6778,17 +6892,22 @@ class _ShopTabState extends State<ShopTab> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Coins verdienen',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800)),
+                    const Text(
+                      'Coins verdienen',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     Text(
-                        'Schließe Aktivitäten ab. Die Coins werden danach automatisch deinem Konto gutgeschrieben.',
-                        style: TextStyle(
-                            color: Colors.white.withOpacity(0.68),
-                            fontSize: 13)),
+                      'Schließe Aktivitäten ab. Die Coins werden danach automatisch deinem Konto gutgeschrieben.',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.68),
+                        fontSize: 13,
+                      ),
+                    ),
                     const SizedBox(height: 14),
                     Row(
                       children: [
@@ -6797,36 +6916,40 @@ class _ShopTabState extends State<ShopTab> {
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(18),
-                              color: Color(0xFF020617)
-                                  .withOpacity(0.42),
+                              color: Color(0xFF020617).withOpacity(0.42),
                               border: Border.all(
-                                  color:
-                                      Colors.white.withOpacity(0.075)),
+                                color: Colors.white.withOpacity(0.075),
+                              ),
                             ),
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Workout abschließen',
-                                    style: TextStyle(
-                                        color:
-                                            Colors.white.withOpacity(0.62),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700)),
+                                Text(
+                                  'Workout abschließen',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.62),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
                                     Image.asset(
-                                        'assets/SYBAU_Coin.png',
-                                        width: 20,
-                                        height: 20,
-                                        fit: BoxFit.contain),
+                                      'assets/SYBAU_Coin.png',
+                                      width: 20,
+                                      height: 20,
+                                      fit: BoxFit.contain,
+                                    ),
                                     const SizedBox(width: 6),
-                                    const Text('50–150',
-                                        style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 16)),
+                                    const Text(
+                                      '50–150',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 16,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ],
@@ -6839,36 +6962,40 @@ class _ShopTabState extends State<ShopTab> {
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(18),
-                              color: Color(0xFF020617)
-                                  .withOpacity(0.42),
+                              color: Color(0xFF020617).withOpacity(0.42),
                               border: Border.all(
-                                  color:
-                                      Colors.white.withOpacity(0.075)),
+                                color: Colors.white.withOpacity(0.075),
+                              ),
                             ),
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Quest erledigen',
-                                    style: TextStyle(
-                                        color:
-                                            Colors.white.withOpacity(0.62),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700)),
+                                Text(
+                                  'Quest erledigen',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.62),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
                                     Image.asset(
-                                        'assets/SYBAU_Coin.png',
-                                        width: 20,
-                                        height: 20,
-                                        fit: BoxFit.contain),
+                                      'assets/SYBAU_Coin.png',
+                                      width: 20,
+                                      height: 20,
+                                      fit: BoxFit.contain,
+                                    ),
                                     const SizedBox(width: 6),
-                                    const Text('100–500',
-                                        style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 16)),
+                                    const Text(
+                                      '100–500',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 16,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ],
@@ -6931,17 +7058,69 @@ class _FriendsTabState extends State<FriendsTab> {
   List<Map<String, dynamic>> _userDirectory = <Map<String, dynamic>>[];
   Map<String, dynamic>? _challengeOpponent;
   String _challengeGoalUnit = 'reps';
+  String _challengeDistanceUnit = 'm';
 
   bool _canDeleteChallenge(String status) =>
       status == 'Completed' || status == 'Expired';
 
+  String _challengeSecondsToTime(int value) {
+    final seconds = value.clamp(0, 999999);
+    final h = seconds ~/ 3600;
+    final m = (seconds % 3600) ~/ 60;
+    final s = seconds % 60;
+    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  int _challengeParseTime(String value) {
+    final parts = value.split(':');
+    if (parts.length != 3) return 0;
+    final h = int.tryParse(parts[0]) ?? 0;
+    final m = int.tryParse(parts[1]) ?? 0;
+    final s = int.tryParse(parts[2]) ?? 0;
+    return h * 3600 + m * 60 + s;
+  }
+
+  String _challengeFormatTimeInput(String value) {
+    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+    final d = digits.length > 6 ? digits.substring(digits.length - 6) : digits;
+    if (d.isEmpty) return '00:00:00';
+    final padded = d.padLeft(6, '0');
+    final h = int.tryParse(padded.substring(0, 2)) ?? 0;
+    final m = int.tryParse(padded.substring(2, 4)) ?? 0;
+    final s = int.tryParse(padded.substring(4, 6)) ?? 0;
+    return _challengeSecondsToTime(h * 3600 + m * 60 + s);
+  }
+
+  double _challengeParseDistanceDraft(String raw) {
+    return double.tryParse(raw.replaceAll(',', '.')) ?? 0;
+  }
+
+  String _challengeFormatDistanceDraft(double value, String unit) {
+    if (unit == 'km') {
+      var text = value.toStringAsFixed(2);
+      text = text.replaceFirst(RegExp(r'\.?0+$'), '');
+      return text.isEmpty ? '0' : text;
+    }
+    return value.round().toString();
+  }
+
   String _formatChallengeAmount(int value, String unit) {
-    if (unit.toLowerCase() != 'time') return '$value';
-    final totalSeconds = value.clamp(0, 1 << 30);
-    final hours = (totalSeconds ~/ 3600).toString().padLeft(2, '0');
-    final minutes = ((totalSeconds % 3600) ~/ 60).toString().padLeft(2, '0');
-    final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
-    return '$hours:$minutes:$seconds';
+    final lower = unit.toLowerCase();
+    if (lower == 'time') {
+      final totalSeconds = value.clamp(0, 1 << 30);
+      final hours = (totalSeconds ~/ 3600).toString().padLeft(2, '0');
+      final minutes = ((totalSeconds % 3600) ~/ 60).toString().padLeft(2, '0');
+      final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
+      return '$hours:$minutes:$seconds';
+    }
+    if (lower == 'km') {
+      final km = value / 1000;
+      return km == km.roundToDouble() ? '${km.round()}' : km.toStringAsFixed(1);
+    }
+    if (lower == 'distance' || lower == 'm') {
+      return '$value';
+    }
+    return '$value';
   }
 
   @override
@@ -7124,6 +7303,105 @@ class _FriendsTabState extends State<FriendsTab> {
     }
   }
 
+  int _challengeGoalAmountToSend() {
+    if (_challengeGoalUnit == 'time') {
+      return _challengeParseTime(_challengeGoalController.text.trim());
+    }
+
+    if (_challengeGoalUnit == 'distance') {
+      final raw = _challengeParseDistanceDraft(_challengeGoalController.text.trim());
+      if (_challengeDistanceUnit == 'km') {
+        return (raw * 1000).round();
+      }
+      return raw.round();
+    }
+
+    return int.tryParse(_challengeGoalController.text.trim()) ?? 100;
+  }
+
+  Future<void> _openChallengeIosTimePicker(VoidCallback refresh) async {
+    var selected = Duration(
+      seconds: _challengeParseTime(
+        _challengeGoalController.text.trim().isEmpty
+            ? '00:10:00'
+            : _challengeGoalController.text.trim(),
+      ),
+    );
+
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (BuildContext modalContext) {
+        return CupertinoTheme(
+          data: const CupertinoThemeData(brightness: Brightness.dark),
+          child: Container(
+            height: 320,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+              border: Border.all(color: Colors.white.withOpacity(0.08)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    child: Row(
+                      children: [
+                        CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () => Navigator.of(modalContext).pop(),
+                          child: const Text(
+                            'Abbrechen',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () {
+                            _challengeGoalController.text = _challengeSecondsToTime(
+                              selected.inSeconds,
+                            );
+                            refresh();
+                            Navigator.of(modalContext).pop();
+                          },
+                          child: const Text(
+                            'Fertig',
+                            style: TextStyle(
+                              color: Color(0xFFEC4899),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: CupertinoTimerPicker(
+                      mode: CupertinoTimerPickerMode.hms,
+                      initialTimerDuration: selected,
+                      onTimerDurationChanged: (Duration next) {
+                        selected = next;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _createChallenge() async {
     final opponent = _challengeOpponent;
     final title = _challengeTitleController.text.trim();
@@ -7132,21 +7410,76 @@ class _FriendsTabState extends State<FriendsTab> {
       return;
     }
 
+    final goalAmount = _challengeGoalAmountToSend();
+    final durationHours =
+        int.tryParse(_challengeDurationController.text.trim()) ?? 0;
+    final goalUnit =
+        _challengeGoalUnit == 'distance'
+        ? _challengeDistanceUnit
+        : _challengeGoalUnit;
+
+    if (goalAmount <= 0) {
+      widget.showSnack(
+        _challengeGoalUnit == 'time'
+            ? 'Bitte eine gueltige Zielzeit eingeben.'
+            : 'Bitte ein gueltiges Ziel eingeben.',
+      );
+      return;
+    }
+
+    if (durationHours < 1 || durationHours > 168) {
+      widget.showSnack('Stunden muessen zwischen 1 und 168 liegen.');
+      return;
+    }
+
     try {
       await ApiService.createFriendChallenge(
-        opponentId: _toInt(opponent['id']),
+        opponentId: _toInt(
+          opponent['friendId'],
+          fallback: _toInt(
+            opponent['userId'],
+            fallback: _toInt(opponent['id']),
+          ),
+        ),
         title: title,
         description: _challengeDescriptionController.text.trim(),
-        goalAmount: int.tryParse(_challengeGoalController.text.trim()) ?? 100,
-        goalUnit: _challengeGoalUnit,
-        durationHours:
-            int.tryParse(_challengeDurationController.text.trim()) ?? 24,
+        goalAmount: goalAmount,
+        goalUnit: goalUnit,
+        durationHours: durationHours,
       );
       if (!mounted) return;
       Navigator.of(context).pop();
       widget.showSnack('Challenge gesendet.');
       await _load();
-    } catch (_) {
+    } catch (error) {
+      if (error is ApiException) {
+        try {
+          final parsed = jsonDecode(error.body ?? '');
+          if (parsed is Map<String, dynamic>) {
+            final message = _string(parsed['message']);
+            if (message.isNotEmpty) {
+              widget.showSnack(message);
+              return;
+            }
+          }
+        } catch (_) {}
+      }
+
+      final raw = error.toString();
+      final bodyMatch = RegExp(r'Request failed \(\d+\): (.+)$').firstMatch(raw);
+      if (bodyMatch != null) {
+        try {
+          final parsed = jsonDecode(bodyMatch.group(1)!);
+          if (parsed is Map<String, dynamic>) {
+            final message = _string(parsed['message']);
+            if (message.isNotEmpty) {
+              widget.showSnack(message);
+              return;
+            }
+          }
+        } catch (_) {}
+      }
+
       widget.showSnack('Challenge konnte nicht erstellt werden.');
     }
   }
@@ -7176,8 +7509,12 @@ class _FriendsTabState extends State<FriendsTab> {
   }
 
   int _parseChallengeTimeToSeconds(String raw) {
-    final parts = raw.split(':').map((part) => int.tryParse(part) ?? 0).toList();
-    if (parts.length == 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+    final parts = raw
+        .split(':')
+        .map((part) => int.tryParse(part) ?? 0)
+        .toList();
+    if (parts.length == 3)
+      return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
     if (parts.length == 2) return (parts[0] * 60) + parts[1];
     if (parts.length == 1) return parts[0];
     return 0;
@@ -7307,6 +7644,7 @@ class _FriendsTabState extends State<FriendsTab> {
     _challengeGoalController.text = '100';
     _challengeDurationController.text = '24';
     _challengeGoalUnit = 'reps';
+    _challengeDistanceUnit = 'm';
 
     showModalBottomSheet<void>(
       context: context,
@@ -7315,147 +7653,374 @@ class _FriendsTabState extends State<FriendsTab> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          18,
-          22,
-          18,
-          24 + MediaQuery.of(ctx).viewInsets.bottom,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Challenge an ${_string(friend['userName'], fallback: _string(friend['friendUserName']))}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 14),
-              _settingsTextField(_challengeTitleController, 'Titel'),
-              const SizedBox(height: 10),
-              _settingsTextField(
-                _challengeDescriptionController,
-                'Beschreibung',
-                maxLines: 2,
-              ),
-              const SizedBox(height: 10),
-              Row(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, modalSetState) {
+          Future<void> changeGoalUnit(String nextUnit) async {
+            if (_challengeGoalUnit == nextUnit) return;
+
+            modalSetState(() {
+              if (nextUnit == 'time') {
+                _challengeGoalController.text = _challengeFormatTimeInput(
+                  _challengeGoalController.text.trim(),
+                );
+              } else if (_challengeGoalUnit == 'time') {
+                _challengeGoalController.text = '100';
+              }
+
+              _challengeGoalUnit = nextUnit;
+            });
+          }
+
+          void changeDistanceUnit(String nextUnit) {
+            if (_challengeDistanceUnit == nextUnit) return;
+
+            final raw = _challengeParseDistanceDraft(
+              _challengeGoalController.text.trim(),
+            );
+            final converted = _challengeDistanceUnit == 'm'
+                ? raw / 1000
+                : raw * 1000;
+
+            modalSetState(() {
+              _challengeDistanceUnit = nextUnit;
+              if (_challengeGoalController.text.trim().isNotEmpty) {
+                _challengeGoalController.text = _challengeFormatDistanceDraft(
+                  converted,
+                  nextUnit,
+                );
+              }
+            });
+          }
+
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              18,
+              22,
+              18,
+              24 + MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: _settingsTextField(_challengeGoalController, 'Ziel'),
+                  Text(
+                    'Challenge an ${_string(friend['userName'], fallback: _string(friend['friendUserName']))}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _settingsTextField(
-                      _challengeDurationController,
-                      'Stunden',
+                  const SizedBox(height: 14),
+                  _settingsTextField(_challengeTitleController, 'Titel'),
+                  const SizedBox(height: 10),
+                  _settingsTextField(
+                    _challengeDescriptionController,
+                    'Beschreibung',
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _challengeGoalUnit,
+                          dropdownColor: const Color(0xFF0F172A),
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: 'Einheit',
+                            labelStyle: TextStyle(
+                              color: Colors.white.withOpacity(0.72),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.04),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.12),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.12),
+                              ),
+                            ),
+                            focusedBorder: const OutlineInputBorder(
+                              borderRadius: BorderRadius.all(Radius.circular(12)),
+                              borderSide: BorderSide(color: Color(0xFFEC4899)),
+                            ),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'reps', child: Text('Reps')),
+                            DropdownMenuItem(value: 'time', child: Text('Time')),
+                            DropdownMenuItem(
+                              value: 'distance',
+                              child: Text('Distance'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value == null) return;
+                            changeGoalUnit(value);
+                          },
+                        ),
+                      ),
+                      if (_challengeGoalUnit == 'distance') ...[
+                        const SizedBox(width: 10),
+                        SizedBox(
+                          width: 90,
+                          child: DropdownButtonFormField<String>(
+                            value: _challengeDistanceUnit,
+                            dropdownColor: const Color(0xFF0F172A),
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: 'm/km',
+                              labelStyle: TextStyle(
+                                color: Colors.white.withOpacity(0.72),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.04),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.white.withOpacity(0.12),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.white.withOpacity(0.12),
+                                ),
+                              ),
+                              focusedBorder: const OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(12)),
+                                borderSide: BorderSide(color: Color(0xFFEC4899)),
+                              ),
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: 'm', child: Text('m')),
+                              DropdownMenuItem(value: 'km', child: Text('km')),
+                            ],
+                            onChanged: (value) {
+                              if (value == null) return;
+                              changeDistanceUnit(value);
+                            },
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _challengeGoalUnit == 'time'
+                            ? (Theme.of(context).platform == TargetPlatform.iOS
+                                ? GestureDetector(
+                                    onTap: () => _openChallengeIosTimePicker(
+                                      () => modalSetState(() {}),
+                                    ),
+                                    child: InputDecorator(
+                                      decoration: InputDecoration(
+                                        labelText: 'Ziel',
+                                        labelStyle: TextStyle(
+                                          color: Colors.white.withOpacity(0.72),
+                                        ),
+                                        filled: true,
+                                        fillColor: Colors.white.withOpacity(0.04),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                            color: Colors.white.withOpacity(0.12),
+                                          ),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                            color: Colors.white.withOpacity(0.12),
+                                          ),
+                                        ),
+                                        focusedBorder: const OutlineInputBorder(
+                                          borderRadius: BorderRadius.all(
+                                            Radius.circular(12),
+                                          ),
+                                          borderSide: BorderSide(
+                                            color: Color(0xFFEC4899),
+                                          ),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(
+                                            CupertinoIcons.time,
+                                            color: Color(0xFF60A5FA),
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            _challengeGoalController
+                                                    .text
+                                                    .trim()
+                                                    .isEmpty
+                                                ? '00:00:00'
+                                                : _challengeGoalController.text,
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                : TextField(
+                                    controller: _challengeGoalController,
+                                    keyboardType: TextInputType.number,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                    ],
+                                    style: const TextStyle(color: Colors.white),
+                                    decoration: InputDecoration(
+                                      labelText: 'Ziel',
+                                      hintText: '00:00:00',
+                                      hintStyle: TextStyle(
+                                        color: Colors.white.withOpacity(0.35),
+                                      ),
+                                      labelStyle: TextStyle(
+                                        color: Colors.white.withOpacity(0.72),
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.white.withOpacity(0.04),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(
+                                          color: Colors.white.withOpacity(0.12),
+                                        ),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(
+                                          color: Colors.white.withOpacity(0.12),
+                                        ),
+                                      ),
+                                      focusedBorder: const OutlineInputBorder(
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(12),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: Color(0xFFEC4899),
+                                        ),
+                                      ),
+                                    ),
+                                    onChanged: (value) {
+                                      final formatted =
+                                          _challengeFormatTimeInput(value);
+                                      if (formatted == _challengeGoalController.text) {
+                                        return;
+                                      }
+                                      _challengeGoalController.value =
+                                          TextEditingValue(
+                                        text: formatted,
+                                        selection: TextSelection.collapsed(
+                                          offset: formatted.length,
+                                        ),
+                                      );
+                                      modalSetState(() {});
+                                    },
+                                  ))
+                            : _settingsTextField(
+                                _challengeGoalController,
+                                'Ziel',
+                                keyboardType: _challengeGoalUnit == 'distance'
+                                    ? const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      )
+                                    : TextInputType.number,
+                              ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _settingsTextField(
+                          _challengeDurationController,
+                          'Stunden',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white.withOpacity(0.04),
+                      border: Border.all(color: Colors.white.withOpacity(0.12)),
+                    ),
+                    child: Wrap(
+                      spacing: 14,
+                      runSpacing: 8,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset(
+                              'assets/XP_Pixel.png',
+                              width: 16,
+                              height: 16,
+                              filterQuality: FilterQuality.none,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'XP automatisch',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset(
+                              'assets/SYBAU_Coin.png',
+                              width: 16,
+                              height: 16,
+                              filterQuality: FilterQuality.none,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Coins automatisch',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: _GradientActionButton(
+                      onPressed: () async {
+                        await _createChallenge();
+                      },
+                      label: 'Challenge senden',
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-              DropdownButtonFormField<String>(
-                value: _challengeGoalUnit,
-                dropdownColor: const Color(0xFF0F172A),
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: 'Einheit',
-                  labelStyle: TextStyle(color: Colors.white.withOpacity(0.72)),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.04),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
-                  ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12)),
-                    borderSide: BorderSide(color: Color(0xFFEC4899)),
-                  ),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'reps', child: Text('Reps')),
-                  DropdownMenuItem(value: 'time', child: Text('Time')),
-                  DropdownMenuItem(value: 'distance', child: Text('Distance')),
-                ],
-                onChanged: (value) {
-                  if (value == null) return;
-                  setState(() => _challengeGoalUnit = value);
-                },
-              ),
-              const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.white.withOpacity(0.04),
-                  border: Border.all(color: Colors.white.withOpacity(0.12)),
-                ),
-                child: Wrap(
-                  spacing: 14,
-                  runSpacing: 8,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          'assets/XP_Pixel.png',
-                          width: 16,
-                          height: 16,
-                          filterQuality: FilterQuality.none,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'XP automatisch',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          'assets/SYBAU_Coin.png',
-                          width: 16,
-                          height: 16,
-                          filterQuality: FilterQuality.none,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Coins automatisch',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                child: _GradientActionButton(
-                  onPressed: _createChallenge,
-                  label: 'Challenge senden',
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -7522,10 +8087,11 @@ class _FriendsTabState extends State<FriendsTab> {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      keyboardType: keyboardType ??
+      keyboardType:
+          keyboardType ??
           (label == 'Titel' || label == 'Beschreibung'
-          ? TextInputType.text
-          : TextInputType.number),
+              ? TextInputType.text
+              : TextInputType.number),
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
@@ -7694,7 +8260,10 @@ class _FriendsTabState extends State<FriendsTab> {
     final goal = _toInt(challenge['goalAmount'], fallback: 1);
     final goalUnit = _string(challenge['goalUnit'], fallback: 'reps');
     final formattedMyProgress = _formatChallengeAmount(myProgress, goalUnit);
-    final formattedOtherProgress = _formatChallengeAmount(otherProgress, goalUnit);
+    final formattedOtherProgress = _formatChallengeAmount(
+      otherProgress,
+      goalUnit,
+    );
     final formattedGoal = _formatChallengeAmount(goal, goalUnit);
 
     return Container(
@@ -7878,12 +8447,7 @@ class _FriendsTabState extends State<FriendsTab> {
         color: color,
         fontSize: 11,
         fontWeight: FontWeight.w800,
-        shadows: [
-          Shadow(
-            color: color.withOpacity(0.55),
-            blurRadius: 14,
-          ),
-        ],
+        shadows: [Shadow(color: color.withOpacity(0.55), blurRadius: 14)],
       ),
     );
   }
@@ -7899,9 +8463,39 @@ class _FriendsTabState extends State<FriendsTab> {
     };
   }
 
+  Widget _buildUnitChip(String label, bool selected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: selected
+              ? Color(0xFFEC4899).withOpacity(0.18)
+              : Colors.white.withOpacity(0.04),
+          border: Border.all(
+            color: selected
+                ? Color(0xFFEC4899).withOpacity(0.5)
+                : Colors.white.withOpacity(0.12),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Color(0xFFEC4899) : Colors.white.withOpacity(0.6),
+            fontWeight: FontWeight.w800,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
   String _challengeUnitShort(String unit) {
     return switch (unit.toLowerCase()) {
       'time' => 'Sek',
+      'm' => 'm',
+      'km' => 'km',
       'distance' => 'm',
       _ => 'Reps',
     };
@@ -8276,13 +8870,39 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
   Color _rankColor(int rank) {
     switch (rank) {
       case 1:
-        return Color(0xFFFBBF24);
+        return Color(0xFFD4AF37);
       case 2:
-        return Color(0xFFC0C4D4);
+        return Color(0xFFC0C7D1);
       case 3:
-        return Color(0xFFFB923C);
+        return Color(0xFFCD7F32);
       default:
-        return Color(0xFF334155);
+        return Color(0xFF475569);
+    }
+  }
+
+  Color _rankHighlightColor(int rank) {
+    switch (rank) {
+      case 1:
+        return Color(0xFFFFECB3);
+      case 2:
+        return Color(0xFFF3F4F6);
+      case 3:
+        return Color(0xFFF1C38A);
+      default:
+        return Color(0xFFE2E8F0);
+    }
+  }
+
+  Color _rankShadowColor(int rank) {
+    switch (rank) {
+      case 1:
+        return Color(0xFF7A5A12);
+      case 2:
+        return Color(0xFF6B7280);
+      case 3:
+        return Color(0xFF7B4A1D);
+      default:
+        return Color(0xFF1E293B);
     }
   }
 
@@ -8448,16 +9068,18 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
   }) {
     final isFirst = place == 1;
     final rankColor = _rankColor(place);
+    final rankHighlightColor = _rankHighlightColor(place);
+    final rankShadowColor = _rankShadowColor(place);
     final avatarSize = isTablet
         ? (isFirst ? 72.0 : (place == 2 ? 58.0 : 48.0))
         : isCompact
         ? (isFirst ? 52.0 : (place == 2 ? 42.0 : 34.0))
         : (isFirst ? 60.0 : (place == 2 ? 48.0 : 36.0));
     final cardHeight = isTablet
-        ? (isFirst ? 220.0 : (place == 2 ? 194.0 : 184.0))
+        ? (isFirst ? 254.0 : (place == 2 ? 222.0 : 194.0))
         : isCompact
-        ? (isFirst ? 186.0 : (place == 2 ? 166.0 : 156.0))
-        : (isFirst ? 198.0 : (place == 2 ? 176.0 : 166.0));
+        ? (isFirst ? 214.0 : (place == 2 ? 184.0 : 160.0))
+        : (isFirst ? 230.0 : (place == 2 ? 198.0 : 174.0));
     final nameFontSize = isTablet ? 14.0 : 13.0;
     final metaFontSize = isTablet ? 12.0 : 11.0;
     final xpFontSize = isTablet ? 13.0 : 12.0;
@@ -8466,87 +9088,128 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
       height: cardHeight,
       padding: EdgeInsets.all(isTablet ? 8 : 6),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(8),
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            rankColor.withOpacity(isFirst ? 0.24 : 0.16),
-            Color(0xFF0F172A).withOpacity(0.96),
+            rankHighlightColor.withOpacity(isFirst ? 0.12 : 0.08),
+            rankColor.withOpacity(isFirst ? 0.18 : 0.14),
+            rankShadowColor.withOpacity(isFirst ? 0.42 : 0.34),
+            const Color(0xFF0B1220),
           ],
+          stops: const [0.0, 0.28, 0.72, 1.0],
         ),
-        border: Border.all(color: rankColor.withOpacity(0.22)),
+        border: Border.all(
+          color: rankHighlightColor.withOpacity(isFirst ? 0.34 : 0.24),
+        ),
         boxShadow: [
           BoxShadow(
-            color: rankColor.withOpacity(0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 8),
+            color: rankShadowColor.withOpacity(isFirst ? 0.18 : 0.12),
+            blurRadius: isFirst ? 24 : 18,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Stack(
         children: [
-          _buildLeaderboardAvatar(player, size: avatarSize),
-          SizedBox(height: isTablet ? 6 : 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
-              color: Colors.white.withOpacity(0.08),
-            ),
-            child: Text(
-              '#$place',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          SizedBox(height: isTablet ? 6 : 4),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Flexible(
-                child: Text(
-                  player['userName'] as String,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: nameFontSize,
-                    fontWeight: FontWeight.w800,
+
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(isTablet ? 3.0 : 2.5),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [rankHighlightColor, rankColor, rankShadowColor],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: rankShadowColor.withOpacity(
+                          isFirst ? 0.28 : 0.2,
+                        ),
+                        blurRadius: isFirst ? 18 : 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: _buildLeaderboardAvatar(player, size: avatarSize),
+                ),
+                SizedBox(height: isTablet ? 6 : 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    color: rankColor.withOpacity(0.18),
+                    border: Border.all(
+                      color: rankHighlightColor.withOpacity(0.26),
+                    ),
+                  ),
+                  child: Text(
+                    '#$place',
+                    style: TextStyle(
+                      color: rankHighlightColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-              ),
-              if (player['isCurrentUser'] == true) ...[
-                const SizedBox(width: 6),
-                const Icon(Icons.star, color: Color(0xFFFBBF24), size: 14),
+                SizedBox(height: isTablet ? 6 : 4),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        player['userName'] as String,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: nameFontSize,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    if (player['isCurrentUser'] == true) ...[
+                      const SizedBox(width: 6),
+                      const Icon(
+                        Icons.star,
+                        color: Color(0xFFFBBF24),
+                        size: 14,
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  'Level ${player['level']}',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: metaFontSize,
+                  ),
+                ),
+                SizedBox(height: isTablet ? 6 : 4),
+                Text(
+                  '${_formatCompactNumber(_toInt(player['totalXp']))} XP',
+                  style: TextStyle(
+                    color: rankHighlightColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: xpFontSize,
+                  ),
+                ),
               ],
-            ],
-          ),
-          const SizedBox(height: 1),
-          Text(
-            'Level ${player['level']}',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.66),
-              fontSize: metaFontSize,
             ),
           ),
-          SizedBox(height: isTablet ? 6 : 4),
-          Text(
-            '${_formatCompactNumber(_toInt(player['totalXp']))} XP',
-            style: TextStyle(
-              color: Color(0xFFFDE047),
-              fontWeight: FontWeight.w800,
-              fontSize: xpFontSize,
-            ),
-          ),
-          // current-user indicator replaced by a small star next to the name
         ],
       ),
     );
@@ -8554,114 +9217,103 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
 
   Widget _buildLeaderboardRow(Map<String, dynamic> player) {
     final rank = player['rank'] as int;
-    final rankColor = _rankColor(rank);
     final isCurrentUser = player['isCurrentUser'] == true;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.zero,
         color: isCurrentUser
             ? Color(0xFFA855F7).withOpacity(0.14)
-            : Colors.white.withOpacity(0.04),
-        border: Border.all(
-          color: isCurrentUser
-              ? Color(0xFFA855F7).withOpacity(0.28)
-              : Colors.white.withOpacity(0.06),
+            : Colors.transparent,
+        border: Border(
+          bottom: BorderSide(
+            color: isCurrentUser
+                ? Color(0xFFEC4899).withOpacity(0.22)
+                : Colors.white.withOpacity(0.08),
+          ),
         ),
       ),
       child: Row(
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              color: rankColor.withOpacity(0.18),
-            ),
-            child: Center(
-              child: rank <= 3
-                  ? Icon(
-                      rank == 1 ? Icons.emoji_events : Icons.workspace_premium,
-                      color: rankColor,
-                      size: 18,
-                    )
-                  : Text(
-                      '#$rank',
-                      style: TextStyle(
-                        color: rankColor,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12,
-                      ),
-                    ),
+          SizedBox(
+            width: 20,
+            child: Text(
+              '$rank',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: rank <= 3
+                    ? _rankColor(rank)
+                    : Colors.white.withOpacity(0.72),
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
             ),
           ),
           const SizedBox(width: 10),
-          _buildLeaderboardAvatar(player, size: 42),
+          _buildLeaderboardAvatar(player, size: 38),
           const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              player['userName'] as String,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          player['userName'] as String,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
                           ),
-                          if (isCurrentUser) ...[
-                            const SizedBox(width: 6),
-                            const Icon(
-                              Icons.star,
-                              color: Color(0xFFFBBF24),
-                              size: 14,
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                      if (isCurrentUser) ...[
+                        const SizedBox(width: 6),
+                        const Icon(
+                          Icons.star,
+                          color: Color(0xFFFBBF24),
+                          size: 13,
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(width: 10),
                 Text(
-                  'Level ${player['level']}',
+                  'lvl ${player['level']}',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.62),
-                    fontSize: 11,
+                    color: Colors.white.withOpacity(0.66),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 10),
-          Column(
+          Row(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${_formatCompactNumber(_toInt(player['totalXp']))} XP',
+                _formatCompactNumber(_toInt(player['totalXp'])),
                 style: const TextStyle(
-                  color: Color(0xFFFDE047),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
+                  color: Color(0xFFE2E8F0),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Gesamtfortschritt',
+              const SizedBox(width: 4),
+              const Text(
+                'XP',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.48),
-                  fontSize: 10,
+                  color: Color(0xFF38BDF8),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
@@ -8713,6 +9365,41 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
         ],
       ),
     );
+  }
+}
+
+class _LeaderboardBeamPainter extends CustomPainter {
+  const _LeaderboardBeamPainter({
+    required this.color,
+    required this.cellSize,
+    required this.lineWidth,
+  });
+
+  final Color color;
+  final double cellSize;
+  final double lineWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = lineWidth;
+
+    for (double y = size.height; y >= 0; y -= cellSize) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+
+    for (double x = 0; x <= size.width; x += cellSize) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _LeaderboardBeamPainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.cellSize != cellSize ||
+        oldDelegate.lineWidth != lineWidth;
   }
 }
 
@@ -9655,9 +10342,7 @@ class _ProfileTabState extends State<ProfileTab> {
                                 height: 38,
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(12),
-                                  color: Color(
-                                    0xFFEC4899,
-                                  ).withOpacity(0.14),
+                                  color: Color(0xFFEC4899).withOpacity(0.14),
                                 ),
                                 child: const Icon(
                                   Icons.logout_rounded,
@@ -10240,9 +10925,7 @@ class _ProfileTabState extends State<ProfileTab> {
                                     color: isToday
                                         ? Color(0xFFFBBF24)
                                         : done
-                                        ? Color(
-                                            0xFF22C55E,
-                                          ).withOpacity(0.6)
+                                        ? Color(0xFF22C55E).withOpacity(0.6)
                                         : Colors.white.withOpacity(0.08),
                                   ),
                                 ),
@@ -10843,9 +11526,7 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
                                         color: isToday
                                             ? Color(0xFFFBBF24)
                                             : done
-                                            ? Color(
-                                                0xFF22C55E,
-                                              ).withOpacity(0.6)
+                                            ? Color(0xFF22C55E).withOpacity(0.6)
                                             : Colors.white.withOpacity(0.08),
                                       ),
                                     ),

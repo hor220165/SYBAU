@@ -22,11 +22,14 @@ const cardClass = computed(() => {
 
 const badgeLabel = computed(() => `#${props.place}`);
 const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImageUrl));
+
+// Pattern removed
 </script>
 
 <template>
   <article class="podium-card" :class="cardClass">
     <div class="podium-glow"></div>
+
     <Crown v-if="place === 1" class="crown-icon" />
 
     <button class="avatar-shell" type="button" @click="emit('openProfile', player.Id)">
@@ -54,50 +57,63 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
 
 <style scoped>
 .podium-card {
+  --podium-accent-rgb: 192, 199, 209;
+  --podium-highlight-rgb: 243, 244, 246;
+  --podium-shadow-rgb: 107, 114, 128;
   position: relative;
   overflow: hidden;
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(15, 23, 42, 0.72);
+  border-radius: 8px;
+  border: 1px solid rgba(var(--podium-highlight-rgb), 0.24);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--podium-highlight-rgb), 0.12) 0%,
+      rgba(var(--podium-accent-rgb), 0.14) 28%,
+      rgba(var(--podium-shadow-rgb), 0.38) 72%,
+      rgba(11, 18, 32, 0.98) 100%
+    ),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.08) 0%, rgba(15, 23, 42, 0.26) 100%);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   padding: 24px 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   text-align: center;
-  min-height: 238px;
-  box-shadow: 0 20px 50px rgba(2, 6, 23, 0.28);
+  min-height: 244px;
+  box-shadow:
+    0 16px 32px rgba(var(--podium-shadow-rgb), 0.16),
+    0 20px 50px rgba(2, 6, 23, 0.28);
 }
 
 .is-first {
-  min-height: 288px;
-  background:
-    linear-gradient(180deg, rgba(245, 158, 11, 0.18), rgba(15, 23, 42, 0.86)),
-    rgba(15, 23, 42, 0.72);
-  border-color: rgba(250, 204, 21, 0.38);
+  --podium-accent-rgb: 212, 175, 55;
+  --podium-highlight-rgb: 255, 236, 179;
+  --podium-shadow-rgb: 122, 90, 18;
+  min-height: 300px;
 }
 
 .is-second {
+  --podium-accent-rgb: 192, 199, 209;
+  --podium-highlight-rgb: 243, 244, 246;
+  --podium-shadow-rgb: 107, 114, 128;
   min-height: 252px;
-  background:
-    linear-gradient(180deg, rgba(148, 163, 184, 0.16), rgba(15, 23, 42, 0.86)),
-    rgba(15, 23, 42, 0.72);
-  border-color: rgba(203, 213, 225, 0.26);
 }
 
 .is-third {
-  min-height: 224px;
-  background:
-    linear-gradient(180deg, rgba(249, 115, 22, 0.16), rgba(15, 23, 42, 0.86)),
-    rgba(15, 23, 42, 0.72);
-  border-color: rgba(251, 146, 60, 0.24);
+  --podium-accent-rgb: 205, 127, 50;
+  --podium-highlight-rgb: 241, 195, 138;
+  --podium-shadow-rgb: 123, 74, 29;
+  min-height: 214px;
 }
 
 .podium-glow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.16), transparent 55%);
+  background:
+    radial-gradient(circle at 50% 10%, rgba(var(--podium-highlight-rgb), 0.2), transparent 46%),
+    radial-gradient(circle at bottom, rgba(var(--podium-accent-rgb), 0.12), transparent 54%);
   pointer-events: none;
 }
 
@@ -108,6 +124,7 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
   width: 28px;
   height: 28px;
   filter: drop-shadow(0 0 16px rgba(250, 204, 21, 0.45));
+  z-index: 2;
 }
 
 .avatar-shell {
@@ -119,13 +136,20 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
   display: grid;
   place-items: center;
   margin-top: 18px;
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.9), rgba(59, 130, 246, 0.9));
-  box-shadow: 0 18px 34px rgba(76, 29, 149, 0.32);
+  background: linear-gradient(
+    135deg,
+    rgba(var(--podium-highlight-rgb), 0.98),
+    rgba(var(--podium-accent-rgb), 0.94),
+    rgba(var(--podium-shadow-rgb), 0.9)
+  );
+  box-shadow: 0 18px 34px rgba(var(--podium-shadow-rgb), 0.32);
   cursor: pointer;
+  position: relative;
+  z-index: 2;
 }
 
 .avatar-shell:focus-visible {
-  outline: 2px solid rgba(236, 72, 153, 0.7);
+  outline: 2px solid rgba(var(--podium-highlight-rgb), 0.64);
   outline-offset: 3px;
 }
 
@@ -161,6 +185,8 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
   margin-top: 16px;
   flex-wrap: wrap;
   justify-content: center;
+  position: relative;
+  z-index: 2;
 }
 
 .place-badge {
@@ -174,8 +200,9 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
 }
 
 .place-badge {
-  background: rgba(255, 255, 255, 0.14);
-  color: white;
+  background: rgba(var(--podium-accent-rgb), 0.18);
+  border: 1px solid rgba(var(--podium-highlight-rgb), 0.2);
+  color: rgb(var(--podium-highlight-rgb));
 }
 
 .player-name {
@@ -188,6 +215,8 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
   justify-content: center;
   gap: 6px;
   max-width: 100%;
+  position: relative;
+  z-index: 2;
 }
 
 .player-name span {
@@ -204,112 +233,19 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
 
 .player-meta {
   margin: 0;
-  color: #c4b5fd;
+  color: rgba(var(--podium-highlight-rgb), 0.82);
   font-size: 0.92rem;
+  position: relative;
+  z-index: 2;
 }
 
 .player-xp {
   margin: 8px 0 0;
-  color: #f8fafc;
-  font-weight: 600;
+  color: rgb(var(--podium-highlight-rgb));
+  font-weight: 700;
+  text-shadow: 0 0 12px rgba(var(--podium-shadow-rgb), 0.18);
+  position: relative;
+  z-index: 2;
 }
 
-@media (max-width: 860px) {
-  .podium-card {
-    padding: 18px 14px;
-  }
-
-  .is-first {
-    min-height: 248px;
-  }
-
-  .is-second {
-    min-height: 218px;
-  }
-
-  .is-third {
-    min-height: 194px;
-  }
-
-  .avatar-shell {
-    width: 76px;
-    height: 76px;
-  }
-}
-
-@media (max-width: 768px) {
-  .podium-card,
-  .is-first,
-  .is-second,
-  .is-third {
-    min-height: unset;
-  }
-
-  .avatar-shell {
-    width: 72px;
-    height: 72px;
-    margin-top: 10px;
-  }
-
-  .player-name {
-    font-size: 0.85rem;
-  }
-
-  .player-meta {
-    font-size: 0.78rem;
-  }
-
-  .player-xp {
-    font-size: 0.82rem;
-  }
-}
-
-@media (max-width: 560px) {
-  .podium-card {
-    padding: 10px 8px;
-    border-radius: 14px;
-  }
-
-  .podium-card,
-  .is-first,
-  .is-second,
-  .is-third {
-    min-height: unset;
-  }
-
-  .avatar-shell {
-    width: 52px;
-    height: 52px;
-    margin-top: 6px;
-  }
-
-  .badge-row {
-    margin-top: 10px;
-  }
-
-  .place-badge {
-    padding: 4px 8px;
-    font-size: 0.7rem;
-  }
-
-  .player-name {
-    margin: 8px 0 2px;
-    font-size: 0.75rem;
-  }
-
-  .player-meta {
-    font-size: 0.68rem;
-  }
-
-  .player-xp {
-    margin: 4px 0 0;
-    font-size: 0.72rem;
-  }
-
-  .crown-icon {
-    width: 20px;
-    height: 20px;
-    top: 10px;
-  }
-}
 </style>

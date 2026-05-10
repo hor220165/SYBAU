@@ -916,9 +916,8 @@ onUnmounted(() => {
 
 /* ───── Tabs ───── */
 .tab-bar {
-  display: grid;
+  display: inline-flex;
   gap: 8px;
-  overflow-x: auto;
   padding: 4px 0 10px;
 }
 
@@ -972,7 +971,7 @@ onUnmounted(() => {
 }
 
 .section-heading {
-  display: grid;
+  display: flex;
   flex-direction: column;
   gap: 8px;
   margin-bottom: 22px;
@@ -984,7 +983,7 @@ onUnmounted(() => {
 }
 
 .title-with-icon {
-  display: grid;
+  display: flex;
   align-items: center;
   gap: 10px;
 }
@@ -1001,6 +1000,7 @@ onUnmounted(() => {
 /* ───── Search ───── */
 .search-bar {
   display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
@@ -1035,6 +1035,7 @@ onUnmounted(() => {
 
 .friend-card, .request-card {
   display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 10px;
   padding: 12px;
@@ -1090,10 +1091,10 @@ onUnmounted(() => {
 }
 
 .friend-info {
-  flex: 1;
-  display: grid;
+  display: flex;
   flex-direction: column;
   gap: 3px;
+  min-width: 0;
 }
 
 .friend-name {
@@ -1107,8 +1108,10 @@ onUnmounted(() => {
 }
 
 .friend-actions {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .action-btn,
@@ -1201,7 +1204,7 @@ onUnmounted(() => {
 }
 
 .challenge-meta {
-  display: grid;
+  display: flex;
   flex-wrap: wrap;
   gap: 16px;
   color: #94a3b8;
@@ -1514,7 +1517,7 @@ onUnmounted(() => {
 @media (max-width: 560px) {
   .friends-page {
     width: min(100%, calc(100% - 16px));
-    gap: 18px;
+    gap: 16px;
   }
 
   .section-card {
@@ -1522,7 +1525,7 @@ onUnmounted(() => {
   }
 
   .tab-bar { gap: 4px; }
-  .tab-btn { padding: 8px 12px; font-size: 0.82rem; }
+  .tab-btn { padding: 8px 10px; font-size: 0.82rem; }
 
   .search-bar {
     padding: 10px 14px;
@@ -1531,6 +1534,7 @@ onUnmounted(() => {
   .friend-card, .request-card {
     align-items: center;
     padding: 10px;
+    gap: 8px;
   }
 
   .friend-avatar {
@@ -1544,10 +1548,6 @@ onUnmounted(() => {
 
   .friend-meta {
     font-size: 0.68rem;
-  }
-
-  .friend-actions {
-    justify-content: center;
   }
 
   .action-btn,
@@ -1599,6 +1599,64 @@ onUnmounted(() => {
 
   .status-text {
     font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .friends-page {
+    gap: 12px;
+  }
+
+  .section-card {
+    padding: 12px;
+  }
+
+  .tab-bar { gap: 3px; }
+  .tab-btn { padding: 6px 8px; font-size: 0.76rem; gap: 4px; }
+
+  .friend-card, .request-card {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .friend-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .friend-name {
+    font-size: 0.8rem;
+  }
+
+  .friend-meta {
+    font-size: 0.62rem;
+  }
+
+  .action-btn,
+  .icon-action-btn,
+  .text-action-btn,
+  .send-request-btn,
+  .sent-pill {
+    padding: 5px 8px;
+    min-height: 28px;
+    font-size: 0.72rem;
+  }
+
+  .icon-action-btn {
+    width: 28px;
+  }
+
+  .challenge-card {
+    padding: 10px;
+  }
+
+  .mobile-section-title {
+    font-size: 1.1rem;
+  }
+
+  .search-bar {
+    padding: 8px 10px;
+    gap: 8px;
   }
 }
 </style>

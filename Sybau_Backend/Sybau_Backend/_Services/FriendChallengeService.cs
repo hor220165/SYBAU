@@ -258,7 +258,8 @@ public class FriendChallengeService
         {
             "reps" or "rep" => "reps",
             "time" or "seconds" or "sek" or "sec" => "time",
-            "distance" or "meter" or "m" or "km" => "distance",
+            "distance" or "meter" or "m" => "m",
+            "km" => "km",
             _ => null
         };
     }
@@ -268,14 +269,14 @@ public class FriendChallengeService
         var baseXp = goalUnit switch
         {
             "time" => Math.Max(20, goalAmount / 3),
-            "distance" => Math.Max(25, goalAmount / 12),
+            "m" or "km" or "distance" => Math.Max(25, goalAmount / 12),
             _ => Math.Max(15, (int)Math.Round(goalAmount * 0.45))
         };
 
         var baseCoins = goalUnit switch
         {
             "time" => Math.Max(4, goalAmount / 45),
-            "distance" => Math.Max(5, goalAmount / 180),
+            "m" or "km" or "distance" => Math.Max(5, goalAmount / 180),
             _ => Math.Max(3, (int)Math.Round(goalAmount * 0.09))
         };
 
