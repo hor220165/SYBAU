@@ -58,14 +58,10 @@
                   }"
                   @click="handleSlotClick(i)"
                 >
-                  <div class="equip-icon" v-if="!slot.item">
-                    <Zap :size="22" />
-                  </div>
-                  <div class="equip-item-icon" v-else>
+                  <div class="equip-item-icon" v-if="slot.item">
                     <img v-if="slot.item.imageUrl" :src="slot.item.imageUrl" alt="" />
                     <span v-else>{{ slot.item.icon }}</span>
                   </div>
-                  <span v-if="!slot.item" class="equip-name">{{ slot.label }}</span>
                   <span class="equip-empty" v-if="!slot.item && selectingSlotFor === null">Leer</span>
                   <span class="equip-select-hint" v-if="!slot.item && selectingSlotFor !== null">Hier</span>
                   <span class="equip-badge" v-if="slot.item">+{{ slot.item.boostValue }}%</span>
@@ -99,14 +95,10 @@
                   }"
                   @click="handleSlotClick(i + 2)"
                 >
-                  <div class="equip-icon" v-if="!slot.item">
-                    <Zap :size="22" />
-                  </div>
-                  <div class="equip-item-icon" v-else>
+                  <div class="equip-item-icon" v-if="slot.item">
                     <img v-if="slot.item.imageUrl" :src="slot.item.imageUrl" alt="" />
                     <span v-else>{{ slot.item.icon }}</span>
                   </div>
-                  <span v-if="!slot.item" class="equip-name">{{ slot.label }}</span>
                   <span class="equip-empty" v-if="!slot.item && selectingSlotFor === null">Leer</span>
                   <span class="equip-select-hint" v-if="!slot.item && selectingSlotFor !== null">Hier</span>
                   <span class="equip-badge" v-if="slot.item">+{{ slot.item.boostValue }}%</span>
@@ -716,17 +708,6 @@ onMounted(() => loadProfile());
   border-width: 0 1px 1px 0;
 }
 
-.equip-icon {
-  color: rgba(168, 85, 247, 0.45);
-  display: flex;
-  transition: all 0.3s ease;
-}
-
-.equip-slot-inner:hover .equip-icon {
-  color: rgba(168, 85, 247, 0.8);
-  filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.6));
-}
-
 .equip-item-icon {
   font-size: 34px;
   filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5));
@@ -743,18 +724,10 @@ onMounted(() => loadProfile());
   image-rendering: pixelated;
 }
 
-.equip-name {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
-}
-
 .equip-empty {
-  font-size: 9px;
-  color: rgba(255, 255, 255, 0.2);
-  letter-spacing: 0.5px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.28);
+  font-weight: 700;
 }
 
 .equip-select-hint {

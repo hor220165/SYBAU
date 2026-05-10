@@ -1022,7 +1022,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   children: [
                     const Expanded(
                       child: Text(
-                        'Booster auswaehlen',
+                        'Booster auswählen',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -1187,48 +1187,57 @@ class _DashboardTabState extends State<DashboardTab> {
         ),
         child: FittedBox(
           fit: BoxFit.scaleDown,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-            if (isEquipped && booster.imageUrl.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  _resolvedImageUrl(booster.imageUrl),
-                  width: 38,
-                  height: 38,
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.none,
-                  isAntiAlias: false,
-                  errorBuilder: (_, __, ___) => Text(
-                    '⚡',
-                    style: TextStyle(
-                      fontSize: isEquipped ? 28 : 16,
-                      color: Color(0xFFC084FC),
+          child: isEquipped
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (booster.imageUrl.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(
+                          _resolvedImageUrl(booster.imageUrl),
+                          width: 38,
+                          height: 38,
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.none,
+                          isAntiAlias: false,
+                          errorBuilder: (_, __, ___) => Text(
+                            '⚡',
+                            style: TextStyle(
+                              fontSize: 28,
+                              color: Color(0xFFC084FC),
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      const Text(
+                        '⚡',
+                        style: TextStyle(
+                          fontSize: 28,
+                          color: Color(0xFFC084FC),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '+${booster.bestBoostPercent}%',
+                      style: const TextStyle(
+                        color: Color(0xFFC084FC),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
+                  ],
+                )
+              : const Text(
+                  'Leer',
+                  style: TextStyle(
+                    color: Colors.white24,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              )
-            else
-              Text(
-                isEquipped ? '⚡' : '◈',
-                style: TextStyle(
-                  fontSize: isEquipped ? 28 : 16,
-                  color: Color(0xFFC084FC),
-                ),
-              ),
-            const SizedBox(height: 8),
-            Text(
-              isEquipped ? '+${booster.bestBoostPercent}%' : 'Leer',
-              style: TextStyle(
-                color: isEquipped ? Color(0xFFC084FC) : Colors.white24,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
         ),
       ),
     );
@@ -4523,7 +4532,7 @@ class _AvatarTabState extends State<AvatarTab> {
                   children: [
                     const Expanded(
                       child: Text(
-                        'Booster auswaehlen',
+                        'Booster auswählen',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
@@ -4650,10 +4659,28 @@ class _AvatarTabState extends State<AvatarTab> {
                                   borderRadius: BorderRadius.circular(12),
                                   color: Colors.white.withOpacity(0.05),
                                 ),
-                                child: Text(
-                                  _boosterIcon(booster),
-                                  style: const TextStyle(fontSize: 20),
-                                ),
+                                child: booster.imageUrl.isNotEmpty
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Image.network(
+                                          _resolvedImageUrl(booster.imageUrl),
+                                          width: 30,
+                                          height: 30,
+                                          fit: BoxFit.contain,
+                                          filterQuality: FilterQuality.none,
+                                          isAntiAlias: false,
+                                          errorBuilder: (_, __, ___) => Text(
+                                            _boosterIcon(booster),
+                                            style: const TextStyle(
+                                              fontSize: 20,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : Text(
+                                        _boosterIcon(booster),
+                                        style: const TextStyle(fontSize: 20),
+                                      ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -4873,46 +4900,55 @@ class _AvatarTabState extends State<AvatarTab> {
         ),
         child: FittedBox(
           fit: BoxFit.scaleDown,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-            if (isFilled && item.imageUrl.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  _resolvedImageUrl(item.imageUrl),
-                  width: iconSize,
-                  height: iconSize,
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.none,
-                  isAntiAlias: false,
-                  errorBuilder: (_, __, ___) => Text(
-                    _boosterIcon(item),
-                    style: TextStyle(fontSize: iconSize),
+          child: isFilled
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (item.imageUrl.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(
+                          _resolvedImageUrl(item.imageUrl),
+                          width: iconSize,
+                          height: iconSize,
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.none,
+                          isAntiAlias: false,
+                          errorBuilder: (_, __, ___) => Text(
+                            _boosterIcon(item),
+                            style: TextStyle(fontSize: iconSize),
+                          ),
+                        ),
+                      )
+                    else
+                      Text(
+                        _boosterIcon(item),
+                        style: TextStyle(fontSize: iconSize),
+                      ),
+                    SizedBox(height: size * 0.02),
+                    Text(
+                      '+${item.bestBoostPercent}%',
+                      style: TextStyle(
+                        color: Color(0xFFC084FC),
+                        fontSize: valueSize,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                )
+              : Text(
+                  'Leer',
+                  style: TextStyle(
+                    color: Colors.white24,
+                    fontSize: valueSize,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              )
-            else
-              Text(
-                isFilled ? _boosterIcon(item) : '⚡',
-                style: TextStyle(fontSize: iconSize),
-              ),
-            SizedBox(height: size * 0.02),
-            Text(
-              isFilled ? '+${item.bestBoostPercent}%' : 'Leer',
-              style: TextStyle(
-                color: isFilled ? Color(0xFFC084FC) : Colors.white24,
-                fontSize: valueSize,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

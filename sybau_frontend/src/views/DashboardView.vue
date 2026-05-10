@@ -23,8 +23,6 @@
                   <span class="equip-badge">+{{ boostSlots[slotIdx]!.xpBoostPercentage || boostSlots[slotIdx]!.coinBoostPercentage || 0 }}%</span>
                 </template>
                 <template v-else>
-                  <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
-                  <span class="equip-name">Booster</span>
                   <span class="equip-empty">Leer</span>
                 </template>
               </div>
@@ -57,8 +55,6 @@
                   <span class="equip-badge">+{{ boostSlots[slotIdx]!.xpBoostPercentage || boostSlots[slotIdx]!.coinBoostPercentage || 0 }}%</span>
                 </template>
                 <template v-else>
-                  <div class="equip-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>`"></div>
-                  <span class="equip-name">Booster</span>
                   <span class="equip-empty">Leer</span>
                 </template>
               </div>
@@ -172,7 +168,10 @@
                 :class="['boost-item', { 'boost-item-disabled': availableQuantity(booster) <= 0 }]"
                 @click="availableQuantity(booster) > 0 && equipBooster(booster)"
               >
-                <div class="boost-item-icon">⚡</div>
+                <div class="boost-item-icon">
+                  <img v-if="getBoostImage(booster)" :src="getBoostImage(booster)" alt="" />
+                  <span v-else>⚡</span>
+                </div>
                 <div class="boost-item-info">
                   <span class="boost-item-name">{{ booster.name }}</span>
                   <span class="boost-item-desc">+{{ booster.xpBoostPercentage }}% XP Boost</span>
@@ -469,29 +468,10 @@ onMounted(async () => {
   border-width: 0 1px 1px 0;
 }
 
-.equip-icon {
-  color: rgba(168, 85, 247, 0.45);
-  display: flex;
-  transition: all 0.3s ease;
-}
-
-.equip-slot-inner:hover .equip-icon {
-  color: rgba(168, 85, 247, 0.8);
-  filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.6));
-}
-
-.equip-name {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
-}
-
 .equip-empty {
-  font-size: 9px;
-  color: rgba(255, 255, 255, 0.2);
-  letter-spacing: 0.5px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.28);
+  font-weight: 700;
 }
 
 /* ══════════════════════════════
@@ -909,8 +889,18 @@ onMounted(async () => {
 }
 
 .boost-item-icon {
-  font-size: 20px;
   flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+}
+
+.boost-item-icon img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .boost-item-info {
