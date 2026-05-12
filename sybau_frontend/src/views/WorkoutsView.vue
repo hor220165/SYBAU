@@ -102,7 +102,7 @@
           @set-time="setTimeDraft(exercise, $event)"
           @set-distance="setDistanceDraft(exercise, $event)"
           @set-distance-unit="setDistanceUnit(exercise, $event)"
-          @submit-log="submitInlineExercise(exercise)"
+          @submit-log="exercise.unit === 'Distance' ? submitInlineExercise(exercise) : openTimerFor(exercise)"
       />
     </div>
 
@@ -354,6 +354,17 @@
     </div>
   </div>
 
+  <ExerciseTimerOverlay
+    v-if="timerExercise"
+    :is-open="timerOpen"
+    :exercise-name="timerExercise?.name ?? ''"
+    :exercise-type="timerExercise?.unit === 'Time' ? 'Time' : 'Reps'"
+    :xp-per-rep="timerExercise?.xpPerRep ?? 1"
+    :max-reps="timerExercise?.dailyLimit ?? 200"
+    :remaining="timerExercise ? remainingFor(timerExercise) : 0"
+    @close="timerOpen = false"
+    @confirm="handleTimerConfirm"
+  />
   <Teleport to="body">
     <MessagePopup
       v-if="popupMessage"
@@ -371,6 +382,7 @@ import Navbar from '@/components/Navbar.vue';
 import WorkoutCard from '@/components/WorkoutCard.vue';
 import FooterComponent from '@/components/FooterComponent.vue';
 import MessagePopup from '@/components/MessagePopup.vue';
+import ExerciseTimerOverlay from '@/components/ExerciseTimerOverlay.vue';
 import { workoutService, achievementService, questService } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
 import { BarChart3, CalendarDays, Flame, Zap } from 'lucide-vue-next';
@@ -420,6 +432,10 @@ const todayActivity = ref({ steps: 0, kilometers: 0 });
 const expandedWorkout = ref<number | null>(null);
 const workoutSession = ref<any>(null);
 const activeExerciseEditorId = ref<number | null>(null);
+
+// Timer-based exercise flow
+const timerOpen = ref(false);
+const timerExercise = ref<ExerciseLocal | null>(null);
 const repsDrafts = ref<Record<number, number>>({});
 const timeDrafts = ref<Record<number, string>>({});
 const distanceDrafts = ref<Record<number, number>>({});
@@ -538,6 +554,10 @@ function logAmountFor(exercise: ExerciseLocal) {
 
 function openRepEditor(exercise: ExerciseLocal) {
   if (remainingFor(exercise) <= 0) return;
+  if (exercise.unit !== 'Distance') {
+    openTimerFor(exercise);
+    return;
+  }
   activeExerciseEditorId.value = exercise.id;
   repsDrafts.value = {
     ...repsDrafts.value,
@@ -555,6 +575,37 @@ function openRepEditor(exercise: ExerciseLocal) {
 
 function closeRepEditor() {
   activeExerciseEditorId.value = null;
+}
+
+function openTimerFor(exercise: ExerciseLocal) {
+  timerExercise.value = exercise;
+  timerOpen.value = true;
+}
+
+async function handleTimerConfirm(data: { reps: number; elapsedSeconds: number }) {
+  const exercise = timerExercise.value;
+  if (!exercise) return;
+  try {
+    const res = await workoutService.logExercise(exercise.id, data.reps, data.elapsedSeconds);
+    const result = res.data;
+    const rewards = rewardTotals(result, data.reps * exercise.xpPerRep);
+    exercise.todayCount += data.reps;
+    const remaining = remainingFor(exercise);
+    repsDrafts.value = { ...repsDrafts.value, [exercise.id]: remaining <= 0 ? 0 : Math.min(data.reps, remaining) };
+    activeExerciseEditorId.value = null;
+    let msg = `${exercise.name}: ${formatAmount(data.reps, exercise.unit)} eingetragen!`;
+    msg += ` +${rewards.xp} XP`;
+    if (rewards.coins > 0) msg += `, +${rewards.coins} Coins`;
+    popupType.value = 'success';
+    popupMessage.value = msg;
+    await refreshProfile();
+    flashHeaderReward(rewards);
+    refreshQuestBadge();
+  } catch (err: any) {
+    const errorMsg = err.response?.data || 'Fehler beim Eintragen';
+    popupType.value = 'error';
+    popupMessage.value = errorMsg;
+  }
 }
 
 function setTimeDraft(exercise: ExerciseLocal, value: string) {
@@ -638,6 +689,31 @@ function formatAmount(value: number, unit: ExerciseLocal['unit']) {
       : `${value.toLocaleString('de-DE')} m`;
   }
   return `${value.toLocaleString('de-DE')} Reps`;
+}
+
+function numberFromResult(result: any, ...keys: string[]) {
+  for (const key of keys) {
+    const value = result?.[key];
+    if (value !== undefined && value !== null) return Number(value) || 0;
+  }
+  return 0;
+}
+
+function rewardTotals(result: any, fallbackXp = 0) {
+  const baseXp = result?.xpEarned ?? result?.XpEarned ?? fallbackXp;
+  return {
+    xp: Math.max(0, (Number(baseXp) || 0) + numberFromResult(result, 'bonusXp', 'BonusXp')),
+    coins: Math.max(0, numberFromResult(result, 'coinsEarned', 'CoinsEarned') + numberFromResult(result, 'bonusCoins', 'BonusCoins'))
+  };
+}
+
+function flashHeaderReward(rewards: { xp: number; coins: number }) {
+  if (rewards.xp <= 0 && rewards.coins <= 0) return;
+  window.dispatchEvent(new CustomEvent('sybau:reward-flash', { detail: rewards }));
+}
+
+function refreshQuestBadge() {
+  window.dispatchEvent(new CustomEvent('sybau:quests-updated'));
 }
 
 // Backend gibt Enums als camelCase Strings zurück (z.B. "easy", "strength")
@@ -792,16 +868,19 @@ async function logWorkoutExercise(ex: any) {
   try {
     const res = await workoutService.logExercise(ex.exerciseId, reps);
     const result = res.data;
+    const rewards = rewardTotals(result);
     ex.logged = true;
     ex.repsLogged = reps;
-    ex.xpEarned = (result.xpEarned ?? 0) + (result.bonusXp ?? 0);
-    ex.coinsEarned = (result.coinsEarned ?? 0) + (result.bonusCoins ?? 0);
+    ex.xpEarned = rewards.xp;
+    ex.coinsEarned = rewards.coins;
 
     // Lokalen Exercise-Counter auch updaten
     const localEx = exercises.value.find(e => e.id === ex.exerciseId);
     if (localEx) localEx.todayCount += reps;
 
     await refreshProfile();
+    flashHeaderReward(rewards);
+    refreshQuestBadge();
   } catch (err: any) {
     popupType.value = 'error';
     popupMessage.value = err.response?.data || 'Fehler beim Eintragen';
@@ -835,6 +914,9 @@ const submitInlineExercise = async (exercise: ExerciseLocal) => {
   try {
     const res = await workoutService.logExercise(exercise.id, reps);
     const result = res.data;
+    const rewards = rewardTotals(result, reps * exercise.xpPerRep);
+    const bonusXp = numberFromResult(result, 'bonusXp', 'BonusXp');
+    const bonusCoins = numberFromResult(result, 'bonusCoins', 'BonusCoins');
 
     exercise.todayCount += reps;
     const remaining = remainingFor(exercise);
@@ -845,17 +927,19 @@ const submitInlineExercise = async (exercise: ExerciseLocal) => {
     activeExerciseEditorId.value = null;
 
     let msg = `${exercise.name}: ${formatAmount(reps, exercise.unit)} eingetragen!\n`;
-    msg += `+${result.xpEarned ?? reps * exercise.xpPerRep} XP`;
-    if (result.bonusXp > 0) msg += ` (+${result.bonusXp} Bonus, ${result.boostPercent}% Boost)`;
-    if (result.coinsEarned > 0) {
-      msg += `\n+${result.coinsEarned} Coins`;
-      if (result.bonusCoins > 0) msg += ` (+${result.bonusCoins} Bonus, ${result.coinBoostPercent}% Boost)`;
+    msg += `+${rewards.xp} XP`;
+    if (bonusXp > 0) msg += ` (+${bonusXp} Bonus, ${result.boostPercent ?? result.BoostPercent}% Boost)`;
+    if (rewards.coins > 0) {
+      msg += `\n+${rewards.coins} Coins`;
+      if (bonusCoins > 0) msg += ` (+${bonusCoins} Bonus, ${result.coinBoostPercent ?? result.CoinBoostPercent}% Boost)`;
     }
     popupType.value = 'success';
     popupMessage.value = msg;
 
     // Header aktualisieren (Level, XP, Coins)
     await refreshProfile();
+    flashHeaderReward(rewards);
+    refreshQuestBadge();
   } catch (err: any) {
     const errorMsg = err.response?.data || 'Fehler beim Eintragen';
     popupType.value = 'error';
@@ -936,6 +1020,11 @@ const submitInlineExercise = async (exercise: ExerciseLocal) => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.stat-icon :deep(svg) {
+  width: 100%;
+  height: 100%;
 }
 
 .stat-icon-blue {
@@ -1152,7 +1241,7 @@ const submitInlineExercise = async (exercise: ExerciseLocal) => {
   }
 
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
   }
 
@@ -1165,7 +1254,8 @@ const submitInlineExercise = async (exercise: ExerciseLocal) => {
   }
 
   .stat-value {
-    font-size: 22px;
+    font-size: 18px;
+    line-height: 1.12;
   }
 
   .filter-section {
@@ -1214,8 +1304,38 @@ const submitInlineExercise = async (exercise: ExerciseLocal) => {
   }
 
   .stat-card {
-    min-height: 116px;
-    padding: 14px;
+    min-height: 76px;
+    padding: 9px 7px;
+    border-radius: 16px;
+    gap: 8px;
+  }
+
+  .mobile-stats-panel {
+    border-radius: 18px;
+    padding: 10px;
+  }
+
+  .stats-grid {
+    gap: 8px;
+  }
+
+  .stat-icon {
+    width: 21px;
+    height: 21px;
+  }
+
+  .stat-copy {
+    gap: 3px;
+  }
+
+  .stat-label {
+    font-size: 0.6rem;
+    line-height: 1.05;
+  }
+
+  .stat-value {
+    font-size: 0.72rem;
+    line-height: 1.08;
   }
 
   .filter-btn {

@@ -18,11 +18,13 @@ public class FriendChallengeDto
     public int ChallengerId { get; set; }
     public string ChallengerUserName { get; set; } = null!;
     public int ChallengerProgress { get; set; }
+    public DateTime? ChallengerHiddenAt { get; set; }
 
     // Opponent-Info
     public int OpponentId { get; set; }
     public string OpponentUserName { get; set; } = null!;
     public int OpponentProgress { get; set; }
+    public DateTime? OpponentHiddenAt { get; set; }
 
     // Gewinner
     public int? WinnerId { get; set; }

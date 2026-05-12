@@ -242,10 +242,150 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
 .player-xp {
   margin: 8px 0 0;
   color: rgb(var(--podium-highlight-rgb));
+  font-size: 0.98rem;
   font-weight: 700;
+  line-height: 1.18;
   text-shadow: 0 0 12px rgba(var(--podium-shadow-rgb), 0.18);
   position: relative;
   z-index: 2;
 }
 
+@media (max-width: 860px) {
+  .podium-card {
+    min-height: 210px;
+    padding: 18px 12px;
+  }
+
+  .is-first {
+    min-height: 246px;
+  }
+
+  .is-second {
+    min-height: 218px;
+  }
+
+  .is-third {
+    min-height: 194px;
+  }
+
+  .crown-icon {
+    top: 14px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .avatar-shell {
+    width: 78px;
+    height: 78px;
+    margin-top: 14px;
+  }
+
+  .badge-row {
+    margin-top: 12px;
+  }
+
+  .player-name {
+    margin-top: 12px;
+    font-size: 1rem;
+  }
+
+  .player-meta {
+    font-size: 0.84rem;
+  }
+
+  .player-xp {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .podium-card {
+    min-height: 154px;
+    padding: 12px 6px;
+    border-radius: 8px;
+  }
+
+  .is-first,
+  .is-second,
+  .is-third {
+    min-height: 166px;
+  }
+
+  .crown-icon {
+    top: 8px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .avatar-shell {
+    width: 50px;
+    height: 50px;
+    padding: 3px;
+    margin-top: 10px;
+  }
+
+  .badge-row {
+    margin-top: 8px;
+  }
+
+  .place-badge {
+    padding: 4px 8px;
+    font-size: 0.68rem;
+  }
+
+  .player-name {
+    margin: 8px 0 2px;
+    gap: 3px;
+    font-size: 0.78rem;
+    line-height: 1.1;
+  }
+
+  .current-user-star {
+    width: 12px;
+    height: 12px;
+  }
+
+  .player-meta {
+    font-size: 0.68rem;
+    line-height: 1.1;
+  }
+
+  .player-xp {
+    margin-top: 5px;
+    font-size: 0.7rem;
+    line-height: 1.12;
+  }
+}
+
+@media (max-width: 400px) {
+  .podium-card {
+    min-height: 142px;
+    padding: 10px 5px;
+  }
+
+  .is-first,
+  .is-second,
+  .is-third {
+    min-height: 152px;
+  }
+
+  .avatar-shell {
+    width: 44px;
+    height: 44px;
+  }
+
+  .place-badge {
+    padding: 3px 7px;
+    font-size: 0.62rem;
+  }
+
+  .player-name {
+    font-size: 0.72rem;
+  }
+
+  .player-meta,
+  .player-xp {
+    font-size: 0.64rem;
+  }
+}
 </style>

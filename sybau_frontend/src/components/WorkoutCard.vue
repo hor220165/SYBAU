@@ -1,5 +1,5 @@
 <template>
-  <div class="workout-card" :class="{ 'is-editing': editorOpen, completed }" @click="!editorOpen && !completed && $emit('openEditor')">
+  <div class="workout-card" :class="{ 'is-editing': editorOpen, completed }">
     <!-- Category Badge mit dynamischer Farbe -->
     <div class="category-badge" :class="`category-${category.toLowerCase()}`">
       {{ category }}
@@ -32,6 +32,9 @@
     <div v-if="completed || remaining <= 0" class="limit-reached">
       Tageslimit erreicht
     </div>
+    <button v-else-if="usesTimer" class="log-btn" @click.stop="$emit('submitLog')">
+      Eintragen
+    </button>
     <button v-else-if="!editorOpen" class="log-btn" @click.stop="$emit('openEditor')">
       Training eintragen
     </button>
@@ -133,6 +136,8 @@ const unitSingular = computed(() => {
   if (props.unit === 'Distance') return 'm';
   return 'Rep';
 });
+
+const usesTimer = computed(() => props.unit !== 'Distance');
 
 const remainingLabel = computed(() => {
   if (props.unit === 'Time') return formatTime(props.remaining);

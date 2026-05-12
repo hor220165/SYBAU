@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useNavigation } from "@/composables/useNavigation.ts";
 import { useAuth } from "@/composables/useAuth";
 import { userService } from '@/services/api';
@@ -12,6 +12,14 @@ const { user } = useAuth();
 const { formatCoins } = useCoins();
 const { connect } = useNotifications();
 
+type RewardFlashDetail = {
+  xp?: number;
+  coins?: number;
+};
+
+const rewardFlash = ref({ xp: 0, coins: 0, key: 0 });
+let rewardFlashTimer: ReturnType<typeof setTimeout> | null = null;
+
 function calculateTotalXp(level: number, experience: number) {
   let total = 0;
   for (let lvl = 1; lvl < level; lvl += 1) {
@@ -20,7 +28,37 @@ function calculateTotalXp(level: number, experience: number) {
   return total + experience;
 }
 
+function clearRewardFlash() {
+  rewardFlash.value = { ...rewardFlash.value, xp: 0, coins: 0 };
+  if (rewardFlashTimer) {
+    clearTimeout(rewardFlashTimer);
+    rewardFlashTimer = null;
+  }
+}
+
+function showRewardFlash(detail: RewardFlashDetail) {
+  const xp = Math.max(0, Number(detail.xp ?? 0));
+  const coins = Math.max(0, Number(detail.coins ?? 0));
+  if (xp <= 0 && coins <= 0) return;
+
+  if (rewardFlashTimer) {
+    clearTimeout(rewardFlashTimer);
+  }
+
+  rewardFlash.value = {
+    xp,
+    coins,
+    key: rewardFlash.value.key + 1
+  };
+  rewardFlashTimer = setTimeout(clearRewardFlash, 4000);
+}
+
+function handleRewardFlash(event: Event) {
+  showRewardFlash((event as CustomEvent<RewardFlashDetail>).detail ?? {});
+}
+
 onMounted(async () => {
+  window.addEventListener('sybau:reward-flash', handleRewardFlash);
   if (!user.value?.avatar || user.value?.totalXp === undefined || user.value?.totalXp === null) {
     try {
       await userService.getProfile();
@@ -30,6 +68,13 @@ onMounted(async () => {
     }
   }
   connect();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('sybau:reward-flash', handleRewardFlash);
+  if (rewardFlashTimer) {
+    clearTimeout(rewardFlashTimer);
+  }
 });
 
 const userLevel = computed(() => user.value?.avatar?.level ?? user.value?.Avatar?.level ?? 0);
@@ -67,6 +112,16 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
         <div class="stat-info">
           <span class="stat-label">XP</span>
           <span class="stat-value">{{ formatCoins(userXP) }}</span>
+          <Transition name="reward-pop">
+            <span
+              v-if="rewardFlash.xp > 0"
+              :key="`xp-${rewardFlash.key}`"
+              class="stat-reward xp-reward"
+              aria-live="polite"
+            >
+              +{{ formatCoins(rewardFlash.xp) }}
+            </span>
+          </Transition>
         </div>
       </div>
 
@@ -77,6 +132,16 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
         <div class="stat-info">
           <span class="stat-label">Coins</span>
           <span class="stat-value">{{ formatCoins(userCoins) }}</span>
+          <Transition name="reward-pop">
+            <span
+              v-if="rewardFlash.coins > 0"
+              :key="`coins-${rewardFlash.key}`"
+              class="stat-reward coin-reward"
+              aria-live="polite"
+            >
+              +{{ formatCoins(rewardFlash.coins) }}
+            </span>
+          </Transition>
         </div>
       </div>
 
@@ -98,9 +163,10 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   padding: 16px 40px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: transparent;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  position: relative;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  position: sticky;
+  top: 0;
   z-index: 2500;
 }
 
@@ -120,6 +186,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   display: flex;
   align-items: center;
   gap: 20px;
+  overflow: visible;
 }
 
 .stat-item {
@@ -155,6 +222,8 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   display: flex;
   flex-direction: column;
   gap: 2px;
+  position: relative;
+  overflow: visible;
 }
 
 .stat-label {
@@ -183,6 +252,42 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 
 .stat-item.coins .stat-value {
   color: white;
+}
+
+.stat-reward {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 2;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow: 0 0 12px currentColor;
+  white-space: nowrap;
+}
+
+.xp-reward {
+  color: #60a5fa;
+}
+
+.coin-reward {
+  color: #fbbf24;
+}
+
+.reward-pop-enter-active,
+.reward-pop-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.reward-pop-enter-from {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.96);
+}
+
+.reward-pop-leave-to {
+  opacity: 0;
+  transform: translateY(6px) scale(0.98);
 }
 
 /* Divider */
@@ -302,6 +407,10 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
     font-size: 13px;
   }
 
+  .stat-reward {
+    font-size: 10px;
+  }
+
   .stat-divider {
     height: 22px;
   }
@@ -348,6 +457,10 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 
   .stat-value {
     font-size: 12px;
+  }
+
+  .stat-reward {
+    font-size: 9px;
   }
 
   .stat-divider {

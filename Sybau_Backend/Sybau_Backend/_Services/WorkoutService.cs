@@ -348,9 +348,24 @@ public class WorkoutService
         return (xpBoost, coinBoost);
     }
 
-    public async Task<ExerciseDto?> LogExerciseAsync(int userId, int exerciseId, int reps)
+    public async Task<ExerciseDto?> LogExerciseAsync(int userId, int exerciseId, int reps, int? elapsedSeconds = null)
     {
         if (reps < 1) throw new ArgumentOutOfRangeException(nameof(reps));
+        // Time-based validation for Reps exercises (1 Rep ≈ 1s, 0.75s/rep puffer)
+        int? minElapsedSeconds = null;
+        bool? isTimeValid = null;
+        if (elapsedSeconds.HasValue)
+        {
+            var exerciseForCheck = await _context.Exercises.FindAsync(exerciseId);
+            if (exerciseForCheck != null && exerciseForCheck.Unit == "Reps")
+            {
+                minElapsedSeconds = (int)Math.Ceiling(reps * 0.75);
+                isTimeValid = elapsedSeconds.Value >= minElapsedSeconds.Value;
+                if (!isTimeValid.Value)
+                    throw new InvalidOperationException($"Zu schnell eingetragen! Mindestens {minElapsedSeconds.Value}s für {reps} Reps. Bitte erneut versuchen.");
+            }
+        }
+
 
         var user = await _context.Users.FindAsync(userId);
         if (user == null) return null;
@@ -366,7 +381,7 @@ public class WorkoutService
         if (todayTotal + reps > exercise.DailyLimit)
             throw new InvalidOperationException($"Tageslimit von {exercise.DailyLimit} überschritten. Bereits {todayTotal} gemacht.");
 
-        var log = new UserExerciseLog(user, exercise, reps);
+        var log = new UserExerciseLog(user, exercise, reps, elapsedSeconds);
         _context.UserExerciseLogs.Add(log);
         await _context.SaveChangesAsync();
 
@@ -378,8 +393,8 @@ public class WorkoutService
         var bonusXp = (int)Math.Round(baseXp * xpBoostPct / 100.0);
         var totalXp = baseXp + bonusXp;
 
-        // Coins berechnen: 1 Coin pro 10 Reps als Basis (mindestens 1 Coin)
-        var baseCoins = Math.Max(1, reps / 10);
+        // Coins berechnen: 1 Coin pro 3 Reps als Basis (mindestens 1 Coin)
+        var baseCoins = Math.Max(1, (int)Math.Ceiling(reps / 3.0));
         var bonusCoins = (int)Math.Round(baseCoins * coinBoostPct / 100.0);
         var totalCoins = baseCoins + bonusCoins;
 
@@ -415,7 +430,9 @@ public class WorkoutService
             BoostPercent = xpBoostPct,
             CoinsEarned = totalCoins,
             BonusCoins = bonusCoins,
-            CoinBoostPercent = coinBoostPct
+            CoinBoostPercent = coinBoostPct,
+            MinElapsedSeconds = minElapsedSeconds,
+            IsTimeValid = isTimeValid,
         };
     }
 }

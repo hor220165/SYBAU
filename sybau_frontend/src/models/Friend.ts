@@ -42,9 +42,11 @@ export interface FriendChallengeDto {
     challengerId: number;
     challengerUserName: string;
     challengerProgress: number;
+    challengerHiddenAt?: string;
     opponentId: number;
     opponentUserName: string;
     opponentProgress: number;
+    opponentHiddenAt?: string;
     winnerId?: number;
     winnerUserName?: string;
 }

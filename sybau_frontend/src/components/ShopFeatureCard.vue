@@ -15,8 +15,7 @@ const emit = defineEmits<{
 }>();
 
 const canAfford = computed(() => props.currentCoins >= props.item.price);
-const limitReached = computed(() => props.item.ownedQuantity >= props.item.maxQuantity);
-const canBuy = computed(() => canAfford.value && !limitReached.value);
+const canBuy = computed(() => canAfford.value);
 const formatPrice = (value: number) => {
   const amount = Number(value || 0);
   const sign = amount < 0 ? '-' : '';
@@ -35,8 +34,8 @@ const priceSizeClass = computed(() => {
 
 <template>
   <article class="feature-card" :class="[`rarity-${item.rarity}`]">
-    <span class="feature-badge" :class="{ 'feature-badge-full': limitReached, 'feature-badge-empty': item.ownedQuantity === 0 }">
-      {{ item.ownedQuantity }}/{{ item.maxQuantity }}
+    <span v-if="item.ownedQuantity > 0" class="feature-count">
+      x{{ item.ownedQuantity }}
     </span>
 
     <div class="feature-main-row">
@@ -69,7 +68,7 @@ const priceSizeClass = computed(() => {
         :disabled="!canBuy || busy"
         @click="emit('buy', item)"
       >
-        <span v-if="busy || limitReached">{{ busy ? '...' : 'Max' }}</span>
+        <span v-if="busy">...</span>
         <span v-else class="button-price" :class="priceSizeClass">
           <img :src="coinIcon" alt="" class="coin-icon" />
           <span>{{ priceText }}</span>
@@ -133,30 +132,15 @@ const priceSizeClass = computed(() => {
   --rarity-color: #fbbf24;
 }
 
-.feature-badge {
+.feature-count {
   position: absolute;
   right: 16px;
   top: 16px;
   z-index: 1;
-  padding: 6px 13px;
-  border-radius: 999px;
-  background: rgba(236, 72, 153, 0.18);
-  border: 1px solid rgba(236, 72, 153, 0.46);
   color: #f9a8d4;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 900;
-}
-
-.feature-badge-empty {
-  background: rgba(148, 163, 184, 0.1);
-  border-color: rgba(148, 163, 184, 0.25);
-  color: rgba(148, 163, 184, 0.6);
-}
-
-.feature-badge-full {
-  background: rgba(239, 68, 68, 0.18);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #fca5a5;
+  text-shadow: 0 0 14px rgba(236, 72, 153, 0.42);
 }
 
 .feature-main-row,

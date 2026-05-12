@@ -279,6 +279,26 @@ onMounted(loadPageData);
     padding-top: 24px;
   }
 
+  .section-card {
+    padding: 18px;
+  }
+
+  .section-heading {
+    margin-bottom: 16px;
+  }
+
+  .title-with-icon {
+    gap: 8px;
+  }
+
+  .title-with-icon h2 {
+    font-size: 1.05rem;
+  }
+
+  .section-heading p {
+    font-size: 0.92rem;
+  }
+
   .podium-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
@@ -294,12 +314,35 @@ onMounted(loadPageData);
   .section-card,
   .state-box,
   .empty-box {
-    border-radius: 22px;
+    border-radius: 18px;
+  }
+
+  .section-card {
+    padding: 12px;
+  }
+
+  .section-heading {
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+
+  .title-with-icon h2 {
+    font-size: 0.98rem;
+  }
+
+  .title-with-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .section-heading p {
+    font-size: 0.82rem;
+    line-height: 1.35;
   }
 
   .podium-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    gap: 6px;
     align-items: stretch;
   }
 }
@@ -310,12 +353,12 @@ onMounted(loadPageData);
   }
 
   .section-card {
-    padding: clamp(14px, 2.5vw, 20px);
+    padding: 10px;
   }
 
   .podium-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 5px;
+    gap: 4px;
   }
 }
 </style>

@@ -198,11 +198,6 @@ public class ShopService
         // Prüfen ob User Item schon besitzt
         var userItem = user.UserItems.FirstOrDefault(ui => ui.Item.Id == itemId);
 
-        // Kauflimit prüfen
-        var currentQty = userItem?.Quantity ?? 0;
-        if (currentQty >= item.MaxQuantity)
-            return $"Limit erreicht! Du kannst maximal {item.MaxQuantity}x \"{item.Name}\" besitzen.";
-
         // Coins abziehen
         user.Coins -= item.Price;
 
@@ -274,13 +269,7 @@ public class ShopService
         var rolledRarity = RollRarity(chest);
         var availableItems = chest.ChestItems
             .Select(ci => ci.Item)
-            .Where(item =>
-            {
-                var owned = user.UserItems.FirstOrDefault(ui => ui.Item.Id == item.Id)?.Quantity ?? 0;
-                return owned < item.MaxQuantity;
-            })
             .ToList();
-        if (!availableItems.Any()) return ("Du besitzt alle Items aus dieser Chest bereits maximal oft.", null);
 
         var rarityItems = availableItems.Where(item => item.Rarity == rolledRarity).ToList();
         var pool = rarityItems.Any() ? rarityItems : availableItems;

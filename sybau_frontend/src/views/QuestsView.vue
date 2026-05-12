@@ -186,9 +186,15 @@ const loadQuests = async () => {
     ]);
     allQuests.value = questsRes.data;
     stats.value = statsRes.data;
+    notifyQuestBadge();
   } catch (e: any) {
     showPopup(e.response?.data?.message || 'Fehler beim Laden der Quests.', 'error');
   }
+};
+
+const notifyQuestBadge = () => {
+  const claimable = allQuests.value.some(q => q.isCompleted && !q.isRewardClaimed);
+  window.dispatchEvent(new CustomEvent('sybau:quests-updated', { detail: { claimable } }));
 };
 
 const claimReward = async (quest: UserQuest) => {
@@ -304,6 +310,11 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.stat-icon :deep(svg) {
+  width: 100%;
+  height: 100%;
 }
 
 .stat-icon-yellow {
@@ -463,8 +474,40 @@ onMounted(async () => {
 
 /* Responsive - Narrow Mobile */
 @media (max-width: 560px) {
+  .mobile-stats-panel {
+    border-radius: 18px;
+    padding: 10px;
+  }
+
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .stat-card {
+    min-height: 82px;
+    border-radius: 16px;
+    padding: 10px 8px;
+    gap: 8px;
+  }
+
+  .stat-icon {
+    width: 21px;
+    height: 21px;
+  }
+
+  .stat-copy {
+    gap: 3px;
+  }
+
+  .stat-label {
+    font-size: 0.66rem;
+    line-height: 1.05;
+  }
+
+  .stat-value {
+    font-size: 0.92rem;
+    line-height: 1.08;
   }
 }
 
@@ -483,8 +526,16 @@ onMounted(async () => {
   }
 
   .stat-card {
-    min-height: 116px;
-    padding: 14px;
+    min-height: 76px;
+    padding: 9px 7px;
+  }
+
+  .stat-label {
+    font-size: 0.6rem;
+  }
+
+  .stat-value {
+    font-size: 0.82rem;
   }
 
 }

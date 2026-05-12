@@ -17,7 +17,6 @@ export interface CreateShopItemDto {
   xpBoostPercentage?: number;
   coinBoostPercentage?: number;
   rarity?: string;
-  maxQuantity?: number;
   imageFile?: File | null;
 }
 
@@ -51,7 +50,6 @@ const shopItemToFormData = (data: CreateShopItemDto) => {
   formData.append('xpBoostPercentage', String(data.xpBoostPercentage ?? 0));
   formData.append('coinBoostPercentage', String(data.coinBoostPercentage ?? 0));
   formData.append('rarity', data.rarity || 'Common');
-  formData.append('maxQuantity', String(data.maxQuantity ?? 5));
   if (data.imageFile) {
     formData.append('image', data.imageFile);
   }

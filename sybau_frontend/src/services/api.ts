@@ -170,7 +170,7 @@ export const workoutService = {
     updateExercise: (id: number, data: any) => API.put(`/workouts/exercises/${id}`, data),
     updateExerciseUnit: (id: number, unit: string) => API.put(`/workouts/exercises/${id}/unit`, { unit }),
     deleteExercise: (id: number) => API.delete(`/workouts/exercises/${id}`),
-    logExercise: (exerciseId: number, reps: number) => API.post('/workouts/exercises/log', { exerciseId, reps })
+    logExercise: (exerciseId: number, reps: number, elapsedSeconds?: number) => API.post('/workouts/exercises/log', { exerciseId, reps, ...(elapsedSeconds != null ? { elapsedSeconds } : {}) })
 };
 
 export const questService = {
@@ -204,6 +204,7 @@ export const friendService = {
     acceptChallenge: (id: number) => API.post(`/friends/challenges/${id}/accept`),
     declineChallenge: (id: number) => API.post(`/friends/challenges/${id}/decline`),
     deleteChallenge: (id: number) => API.delete(`/friends/challenges/${id}`),
+    hideChallenge: (id: number) => API.delete(`/friends/challenges/${id}`),
     updateProgress: (id: number, amount: number) => API.put(`/friends/challenges/${id}/progress`, { amount })
 };
 

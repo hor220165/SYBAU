@@ -169,7 +169,6 @@ const toDisplayItem = (shopItem: item): ShopDisplayItem => {
     imageUrl: resolveMediaUrl(shopItem.imageUrl ?? (shopItem as any).ImageUrl ?? ''),
     highlights: buildHighlights(shopItem, category),
     ownedQuantity: ownedItems.value[shopItem.id] ?? 0,
-    maxQuantity: (shopItem as any).maxQuantity ?? 5,
   };
 };
 

@@ -15,5 +15,4 @@ export interface ShopDisplayItem {
   imageUrl?: string;
   highlights: string[];
   ownedQuantity: number;
-  maxQuantity: number;
 }

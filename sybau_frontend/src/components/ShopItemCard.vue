@@ -15,8 +15,7 @@ const emit = defineEmits<{
 }>();
 
 const canAfford = computed(() => props.currentCoins >= props.item.price);
-const limitReached = computed(() => props.item.ownedQuantity >= props.item.maxQuantity);
-const canBuy = computed(() => canAfford.value && !limitReached.value);
+const canBuy = computed(() => canAfford.value);
 const formatPrice = (value: number) => {
   const amount = Number(value || 0);
   const sign = amount < 0 ? '-' : '';
@@ -38,8 +37,8 @@ const priceSizeClass = computed(() => {
     <div class="card-background"></div>
 
     <div class="card-content">
-      <span class="owned-badge" :class="{ 'owned-badge-full': limitReached, 'owned-badge-empty': item.ownedQuantity === 0 }">
-        {{ item.ownedQuantity }}/{{ item.maxQuantity }}
+      <span v-if="item.ownedQuantity > 0" class="owned-count">
+        x{{ item.ownedQuantity }}
       </span>
 
       <div class="item-main-row">
@@ -72,7 +71,7 @@ const priceSizeClass = computed(() => {
           :disabled="!canBuy || busy"
           @click="emit('buy', item)"
         >
-          <span v-if="busy || limitReached">{{ busy ? '...' : 'Max' }}</span>
+          <span v-if="busy">...</span>
           <span v-else class="button-price" :class="priceSizeClass">
             <img :src="coinIcon" alt="" class="coin-icon" />
             <span>{{ priceText }}</span>
@@ -402,32 +401,18 @@ const priceSizeClass = computed(() => {
   }
 }
 
-.owned-badge {
+.owned-count {
   position: absolute;
   right: 22px;
   top: 22px;
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(236, 72, 153, 0.18);
-  border: 1px solid rgba(236, 72, 153, 0.46);
   color: #f9a8d4;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 900;
   letter-spacing: 0;
   z-index: 2;
+  text-shadow: 0 0 14px rgba(236, 72, 153, 0.42);
 }
 
-.owned-badge-empty {
-  background: rgba(148, 163, 184, 0.1);
-  border-color: rgba(148, 163, 184, 0.25);
-  color: rgba(148, 163, 184, 0.6);
-}
-
-.owned-badge-full {
-  background: rgba(239, 68, 68, 0.18);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #fca5a5;
-}
 </style>

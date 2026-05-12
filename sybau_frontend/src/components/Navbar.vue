@@ -12,9 +12,10 @@
       <Dumbbell class="nav-icon" :size="20" />
       <span>Workouts</span>
     </button>
-    <button class="nav-item" :class="{ active: isActiveRoute('/quests') }" @click="navigateAndClose('/quests')">
+    <button class="nav-item nav-item-quests" :class="{ active: isActiveRoute('/quests') }" @click="navigateAndClose('/quests')">
       <Flag class="nav-icon" :size="20" />
       <span>Quests</span>
+      <span v-if="hasClaimableQuest" class="nav-alert-dot" aria-label="Abgeschlossene Quest verfügbar"></span>
     </button>
     <button class="nav-item" :class="{ active: isActiveRoute('/avatar') }" @click="navigateAndClose('/avatar')">
       <Accessibility class="nav-icon" :size="20" />
@@ -47,7 +48,8 @@
 
 <script setup lang="ts">
 import { useNavigation } from "@/composables/useNavigation.ts";
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { questService } from '@/services/api';
 import {
   Accessibility,
   Dumbbell,
@@ -64,10 +66,44 @@ const { navigateTo, isActiveRoute } = useNavigation();
 const isAdmin = ref(false);
 const mobileMenuOpen = ref(false);
 const headerVisible = ref(true);
+const hasClaimableQuest = ref(false);
+
+type QuestBadgeEventDetail = {
+  claimable?: boolean;
+};
 
 const navigateAndClose = (path: string) => {
   navigateTo(path);
   mobileMenuOpen.value = false;
+};
+
+const isClaimableQuest = (quest: any) => {
+  const completed = quest?.isCompleted ?? quest?.IsCompleted;
+  const claimed = quest?.isRewardClaimed ?? quest?.IsRewardClaimed;
+  return completed === true && claimed !== true;
+};
+
+const refreshQuestBadge = async () => {
+  if (!localStorage.getItem('token')) {
+    hasClaimableQuest.value = false;
+    return;
+  }
+
+  try {
+    const { data } = await questService.getMyQuests();
+    hasClaimableQuest.value = Array.isArray(data) && data.some(isClaimableQuest);
+  } catch {
+    hasClaimableQuest.value = false;
+  }
+};
+
+const handleQuestBadgeUpdate = (event: Event) => {
+  const detail = (event as CustomEvent<QuestBadgeEventDetail>).detail;
+  if (typeof detail?.claimable === 'boolean') {
+    hasClaimableQuest.value = detail.claimable;
+    return;
+  }
+  void refreshQuestBadge();
 };
 
 onMounted(() => {
@@ -93,6 +129,15 @@ onMounted(() => {
     );
     observer.observe(header);
   }
+
+  void refreshQuestBadge();
+  window.addEventListener('sybau:quests-updated', handleQuestBadgeUpdate);
+  window.addEventListener('focus', refreshQuestBadge);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('sybau:quests-updated', handleQuestBadgeUpdate);
+  window.removeEventListener('focus', refreshQuestBadge);
 });
 </script>
 
@@ -131,11 +176,11 @@ onMounted(() => {
   height: 60px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: sticky;
-  top: 0;
-  z-index: 1000;
+  top: 83px;
+  z-index: 2400;
   background: transparent;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .nav-item {
@@ -153,6 +198,20 @@ onMounted(() => {
   font-weight: 500;
   transition: all 0.3s ease;
   position: relative;
+}
+
+.nav-alert-dot {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #ef4444;
+  box-shadow:
+    0 0 0 2px rgba(5, 10, 18, 0.88),
+    0 0 12px rgba(239, 68, 68, 0.9);
+  pointer-events: none;
 }
 
 .nav-item:hover {
@@ -203,7 +262,7 @@ onMounted(() => {
 
   .navbar {
     position: sticky;
-    top: 0;
+    top: 61px;
     right: auto;
     width: 100%;
     height: 60px;
@@ -213,12 +272,13 @@ onMounted(() => {
     padding: 0 16px;
     overflow-x: auto;
     overflow-y: hidden;
-    background: rgba(5, 7, 20, 0.72);
-    backdrop-filter: blur(20px);
+    background: transparent;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     border-left: none;
     transition: none;
-    z-index: 1000;
+    z-index: 2400;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
   }
@@ -252,6 +312,18 @@ onMounted(() => {
 @media (max-width: 1024px) {
   .navbar::-webkit-scrollbar {
     display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    top: 53px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    top: 43px;
   }
 }
 </style>

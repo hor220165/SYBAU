@@ -282,10 +282,6 @@
                     <option value="Legendary">Legendary</option>
                   </select>
                 </div>
-                <div class="form-group">
-                  <label>Max. Anzahl</label>
-                  <input v-model.number="shopItemForm.maxQuantity" type="number" required min="1">
-                </div>
                 <div class="form-group boost-form-group">
                   <label>Boosts (optional)</label>
                   <div class="boost-input-row">
@@ -715,8 +711,7 @@ const shopItemForm = ref({
   type: '',
   xpBoostPercentage: 0,
   coinBoostPercentage: 0,
-  rarity: 'Common',
-  maxQuantity: 5
+  rarity: 'Common'
 });
 const shopItemImageFile = ref<File | null>(null);
 const shopItemImagePreview = ref('');
@@ -901,8 +896,7 @@ const openShopForm = () => {
     type: '',
     xpBoostPercentage: 0,
     coinBoostPercentage: 0,
-    rarity: 'Common',
-    maxQuantity: 5
+    rarity: 'Common'
   };
   showShopForm.value = true;
 };
@@ -925,8 +919,7 @@ const editShopItem = (item: any) => {
     type: normalizeItemType(item.type),
     xpBoostPercentage: Number(item.xpBoostPercentage ?? item.xpBoostPercent ?? 0),
     coinBoostPercentage: Number(item.coinBoostPercentage ?? item.coinBoostPercent ?? 0),
-    rarity: normalizeRarity(item.rarity),
-    maxQuantity: Number(item.maxQuantity ?? 5)
+    rarity: normalizeRarity(item.rarity)
   };
   showShopForm.value = true;
 };

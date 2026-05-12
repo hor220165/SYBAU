@@ -215,15 +215,18 @@ const progressPercent = computed(() => {
 
 /* Reward Section */
 .reward-section {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
+  gap: 12px;
 }
 
 .rewards {
   display: flex;
   align-items: center;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  min-width: 0;
 }
 
 .xp-reward {
@@ -233,6 +236,8 @@ const progressPercent = computed(() => {
   font-size: 16px;
   font-weight: 700;
   color: #fbbf24;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .xp-reward img,
@@ -249,6 +254,8 @@ const progressPercent = computed(() => {
   font-size: 15px;
   font-weight: 700;
   color: #f59e0b;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 /* Completed State */
@@ -267,7 +274,9 @@ const progressPercent = computed(() => {
 
 /* Claim Button */
 .claim-btn {
-  padding: 8px 20px;
+  justify-self: end;
+  min-width: 126px;
+  padding: 9px 18px;
   border: 1px solid rgba(74, 222, 128, 0.42);
   border-radius: 12px;
   background:
@@ -276,6 +285,7 @@ const progressPercent = computed(() => {
   color: white;
   font-size: 14px;
   font-weight: 900;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 10px 22px rgba(22, 163, 74, 0.18), inset 0 0 18px rgba(34, 197, 94, 0.08);
@@ -293,8 +303,20 @@ const progressPercent = computed(() => {
 }
 
 .claimed-badge {
+  justify-self: end;
   font-size: 14px;
   font-weight: 600;
   color: #22c55e;
+}
+
+@media (max-width: 420px) {
+  .reward-section {
+    grid-template-columns: 1fr;
+  }
+
+  .claim-btn,
+  .claimed-badge {
+    justify-self: start;
+  }
 }
 </style>

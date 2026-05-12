@@ -37,9 +37,11 @@ public class FriendChallenge : BaseEntity<int>
 
     public int ChallengerId { get; set; }
     public User Challenger { get; set; } = null!;
+    public DateTime? ChallengerHiddenAt { get; set; }
 
     public int OpponentId { get; set; }
     public User Opponent { get; set; } = null!;
+    public DateTime? OpponentHiddenAt { get; set; }
 
     public string Title { get; set; } = null!;
     public string? Description { get; set; }

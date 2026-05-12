@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Sybau_Backend.Data;
 
@@ -10,9 +11,11 @@ using Sybau_Backend.Data;
 namespace Sybau_Backend.Migrations
 {
     [DbContext(typeof(FitnessDbContext))]
-    partial class FitnessDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260510160502_AddElapsedSecondsToExerciseLog")]
+    partial class AddElapsedSecondsToExerciseLog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.5");
@@ -472,9 +475,6 @@ namespace Sybau_Backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime?>("ChallengerHiddenAt")
-                        .HasColumnType("TEXT");
-
                     b.Property<int>("ChallengerId")
                         .HasColumnType("INTEGER");
 
@@ -501,9 +501,6 @@ namespace Sybau_Backend.Migrations
 
                     b.Property<string>("GoalUnit")
                         .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("OpponentHiddenAt")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("OpponentId")

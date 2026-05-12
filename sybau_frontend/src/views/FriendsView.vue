@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import {
   Users, UserPlus, Swords, Trophy, Check, X,
-  Search, Clock, Trash2, Plus, Target
+  Search, Clock, Trash2, Plus, Target, EyeOff
 } from 'lucide-vue-next';
 import Navbar from '@/components/Navbar.vue';
 import Header from '@/components/Header.vue';
@@ -209,17 +209,6 @@ const statusLabel = (status: string) => {
 const progressPercent = (current: number, goal: number) =>
   Math.min(100, Math.round((current / Math.max(goal, 1)) * 100));
 
-const canDeleteChallenge = (status: string) =>
-  status === 'Completed' || status === 'Expired';
-
-const goalUnitLabel = (unit: FriendChallengeDto['goalUnit'] | CreateFriendChallengeDto['goalUnit']) => {
-  switch (unit) {
-    case 'time': return 'Sekunden';
-    case 'distance': return 'Meter';
-    default: return 'Reps';
-  }
-};
-
 const goalUnitShort = (unit: FriendChallengeDto['goalUnit'] | CreateFriendChallengeDto['goalUnit']) => {
   switch (unit) {
     case 'time': return 'Sek';
@@ -243,9 +232,12 @@ const parseGoalInput = (value: string, unit: CreateFriendChallengeDto['goalUnit'
   }
 
   const parts = value.split(':').map((part) => Number(part) || 0);
-  if (parts.length === 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
-  if (parts.length === 2) return (parts[0] * 60) + parts[1];
-  if (parts.length === 1) return parts[0];
+  const first = parts[0] ?? 0;
+  const second = parts[1] ?? 0;
+  const third = parts[2] ?? 0;
+  if (parts.length === 3) return (first * 3600) + (second * 60) + third;
+  if (parts.length === 2) return (first * 60) + second;
+  if (parts.length === 1) return first;
   return 0;
 };
 
@@ -420,14 +412,14 @@ const declineChallenge = async (id: number) => {
   }
 };
 
-const deleteChallenge = async (id: number) => {
-  if (!confirm('Challenge wirklich löschen?')) return;
+const hideChallenge = async (id: number) => {
+  if (!confirm('Challenge nur für dich ausblenden?')) return;
   try {
-    const { data } = await friendService.deleteChallenge(id);
-    showPopup(data.message || 'Challenge gelöscht.', 'success');
+    const { data } = await friendService.hideChallenge(id);
+    showPopup(data.message || 'Challenge ausgeblendet.', 'success');
     await loadChallenges();
   } catch (e: any) {
-    showPopup(e.response?.data?.message || 'Fehler beim Löschen.', 'error');
+    showPopup(e.response?.data?.message || 'Fehler beim Ausblenden.', 'error');
   }
 };
 
@@ -664,10 +656,18 @@ onUnmounted(() => {
                 <span><Target :size="14" /> Ziel: {{ ch.goalAmount }} {{ goalUnitShort(ch.goalUnit) }}</span>
                 <span><Clock :size="14" /> {{ timeRemaining(ch.expiresAt) }}</span>
               </div>
-              <p class="challenge-from">Von: <strong>{{ ch.challengerUserName }}</strong></p>
-              <div class="friend-actions" v-if="ch.opponentId === currentUserId">
-                <button class="action-btn accept-btn" @click="acceptChallenge(ch.id)"><Check :size="16" /> Annehmen</button>
-                <button class="action-btn decline-btn" @click="declineChallenge(ch.id)"><X :size="16" /> Ablehnen</button>
+              <p class="challenge-from">
+                {{ ch.challengerId === currentUserId ? 'Gesendet an' : 'Von' }}:
+                <strong>{{ ch.challengerId === currentUserId ? ch.opponentUserName : ch.challengerUserName }}</strong>
+              </p>
+              <div class="friend-actions challenge-actions">
+                <template v-if="ch.opponentId === currentUserId">
+                  <button class="action-btn accept-btn" @click="acceptChallenge(ch.id)"><Check :size="16" /> Annehmen</button>
+                  <button class="action-btn decline-btn" @click="declineChallenge(ch.id)"><X :size="16" /> Ablehnen</button>
+                </template>
+                <button class="action-btn hide-btn" @click="hideChallenge(ch.id)">
+                  <EyeOff :size="16" /> Ausblenden
+                </button>
               </div>
             </div>
           </div>
@@ -711,9 +711,14 @@ onUnmounted(() => {
                 </div>
               </div>
 
-              <button class="primary-btn sm" @click="openProgressModal(ch)">
-                <Plus :size="16" /> Fortschritt melden
-              </button>
+              <div class="challenge-action-row">
+                <button class="primary-btn sm" @click="openProgressModal(ch)">
+                  <Plus :size="16" /> Fortschritt melden
+                </button>
+                <button class="hide-challenge-btn" @click="hideChallenge(ch.id)">
+                  <EyeOff :size="15" /> Ausblenden
+                </button>
+              </div>
             </div>
           </div>
           <div v-else class="empty-box">
@@ -753,9 +758,9 @@ onUnmounted(() => {
                   <span class="progress-pct">{{ ch.opponentProgress }}/{{ ch.goalAmount }}</span>
                 </div>
               </div>
-              <div class="past-actions" v-if="canDeleteChallenge(ch.status)">
-                <button class="delete-challenge-btn" @click="deleteChallenge(ch.id)">
-                  <Trash2 :size="15" /> Löschen
+              <div class="past-actions">
+                <button class="hide-challenge-btn" @click="hideChallenge(ch.id)">
+                  <EyeOff :size="15" /> Ausblenden
                 </button>
               </div>
             </div>
@@ -1159,6 +1164,8 @@ onUnmounted(() => {
 .decline-btn:hover { background: rgba(239, 68, 68, 0.4); }
 .remove-btn { background: rgba(239, 68, 68, 0.1); }
 .remove-btn:hover { background: rgba(239, 68, 68, 0.25); }
+.hide-btn { background: rgba(148, 163, 184, 0.14); color: #e2e8f0; }
+.hide-btn:hover { background: rgba(148, 163, 184, 0.24); }
 
 .inline-empty {
   margin: 0;
@@ -1231,6 +1238,10 @@ onUnmounted(() => {
   margin: 0 0 12px;
 }
 
+.challenge-actions {
+  flex-wrap: wrap;
+}
+
 /* ───── Progress Bars ───── */
 .progress-section {
   display: grid;
@@ -1300,6 +1311,13 @@ onUnmounted(() => {
 }
 .primary-btn:hover { opacity: 0.85; transform: translateY(-1px); }
 .primary-btn.sm { padding: 8px 16px; font-size: 0.85rem; }
+
+.challenge-action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
 
 .secondary-btn {
   display: inline-flex;
@@ -1483,25 +1501,31 @@ onUnmounted(() => {
   font-size: 0.9rem;
   font-weight: 700;
 }
-.past-actions {  margin-top: 14px;  display: flex;  justify-content: flex-end;}
-.delete-challenge-btn {
+.past-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.hide-challenge-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   min-height: 36px;
   padding: 0 12px;
-  border: 1px solid rgba(248, 113, 113, 0.24);
+  border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 12px;
-  background: rgba(127, 29, 29, 0.24);
-  color: #fca5a5;
+  background: rgba(15, 23, 42, 0.58);
+  color: #cbd5e1;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.delete-challenge-btn:hover {
-  background: rgba(127, 29, 29, 0.34);
-  border-color: rgba(248, 113, 113, 0.38);
+.hide-challenge-btn:hover {
+  background: rgba(148, 163, 184, 0.14);
+  border-color: rgba(148, 163, 184, 0.34);
 }
 
 /* ───── Responsive ───── */
@@ -1575,6 +1599,14 @@ onUnmounted(() => {
 
   .challenge-meta {
     font-size: 0.76rem;
+  }
+
+  .challenge-action-row {
+    grid-template-columns: 1fr;
+  }
+
+  .hide-challenge-btn {
+    width: 100%;
   }
 
   .progress-section {

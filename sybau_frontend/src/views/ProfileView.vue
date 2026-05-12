@@ -166,81 +166,110 @@
 
   <Teleport to="body">
     <Transition name="settings">
-      <div v-if="showSettings" class="settings-overlay" @click="showSettings = false">
+      <div v-if="showSettings" class="settings-overlay" @click="closeSettings">
         <div class="settings-sidebar" @click.stop>
           <div class="settings-header">
-            <h2>Einstellungen</h2>
-            <button class="close-btn" @click="showSettings = false">&#10005;</button>
+            <div class="settings-title-row">
+              <button
+                v-if="settingsView === 'password'"
+                class="settings-back-btn"
+                @click="settingsView = 'main'"
+                type="button"
+                aria-label="Zurück"
+              >
+                <ArrowLeft :size="18" />
+              </button>
+              <h2>{{ settingsView === 'password' ? 'Passwort ändern' : 'Einstellungen' }}</h2>
+            </div>
+            <button class="close-btn" @click="closeSettings">&#10005;</button>
           </div>
           <div class="settings-content">
-            <section class="settings-section">
-              <h3>Profil</h3>
-              <div class="field">
-                <label>Benutzername</label>
-                <input v-model="editingUsername" />
-              </div>
-              <div class="field">
-                <label>E-Mail</label>
-                <input :value="user?.email ?? user?.Email ?? ''" readonly />
-              </div>
-              <button class="btn-primary" @click="saveProfile" :disabled="savingProfile || usernameUnchanged">Speichern</button>
-            </section>
+            <template v-if="settingsView === 'main'">
+              <section class="settings-section">
+                <h3>Profil</h3>
+                <div class="field">
+                  <label>Benutzername</label>
+                  <input v-model="editingUsername" />
+                </div>
+                <div class="field">
+                  <label>E-Mail</label>
+                  <input :value="user?.email ?? user?.Email ?? ''" readonly />
+                </div>
+                <button class="btn-primary" @click="saveProfile" :disabled="savingProfile || usernameUnchanged">Speichern</button>
+              </section>
 
-            <section class="settings-section">
-              <h3>Fortschritt</h3>
-              <div class="progress-stats">
-                <div class="stat-row">
-                  <span class="stat-label">Level:</span>
-                  <span class="stat-value">{{ level }}</span>
-                </div>
-                <div class="stat-row">
-                  <span class="stat-label">XP:</span>
-                  <span class="stat-value">{{ experience }}</span>
-                </div>
-                <div class="stat-row">
-                  <span class="stat-label">Absolvierte Challenges:</span>
-                  <span class="stat-value">{{ completedChallenges }}</span>
-                </div>
-                <div class="stat-row">
-                  <span class="stat-label">Leaderboard-Position:</span>
-                  <span class="stat-value">{{ leaderboardPosition }}</span>
-                </div>
-              </div>
-            </section>
-
-            <section class="settings-section">
-              <h3>Sicherheit</h3>
-              <div class="field">
-                <label>Altes Passwort</label>
-                <input type="password" v-model="oldPassword" />
-              </div>
-              <div class="field">
-                <label>Neues Passwort</label>
-                <input type="password" v-model="newPassword" />
-              </div>
-              <button class="btn-primary" @click="changePassword" :disabled="changingPassword">Passwort ändern</button>
-            </section>
-
-            <section class="settings-section">
-              <h3>Account</h3>
-              <div class="account-actions">
-                <button class="account-action-btn" @click="handleLogout" type="button">
-                  <div class="account-action-icon logout-icon">↪</div>
-                  <div class="account-action-copy">
-                    <strong>Abmelden</strong>
-                    <span>Du wirst in diesem Browser ausgeloggt.</span>
+              <section class="settings-section">
+                <h3>Fortschritt</h3>
+                <div class="progress-stats">
+                  <div class="stat-row">
+                    <span class="stat-label">Level</span>
+                    <span class="stat-value">{{ level }}</span>
                   </div>
-                </button>
-
-                <button class="account-action-btn account-action-danger" @click="deleteAccount" type="button">
-                  <div class="account-action-icon delete-icon">×</div>
-                  <div class="account-action-copy">
-                    <strong>Account löschen</strong>
-                    <span>Diese Aktion kann nicht rückgängig gemacht werden.</span>
+                  <div class="stat-row">
+                    <span class="stat-label">XP</span>
+                    <span class="stat-value">{{ experience }}</span>
                   </div>
+                  <div class="stat-row">
+                    <span class="stat-label">Absolvierte Challenges</span>
+                    <span class="stat-value">{{ completedChallenges }}</span>
+                  </div>
+                  <div class="stat-row">
+                    <span class="stat-label">Leaderboard-Position</span>
+                    <span class="stat-value">{{ leaderboardPosition }}</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="settings-section">
+                <h3>Sicherheit</h3>
+                <button class="settings-nav-row" @click="settingsView = 'password'" type="button">
+                  <span class="settings-nav-icon">
+                    <LockKeyhole :size="18" />
+                  </span>
+                  <span class="settings-nav-copy">
+                    <strong>Passwort ändern</strong>
+                    <span>Öffnet eine eigene sichere Ansicht.</span>
+                  </span>
+                  <ChevronRight :size="18" />
                 </button>
-              </div>
-            </section>
+              </section>
+
+              <section class="settings-section">
+                <h3>Account</h3>
+                <div class="account-actions">
+                  <button class="account-action-btn" @click="handleLogout" type="button">
+                    <div class="account-action-icon logout-icon">↪</div>
+                    <div class="account-action-copy">
+                      <strong>Abmelden</strong>
+                      <span>Du wirst in diesem Browser ausgeloggt.</span>
+                    </div>
+                  </button>
+
+                  <button class="account-action-btn account-action-danger" @click="deleteAccount" type="button">
+                    <div class="account-action-icon delete-icon">×</div>
+                    <div class="account-action-copy">
+                      <strong>Account löschen</strong>
+                      <span>Diese Aktion kann nicht rückgängig gemacht werden.</span>
+                    </div>
+                  </button>
+                </div>
+              </section>
+            </template>
+
+            <template v-else>
+              <section class="settings-section password-panel">
+                <p class="settings-subtitle">Gib dein aktuelles Passwort ein und setze danach ein neues.</p>
+                <div class="field">
+                  <label>Altes Passwort</label>
+                  <input type="password" v-model="oldPassword" />
+                </div>
+                <div class="field">
+                  <label>Neues Passwort</label>
+                  <input type="password" v-model="newPassword" />
+                </div>
+                <button class="btn-primary" @click="changePassword" :disabled="changingPassword">Passwort speichern</button>
+              </section>
+            </template>
           </div>
         </div>
       </div>
@@ -274,7 +303,7 @@ import FooterComponent from '@/components/FooterComponent.vue';
 import MessagePopup from '@/components/MessagePopup.vue';
 import type { Achievement, ProfileStats } from '@/models/Achievement';
 import noProfilePicture from '@/assets/Nopfp.png';
-import { Pencil } from 'lucide-vue-next';
+import { ArrowLeft, ChevronRight, LockKeyhole, Pencil } from 'lucide-vue-next';
 
 const router = useRouter();
 const { user, logout, refreshProfile } = useAuth();
@@ -285,6 +314,7 @@ const currentStreak = ref(0);
 const profileStats = ref<ProfileStats>({ totalWorkouts: 0, trainingHours: 0, caloriesBurned: 0, longestStreak: 0, currentStreak: 0 });
 
 const showSettings = ref(false);
+const settingsView = ref<'main' | 'password'>('main');
 const editingUsername = ref('');
 const savingProfile = ref(false);
 
@@ -292,7 +322,15 @@ const currentUsername = computed(() => user.value?.userName ?? user.value?.UserN
 
 function openSettings() {
   editingUsername.value = currentUsername.value;
+  settingsView.value = 'main';
   showSettings.value = true;
+}
+
+function closeSettings() {
+  showSettings.value = false;
+  settingsView.value = 'main';
+  oldPassword.value = '';
+  newPassword.value = '';
 }
 
 const popupMessage = ref('');
@@ -406,6 +444,7 @@ async function changePassword() {
     await userService.changePassword(oldPassword.value, newPassword.value);
     oldPassword.value = '';
     newPassword.value = '';
+    settingsView.value = 'main';
     popupType.value = 'success';
     popupMessage.value = 'Passwort erfolgreich geändert!';
   } catch (err: any) {
@@ -1059,8 +1098,8 @@ onMounted(async () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(2, 6, 23, 0.74);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(10px);
   z-index: 10000;
   display: flex;
   justify-content: flex-end;
@@ -1069,12 +1108,12 @@ onMounted(async () => {
 .settings-sidebar {
   width: 100%;
   max-width: 500px;
-  background: linear-gradient(180deg, #111827, #0b1120);
-  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.6);
+  background: linear-gradient(180deg, #05070d 0%, #080b14 54%, #03050a 100%);
+  box-shadow: -10px 0 46px rgba(0, 0, 0, 0.72);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .settings-header {
@@ -1083,6 +1122,14 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 14px;
+}
+
+.settings-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .settings-header h2 {
@@ -1090,6 +1137,25 @@ onMounted(async () => {
   font-weight: 700;
   color: white;
   margin: 0;
+}
+
+.settings-back-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: white;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.22s ease;
+}
+
+.settings-back-btn:hover {
+  border-color: rgba(236, 72, 153, 0.28);
+  background: rgba(236, 72, 153, 0.12);
 }
 
 .close-btn {
@@ -1121,9 +1187,9 @@ onMounted(async () => {
 .settings-section {
   margin-bottom: 16px;
   padding: 18px;
-  background: rgba(15, 23, 42, 0.72);
+  background: rgba(5, 10, 23, 0.86);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.075);
+  border: 1px solid rgba(255, 255, 255, 0.065);
   border-radius: 18px;
 }
 
@@ -1154,8 +1220,8 @@ onMounted(async () => {
   width: 100%;
   padding: 14px 16px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(0, 0, 0, 0.24);
   color: white;
   font-size: 15px;
   transition: all 0.3s ease;
@@ -1171,7 +1237,7 @@ onMounted(async () => {
 .field input:read-only {
   opacity: 0.6;
   cursor: not-allowed;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .progress-stats { display: flex; flex-direction: column; gap: 12px; }
@@ -1181,15 +1247,73 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.035);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   transition: all 0.3s ease;
 }
 
 .stat-row:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.14);
+}
+
+.settings-subtitle {
+  margin: 0 0 16px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.settings-nav-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+  color: white;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.24s ease;
+}
+
+.settings-nav-row:hover {
+  border-color: rgba(236, 72, 153, 0.28);
+  background: rgba(236, 72, 153, 0.08);
+}
+
+.settings-nav-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #f9a8d4;
+  background: rgba(236, 72, 153, 0.12);
+}
+
+.settings-nav-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.settings-nav-copy strong {
+  font-size: 15px;
+}
+
+.settings-nav-copy span {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 12px;
+}
+
+.password-panel {
+  min-height: 280px;
 }
 
 .stat-label { color: rgba(255, 255, 255, 0.7); font-size: 14px; font-weight: 500; }
@@ -1239,7 +1363,7 @@ onMounted(async () => {
   padding: 14px 16px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.035);
   color: white;
   text-align: left;
   cursor: pointer;

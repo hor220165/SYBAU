@@ -95,7 +95,7 @@ public class WorkoutsController : ControllerBase
 
         try
         {
-            var result = await _workoutService.LogExerciseAsync(userId, dto.ExerciseId, dto.Reps);
+            var result = await _workoutService.LogExerciseAsync(userId, dto.ExerciseId, dto.Reps, dto.ElapsedSeconds);
             if (result == null) return NotFound("Übung oder User nicht gefunden.");
             return Ok(result);
         }

@@ -55,6 +55,7 @@
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_http._tcp</string>
+		<string>_dartobservatory._tcp</string>
 	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>

@@ -87,6 +87,11 @@ class _AppShellScreenState extends State<AppShellScreen> {
   List<Map<String, dynamic>> _notifications = <Map<String, dynamic>>[];
   Set<String> _knownNotificationKeys = <String>{};
   Timer? _notificationPollTimer;
+  Timer? _rewardFlashTimer;
+  int _rewardFlashXp = 0;
+  int _rewardFlashCoins = 0;
+  int _rewardFlashToken = 0;
+  bool _hasClaimableQuest = false;
 
   @override
   void initState() {
@@ -94,13 +99,54 @@ class _AppShellScreenState extends State<AppShellScreen> {
     _currentTab = widget.initialTab;
     unawaited(_loadHeaderProfile());
     unawaited(_syncHealthOnLogin());
+    unawaited(_refreshQuestBadge());
     _startNotificationPolling();
   }
 
   @override
   void dispose() {
     _notificationPollTimer?.cancel();
+    _rewardFlashTimer?.cancel();
     super.dispose();
+  }
+
+  void _showHeaderReward({int xp = 0, int coins = 0}) {
+    if (!mounted || (xp <= 0 && coins <= 0)) return;
+    _rewardFlashTimer?.cancel();
+    setState(() {
+      _rewardFlashXp = math.max(0, xp);
+      _rewardFlashCoins = math.max(0, coins);
+      _rewardFlashToken++;
+    });
+    _rewardFlashTimer = Timer(const Duration(seconds: 4), () {
+      if (!mounted) return;
+      setState(() {
+        _rewardFlashXp = 0;
+        _rewardFlashCoins = 0;
+      });
+    });
+  }
+
+  bool _isClaimableQuest(dynamic quest) {
+    final map = _map(quest);
+    final completed = _toBool(map['isCompleted'] ?? map['IsCompleted']);
+    final claimed = _toBool(map['isRewardClaimed'] ?? map['IsRewardClaimed']);
+    return completed && !claimed;
+  }
+
+  Future<void> _refreshQuestBadge() async {
+    try {
+      final quests = await ApiService.getMyQuests();
+      if (!mounted) return;
+      setState(() {
+        _hasClaimableQuest = quests.any(_isClaimableQuest);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _hasClaimableQuest = false;
+      });
+    }
   }
 
   Future<void> _loadHeaderProfile() async {
@@ -158,6 +204,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
       if (result == null || !mounted) return;
       if (result.hasNewData) {
         await _loadHeaderProfile();
+        await _refreshQuestBadge();
       }
       if (result.hasRewards) {
         _showSnack(
@@ -354,12 +401,22 @@ class _AppShellScreenState extends State<AppShellScreen> {
                       assetPath: 'assets/XP_Pixel.png',
                       label: 'XP',
                       value: _formatCompactNumber(_xp),
+                      delta: _rewardFlashXp > 0
+                          ? '+${_formatCompactNumber(_rewardFlashXp)}'
+                          : null,
+                      deltaColor: const Color(0xFF60A5FA),
+                      deltaToken: _rewardFlashToken,
                     ),
                     const SizedBox(width: 10),
                     _StatChip(
                       assetPath: 'assets/SYBAU_Coin.png',
                       label: 'Coins',
                       value: _formatCompactNumber(_coins),
+                      delta: _rewardFlashCoins > 0
+                          ? '+${_formatCompactNumber(_rewardFlashCoins)}'
+                          : null,
+                      deltaColor: const Color(0xFFFBBF24),
+                      deltaToken: _rewardFlashToken,
                     ),
                   ],
                 ),
@@ -513,11 +570,14 @@ class _AppShellScreenState extends State<AppShellScreen> {
       case AppTab.workouts:
         return WorkoutsTab(
           onRefreshHeader: _loadHeaderProfile,
+          onRewardEarned: _showHeaderReward,
+          onQuestStatusChanged: _refreshQuestBadge,
           showSnack: _showSnack,
         );
       case AppTab.quests:
         return QuestsTab(
           onRefreshHeader: _loadHeaderProfile,
+          onQuestStatusChanged: _refreshQuestBadge,
           showSnack: _showSnack,
         );
       case AppTab.avatar:
@@ -590,12 +650,45 @@ class _AppShellScreenState extends State<AppShellScreen> {
                             children: [
                               Row(
                                 children: [
-                                  Icon(
-                                    entry.icon,
-                                    size: 18,
-                                    color: isActive
-                                        ? Colors.white
-                                        : Colors.white70,
+                                  Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      Icon(
+                                        entry.icon,
+                                        size: 18,
+                                        color: isActive
+                                            ? Colors.white
+                                            : Colors.white70,
+                                      ),
+                                      if (entry.tab == AppTab.quests &&
+                                          _hasClaimableQuest)
+                                        Positioned(
+                                          top: -4,
+                                          right: -5,
+                                          child: Container(
+                                            width: 9,
+                                            height: 9,
+                                            decoration: BoxDecoration(
+                                              color: Color(0xFFEF4444),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: Color(
+                                                  0xFF03070D,
+                                                ).withOpacity(0.92),
+                                                width: 1.5,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Color(
+                                                    0xFFEF4444,
+                                                  ).withOpacity(0.75),
+                                                  blurRadius: 8,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                   const SizedBox(width: 7),
                                   Text(
@@ -647,8 +740,8 @@ class _AppShellScreenState extends State<AppShellScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          Positioned.fill(
-            child: Container(
+          const Positioned.fill(
+            child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
@@ -758,6 +851,9 @@ class _StatChip extends StatelessWidget {
     this.icon,
     this.iconColor,
     this.assetPath,
+    this.delta,
+    this.deltaColor = Colors.white,
+    this.deltaToken = 0,
     required this.label,
     required this.value,
   }) : assert(icon != null || assetPath != null);
@@ -765,6 +861,9 @@ class _StatChip extends StatelessWidget {
   final IconData? icon;
   final Color? iconColor;
   final String? assetPath;
+  final String? delta;
+  final Color deltaColor;
+  final int deltaToken;
   final String label;
   final String value;
 
@@ -794,6 +893,44 @@ class _StatChip extends StatelessWidget {
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
+              ),
+            ),
+            SizedBox(
+              height: 14,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  final offset = Tween<Offset>(
+                    begin: const Offset(0, -0.25),
+                    end: Offset.zero,
+                  ).animate(animation);
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(position: offset, child: child),
+                  );
+                },
+                child: delta == null
+                    ? const SizedBox(
+                        key: ValueKey<String>('reward-empty'),
+                        height: 14,
+                      )
+                    : Text(
+                        delta!,
+                        key: ValueKey<String>(
+                          'reward-$label-$deltaToken-$delta',
+                        ),
+                        style: TextStyle(
+                          color: deltaColor,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 11,
+                          height: 1,
+                          shadows: <Shadow>[
+                            Shadow(color: deltaColor, blurRadius: 10),
+                          ],
+                        ),
+                      ),
               ),
             ),
           ],
@@ -1927,11 +2064,15 @@ class _BoosterSelection {
 class WorkoutsTab extends StatefulWidget {
   const WorkoutsTab({
     required this.onRefreshHeader,
+    required this.onRewardEarned,
+    required this.onQuestStatusChanged,
     required this.showSnack,
     super.key,
   });
 
   final Future<void> Function() onRefreshHeader;
+  final void Function({int xp, int coins}) onRewardEarned;
+  final Future<void> Function() onQuestStatusChanged;
   final void Function(String) showSnack;
 
   @override
@@ -1950,6 +2091,17 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
   final Map<int, double> _distanceDraft = <int, double>{};
   final Map<int, String> _distanceUnit = <int, String>{};
   final Set<int> _expandedRepEditors = <int>{};
+
+  // Timer-based exercise flow state
+  bool _timerOverlayOpen = false;
+  String _timerPhase = 'setup'; // setup | ready | running | result
+  dynamic _timerExercise;
+  int _timerTargetReps = 1;
+  int _timerElapsed = 0;
+  bool _timerTimeValid = false;
+  int _timerMinSeconds = 0;
+  int _timerReadyCountdown = 0;
+  Stopwatch _timerStopwatch = Stopwatch();
   bool _showCreateWorkoutForm = false;
   bool _creatingWorkout = false;
   final TextEditingController _newWorkoutNameController =
@@ -2233,15 +2385,6 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
     return _draftFor(exercise);
   }
 
-  String _formatAmount(int value, String unit) {
-    if (unit == 'Time') return _secondsToTime(value);
-    if (unit == 'Distance') {
-      if (value >= 1000) return '${(value / 1000).toStringAsFixed(2)} km';
-      return '$value m';
-    }
-    return '$value Reps';
-  }
-
   String _remainingLabel(Map<String, dynamic> exercise) {
     final unit = _normalizeUnit(exercise['unit'] ?? exercise['Unit']);
     final remaining = _remainingFor(exercise);
@@ -2254,14 +2397,156 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
     return '$remaining Wiederholungen';
   }
 
-  Future<void> _logExerciseWithAmount(dynamic exercise, int amount) async {
-    final map = _map(exercise);
-    final id = _toInt(map['id']);
+  // ──────────────────────────────────────────────
+  // Timer-based exercise flow
+  // ──────────────────────────────────────────────
+
+  void _startExerciseTimer(dynamic exercise, int reps) {
+    setState(() {
+      _timerOverlayOpen = true;
+      _timerPhase = 'setup';
+      _timerExercise = exercise;
+      _timerTargetReps = reps;
+      _timerElapsed = 0;
+      _timerStopwatch.reset();
+    });
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: 'Exercise Timer',
+      barrierColor: Colors.black.withOpacity(0.85),
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (ctx, anim1, anim2) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return _buildExerciseTimerDialog(ctx, setDialogState);
+          },
+        );
+      },
+    );
+  }
+
+  void _timerSetReps(int reps) {
+    final map = _map(_timerExercise);
+    final maxReps = math.max(1, _remainingFor(map));
+    _timerTargetReps = reps.clamp(1, maxReps).toInt();
+  }
+
+  void _timerAdjustReps(int delta) {
+    final map = _map(_timerExercise);
+    final maxReps = math.max(1, _remainingFor(map));
+    _timerTargetReps = (_timerTargetReps + delta).clamp(1, maxReps).toInt();
+  }
+
+  void _timerGoReady() {
+    setState(() {
+      _timerPhase = 'ready';
+      _timerReadyCountdown = 3;
+    });
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 1));
+      if (!mounted || !_timerOverlayOpen) return false;
+      setState(() {
+        _timerReadyCountdown--;
+      });
+      if (_timerReadyCountdown <= 0) {
+        _timerStartRunning();
+        return false;
+      }
+      return true;
+    });
+  }
+
+  void _timerStartRunning() {
+    setState(() {
+      _timerPhase = 'running';
+      _timerStopwatch.reset();
+      _timerStopwatch.start();
+    });
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(milliseconds: 200));
+      if (!mounted || !_timerOverlayOpen) return false;
+      if (_timerStopwatch.isRunning) {
+        setState(() {
+          _timerElapsed = _timerStopwatch.elapsed.inSeconds;
+        });
+      }
+      return _timerStopwatch.isRunning;
+    });
+  }
+
+  void _timerFinish() {
+    _timerStopwatch.stop();
+    final map = _map(_timerExercise);
     final unit = _normalizeUnit(map['unit'] ?? map['Unit']);
+    final elapsed = _timerStopwatch.elapsed.inSeconds;
+    setState(() {
+      _timerElapsed = elapsed;
+      _timerPhase = unit == 'Time' ? 'result' : 'enter-reps';
+    });
+  }
+
+  void _timerRetry() {
+    setState(() {
+      _timerPhase = 'enter-reps';
+      // Keep the same elapsed time so user can just adjust their rep count
+      _timerReadyCountdown = 0;
+      final map = _map(_timerExercise);
+      final remaining = _remainingFor(map);
+      _timerTargetReps = remaining <= 0 ? 1 : math.min(10, remaining);
+    });
+  }
+
+  void _timerConfirmResult() {
+    final map = _map(_timerExercise);
+    final unit = _normalizeUnit(map['unit'] ?? map['Unit']);
+    final reps = unit == 'Time' ? _timerElapsed : _timerTargetReps;
+    _logExerciseWithTimer(map, reps, _timerElapsed);
+    _timerClose();
+  }
+
+  void _timerClose() {
+    _timerStopwatch.stop();
+    setState(() {
+      _timerOverlayOpen = false;
+      _timerPhase = 'setup';
+      _timerElapsed = 0;
+      _timerReadyCountdown = 0;
+    });
+  }
+
+  void _timerConfirmRepsEntry() {
+    final minSeconds = (_timerTargetReps * 0.75).ceil();
+    final valid = _timerElapsed >= minSeconds;
+    setState(() {
+      _timerMinSeconds = minSeconds;
+      _timerTimeValid = valid;
+      _timerPhase = 'result';
+    });
+  }
+
+  Future<void> _logExerciseWithTimer(
+    Map<String, dynamic> map,
+    int amount,
+    int elapsedSeconds,
+  ) async {
+    final id = _toInt(map['id']);
     if (id == 0 || amount <= 0) return;
     try {
-      await ApiService.logExercise(exerciseId: id, reps: amount);
+      final result = await ApiService.logExercise(
+        exerciseId: id,
+        reps: amount,
+        elapsedSeconds: elapsedSeconds,
+      );
       if (!mounted) return;
+      final xpEarned = _toInt(result['xpEarned'] ?? result['XpEarned'] ?? 0);
+      final bonusXp = _toInt(result['bonusXp'] ?? result['BonusXp'] ?? 0);
+      final coinsEarned = _toInt(
+        result['coinsEarned'] ?? result['CoinsEarned'] ?? 0,
+      );
+      final bonusCoins = _toInt(
+        result['bonusCoins'] ?? result['BonusCoins'] ?? 0,
+      );
       setState(() {
         map['todayCount'] = _toInt(map['todayCount']) + amount;
         final remaining = _remainingFor(map);
@@ -2270,8 +2555,571 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
             : (remaining < amount ? remaining : amount);
         _expandedRepEditors.remove(id);
       });
-      widget.showSnack('${_formatAmount(amount, unit)} eingetragen.');
       await widget.onRefreshHeader();
+      widget.onRewardEarned(
+        xp: xpEarned + bonusXp,
+        coins: coinsEarned + bonusCoins,
+      );
+      await widget.onQuestStatusChanged();
+    } catch (_) {
+      widget.showSnack('Exercise-Log fehlgeschlagen.');
+    }
+  }
+
+  Widget _buildExerciseTimerDialog(BuildContext ctx, StateSetter setDs) {
+    final map = _map(_timerExercise);
+    final name = _string(map['name'], fallback: 'Exercise');
+    final unit = _normalizeUnit(map['unit'] ?? map['Unit']);
+    final remaining = _remainingFor(map);
+    final elapsedM = _timerElapsed ~/ 60;
+    final elapsedS = _timerElapsed % 60;
+    final elapsedFmt =
+        '${elapsedM.toString().padLeft(2, '0')}:${elapsedS.toString().padLeft(2, '0')}';
+
+    Widget timerRing({required Widget child, double size = 320}) {
+      return Container(
+        width: size,
+        height: size,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFEC4899), Color(0xFFF43F5E)],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFEC4899).withOpacity(0.24),
+              blurRadius: 32,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Container(
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Color(0xFF040A18),
+          ),
+          child: Center(child: child),
+        ),
+      );
+    }
+
+    // Gradient button matching the workout card style
+    Widget pinkButton({
+      required String label,
+      required VoidCallback onPressed,
+      bool enabled = true,
+    }) {
+      return SizedBox(
+        width: double.infinity,
+        height: 52,
+        child: ElevatedButton(
+          onPressed: enabled ? onPressed : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            padding: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              gradient: const LinearGradient(
+                colors: [Color(0xFFEC4899), Color(0xFFF43F5E)],
+              ),
+            ),
+            child: SizedBox(
+              height: 52,
+              width: double.infinity,
+              child: Center(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Plain text cancel button
+    Widget cancelButton() {
+      return GestureDetector(
+        onTap: () {
+          _timerClose();
+          Navigator.of(ctx).pop();
+        },
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 10),
+          child: Center(
+            child: Text(
+              'Abbrechen',
+              style: TextStyle(
+                color: Color(0xFF9CA3AF),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    Widget buildSetupPhase() {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            unit == 'Time'
+                ? 'Drücke Start und beginne deine Zeit.'
+                : 'Drücke Start, mache deine Wiederholungen und trage sie danach ein.',
+            style: TextStyle(color: Colors.white54, fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          timerRing(
+            size: 296,
+            child: const Text(
+              '00:00',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 66,
+                fontWeight: FontWeight.w300,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          pinkButton(
+            label: 'Start',
+            onPressed: () {
+              _timerGoReady();
+              setDs(() {});
+              Future.doWhile(() async {
+                await Future.delayed(const Duration(seconds: 1));
+                if (!mounted || !_timerOverlayOpen) return false;
+                setDs(() {});
+                if (_timerPhase == 'running' && _timerStopwatch.isRunning) {
+                  _timerElapsed = _timerStopwatch.elapsed.inSeconds;
+                }
+                return _timerOverlayOpen &&
+                    (_timerPhase == 'ready' ||
+                        (_timerPhase == 'running' &&
+                            _timerStopwatch.isRunning));
+              });
+            },
+          ),
+        ],
+      );
+    }
+
+    Widget buildReadyPhase() {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Mache dich bereit!',
+            style: TextStyle(color: Colors.white54, fontSize: 14),
+          ),
+          const SizedBox(height: 14),
+          timerRing(
+            size: 280,
+            child: Text(
+              _timerReadyCountdown > 0 ? '$_timerReadyCountdown' : 'GO!',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 58,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    Widget buildRunningPhase() {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 14),
+          timerRing(
+            size: 324,
+            child: Text(
+              elapsedFmt,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 78,
+                fontWeight: FontWeight.w300,
+              ),
+            ),
+          ),
+          if (unit == 'Reps')
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                'Danach trägst du deine Reps ein',
+                style: TextStyle(color: Colors.white38, fontSize: 13),
+              ),
+            ),
+          const SizedBox(height: 28),
+          pinkButton(
+            label: 'Fertig',
+            onPressed: () {
+              _timerFinish();
+              setDs(() {});
+            },
+          ),
+        ],
+      );
+    }
+
+    Widget buildEnterRepsPhase() {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 12),
+          timerRing(
+            size: 220,
+            child: Text(
+              elapsedFmt,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 44,
+                fontWeight: FontWeight.w300,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Wiederholungen',
+                  style: TextStyle(
+                    color: Colors.white60,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  height: 60,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    color: const Color(0xFF040A18).withOpacity(0.72),
+                    border: Border.all(color: Colors.white.withOpacity(0.11)),
+                  ),
+                  child: Row(
+                    children: [
+                      _timerRepSegment(-5, setDs, width: 50),
+                      _timerStepperDivider(),
+                      _timerRepSegment(-1, setDs, width: 46),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.035),
+                            gradient: RadialGradient(
+                              colors: [
+                                const Color(0xFFEC4899).withOpacity(0.17),
+                                const Color(0xFFEC4899).withOpacity(0.04),
+                                Colors.transparent,
+                              ],
+                              stops: const [0.0, 0.62, 1.0],
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                '$_timerTargetReps',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.w900,
+                                  height: 1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      _timerStepperDivider(),
+                      _timerRepSegment(1, setDs, width: 46),
+                      _timerStepperDivider(),
+                      _timerRepSegment(5, setDs, width: 50),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Noch $remaining möglich heute',
+                  style: TextStyle(color: Colors.white38, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          pinkButton(
+            label: 'Prüfen',
+            enabled: _timerTargetReps > 0,
+            onPressed: () {
+              _timerConfirmRepsEntry();
+              setDs(() {});
+            },
+          ),
+        ],
+      );
+    }
+
+    Widget buildResultPhase() {
+      final valid = unit == 'Time' || _timerTimeValid;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          if (valid) ...[
+            const SizedBox(height: 12),
+            // Success: pink ring with checkmark inside
+            timerRing(
+              size: 304,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: Color(0xFF22C55E),
+                    size: 58,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    unit == 'Time'
+                        ? '$elapsedFmt eingetragen'
+                        : '$_timerTargetReps Reps in $elapsedFmt',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            pinkButton(
+              label: 'Eintragen',
+              onPressed: () {
+                _timerConfirmResult();
+                Navigator.of(ctx).pop();
+              },
+            ),
+          ] else ...[
+            const SizedBox(height: 12),
+            // Failure: still PINK ring with X inside
+            timerRing(
+              size: 304,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.cancel_rounded,
+                      color: Color(0xFFFDA4AF),
+                      size: 58,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Zu schnell!',
+                      style: TextStyle(
+                        color: Color(0xFFFDA4AF),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Mindestens ${_timerMinSeconds}s für $_timerTargetReps Reps. Du hast ${_timerElapsed}s gebraucht.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white54, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            pinkButton(
+              label: 'Erneut versuchen',
+              onPressed: () {
+                _timerRetry();
+                setDs(() {});
+              },
+            ),
+            cancelButton(),
+          ],
+        ],
+      );
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: Center(
+        child: Container(
+          width: MediaQuery.of(ctx).size.width * 0.9,
+          constraints: const BoxConstraints(maxWidth: 430),
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_timerPhase != 'ready' && _timerPhase != 'running')
+                Align(
+                  alignment: Alignment.topRight,
+                  child: GestureDetector(
+                    onTap: () {
+                      _timerClose();
+                      Navigator.of(ctx).pop();
+                    },
+                    child: Icon(Icons.close, color: Colors.white38, size: 28),
+                  ),
+                ),
+              if (_timerPhase == 'setup') buildSetupPhase(),
+              if (_timerPhase == 'ready') buildReadyPhase(),
+              if (_timerPhase == 'running') buildRunningPhase(),
+              if (_timerPhase == 'enter-reps') buildEnterRepsPhase(),
+              if (_timerPhase == 'result') buildResultPhase(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _timerStepperDivider() {
+    return Container(width: 1, color: Colors.white.withOpacity(0.08));
+  }
+
+  Widget _timerRepSegment(
+    int delta,
+    StateSetter setDs, {
+    required double width,
+  }) {
+    final label = delta.abs() > 1
+        ? '${delta > 0 ? '+' : ''}$delta'
+        : (delta > 0 ? '+' : '-');
+    final isWideStep = delta.abs() > 1;
+    return SizedBox(
+      width: width,
+      height: double.infinity,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          splashColor: const Color(0xFFEC4899).withOpacity(0.18),
+          highlightColor: const Color(0xFFEC4899).withOpacity(0.12),
+          onTap: () {
+            setDs(() {
+              _timerAdjustReps(delta);
+            });
+          },
+          child: Center(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              strutStyle: const StrutStyle(forceStrutHeight: true, height: 1),
+              style: TextStyle(
+                color: isWideStep ? Colors.white70 : Colors.white,
+                fontSize: isWideStep ? 14 : 20,
+                fontWeight: FontWeight.w900,
+                height: 1,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _logExerciseWithAmount(dynamic exercise, int amount) async {
+    final map = _map(exercise);
+    final id = _toInt(map['id']);
+    if (id == 0 || amount <= 0) return;
+    try {
+      final result = await ApiService.logExercise(exerciseId: id, reps: amount);
+      if (!mounted) return;
+      final xpEarned = _toInt(result['xpEarned'] ?? result['XpEarned'] ?? 0);
+      final bonusXp = _toInt(result['bonusXp'] ?? result['BonusXp'] ?? 0);
+      final coinsEarned = _toInt(
+        result['coinsEarned'] ?? result['CoinsEarned'] ?? 0,
+      );
+      final bonusCoins = _toInt(
+        result['bonusCoins'] ?? result['BonusCoins'] ?? 0,
+      );
+      setState(() {
+        map['todayCount'] = _toInt(map['todayCount']) + amount;
+        final remaining = _remainingFor(map);
+        _repsDraft[id] = remaining <= 0
+            ? 0
+            : (remaining < amount ? remaining : amount);
+        _expandedRepEditors.remove(id);
+      });
+      await widget.onRefreshHeader();
+      widget.onRewardEarned(
+        xp: xpEarned + bonusXp,
+        coins: coinsEarned + bonusCoins,
+      );
+      await widget.onQuestStatusChanged();
     } catch (_) {
       widget.showSnack('Exercise-Log fehlgeschlagen.');
     }
@@ -2911,6 +3759,48 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                           ),
                         ),
                       )
+                    else if (_normalizeUnit(m['unit'] ?? m['Unit']) !=
+                        'Distance')
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => _startExerciseTimer(
+                            e,
+                            _normalizeUnit(m['unit'] ?? m['Unit']) == 'Time'
+                                ? _parseTime(_timeDraftFor(m))
+                                : _draftFor(m),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Ink(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              gradient: LinearGradient(
+                                colors: [Color(0xFFEC4899), Color(0xFFF43F5E)],
+                              ),
+                            ),
+                            child: const SizedBox(
+                              height: 46,
+                              child: Center(
+                                child: Text(
+                                  'Eintragen',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
                     else if (!editorOpen)
                       SizedBox(
                         width: double.infinity,
@@ -3138,7 +4028,7 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                                   width: 132,
                                   child: ElevatedButton(
                                     onPressed: _parseTime(_timeDraftFor(m)) > 0
-                                        ? () => _logExerciseWithAmount(
+                                        ? () => _startExerciseTimer(
                                             e,
                                             _parseTime(_timeDraftFor(m)),
                                           )
@@ -3297,7 +4187,7 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                                   width: 132,
                                   child: ElevatedButton(
                                     onPressed: _distanceDraftFor(m) > 0
-                                        ? () => _logExerciseWithAmount(
+                                        ? () => _startExerciseTimer(
                                             e,
                                             _logAmountFor(m),
                                           )
@@ -3780,11 +4670,13 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
 class QuestsTab extends StatefulWidget {
   const QuestsTab({
     required this.onRefreshHeader,
+    required this.onQuestStatusChanged,
     required this.showSnack,
     super.key,
   });
 
   final Future<void> Function() onRefreshHeader;
+  final Future<void> Function() onQuestStatusChanged;
   final void Function(String) showSnack;
 
   @override
@@ -3838,6 +4730,7 @@ class _QuestsTabState extends State<QuestsTab> {
         _stats = _map(results[1]);
         _loading = false;
       });
+      await widget.onQuestStatusChanged();
     } catch (_) {
       if (!mounted) return;
       if (showLoader) {
@@ -4017,8 +4910,10 @@ class _QuestsTabState extends State<QuestsTab> {
           final progress = _questProgress(m);
           final target = _questTarget(m);
           final percent = _questPercent(m);
-          final isCompleted = (m['isCompleted'] as bool?) == true;
-          final rewardClaimed = (m['isRewardClaimed'] as bool?) == true;
+          final isCompleted = _toBool(m['isCompleted'] ?? m['IsCompleted']);
+          final rewardClaimed = _toBool(
+            m['isRewardClaimed'] ?? m['IsRewardClaimed'],
+          );
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
@@ -5720,7 +6615,8 @@ class _ShopTabState extends State<ShopTab> {
           if (body is String) {
             errorMsg = body;
           } else if (body is Map) {
-            errorMsg = body['error'] ?? body['message'] ?? body['title'] ?? errorMsg;
+            errorMsg =
+                body['error'] ?? body['message'] ?? body['title'] ?? errorMsg;
           }
         } catch (_) {}
       }
@@ -5835,7 +6731,6 @@ class _ShopTabState extends State<ShopTab> {
       'imageUrl': _string(m['imageUrl'] ?? m['ImageUrl']),
       'rarity': _shopRarity(m),
       'category': _shopCategory(m),
-      'maxQuantity': _toInt(m['maxQuantity'] ?? m['maxQuantity'], fallback: 5),
       'ownedQuantity': owned,
     };
   }
@@ -5904,108 +6799,84 @@ class _ShopTabState extends State<ShopTab> {
     );
   }
 
-  // ---------- Chest card (purple gradient matching frontend) ----------
+  // ---------- Chest card ----------
 
   Widget _buildChestCard(Map<String, dynamic> chest) {
     final price = _toInt(chest['price']);
     final canAfford = _currentCoins >= price;
     final isOpening = _openingChestId == _toInt(chest['id']);
     final imageUrl = _string(chest['imageUrl']);
-    final itemCount =
-        ((chest['items'] as List<dynamic>?) ?? <dynamic>[]).length;
 
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: const LinearGradient(
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1E1B4B), Color(0xFF312E81)],
+          colors: [
+            Color(0xFF080A1F).withOpacity(0.96),
+            Color(0xFF15051A).withOpacity(0.9),
+          ],
         ),
-        border: Border.all(color: Color(0xFF8B5CF6).withOpacity(0.35)),
+        border: Border.all(color: Color(0xFFEC4899).withOpacity(0.26)),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0xFFEC4899).withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 12),
+          ),
+        ],
       ),
       child: Stack(
         children: [
           Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 84,
-                      height: 84,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0xFF8B5CF6).withOpacity(0.18),
-                            Color(0xFF6D28D9).withOpacity(0.08),
-                          ],
-                        ),
-                        border: Border.all(
-                          color: Color(0xFF8B5CF6).withOpacity(0.2),
-                        ),
-                      ),
-                      child: Center(
-                        child: imageUrl.isNotEmpty
-                            ? Image.network(
-                                ApiService.mediaUrl(imageUrl) ?? '',
-                                width: 66,
-                                height: 66,
-                                fit: BoxFit.contain,
-                                filterQuality: FilterQuality.none,
-                                isAntiAlias: false,
-                                errorBuilder: (_, __, ___) => const Text(
-                                  '📦',
-                                  style: TextStyle(fontSize: 40),
-                                ),
-                              )
-                            : const Text('📦', style: TextStyle(fontSize: 40)),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 4, right: 30),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _string(chest['name']),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              '$itemCount mögliche Items',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.62),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
-                  height: 38,
+                  height: 160,
+                  child: Center(
+                    child: imageUrl.isNotEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            child: Image.network(
+                              ApiService.mediaUrl(imageUrl) ?? '',
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.none,
+                              isAntiAlias: false,
+                              errorBuilder: (_, __, ___) => const Text(
+                                '📦',
+                                style: TextStyle(fontSize: 54),
+                              ),
+                            ),
+                          )
+                        : const Text('📦', style: TextStyle(fontSize: 54)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _string(chest['name']),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 21,
+                    height: 1.05,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
                   child: ElevatedButton(
                     onPressed: canAfford && !isOpening
                         ? () => _requestPurchase(chest, isChest: true)
@@ -6016,12 +6887,12 @@ class _ShopTabState extends State<ShopTab> {
                       shadowColor: Colors.transparent,
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
                     child: Ink(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         gradient: canAfford
                             ? const LinearGradient(
                                 colors: [Color(0xFF22C55E), Color(0xFF14532D)],
@@ -6076,19 +6947,19 @@ class _ShopTabState extends State<ShopTab> {
             ),
           ),
           Positioned(
-            top: 10,
-            right: 10,
+            top: 24,
+            right: 24,
             child: InkWell(
               onTap: () => _showChestRatesDialog(chest),
               borderRadius: BorderRadius.circular(999),
               child: Container(
-                width: 28,
-                height: 28,
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0xFF0F172A).withOpacity(0.78),
+                  color: Color(0xFF0F172A).withOpacity(0.86),
                   border: Border.all(
-                    color: Color(0xFFF9A8D4).withOpacity(0.22),
+                    color: Color(0xFFF9A8D4).withOpacity(0.34),
                   ),
                 ),
                 child: Icon(
@@ -6175,134 +7046,95 @@ class _ShopTabState extends State<ShopTab> {
     );
   }
 
-  // ---------- Shop item card (horizontal layout) ----------
+  // ---------- Shop item card ----------
 
   Widget _buildShopItemCard(Map<String, dynamic> item) {
     final rarity = _string(item['rarity']);
     final accent = _rarityAccent(rarity);
     final price = _toInt(item['price']);
     final owned = _toInt(item['ownedQuantity']);
-    final maxQty = _toInt(item['maxQuantity'], fallback: 5);
-    final canBuy = _currentCoins >= price && owned < maxQty;
+    final canBuy = _currentCoins >= price;
     final imageUrl = _string(item['imageUrl']);
     final category = _string(item['category']);
     final icon = _rarityIcon(rarity, category: category);
     final xpBoost = _toInt(item['xpBoostPercentage']);
     final coinBoost = _toInt(item['coinBoostPercentage']);
-    final limitReached = owned >= maxQty;
 
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         color: Color(0xFF080A1F).withOpacity(0.78),
         border: Border.all(color: accent.withOpacity(0.18)),
       ),
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.all(12),
+      child: Stack(
         children: [
-          // Content row: image + text info
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Image section
-              Container(
-                width: 84,
-                height: 84,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: Color(0xFF020617).withOpacity(0.26),
-                  border: Border.all(color: Colors.white.withOpacity(0.06)),
-                ),
-                child: Center(
-                  child: imageUrl.isNotEmpty
-                      ? Image.network(
-                          ApiService.mediaUrl(imageUrl) ?? '',
-                          width: 66,
-                          height: 66,
-                          fit: BoxFit.contain,
-                          filterQuality: FilterQuality.none,
-                          isAntiAlias: false,
-                          errorBuilder: (_, __, ___) =>
-                              Text(icon, style: const TextStyle(fontSize: 40)),
-                        )
-                      : Text(icon, style: const TextStyle(fontSize: 40)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Text content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 92,
+                    height: 92,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      color: Color(0xFF020617).withOpacity(0.26),
+                      border: Border.all(color: Colors.white.withOpacity(0.06)),
+                    ),
+                    child: Center(
+                      child: imageUrl.isNotEmpty
+                          ? Image.network(
+                              ApiService.mediaUrl(imageUrl) ?? '',
+                              width: 74,
+                              height: 74,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.none,
+                              isAntiAlias: false,
+                              errorBuilder: (_, __, ___) => Text(
+                                icon,
+                                style: const TextStyle(fontSize: 40),
+                              ),
+                            )
+                          : Text(icon, style: const TextStyle(fontSize: 40)),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        top: 4,
+                        right: owned > 0 ? 48 : 0,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                             _string(item['name']),
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
-                            color: limitReached
-                                ? Color(0xFFEF4444).withOpacity(0.18)
-                                : owned == 0
-                                ? Color(0xFF94A3B8).withOpacity(0.1)
-                                : Color(0xFFEC4899).withOpacity(0.18),
-                            border: Border.all(
-                              color: limitReached
-                                  ? Color(0xFFEF4444).withOpacity(0.4)
-                                  : owned == 0
-                                  ? Color(0xFF94A3B8).withOpacity(0.25)
-                                  : Color(0xFFEC4899).withOpacity(0.46),
-                            ),
-                          ),
-                          child: Text(
-                            '$owned/$maxQty',
-                            style: TextStyle(
-                              color: limitReached
-                                  ? Color(0xFFFCA5A5)
-                                  : owned == 0
-                                  ? Color(0xFF94A3B8).withOpacity(0.6)
-                                  : Color(0xFFF9A8D4),
+                              fontSize: 21,
+                              height: 1.05,
                               fontWeight: FontWeight.w900,
-                              fontSize: 11,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      rarity.toUpperCase(),
-                      maxLines: 1,
-                      style: TextStyle(
-                        color: accent,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.1,
-                      ),
-                    ),
-                    if (xpBoost > 0 || coinBoost > 0)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Wrap(
-                          spacing: 6,
-                          runSpacing: 4,
-                          children: [
+                          const SizedBox(height: 6),
+                          Text(
+                            rarity.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: accent,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2.2,
+                            ),
+                          ),
+                          if (xpBoost > 0 || coinBoost > 0) ...[
+                            const SizedBox(height: 11),
                             if (xpBoost > 0)
                               _buildBoostPill(
                                 iconAsset: 'assets/XP_Pixel.png',
@@ -6311,6 +7143,8 @@ class _ShopTabState extends State<ShopTab> {
                                 borderColor: Color(0xFF3B82F6),
                                 backgroundColor: Color(0xFF2563EB),
                               ),
+                            if (xpBoost > 0 && coinBoost > 0)
+                              const SizedBox(height: 5),
                             if (coinBoost > 0)
                               _buildBoostPill(
                                 iconAsset: 'assets/SYBAU_Coin.png',
@@ -6320,79 +7154,88 @@ class _ShopTabState extends State<ShopTab> {
                                 backgroundColor: Color(0xFFF59E0B),
                               ),
                           ],
-                        ),
+                        ],
                       ),
-                  ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 42,
+                child: ElevatedButton(
+                  onPressed: canBuy ? () => _requestPurchase(item) : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    disabledBackgroundColor: Colors.white.withOpacity(0.06),
+                    shadowColor: Colors.transparent,
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                  ),
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(11),
+                      gradient: canBuy
+                          ? const LinearGradient(
+                              colors: [Color(0xFF22C55E), Color(0xFF14532D)],
+                            )
+                          : null,
+                      color: canBuy ? null : Colors.white.withOpacity(0.06),
+                      border: Border.all(
+                        color: canBuy
+                            ? Color(0xFF4ADE80).withOpacity(0.42)
+                            : Color(0xFF94A3B8).withOpacity(0.18),
+                      ),
+                    ),
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset(
+                            'assets/SYBAU_Coin.png',
+                            width: 19,
+                            height: 19,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.none,
+                            isAntiAlias: false,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              _formatCompactNumber(price),
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: canBuy ? Colors.white : Colors.white54,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 20,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          // Buy button below the content
-          SizedBox(
-            width: double.infinity,
-            height: 36,
-            child: ElevatedButton(
-              onPressed: canBuy ? () => _requestPurchase(item) : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                disabledBackgroundColor: Colors.white.withOpacity(0.06),
-                shadowColor: Colors.transparent,
-                padding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: Ink(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  gradient: canBuy
-                      ? const LinearGradient(
-                          colors: [Color(0xFF22C55E), Color(0xFF14532D)],
-                        )
-                      : null,
-                  color: canBuy ? null : Colors.white.withOpacity(0.06),
-                  border: Border.all(
-                    color: canBuy
-                        ? Color(0xFF4ADE80).withOpacity(0.42)
-                        : Color(0xFF94A3B8).withOpacity(0.18),
-                  ),
-                ),
-                child: Center(
-                  child: limitReached
-                      ? const Text(
-                          'Max erreicht',
-                          style: TextStyle(
-                            color: Colors.white54,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                          ),
-                        )
-                      : Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset(
-                              'assets/SYBAU_Coin.png',
-                              width: 16,
-                              height: 16,
-                              fit: BoxFit.contain,
-                              filterQuality: FilterQuality.none,
-                              isAntiAlias: false,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _formatCompactNumber(price),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
+          if (owned > 0)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Text(
+                'x$owned',
+                style: const TextStyle(
+                  color: Color(0xFFF9A8D4),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                  shadows: [Shadow(color: Color(0xFFEC4899), blurRadius: 12)],
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -6406,32 +7249,33 @@ class _ShopTabState extends State<ShopTab> {
     required Color backgroundColor,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(11),
         color: backgroundColor.withOpacity(0.16),
         border: Border.all(color: borderColor.withOpacity(0.38)),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
         children: [
           Image.asset(
             iconAsset,
-            width: 15,
-            height: 15,
+            width: 16,
+            height: 16,
             fit: BoxFit.contain,
             filterQuality: FilterQuality.none,
             isAntiAlias: false,
           ),
-          const SizedBox(width: 5),
-          Flexible(
+          const SizedBox(width: 7),
+          Expanded(
             child: Text(
               label,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: textColor,
                 fontWeight: FontWeight.w900,
-                fontSize: 10,
+                fontSize: 12,
               ),
             ),
           ),
@@ -6843,7 +7687,7 @@ class _ShopTabState extends State<ShopTab> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(2),
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+                            colors: [Color(0xFFEC4899), Color(0xFFF43F5E)],
                           ),
                         ),
                       ),
@@ -7096,9 +7940,6 @@ class _FriendsTabState extends State<FriendsTab> {
   String _challengeGoalUnit = 'reps';
   String _challengeDistanceUnit = 'm';
 
-  bool _canDeleteChallenge(String status) =>
-      status == 'Completed' || status == 'Expired';
-
   String _challengeSecondsToTime(int value) {
     final seconds = value.clamp(0, 999999);
     final h = seconds ~/ 3600;
@@ -7329,13 +8170,13 @@ class _FriendsTabState extends State<FriendsTab> {
     }
   }
 
-  Future<void> _deleteChallenge(int id) async {
+  Future<void> _hideChallenge(int id) async {
     try {
-      await ApiService.deleteFriendChallenge(id);
-      widget.showSnack('Challenge geloescht.');
+      await ApiService.hideFriendChallenge(id);
+      widget.showSnack('Challenge ausgeblendet.');
       await _load();
     } catch (_) {
-      widget.showSnack('Challenge konnte nicht geloescht werden.');
+      widget.showSnack('Challenge konnte nicht ausgeblendet werden.');
     }
   }
 
@@ -7345,7 +8186,9 @@ class _FriendsTabState extends State<FriendsTab> {
     }
 
     if (_challengeGoalUnit == 'distance') {
-      final raw = _challengeParseDistanceDraft(_challengeGoalController.text.trim());
+      final raw = _challengeParseDistanceDraft(
+        _challengeGoalController.text.trim(),
+      );
       if (_challengeDistanceUnit == 'km') {
         return (raw * 1000).round();
       }
@@ -7402,9 +8245,8 @@ class _FriendsTabState extends State<FriendsTab> {
                         CupertinoButton(
                           padding: EdgeInsets.zero,
                           onPressed: () {
-                            _challengeGoalController.text = _challengeSecondsToTime(
-                              selected.inSeconds,
-                            );
+                            _challengeGoalController.text =
+                                _challengeSecondsToTime(selected.inSeconds);
                             refresh();
                             Navigator.of(modalContext).pop();
                           },
@@ -7449,8 +8291,7 @@ class _FriendsTabState extends State<FriendsTab> {
     final goalAmount = _challengeGoalAmountToSend();
     final durationHours =
         int.tryParse(_challengeDurationController.text.trim()) ?? 0;
-    final goalUnit =
-        _challengeGoalUnit == 'distance'
+    final goalUnit = _challengeGoalUnit == 'distance'
         ? _challengeDistanceUnit
         : _challengeGoalUnit;
 
@@ -7502,7 +8343,9 @@ class _FriendsTabState extends State<FriendsTab> {
       }
 
       final raw = error.toString();
-      final bodyMatch = RegExp(r'Request failed \(\d+\): (.+)$').firstMatch(raw);
+      final bodyMatch = RegExp(
+        r'Request failed \(\d+\): (.+)$',
+      ).firstMatch(raw);
       if (bodyMatch != null) {
         try {
           final parsed = jsonDecode(bodyMatch.group(1)!);
@@ -7665,7 +8508,7 @@ class _FriendsTabState extends State<FriendsTab> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Color(0xFF0F172A),
+      backgroundColor: Color(0xFF05070D),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -7784,13 +8627,21 @@ class _FriendsTabState extends State<FriendsTab> {
                               ),
                             ),
                             focusedBorder: const OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(12)),
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(12),
+                              ),
                               borderSide: BorderSide(color: Color(0xFFEC4899)),
                             ),
                           ),
                           items: const [
-                            DropdownMenuItem(value: 'reps', child: Text('Reps')),
-                            DropdownMenuItem(value: 'time', child: Text('Time')),
+                            DropdownMenuItem(
+                              value: 'reps',
+                              child: Text('Reps'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'time',
+                              child: Text('Time'),
+                            ),
                             DropdownMenuItem(
                               value: 'distance',
                               child: Text('Distance'),
@@ -7830,8 +8681,12 @@ class _FriendsTabState extends State<FriendsTab> {
                                 ),
                               ),
                               focusedBorder: const OutlineInputBorder(
-                                borderRadius: BorderRadius.all(Radius.circular(12)),
-                                borderSide: BorderSide(color: Color(0xFFEC4899)),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(12),
+                                ),
+                                borderSide: BorderSide(
+                                  color: Color(0xFFEC4899),
+                                ),
                               ),
                             ),
                             items: const [
@@ -7853,28 +8708,120 @@ class _FriendsTabState extends State<FriendsTab> {
                       Expanded(
                         child: _challengeGoalUnit == 'time'
                             ? (Theme.of(context).platform == TargetPlatform.iOS
-                                ? GestureDetector(
-                                    onTap: () => _openChallengeIosTimePicker(
-                                      () => modalSetState(() {}),
-                                    ),
-                                    child: InputDecorator(
+                                  ? GestureDetector(
+                                      onTap: () => _openChallengeIosTimePicker(
+                                        () => modalSetState(() {}),
+                                      ),
+                                      child: InputDecorator(
+                                        decoration: InputDecoration(
+                                          labelText: 'Ziel',
+                                          labelStyle: TextStyle(
+                                            color: Colors.white.withOpacity(
+                                              0.72,
+                                            ),
+                                          ),
+                                          filled: true,
+                                          fillColor: Colors.white.withOpacity(
+                                            0.04,
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: Colors.white.withOpacity(
+                                                0.12,
+                                              ),
+                                            ),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: Colors.white.withOpacity(
+                                                0.12,
+                                              ),
+                                            ),
+                                          ),
+                                          focusedBorder:
+                                              const OutlineInputBorder(
+                                                borderRadius: BorderRadius.all(
+                                                  Radius.circular(12),
+                                                ),
+                                                borderSide: BorderSide(
+                                                  color: Color(0xFFEC4899),
+                                                ),
+                                              ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(
+                                              CupertinoIcons.time,
+                                              color: Color(0xFF60A5FA),
+                                              size: 18,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              _challengeGoalController.text
+                                                      .trim()
+                                                      .isEmpty
+                                                  ? '00:00:00'
+                                                  : _challengeGoalController
+                                                        .text,
+                                              textAlign: TextAlign.center,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                  : TextField(
+                                      controller: _challengeGoalController,
+                                      keyboardType: TextInputType.number,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                      ],
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
                                       decoration: InputDecoration(
                                         labelText: 'Ziel',
+                                        hintText: '00:00:00',
+                                        hintStyle: TextStyle(
+                                          color: Colors.white.withOpacity(0.35),
+                                        ),
                                         labelStyle: TextStyle(
                                           color: Colors.white.withOpacity(0.72),
                                         ),
                                         filled: true,
-                                        fillColor: Colors.white.withOpacity(0.04),
+                                        fillColor: Colors.white.withOpacity(
+                                          0.04,
+                                        ),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                           borderSide: BorderSide(
-                                            color: Colors.white.withOpacity(0.12),
+                                            color: Colors.white.withOpacity(
+                                              0.12,
+                                            ),
                                           ),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                           borderSide: BorderSide(
-                                            color: Colors.white.withOpacity(0.12),
+                                            color: Colors.white.withOpacity(
+                                              0.12,
+                                            ),
                                           ),
                                         ),
                                         focusedBorder: const OutlineInputBorder(
@@ -7886,89 +8833,23 @@ class _FriendsTabState extends State<FriendsTab> {
                                           ),
                                         ),
                                       ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          const Icon(
-                                            CupertinoIcons.time,
-                                            color: Color(0xFF60A5FA),
-                                            size: 18,
+                                      onChanged: (value) {
+                                        final formatted =
+                                            _challengeFormatTimeInput(value);
+                                        if (formatted ==
+                                            _challengeGoalController.text) {
+                                          return;
+                                        }
+                                        _challengeGoalController
+                                            .value = TextEditingValue(
+                                          text: formatted,
+                                          selection: TextSelection.collapsed(
+                                            offset: formatted.length,
                                           ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            _challengeGoalController
-                                                    .text
-                                                    .trim()
-                                                    .isEmpty
-                                                ? '00:00:00'
-                                                : _challengeGoalController.text,
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                : TextField(
-                                    controller: _challengeGoalController,
-                                    keyboardType: TextInputType.number,
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.digitsOnly,
-                                    ],
-                                    style: const TextStyle(color: Colors.white),
-                                    decoration: InputDecoration(
-                                      labelText: 'Ziel',
-                                      hintText: '00:00:00',
-                                      hintStyle: TextStyle(
-                                        color: Colors.white.withOpacity(0.35),
-                                      ),
-                                      labelStyle: TextStyle(
-                                        color: Colors.white.withOpacity(0.72),
-                                      ),
-                                      filled: true,
-                                      fillColor: Colors.white.withOpacity(0.04),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color: Colors.white.withOpacity(0.12),
-                                        ),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color: Colors.white.withOpacity(0.12),
-                                        ),
-                                      ),
-                                      focusedBorder: const OutlineInputBorder(
-                                        borderRadius: BorderRadius.all(
-                                          Radius.circular(12),
-                                        ),
-                                        borderSide: BorderSide(
-                                          color: Color(0xFFEC4899),
-                                        ),
-                                      ),
-                                    ),
-                                    onChanged: (value) {
-                                      final formatted =
-                                          _challengeFormatTimeInput(value);
-                                      if (formatted == _challengeGoalController.text) {
-                                        return;
-                                      }
-                                      _challengeGoalController.value =
-                                          TextEditingValue(
-                                        text: formatted,
-                                        selection: TextSelection.collapsed(
-                                          offset: formatted.length,
-                                        ),
-                                      );
-                                      modalSetState(() {});
-                                    },
-                                  ))
+                                        );
+                                        modalSetState(() {});
+                                      },
+                                    ))
                             : _settingsTextField(
                                 _challengeGoalController,
                                 'Ziel',
@@ -8420,51 +9301,75 @@ class _FriendsTabState extends State<FriendsTab> {
           ),
           const SizedBox(height: 12),
           if (isPendingForMe)
-            Row(
+            Column(
               children: [
-                Expanded(
-                  child: _GradientActionButton(
-                    onPressed: id == 0 ? null : () => _acceptChallenge(id),
-                    label: 'Annehmen',
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _GradientActionButton(
+                        onPressed: id == 0 ? null : () => _acceptChallenge(id),
+                        label: 'Annehmen',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: id == 0 ? null : () => _declineChallenge(id),
+                        child: const Text('Ablehnen'),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: id == 0 ? null : () => _declineChallenge(id),
-                    child: const Text('Ablehnen'),
-                  ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _buildHideChallengeButton(id),
                 ),
               ],
             )
-          else if (status == 'Accepted')
-            SizedBox(
-              width: double.infinity,
-              child: _GradientActionButton(
-                onPressed: () => _openProgressModal(challenge),
-                label: 'Fortschritt melden',
-              ),
-            )
-          else if (_canDeleteChallenge(status))
+          else if (status == 'Pending')
             Align(
               alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: id == 0 ? null : () => _deleteChallenge(id),
-                icon: const Icon(
-                  Icons.delete_outline_rounded,
-                  color: Color(0xFFFCA5A5),
-                  size: 18,
-                ),
-                label: const Text(
-                  'Loeschen',
-                  style: TextStyle(
-                    color: Color(0xFFFCA5A5),
-                    fontWeight: FontWeight.w700,
+              child: _buildHideChallengeButton(id),
+            )
+          else if (status == 'Accepted')
+            Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: _GradientActionButton(
+                    onPressed: () => _openProgressModal(challenge),
+                    label: 'Fortschritt melden',
                   ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _buildHideChallengeButton(id),
+                ),
+              ],
+            )
+          else
+            Align(
+              alignment: Alignment.centerRight,
+              child: _buildHideChallengeButton(id),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHideChallengeButton(int id) {
+    return TextButton.icon(
+      onPressed: id == 0 ? null : () => _hideChallenge(id),
+      icon: const Icon(
+        Icons.visibility_off_rounded,
+        color: Color(0xFFCBD5E1),
+        size: 18,
+      ),
+      label: const Text(
+        'Ausblenden',
+        style: TextStyle(color: Color(0xFFCBD5E1), fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -9149,7 +10054,6 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
       ),
       child: Stack(
         children: [
-
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -9476,6 +10380,8 @@ class _ProfileTabState extends State<ProfileTab> {
   bool _notificationsEnabled = false;
   bool _healthSyncEnabled = false;
   bool _settingsBusy = false;
+  NotificationReminderTime _notificationReminderTime =
+      const NotificationReminderTime(hour: 20, minute: 0);
   DateTime? _usernameChangedAt;
 
   @override
@@ -9504,6 +10410,7 @@ class _ProfileTabState extends State<ProfileTab> {
         ApiService.getRecentActivities(limit: 10),
         ApiService.getWeeklyActivity(from: week.$1, to: week.$2),
         NotificationService.isEnabled(),
+        NotificationService.reminderTime(),
         HealthSyncService.isEnabled(),
       ]);
 
@@ -9534,7 +10441,8 @@ class _ProfileTabState extends State<ProfileTab> {
         _pickedProfileImageBytes = null;
         _currentAchievementIndex = 0;
         _notificationsEnabled = results[5] as bool;
-        _healthSyncEnabled = results[6] as bool;
+        _notificationReminderTime = results[6] as NotificationReminderTime;
+        _healthSyncEnabled = results[7] as bool;
         _usernameChangedAt = usernameChangedAt;
         _loading = false;
       });
@@ -9551,17 +10459,126 @@ class _ProfileTabState extends State<ProfileTab> {
   ) async {
     modalSetState(() => _settingsBusy = true);
     try {
-      await NotificationService.setEnabled(enabled);
+      final applied = await NotificationService.setEnabled(enabled);
+      final scheduled = applied
+          ? await NotificationService.isDailyReminderScheduled()
+          : false;
       if (!mounted) return;
-      setState(() => _notificationsEnabled = enabled);
-      modalSetState(() => _notificationsEnabled = enabled);
-      widget.showSnack(
-        enabled
-            ? 'In-App Benachrichtigungen aktiviert.'
-            : 'In-App Benachrichtigungen deaktiviert.',
-      );
+      setState(() => _notificationsEnabled = applied);
+      modalSetState(() => _notificationsEnabled = applied);
+      if (enabled && !applied) {
+        widget.showSnack('Bitte erlaube Notifications in iOS.');
+      } else {
+        widget.showSnack(
+          applied && scheduled
+              ? 'Workout-Erinnerung geplant.'
+              : applied
+              ? 'Notifications erlaubt, Reminder aber nicht gefunden.'
+              : 'Workout-Erinnerung deaktiviert.',
+        );
+      }
     } catch (_) {
       widget.showSnack('Benachrichtigungen konnten nicht aktiviert werden.');
+    } finally {
+      if (mounted) {
+        modalSetState(() => _settingsBusy = false);
+      }
+    }
+  }
+
+  String _formatReminderTime(NotificationReminderTime time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  Future<void> _openReminderTimePicker(StateSetter modalSetState) async {
+    var selected = DateTime(
+      2026,
+      1,
+      1,
+      _notificationReminderTime.hour,
+      _notificationReminderTime.minute,
+    );
+
+    final picked = await showCupertinoModalPopup<DateTime>(
+      context: context,
+      builder: (pickerContext) => Container(
+        height: 300,
+        decoration: const BoxDecoration(
+          color: Color(0xFF0F172A),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 10, 6),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Erinnerungszeit',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: const Text('Fertig'),
+                      onPressed: () =>
+                          Navigator.of(pickerContext).pop(selected),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: CupertinoTheme(
+                  data: const CupertinoThemeData(
+                    brightness: Brightness.dark,
+                    primaryColor: Color(0xFFEC4899),
+                  ),
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.time,
+                    use24hFormat: true,
+                    initialDateTime: selected,
+                    onDateTimeChanged: (value) => selected = value,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (picked == null) return;
+
+    final nextTime = NotificationReminderTime(
+      hour: picked.hour,
+      minute: picked.minute,
+    );
+
+    modalSetState(() => _settingsBusy = true);
+    try {
+      await NotificationService.setReminderTime(nextTime);
+      final scheduled = _notificationsEnabled
+          ? await NotificationService.isDailyReminderScheduled()
+          : false;
+      if (!mounted) return;
+      setState(() => _notificationReminderTime = nextTime);
+      modalSetState(() => _notificationReminderTime = nextTime);
+      widget.showSnack(
+        scheduled
+            ? 'Erinnerung auf ${_formatReminderTime(nextTime)} geplant.'
+            : 'Erinnerungszeit auf ${_formatReminderTime(nextTime)} gesetzt.',
+      );
+    } catch (_) {
+      widget.showSnack('Erinnerungszeit konnte nicht gespeichert werden.');
     } finally {
       if (mounted) {
         modalSetState(() => _settingsBusy = false);
@@ -9706,16 +10723,16 @@ class _ProfileTabState extends State<ProfileTab> {
     return '$day.$month.${date.year}';
   }
 
-  Future<void> _changePassword() async {
+  Future<bool> _changePassword() async {
     final oldPassword = _oldPasswordController.text;
     final newPassword = _newPasswordController.text;
     if (oldPassword.isEmpty || newPassword.isEmpty) {
-      widget.showSnack('Bitte beide Passwortfelder ausfuellen.');
-      return;
+      widget.showSnack('Bitte beide Passwortfelder ausfüllen.');
+      return false;
     }
     if (oldPassword == newPassword) {
       widget.showSnack('Das neue Passwort muss anders sein.');
-      return;
+      return false;
     }
     try {
       await ApiService.changePassword(
@@ -9724,9 +10741,11 @@ class _ProfileTabState extends State<ProfileTab> {
       );
       _oldPasswordController.clear();
       _newPasswordController.clear();
-      widget.showSnack('Passwort geaendert.');
+      widget.showSnack('Passwort geändert.');
+      return true;
     } catch (_) {
       widget.showSnack('Passwortwechsel fehlgeschlagen.');
+      return false;
     }
   }
 
@@ -10087,10 +11106,8 @@ class _ProfileTabState extends State<ProfileTab> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Color(0xFF0F172A),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.72),
       builder: (ctx) {
         final topInset = MediaQuery.of(ctx).padding.top;
         final email = _string(
@@ -10098,396 +11115,396 @@ class _ProfileTabState extends State<ProfileTab> {
           fallback: _string(_profile['Email']),
         );
         final canEditUsername = !_isUsernameChangeLocked;
+        var settingsPage = 'main';
         return StatefulBuilder(
           builder: (ctx, modalSetState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                top: topInset + 56,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom,
-              ),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 22, 18, 28),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Einstellungen',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
+            Widget sectionTitle(String title) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 18, bottom: 10),
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.92),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              );
+            }
+
+            Widget passwordPage() {
+              return Column(
+                key: const ValueKey<String>('settings-password'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  sectionTitle('Sicherheit'),
+                  TextField(
+                    controller: _oldPasswordController,
+                    style: const TextStyle(color: Colors.white),
+                    obscureText: true,
+                    decoration: _settingsInputDecoration('Altes Passwort'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _newPasswordController,
+                    style: const TextStyle(color: Colors.white),
+                    obscureText: true,
+                    decoration: _settingsInputDecoration('Neues Passwort'),
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: _GradientActionButton(
+                      onPressed: () async {
+                        final changed = await _changePassword();
+                        if (changed && mounted) {
+                          modalSetState(() => settingsPage = 'main');
+                        }
+                      },
+                      label: 'Passwort speichern',
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            Widget mainPage() {
+              return Column(
+                key: const ValueKey<String>('settings-main'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  sectionTitle('Profil'),
+                  TextField(
+                    controller: _usernameController,
+                    readOnly: !canEditUsername,
+                    style: TextStyle(
+                      color: canEditUsername ? Colors.white : Colors.white54,
+                    ),
+                    decoration: _settingsInputDecoration(
+                      'Benutzername',
+                    ).copyWith(helperText: _usernameChangeHint),
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    enabled: false,
+                    initialValue: email,
+                    style: const TextStyle(color: Colors.white38),
+                    decoration: _disabledSettingsInputDecoration('E-Mail'),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: _GradientActionButton(
+                      onPressed: () async {
+                        final saved = await _saveProfile();
+                        if (saved && ctx.mounted) {
+                          Navigator.of(ctx).pop();
+                        }
+                      },
+                      label: 'Speichern',
+                    ),
+                  ),
+                  sectionTitle('Fortschritt'),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      color: const Color(0xFF050914),
+                      border: Border.all(color: Colors.white.withOpacity(0.07)),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildProgressRow(
+                          'Level',
+                          '${_toInt(_map(_profile['avatar'])['level'], fallback: 1)}',
+                        ),
+                        _buildProgressRow(
+                          'XP',
+                          _formatCompactNumber(
+                            _toInt(
+                              _profile['totalXp'],
+                              fallback: _toInt(
+                                _map(_profile['avatar'])['experience'],
+                              ),
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.close,
-                              color: Colors.white70,
+                        ),
+                        _buildProgressRow(
+                          'Challenges',
+                          '${_toInt(_profileStats['completedChallenges'])}',
+                        ),
+                        _buildProgressRow(
+                          'Streak',
+                          '${_toInt(_profileStats['currentStreak'])} Tage',
+                          isLast: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                  sectionTitle('Benachrichtigungen'),
+                  _buildSettingsTile(
+                    icon: Icons.notifications_active_rounded,
+                    iconColor: Color(0xFFFDA4AF),
+                    title: 'iPhone-Reminder',
+                    subtitle: _notificationsEnabled ? 'Aktiv' : null,
+                    trailing: Switch.adaptive(
+                      value: _notificationsEnabled,
+                      activeThumbColor: Color(0xFFEC4899),
+                      onChanged: _settingsBusy
+                          ? null
+                          : (value) =>
+                                _setNotificationsEnabled(value, modalSetState),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildReminderTimeTile(modalSetState),
+                  sectionTitle('Health Sync'),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      color: const Color(0xFF050914),
+                      border: Border.all(color: Colors.white.withOpacity(0.07)),
+                    ),
+                    child: ListTile(
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 2,
+                      ),
+                      leading: _buildSettingsImageIcon(_appleHealthLogoAsset),
+                      title: const Text(
+                        'Apple Health',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                      trailing: Switch.adaptive(
+                        value: _healthSyncEnabled,
+                        activeThumbColor: Color(0xFFEC4899),
+                        onChanged: _settingsBusy
+                            ? null
+                            : (value) =>
+                                  _setHealthSyncEnabled(value, modalSetState),
+                      ),
+                    ),
+                  ),
+                  sectionTitle('Sicherheit'),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () =>
+                          modalSetState(() => settingsPage = 'password'),
+                      icon: const Icon(Icons.lock_reset_rounded, size: 18),
+                      label: const Text('Passwort ändern'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(
+                          color: const Color(0xFFF472B6).withOpacity(0.32),
+                        ),
+                        backgroundColor: const Color(0xFF050914),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                  sectionTitle('Account'),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      color: const Color(0xFF050914),
+                      border: Border.all(color: Colors.white.withOpacity(0.07)),
+                    ),
+                    child: Column(
+                      children: [
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 2,
+                          ),
+                          leading: _buildSettingsIcon(
+                            Icons.logout_rounded,
+                            const Color(0xFFFDA4AF),
+                          ),
+                          title: const Text(
+                            'Abmelden',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
                             ),
-                            onPressed: () => Navigator.of(ctx).pop(),
+                          ),
+                          trailing: const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Colors.white38,
+                          ),
+                          onTap: () async {
+                            await ApiService.logout();
+                            if (!mounted) return;
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (_) => const LoginScreen(),
+                              ),
+                              (_) => false,
+                            );
+                          },
+                        ),
+                        Divider(
+                          height: 1,
+                          color: Colors.white.withOpacity(0.08),
+                        ),
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 2,
+                          ),
+                          leading: _buildSettingsIcon(
+                            Icons.delete_outline_rounded,
+                            const Color(0xFFFCA5A5),
+                          ),
+                          title: const Text(
+                            'Account löschen',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          trailing: const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Colors.white38,
+                          ),
+                          onTap: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (dctx) => AlertDialog(
+                                title: const Text('Account löschen'),
+                                content: const Text(
+                                  'Möchtest du deinen Account wirklich löschen? Diese Aktion ist endgültig.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(dctx).pop(false),
+                                    child: const Text('Abbrechen'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(dctx).pop(true),
+                                    child: const Text('Löschen'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true) {
+                              await _deleteAccount();
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            return ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(26),
+              ),
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF03050A),
+                      Color(0xFF050812),
+                      Color(0xFF020308),
+                    ],
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    top: topInset + 48,
+                    bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                  ),
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    if (settingsPage == 'password') ...[
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.arrow_back_rounded,
+                                          color: Colors.white,
+                                        ),
+                                        onPressed: () => modalSetState(
+                                          () => settingsPage = 'main',
+                                        ),
+                                      ),
+                                      const SizedBox(width: 2),
+                                    ],
+                                    Expanded(
+                                      child: Text(
+                                        settingsPage == 'password'
+                                            ? 'Passwort ändern'
+                                            : 'Einstellungen',
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Colors.white70,
+                                ),
+                                onPressed: () => Navigator.of(ctx).pop(),
+                              ),
+                            ],
+                          ),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 260),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            transitionBuilder:
+                                (Widget child, Animation<double> animation) {
+                                  final slide = Tween<Offset>(
+                                    begin: const Offset(0.18, 0),
+                                    end: Offset.zero,
+                                  ).animate(animation);
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: SlideTransition(
+                                      position: slide,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                            child: settingsPage == 'password'
+                                ? passwordPage()
+                                : mainPage(),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 14),
-                      Text(
-                        'Profil',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _usernameController,
-                        readOnly: !canEditUsername,
-                        style: TextStyle(
-                          color: canEditUsername
-                              ? Colors.white
-                              : Colors.white54,
-                        ),
-                        decoration: _settingsInputDecoration(
-                          'Benutzername',
-                        ).copyWith(helperText: _usernameChangeHint),
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        enabled: false,
-                        initialValue: email,
-                        style: const TextStyle(color: Colors.white38),
-                        decoration: _disabledSettingsInputDecoration('E-Mail'),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: _GradientActionButton(
-                          onPressed: () async {
-                            final saved = await _saveProfile();
-                            if (saved && mounted) Navigator.of(ctx).pop();
-                          },
-                          label: 'Speichern',
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Text(
-                        'Fortschritt',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
-                          color: Colors.white.withOpacity(0.04),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.08),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            _buildProgressRow(
-                              'Level',
-                              '${_toInt(_map(_profile['avatar'])['level'], fallback: 1)}',
-                            ),
-                            _buildProgressRow(
-                              'XP',
-                              _formatCompactNumber(
-                                _toInt(
-                                  _profile['totalXp'],
-                                  fallback: _toInt(
-                                    _map(_profile['avatar'])['experience'],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            _buildProgressRow(
-                              'Challenges',
-                              '${_toInt(_profileStats['completedChallenges'])}',
-                            ),
-                            _buildProgressRow(
-                              'Streak',
-                              '${_toInt(_profileStats['currentStreak'])} Tage',
-                              isLast: true,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Text(
-                        'Benachrichtigungen',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      _buildSettingsTile(
-                        icon: Icons.notifications_active_rounded,
-                        iconColor: Color(0xFFFDA4AF),
-                        title: 'Notifications',
-                        subtitle: 'Neue Anfragen und Challenges in der App.',
-                        trailing: Switch.adaptive(
-                          value: _notificationsEnabled,
-                          activeThumbColor: Color(0xFFEC4899),
-                          onChanged: _settingsBusy
-                              ? null
-                              : (value) => _setNotificationsEnabled(
-                                  value,
-                                  modalSetState,
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Text(
-                        'Health Sync',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: Colors.white.withOpacity(0.04),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.08),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            ListTile(
-                              dense: true,
-                              visualDensity: VisualDensity.compact,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 0,
-                              ),
-                              leading: _buildSettingsImageIcon(
-                                _appleHealthLogoAsset,
-                              ),
-                              title: const Text(
-                                'Apple Health',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              subtitle: Text(
-                                'Holt deine freigegebenen Health-Daten automatisch.',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.6),
-                                  fontSize: 11,
-                                ),
-                              ),
-                              trailing: Switch.adaptive(
-                                value: _healthSyncEnabled,
-                                activeThumbColor: Color(0xFFEC4899),
-                                onChanged: _settingsBusy
-                                    ? null
-                                    : (value) => _setHealthSyncEnabled(
-                                        value,
-                                        modalSetState,
-                                      ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Text(
-                        'Sicherheit',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _oldPasswordController,
-                        style: const TextStyle(color: Colors.white),
-                        obscureText: true,
-                        decoration: _settingsInputDecoration('Altes Passwort'),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _newPasswordController,
-                        style: const TextStyle(color: Colors.white),
-                        obscureText: true,
-                        decoration: _settingsInputDecoration('Neues Passwort'),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: () async {
-                            await _changePassword();
-                            if (mounted) Navigator.of(ctx).pop();
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            side: BorderSide(
-                              color: Colors.white.withOpacity(0.18),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: const Text('Passwort ändern'),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Text(
-                        'Account',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: Colors.white.withOpacity(0.04),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.08),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 2,
-                              ),
-                              leading: Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: Color(0xFFEC4899).withOpacity(0.14),
-                                ),
-                                child: const Icon(
-                                  Icons.logout_rounded,
-                                  color: Color(0xFFFDA4AF),
-                                  size: 20,
-                                ),
-                              ),
-                              title: const Text(
-                                'Abmelden',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              subtitle: Text(
-                                'Du wirst auf diesem Gerät ausgeloggt.',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.6),
-                                  fontSize: 12,
-                                ),
-                              ),
-                              trailing: const Icon(
-                                Icons.chevron_right_rounded,
-                                color: Colors.white38,
-                              ),
-                              onTap: () async {
-                                await ApiService.logout();
-                                if (!mounted) return;
-                                Navigator.of(context).pushAndRemoveUntil(
-                                  MaterialPageRoute(
-                                    builder: (_) => const LoginScreen(),
-                                  ),
-                                  (_) => false,
-                                );
-                              },
-                            ),
-                            Divider(
-                              height: 1,
-                              color: Colors.white.withOpacity(0.08),
-                            ),
-                            ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 2,
-                              ),
-                              leading: Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: Colors.red.withOpacity(0.12),
-                                ),
-                                child: const Icon(
-                                  Icons.delete_outline_rounded,
-                                  color: Color(0xFFFCA5A5),
-                                  size: 20,
-                                ),
-                              ),
-                              title: const Text(
-                                'Account löschen',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              subtitle: Text(
-                                email.isEmpty
-                                    ? 'Dieser Schritt kann nicht rückgängig gemacht werden.'
-                                    : 'Entfernt $email dauerhaft aus der App.',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.6),
-                                  fontSize: 12,
-                                ),
-                              ),
-                              trailing: const Icon(
-                                Icons.chevron_right_rounded,
-                                color: Colors.white38,
-                              ),
-                              onTap: () async {
-                                final confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder: (dctx) => AlertDialog(
-                                    title: const Text('Account löschen'),
-                                    content: const Text(
-                                      'Möchtest du deinen Account wirklich löschen? Diese Aktion ist endgültig.',
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.of(dctx).pop(false),
-                                        child: const Text('Abbrechen'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.of(dctx).pop(true),
-                                        child: const Text('Löschen'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                                if (confirm == true) {
-                                  await _deleteAccount();
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -10502,19 +11519,24 @@ class _ProfileTabState extends State<ProfileTab> {
     required IconData icon,
     required Color iconColor,
     required String title,
-    required String subtitle,
+    String? subtitle,
     required Widget trailing,
+    VoidCallback? onTap,
   }) {
+    final hasSubtitle = subtitle != null && subtitle.trim().isNotEmpty;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Colors.white.withOpacity(0.04),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        color: const Color(0xFF050914),
+        border: Border.all(color: Colors.white.withOpacity(0.07)),
       ),
       child: ListTile(
         dense: true,
         visualDensity: VisualDensity.compact,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: hasSubtitle ? 2 : 6,
+        ),
         leading: _buildSettingsIcon(icon, iconColor),
         title: Text(
           title,
@@ -10524,13 +11546,73 @@ class _ProfileTabState extends State<ProfileTab> {
             fontSize: 14,
           ),
         ),
-        subtitle: Text(
-          subtitle,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
-        ),
+        subtitle: hasSubtitle
+            ? Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.54),
+                  fontSize: 12,
+                ),
+              )
+            : null,
         trailing: trailing,
+        onTap: onTap,
+      ),
+    );
+  }
+
+  Widget _buildReminderTimeTile(StateSetter modalSetState) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFF050914),
+        border: Border.all(color: Colors.white.withOpacity(0.07)),
+      ),
+      child: ListTile(
+        dense: true,
+        visualDensity: VisualDensity.compact,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+        leading: _buildSettingsIcon(
+          Icons.schedule_rounded,
+          const Color(0xFF60A5FA),
+        ),
+        title: const Text(
+          'Erinnerungszeit',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: Text(
+          _notificationsEnabled ? 'Täglich' : 'Inaktiv',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: Colors.white.withOpacity(0.54), fontSize: 12),
+        ),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: const Color(0xFFEC4899).withOpacity(0.14),
+            border: Border.all(
+              color: const Color(0xFFF472B6).withOpacity(0.28),
+            ),
+          ),
+          child: Text(
+            _formatReminderTime(_notificationReminderTime),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+            ),
+          ),
+        ),
+        onTap: _settingsBusy
+            ? null
+            : () => _openReminderTimePicker(modalSetState),
       ),
     );
   }
@@ -10566,14 +11648,14 @@ class _ProfileTabState extends State<ProfileTab> {
         fontSize: 11,
       ),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.04),
+      fillColor: const Color(0xFF050914),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.09)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.09)),
       ),
       focusedBorder: const OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -10585,7 +11667,7 @@ class _ProfileTabState extends State<ProfileTab> {
   InputDecoration _disabledSettingsInputDecoration(String label) {
     return _settingsInputDecoration(label).copyWith(
       filled: true,
-      fillColor: Colors.white.withOpacity(0.025),
+      fillColor: const Color(0xFF030611),
       labelStyle: TextStyle(color: Colors.white.withOpacity(0.38)),
       disabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -12072,6 +13154,17 @@ double _toDouble(dynamic value, {double fallback = 0}) {
   if (value is double) return value;
   if (value is int) return value.toDouble();
   if (value is String) return double.tryParse(value) ?? fallback;
+  return fallback;
+}
+
+bool _toBool(dynamic value, {bool fallback = false}) {
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  if (value is String) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized == 'true' || normalized == '1') return true;
+    if (normalized == 'false' || normalized == '0') return false;
+  }
   return fallback;
 }
 

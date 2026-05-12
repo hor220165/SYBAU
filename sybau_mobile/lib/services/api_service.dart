@@ -719,10 +719,12 @@ class ApiService {
   static Future<Map<String, dynamic>> logExercise({
     required int exerciseId,
     required int reps,
+    int? elapsedSeconds,
   }) async {
     return _authedPostJson('/workouts/exercises/log', {
       'exerciseId': exerciseId,
       'reps': reps,
+      if (elapsedSeconds != null) 'elapsedSeconds': elapsedSeconds,
     });
   }
 
@@ -833,6 +835,11 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> deleteFriendChallenge(int id) async {
+    await _authedDelete('/friends/challenges/$id');
+    return <String, dynamic>{'ok': true};
+  }
+
+  static Future<Map<String, dynamic>> hideFriendChallenge(int id) async {
     await _authedDelete('/friends/challenges/$id');
     return <String, dynamic>{'ok': true};
   }

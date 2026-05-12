@@ -21,4 +21,6 @@ public class ExerciseDto
     public int? CoinsEarned { get; set; }
     public int? BonusCoins { get; set; }
     public int? CoinBoostPercent { get; set; }
+    public int? MinElapsedSeconds { get; set; }
+    public bool? IsTimeValid { get; set; }
 }

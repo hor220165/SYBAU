@@ -172,7 +172,9 @@ public class FriendChallengeService
             .Include(fc => fc.Challenger)
             .Include(fc => fc.Opponent)
             .Include(fc => fc.Winner)
-            .Where(fc => fc.ChallengerId == userId || fc.OpponentId == userId)
+            .Where(fc =>
+                (fc.ChallengerId == userId && fc.ChallengerHiddenAt == null) ||
+                (fc.OpponentId == userId && fc.OpponentHiddenAt == null))
             .OrderByDescending(fc => fc.CreatedAt)
             .ToListAsync();
 
@@ -193,7 +195,10 @@ public class FriendChallengeService
         var challenges = await _context.FriendChallenges
             .Include(fc => fc.Challenger)
             .Include(fc => fc.Opponent)
-            .Where(fc => fc.OpponentId == userId && fc.Status == FriendChallengeStatus.Pending)
+            .Where(fc =>
+                fc.OpponentId == userId &&
+                fc.OpponentHiddenAt == null &&
+                fc.Status == FriendChallengeStatus.Pending)
             .OrderByDescending(fc => fc.CreatedAt)
             .ToListAsync();
 
@@ -209,23 +214,21 @@ public class FriendChallengeService
             return (false, "Challenge nicht gefunden.");
 
         if (challenge.ChallengerId != userId && challenge.OpponentId != userId)
-            return (false, "Du darfst diese Challenge nicht loeschen.");
+            return (false, "Du darfst diese Challenge nicht ausblenden.");
 
         if (challenge.Status == FriendChallengeStatus.Accepted && challenge.ExpiresAt < DateTime.UtcNow)
         {
             challenge.Status = FriendChallengeStatus.Expired;
-            await _context.SaveChangesAsync();
         }
 
-        if (challenge.Status != FriendChallengeStatus.Completed &&
-            challenge.Status != FriendChallengeStatus.Expired)
-        {
-            return (false, "Nur abgeschlossene oder abgelaufene Challenges koennen geloescht werden.");
-        }
+        var hiddenAt = DateTime.UtcNow;
+        if (challenge.ChallengerId == userId)
+            challenge.ChallengerHiddenAt ??= hiddenAt;
+        else
+            challenge.OpponentHiddenAt ??= hiddenAt;
 
-        _context.FriendChallenges.Remove(challenge);
         await _context.SaveChangesAsync();
-        return (true, "Challenge geloescht.");
+        return (true, "Challenge ausgeblendet.");
     }
 
     private static FriendChallengeDto MapToDto(FriendChallenge fc) => new()
@@ -244,9 +247,11 @@ public class FriendChallengeService
         ChallengerId = fc.ChallengerId,
         ChallengerUserName = fc.Challenger?.UserName ?? "",
         ChallengerProgress = fc.ChallengerProgress,
+        ChallengerHiddenAt = fc.ChallengerHiddenAt,
         OpponentId = fc.OpponentId,
         OpponentUserName = fc.Opponent?.UserName ?? "",
         OpponentProgress = fc.OpponentProgress,
+        OpponentHiddenAt = fc.OpponentHiddenAt,
         WinnerId = fc.WinnerId,
         WinnerUserName = fc.Winner?.UserName
     };
