@@ -258,7 +258,9 @@ onUnmounted(() => {
     radial-gradient(circle at top left, #1a237e, transparent 45%),
     radial-gradient(circle at bottom right, #311b92, transparent 45%),
     #050714;
+  background-repeat: no-repeat;
   background-attachment: fixed;
+  overflow-x: hidden;
 }
 
 .container {
@@ -814,6 +816,10 @@ onUnmounted(() => {
 }
 
 @media (max-width: 820px) {
+  .landing-page {
+    background-attachment: scroll;
+  }
+
   .container {
     width: min(100% - 32px, 1180px);
   }

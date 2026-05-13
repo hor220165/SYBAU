@@ -128,7 +128,16 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("Default", policy =>
     {
-        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+        var configuredOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+        var allowedOrigins = configuredOrigins
+            .Concat([
+                "https://sybau-fitness.at",
+                "https://www.sybau-fitness.at",
+                "http://sybau-fitness.at",
+                "http://www.sybau-fitness.at"
+            ])
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
         if (allowedOrigins is { Length: > 0 } && !allowedOrigins.Contains("*"))
         {
             policy.WithOrigins(allowedOrigins)

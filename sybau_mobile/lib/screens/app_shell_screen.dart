@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/cupertino.dart';
@@ -18,6 +17,62 @@ import 'login_screen.dart';
 const String _noProfilePictureAsset = 'assets/Nopfp.png';
 const String _appleHealthLogoAsset = 'assets/applehealth_logo.png';
 const int _achievementPageSize = 4;
+
+bool _isDataImageUrl(String? value) {
+  final normalized = value?.trim().toLowerCase() ?? '';
+  return normalized.startsWith('data:image/');
+}
+
+Uint8List? _decodeDataImageUrl(String? value) {
+  final dataUrl = value?.trim();
+  if (dataUrl == null || !_isDataImageUrl(dataUrl)) return null;
+
+  final commaIndex = dataUrl.indexOf(',');
+  if (commaIndex < 0 || commaIndex == dataUrl.length - 1) return null;
+
+  final metadata = dataUrl.substring(0, commaIndex).toLowerCase();
+  final payload = dataUrl.substring(commaIndex + 1);
+  try {
+    if (metadata.contains(';base64')) {
+      return base64Decode(payload);
+    }
+
+    return Uint8List.fromList(utf8.encode(Uri.decodeComponent(payload)));
+  } catch (_) {
+    return null;
+  }
+}
+
+Widget _buildProfileImageFromUrl(
+  String? imageUrl, {
+  BoxFit fit = BoxFit.cover,
+  bool gaplessPlayback = false,
+  Key? key,
+}) {
+  Widget fallback() => Image.asset(_noProfilePictureAsset, fit: fit);
+
+  final dataBytes = _decodeDataImageUrl(imageUrl);
+  if (dataBytes != null) {
+    return Image.memory(
+      dataBytes,
+      key: key,
+      fit: fit,
+      gaplessPlayback: gaplessPlayback,
+    );
+  }
+
+  if (imageUrl == null || imageUrl.trim().isEmpty) {
+    return fallback();
+  }
+
+  return Image.network(
+    imageUrl,
+    key: key,
+    fit: fit,
+    gaplessPlayback: gaplessPlayback,
+    errorBuilder: (_, _, _) => fallback(),
+  );
+}
 
 String _formatCompactNumber(int value) {
   if (value.abs() < 10000) return value.toString();
@@ -8499,12 +8554,7 @@ class _FriendsTabState extends State<FriendsTab> {
       child: ClipOval(
         child: imageUrl == null
             ? Image.asset(_noProfilePictureAsset, fit: BoxFit.cover)
-            : Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) =>
-                    Image.asset(_noProfilePictureAsset, fit: BoxFit.cover),
-              ),
+            : _buildProfileImageFromUrl(imageUrl, fit: BoxFit.cover),
       ),
     );
 
@@ -9877,12 +9927,7 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
       child: ClipOval(
         child: imageUrl == null
             ? Image.asset(_noProfilePictureAsset, fit: BoxFit.cover)
-            : Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) =>
-                    Image.asset(_noProfilePictureAsset, fit: BoxFit.cover),
-              ),
+            : _buildProfileImageFromUrl(imageUrl, fit: BoxFit.cover),
       ),
     );
 
@@ -11035,6 +11080,8 @@ class _ProfileTabState extends State<ProfileTab> {
     final imageUrl = ApiService.mediaUrl(_profileImageUrl);
     final versionedImageUrl = imageUrl == null
         ? null
+        : _isDataImageUrl(imageUrl)
+        ? imageUrl
         : '$imageUrl${imageUrl.contains('?') ? '&' : '?'}v=$_profileImageVersion';
     final hasPhoto = imageUrl != null && imageUrl.isNotEmpty;
     final pickedProfileImageBytes = _pickedProfileImageBytes;
@@ -11064,12 +11111,11 @@ class _ProfileTabState extends State<ProfileTab> {
                     gaplessPlayback: true,
                   )
                 : hasPhoto
-                ? Image.network(
+                ? _buildProfileImageFromUrl(
                     versionedImageUrl!,
                     key: ValueKey(versionedImageUrl),
                     fit: BoxFit.cover,
                     gaplessPlayback: true,
-                    errorBuilder: (_, _, _) => _buildNoProfilePicture(),
                   )
                 : _buildNoProfilePicture(),
           ),
@@ -12923,12 +12969,7 @@ class _ReadOnlyProfileAvatar extends StatelessWidget {
       child: ClipOval(
         child: resolved == null
             ? Image.asset(_noProfilePictureAsset, fit: BoxFit.cover)
-            : Image.network(
-                resolved,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) =>
-                    Image.asset(_noProfilePictureAsset, fit: BoxFit.cover),
-              ),
+            : _buildProfileImageFromUrl(resolved, fit: BoxFit.cover),
       ),
     );
   }
