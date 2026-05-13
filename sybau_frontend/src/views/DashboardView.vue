@@ -32,6 +32,7 @@
           <div class="avatar-wrapper">
             <div class="avatar-sprite">
               <SpriteAnimator
+                :bodyStage="bodyStage"
                 :frameWidth="128"
                 :frameHeight="128"
                 :columns="2"
@@ -213,6 +214,7 @@ const coins = ref(0);
 const level = ref(1);
 const currentXp = ref(0);
 const xpForNextLevel = ref(1000);
+const bodyStage = ref('skinny');
 const router = useRouter();
 
 const getBoostImage = (booster: item | null) => resolveMediaUrl(booster?.imageUrl ?? (booster as any)?.ImageUrl ?? '');
@@ -262,6 +264,7 @@ async function loadProfile() {
     level.value = avatar.level ?? 0;
     currentXp.value = avatar.experience ?? 0;
     xpForNextLevel.value = avatar.xpForNextLevel ?? 1000;
+    bodyStage.value = avatar.bodyStage ?? 'skinny';
 
     // Booster-Slots aus Profil laden und mit owned Boosters matchen
     await loadOwnedBoosters();

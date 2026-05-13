@@ -13,6 +13,31 @@ export function resolveMediaUrl(path?: string | null) {
     return resolveApiUrl(path);
 }
 
+export function normalizeUser(data: any) {
+    if (!data) return null;
+    const avatar = data.avatar ?? data.Avatar ?? {};
+    return {
+        id: data.id ?? data.Id,
+        userName: data.userName ?? data.UserName,
+        email: data.email ?? data.Email,
+        profileImageUrl: data.profileImageUrl ?? data.ProfileImageUrl,
+        coins: data.coins ?? data.Coins ?? 0,
+        totalXp: data.totalXp ?? data.TotalXp ?? 0,
+        isAdmin: data.isAdmin ?? data.IsAdmin ?? false,
+        avatar: {
+            id: avatar.id ?? avatar.Id,
+            bodyStage: avatar.bodyStage ?? avatar.BodyStage,
+            level: avatar.level ?? avatar.Level ?? 1,
+            experience: avatar.experience ?? avatar.Experience ?? 0,
+            xpForNextLevel: avatar.xpForNextLevel ?? avatar.XpForNextLevel ?? 1000,
+            boost1: avatar.boost1 ?? avatar.Boost1,
+            boost2: avatar.boost2 ?? avatar.Boost2,
+            boost3: avatar.boost3 ?? avatar.Boost3,
+            boost4: avatar.boost4 ?? avatar.Boost4
+        }
+    };
+}
+
 // Attach token from localStorage (if exists)
 API.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
@@ -53,34 +78,18 @@ export const authService = {
 export const userService = {
     // Hole User aus localStorage statt API (falls bereits vorhanden)
     getProfile: async () => {
-    const { data } = await API.get('/users/profile');  // holt alles vom Backend
-    // Wichtige Userinfos in LocalStorage speichern
-    localStorage.setItem('user', JSON.stringify({ 
-        id: data.id, 
-        userName: data.userName, 
-        email: data.email,
-        profileImageUrl: data.profileImageUrl,
-        coins: data.coins,
-        totalXp: data.totalXp ?? data.TotalXp,
-        isAdmin: data.isAdmin,
-        avatar: { 
-          bodyStage: data.avatar?.bodyStage,
-          level: data.avatar?.level,
-          experience: data.avatar?.experience
+        const { data } = await API.get('/users/profile');
+        const normalized = normalizeUser(data);
+        if (normalized) {
+            localStorage.setItem('user', JSON.stringify(normalized));
         }
-    }));
-    return { data };
+        return { data };
     },
     getPublicProfile: (id: number) =>
         API.get(`/users/${id}/profile`),
     getLeaderboard: () => API.get('/users/leaderboard'),
-    updateProfile: (data: { UserName?: string}) => {
-        // Aktualisiere in localStorage UND Backend
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const updated = { ...user, ...data };
-        localStorage.setItem('user', JSON.stringify(updated));
-       return API.put('/users/profile', data);
-    },
+    updateProfile: (data: { UserName?: string}) =>
+        API.put('/users/profile', data),
     uploadProfileImage: (file: File) => {
         const formData = new FormData();
         formData.append('image', file);

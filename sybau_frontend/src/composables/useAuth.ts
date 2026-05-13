@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { authService, userService } from '@/services/api';
+import { authService, normalizeUser, userService } from '@/services/api';
 
 const user = ref<any>(null);
 
@@ -16,21 +16,7 @@ export function useAuth() {
   const refreshProfile = async () => {
     try {
       const res = await userService.getProfile();
-      // getProfile speichert bereits in localStorage, jetzt user.value direkt updaten
-      user.value = res.data ? {
-        id: res.data.id,
-        userName: res.data.userName,
-        email: res.data.email,
-        profileImageUrl: res.data.profileImageUrl,
-        coins: res.data.coins,
-        totalXp: res.data.totalXp ?? res.data.TotalXp,
-        isAdmin: res.data.isAdmin,
-        avatar: {
-          bodyStage: res.data.avatar?.bodyStage,
-          level: res.data.avatar?.level,
-          experience: res.data.avatar?.experience
-        }
-      } : JSON.parse(localStorage.getItem('user') || '{}');
+      user.value = normalizeUser(res.data) ?? JSON.parse(localStorage.getItem('user') || '{}');
     } catch (e) {
       console.error('Fehler beim Aktualisieren des Profils', e);
     }
@@ -42,22 +28,15 @@ export function useAuth() {
     const res = await authService.login(email, password);
     const token = res.data?.token;
     const u = res.data?.user;
-    console.log('Login response:', res.data); // DEBUG
     if (token) localStorage.setItem('token', token);
     if (u) {
-      const userToStore = {
-        id: u.id,
-        userName: u.userName,
-        email: u.email,
-        profileImageUrl: u.profileImageUrl,
-        coins: u.coins ?? u.Coins ?? 0,
-        totalXp: u.totalXp ?? u.TotalXp ?? 0,
-        avatar: { bodyStage: u.avatar?.bodyStage }
-      };
-      console.log('User to store:', userToStore); // DEBUG
-      localStorage.setItem('user', JSON.stringify(userToStore));
-      user.value = userToStore;
+      const userToStore = normalizeUser(u);
+      if (userToStore) {
+        localStorage.setItem('user', JSON.stringify(userToStore));
+        user.value = userToStore;
+      }
     }
+    await refreshProfile();
     return res;
   };
 
@@ -71,18 +50,13 @@ export function useAuth() {
     const u = res.data?.user;
     if (token) localStorage.setItem('token', token);
     if (u) {
-      const userToStore = {
-        id: u.id,
-        userName: u.userName,
-        email: u.email,
-        profileImageUrl: u.profileImageUrl,
-        coins: u.coins ?? u.Coins ?? 0,
-        totalXp: u.totalXp ?? u.TotalXp ?? 0,
-        avatar: { bodyStage: u.avatar?.bodyStage }
-      };
-      localStorage.setItem('user', JSON.stringify(userToStore));
-      user.value = userToStore;
+      const userToStore = normalizeUser(u);
+      if (userToStore) {
+        localStorage.setItem('user', JSON.stringify(userToStore));
+        user.value = userToStore;
+      }
     }
+    await refreshProfile();
     return res;
   };
 

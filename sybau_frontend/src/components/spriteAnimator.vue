@@ -5,10 +5,14 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, onUnmounted, ref } from "vue";
+import { defineComponent, onMounted, onUnmounted, ref, watch } from "vue";
+import skinnySprite from "@/assets/Spritesheet_Skinny.png";
+import normalSprite from "@/assets/Spritesheet_Normal.png";
+import bodybuilderSprite from "@/assets/Spritesheet_Bodybuilder.png";
 
 export default defineComponent({
   props: {
+    bodyStage: { type: String, default: "" },
     frameWidth: { type: Number, default: 128 },
     frameHeight: { type: Number, default: 128 },
     columns: { type: Number, default: 2 },
@@ -19,31 +23,51 @@ export default defineComponent({
   },
   setup(props) {
     const canvas = ref<HTMLCanvasElement | null>(null);
-    let intervalId: number | null = null;
+    let intervalId: ReturnType<typeof window.setInterval> | null = null;
+    let activeSprite: HTMLImageElement | null = null;
 
-    onMounted(() => {
+    const stageToSprite: Record<string, string> = {
+      skinny: skinnySprite,
+      defined: normalSprite,
+      normal: normalSprite,
+      bodybuilder: bodybuilderSprite
+    };
+
+    const getStoredBodyStage = () => {
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        return String(user.avatar?.bodyStage ?? user.avatar?.BodyStage ?? "").trim().toLowerCase();
+      } catch {
+        return "";
+      }
+    };
+
+    const clearAnimation = () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const drawSprite = () => {
       if (!canvas.value) return;
       const ctx = canvas.value.getContext("2d");
       if (!ctx) return;
 
       ctx.imageSmoothingEnabled = false;
+      clearAnimation();
 
       const sprite = new Image();
+      activeSprite = sprite;
 
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const stage = String(user.avatar?.bodyStage ?? '').trim().toLowerCase();
-
-      const stageToSprite: Record<string, string> = {
-        skinny: "./src/assets/Spritesheet_Skinny.png",
-        defined: "./src/assets/Spritesheet_Normal.png",
-        bodybuilder: "./src/assets/Spritesheet_Bodybuilder.png"
-      };
-
-      sprite.src = stageToSprite[stage] || "./src/assets/Spritesheet_Skinny.png";
+      const stage = String(props.bodyStage || getStoredBodyStage()).trim().toLowerCase();
+      sprite.src = stageToSprite[stage] || skinnySprite;
 
       let frame = 0;
 
       sprite.onload = () => {
+        if (activeSprite !== sprite) return;
+
         function draw() {
           if (!ctx || !canvas.value) return;
           ctx.clearRect(0, 0, canvas.value.width, canvas.value.height);
@@ -59,12 +83,19 @@ export default defineComponent({
         }
 
         draw();
-        intervalId = setInterval(draw, props.speed);
+        intervalId = window.setInterval(draw, props.speed);
       };
-    });
+    };
+
+    onMounted(drawSprite);
+
+    watch(
+      () => [props.bodyStage, props.speed, props.frameWidth, props.frameHeight, props.columns, props.frameCount],
+      drawSprite
+    );
 
     onUnmounted(() => {
-      if (intervalId) clearInterval(intervalId);
+      clearAnimation();
     });
 
     return { canvas };

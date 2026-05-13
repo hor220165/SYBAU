@@ -440,6 +440,8 @@ onUnmounted(() => {
 .stat-item {
   display: grid;
   gap: 6px;
+  justify-items: center;
+  text-align: center;
 }
 
 .stat-value {
@@ -550,6 +552,7 @@ onUnmounted(() => {
   width: min(620px, 43vw);
   max-width: none;
   margin-right: 0;
+  transform: translateX(-28px);
 }
 
 .workouts-media .mockup-image,
@@ -864,49 +867,88 @@ onUnmounted(() => {
 
   .showcase-row {
     min-height: auto;
-    gap: 22px;
-    padding: 54px 0;
-    text-align: center;
-  }
-
-  .showcase-copy {
-    justify-self: center;
-    max-width: 430px;
-  }
-
-  .showcase-copy p {
-    margin-right: auto;
-    margin-left: auto;
-    font-size: 0.98rem;
-    line-height: 1.68;
-  }
-
-  .showcase-copy ul {
-    width: fit-content;
-    margin: 0 auto;
+    grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
+    gap: 14px;
+    padding: 46px 0;
     text-align: left;
   }
 
-  .showcase-media {
-    width: 100%;
-    min-height: clamp(300px, 86vw, 430px);
-    justify-content: center;
+  .image-left {
+    grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr);
   }
 
-  .image-right .showcase-media,
   .image-left .showcase-media {
-    justify-content: center;
+    order: 1;
+  }
+
+  .image-left .showcase-copy {
+    order: 2;
+  }
+
+  .showcase-copy {
+    justify-self: stretch;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .showcase-copy h3 {
+    margin-bottom: 9px;
+    font-size: clamp(1.1rem, 4.8vw, 1.45rem);
+    line-height: 1.08;
+  }
+
+  .showcase-copy p {
+    margin: 0 0 10px;
+    max-width: none;
+    font-size: clamp(0.68rem, 2.6vw, 0.84rem);
+    line-height: 1.45;
+  }
+
+  .showcase-copy ul {
+    width: auto;
+    gap: 5px;
+    margin: 0;
+    text-align: left;
+  }
+
+  .showcase-copy li {
+    gap: 6px;
+    font-size: clamp(0.62rem, 2.4vw, 0.78rem);
+    line-height: 1.3;
+  }
+
+  .showcase-copy li::before {
+    width: 5px;
+    height: 5px;
+  }
+
+  .showcase-media {
+    width: auto;
+    min-height: 0;
+    justify-content: flex-end;
+  }
+
+  .image-left .showcase-media {
+    justify-content: flex-start;
+  }
+
+  .image-right .showcase-media {
+    justify-content: flex-end;
   }
 
   .dashboard-media .mockup-image,
   .leaderboard-media .mockup-image,
   .quests-media .mockup-image {
-    width: min(430px, 84vw);
+    width: min(220px, 44vw);
   }
 
   .workouts-media .mockup-image,
   .shop-media .mockup-image {
-    width: min(255px, 58vw);
+    width: min(140px, 30vw);
+  }
+
+  .quests-media .mockup-image {
+    transform: translateX(-12px);
   }
 
   .avatar-section {
@@ -951,22 +993,35 @@ onUnmounted(() => {
   }
 
   .showcase-copy h3 {
-    font-size: 2.05rem;
+    font-size: clamp(1rem, 4.6vw, 1.24rem);
   }
 
-  .showcase-media {
-    min-height: clamp(280px, 92vw, 390px);
+  .showcase-row {
+    gap: 10px;
+    padding: 38px 0;
+  }
+
+  .showcase-copy p {
+    font-size: clamp(0.62rem, 2.45vw, 0.74rem);
+  }
+
+  .showcase-copy li {
+    font-size: clamp(0.58rem, 2.3vw, 0.7rem);
   }
 
   .dashboard-media .mockup-image,
   .leaderboard-media .mockup-image,
   .quests-media .mockup-image {
-    width: min(350px, 86vw);
+    width: min(185px, 42vw);
   }
 
   .workouts-media .mockup-image,
   .shop-media .mockup-image {
-    width: min(230px, 60vw);
+    width: min(118px, 29vw);
+  }
+
+  .quests-media .mockup-image {
+    transform: translateX(-8px);
   }
 }
 </style>

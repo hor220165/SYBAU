@@ -223,23 +223,7 @@ namespace Sybau_Backend.Controllers
             var user = await _userService.GetUserById(userId);
             if (user == null) return NotFound();
 
-            var uploadsRoot = Path.Combine(
-                _environment.ContentRootPath,
-                "wwwroot",
-                "uploads",
-                "profile-images");
-            Directory.CreateDirectory(uploadsRoot);
-
-            if (!string.IsNullOrWhiteSpace(user.ProfileImageUrl))
-            {
-                var existingRelativePath = user.ProfileImageUrl.TrimStart('/')
-                    .Replace('/', Path.DirectorySeparatorChar);
-                var existingFullPath = Path.Combine(_environment.ContentRootPath, "wwwroot", existingRelativePath);
-                if (System.IO.File.Exists(existingFullPath))
-                {
-                    System.IO.File.Delete(existingFullPath);
-                }
-            }
+            DeleteLocalUpload(user.ProfileImageUrl);
 
             if (string.IsNullOrWhiteSpace(extension))
             {
@@ -253,17 +237,56 @@ namespace Sybau_Backend.Controllers
                 };
             }
 
-            var fileName = $"user-{user.Id}-{Guid.NewGuid():N}{extension}";
-            var fullPath = Path.Combine(uploadsRoot, fileName);
-            await using (var stream = new FileStream(fullPath, FileMode.Create))
-            {
-                await image.CopyToAsync(stream);
-            }
+            await using var memory = new MemoryStream();
+            await image.CopyToAsync(memory);
 
-            var profileImageUrl = $"/uploads/profile-images/{fileName}";
+            var contentType = GetImageContentType(image.ContentType, extension);
+            var profileImageUrl = $"data:{contentType};base64,{Convert.ToBase64String(memory.ToArray())}";
             await _userService.SetProfileImageUrlAsync(user.Id, profileImageUrl);
 
             return Ok(new { profileImageUrl });
+        }
+
+        private static string GetImageContentType(string? contentType, string extension)
+        {
+            if (!string.IsNullOrWhiteSpace(contentType) &&
+                contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            {
+                return contentType.Split(';', 2)[0].Trim().ToLowerInvariant();
+            }
+
+            return extension.ToLowerInvariant() switch
+            {
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                ".heic" => "image/heic",
+                ".heif" => "image/heif",
+                _ => "image/jpeg"
+            };
+        }
+
+        private void DeleteLocalUpload(string? imageUrl)
+        {
+            if (string.IsNullOrWhiteSpace(imageUrl) ||
+                !imageUrl.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var relativePath = imageUrl.TrimStart('/')
+                .Replace('/', Path.DirectorySeparatorChar);
+            var uploadsRoot = Path.GetFullPath(Path.Combine(_environment.ContentRootPath, "wwwroot", "uploads"));
+            var fullPath = Path.GetFullPath(Path.Combine(_environment.ContentRootPath, "wwwroot", relativePath));
+
+            if (!fullPath.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            if (System.IO.File.Exists(fullPath))
+            {
+                System.IO.File.Delete(fullPath);
+            }
         }
 
         // DELETE /users/profile/image
@@ -278,16 +301,7 @@ namespace Sybau_Backend.Controllers
             var user = await _userService.GetUserById(userId);
             if (user == null) return NotFound();
 
-            if (!string.IsNullOrWhiteSpace(user.ProfileImageUrl))
-            {
-                var existingRelativePath = user.ProfileImageUrl.TrimStart('/')
-                    .Replace('/', Path.DirectorySeparatorChar);
-                var existingFullPath = Path.Combine(_environment.ContentRootPath, "wwwroot", existingRelativePath);
-                if (System.IO.File.Exists(existingFullPath))
-                {
-                    System.IO.File.Delete(existingFullPath);
-                }
-            }
+            DeleteLocalUpload(user.ProfileImageUrl);
 
             await _userService.SetProfileImageUrlAsync(user.Id, null);
 

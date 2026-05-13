@@ -28,10 +28,13 @@ builder.Configuration
     .AddCommandLine(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-var usePostgres = builder.Environment.IsProduction() || IsPostgresConnectionString(connectionString);
-if (usePostgres && string.IsNullOrWhiteSpace(connectionString))
+var usePostgres = builder.Environment.IsProduction()
+    || IsRenderRuntime()
+    || IsPostgresConnectionString(connectionString);
+if (usePostgres && !IsPostgresConnectionString(connectionString))
 {
-    throw new InvalidOperationException("ConnectionStrings:DefaultConnection must be configured for PostgreSQL.");
+    throw new InvalidOperationException(
+        "ConnectionStrings:DefaultConnection must be configured with a PostgreSQL/Supabase connection string for Production/Render.");
 }
 
 var jwtKey = builder.Configuration["Jwt:Key"];
@@ -46,6 +49,13 @@ static bool IsPostgresConnectionString(string? value)
     return value.Contains("Host=", StringComparison.OrdinalIgnoreCase)
         || value.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase)
         || value.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase);
+}
+
+static bool IsRenderRuntime()
+{
+    return !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("RENDER"))
+        || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("RENDER_SERVICE_ID"))
+        || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("RENDER_EXTERNAL_URL"));
 }
 
 // Add services to the container.
@@ -178,6 +188,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<FitnessDbContext>();
     db.Database.Migrate();
+    app.Logger.LogInformation("Database provider: {ProviderName}", db.Database.ProviderName);
 }
 
 Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads", "profile-images"));

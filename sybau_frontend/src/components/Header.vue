@@ -2,13 +2,12 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useNavigation } from "@/composables/useNavigation.ts";
 import { useAuth } from "@/composables/useAuth";
-import { userService } from '@/services/api';
 import { useCoins } from '@/composables/useCoins';
 import { useNotifications } from '@/composables/useNotifications';
 import NotificationBell from '@/components/NotificationBell.vue';
 
 const { logout } = useNavigation();
-const { user } = useAuth();
+const { user, refreshProfile } = useAuth();
 const { formatCoins } = useCoins();
 const { connect } = useNotifications();
 
@@ -59,10 +58,9 @@ function handleRewardFlash(event: Event) {
 
 onMounted(async () => {
   window.addEventListener('sybau:reward-flash', handleRewardFlash);
-  if (!user.value?.avatar || user.value?.totalXp === undefined || user.value?.totalXp === null) {
+  if (localStorage.getItem('token')) {
     try {
-      await userService.getProfile();
-      user.value = JSON.parse(localStorage.getItem('user') || '{}');
+      await refreshProfile();
     } catch (err) {
       console.error('Failed to fetch profile:', err);
     }

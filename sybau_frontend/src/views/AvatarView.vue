@@ -72,6 +72,7 @@
             <div class="avatar-wrapper">
               <div class="avatar-sprite">
                 <SpriteAnimator
+                  :bodyStage="bodyStage"
                   :frameWidth="128"
                   :frameHeight="128"
                   :columns="2"
@@ -246,6 +247,7 @@ import coinIcon from '@/assets/SYBAU_Coin.png';
 
 const { refreshProfile } = useAuth();
 const userName = ref('');
+const bodyStage = ref('skinny');
 
 interface BoosterItem {
   id: number;
@@ -417,6 +419,7 @@ async function loadProfile() {
 
     // Equippte Slots aus Profil wiederherstellen
     const avatar = data.avatar ?? {};
+    bodyStage.value = avatar.bodyStage ?? 'skinny';
     const slotNames = [avatar.boost1, avatar.boost2, avatar.boost3, avatar.boost4];
     equipSlots.value = slotNames.map((name: string | null) => ({
       label: 'Booster',
