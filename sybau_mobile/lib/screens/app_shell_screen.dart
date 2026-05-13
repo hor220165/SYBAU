@@ -5022,7 +5022,7 @@ class _QuestsTabState extends State<QuestsTab> {
                       Text(
                         '+${_formatCompactNumber(_toInt(m['xpReward']))} XP',
                         style: const TextStyle(
-                          color: Color(0xFFFBBF24),
+                          color: Color(0xFF60A5FA),
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -5031,7 +5031,7 @@ class _QuestsTabState extends State<QuestsTab> {
                         Text(
                           '+${_formatCompactNumber(_toInt(m['coinReward']))} Coins',
                           style: const TextStyle(
-                            color: Color(0xFFF59E0B),
+                            color: Color(0xFFFBBF24),
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -10530,16 +10530,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 10, 6),
                 child: Row(
                   children: [
-                    const Expanded(
-                      child: Text(
-                        'Erinnerungszeit',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
+                    const Spacer(),
                     CupertinoButton(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: const Text('Fertig'),

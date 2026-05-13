@@ -3,7 +3,7 @@
     <header class="landing-header">
       <div class="container header-inner">
         <button class="logo-button" type="button" @click="navigateTo('/home')" aria-label="SYBAU Home">
-          <img :src="logoWhite" alt="SYBAU Logo" class="logo-image">
+          <img :src="shortLogo" alt="SYBAU Logo" class="logo-image">
         </button>
 
         <nav class="nav-buttons" aria-label="Landing Navigation">
@@ -16,16 +16,14 @@
     <main>
       <section class="hero-section">
         <div class="container hero-content">
-          <p class="eyebrow fade-in">SYBAU Web & Mobile</p>
           <h1 class="hero-title fade-in">
             Trainieren, leveln, sichtbar stärker werden.
           </h1>
-          <p class="hero-description fade-in delay-1">
-            SYBAU verbindet Workouts, Avatar-Fortschritt, Quests, Shop und Ranking zu einem klaren Fitness-Game.
+          <p class="hero-subtitle fade-in delay-1">
+            Dein Training wird zu Fortschritt, den du jeden Tag direkt siehst.
           </p>
           <div class="hero-actions fade-in delay-2">
             <button class="primary-btn" type="button" @click="navigateTo('/auth')">Webplayer öffnen</button>
-            <button class="ghost-btn" type="button" @click="scrollToProduct">Einblicke ansehen</button>
           </div>
         </div>
       </section>
@@ -46,11 +44,6 @@
 
       <section class="product-section" id="product-preview">
         <div class="container">
-          <div class="section-heading scroll-reveal">
-            <span class="eyebrow">App-Einblicke</span>
-            <h2>Die wichtigsten Screens auf einen Blick.</h2>
-          </div>
-
           <div
             class="showcase-row scroll-reveal"
             :class="section.layout"
@@ -58,7 +51,6 @@
             :key="section.title"
           >
             <div class="showcase-copy">
-              <span class="eyebrow">{{ section.kicker }}</span>
               <h3>{{ section.title }}</h3>
               <p>{{ section.text }}</p>
               <ul>
@@ -73,7 +65,6 @@
 
           <div class="avatar-section scroll-reveal">
             <div class="avatar-copy">
-              <span class="eyebrow">Avatar Progress</span>
               <h3>Drei Phasen, kein abstrakter Fortschritt.</h3>
               <p>
                 Der Charakter entwickelt sich mit deinem Training. Die Veränderung bleibt bewusst sichtbar und simpel.
@@ -124,7 +115,7 @@
 import FooterComponent from '@/components/FooterComponent.vue';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import logoWhite from '@/assets/Sybau_Logo_White.png';
+import shortLogo from '@/assets/Sybau_logo_short.png';
 import skinnySprite from '@/assets/Spritesheet_Skinny.png';
 import normalSprite from '@/assets/Spritesheet_Normal.png';
 import bodybuilderSprite from '@/assets/Spritesheet_Bodybuilder.png';
@@ -147,7 +138,6 @@ const stats = [
 
 const productSections = [
   {
-    kicker: 'Dashboard',
     title: 'Alles startet mit deinem Avatar.',
     text: 'Level, XP, Coins, Items und Tagesfortschritt sitzen direkt im Blick. Der Screen zeigt sofort, was dein Training gebracht hat.',
     image: dashboardMockup,
@@ -156,7 +146,6 @@ const productSections = [
     points: ['Avatar als Mittelpunkt', 'Level- und XP-Fortschritt', 'Streak, Rang und Quests'],
   },
   {
-    kicker: 'Workouts',
     title: 'Eintragen bleibt schnell.',
     text: 'Timer, Wiederholungen und Belohnungen sind auf Mobile so gestaltet, dass man nach dem Satz nicht lange suchen muss.',
     image: workoutsMockup,
@@ -165,25 +154,22 @@ const productSections = [
     points: ['Timer-Modus', 'Reps sauber ändern', 'Belohnung direkt sichtbar'],
   },
   {
-    kicker: 'Quests',
-    title: 'Klare Ziele statt leere Motivation.',
-    text: 'Quests geben dem Training kleine Aufgaben, Fortschritt und Rewards. So entsteht ein Loop, der nicht kompliziert wirkt.',
-    image: questsMockup,
-    mediaClass: 'quests-media',
-    layout: 'image-right',
-    points: ['Daily und Weekly Quests', 'XP und Coins als Rewards', 'Claim-Feedback im Header'],
-  },
-  {
-    kicker: 'Shop',
     title: 'Chests und Items fühlen sich nach Loot an.',
     text: 'Der Shop zeigt Booster, Chests und Item-Besitz im gleichen Gaming-Stil wie der Rest der App.',
     image: shopMockup,
     mediaClass: 'shop-media',
-    layout: 'image-left',
+    layout: 'image-right',
     points: ['Chests mit Drop-Idee', 'Items mit XP- und Coin-Boosts', 'Pixel-Art bleibt im Fokus'],
   },
   {
-    kicker: 'Leaderboard',
+    title: 'Klare Ziele statt leere Motivation.',
+    text: 'Quests geben dem Training kleine Aufgaben, Fortschritt und Rewards. So entsteht ein Loop, der nicht kompliziert wirkt.',
+    image: questsMockup,
+    mediaClass: 'quests-media',
+    layout: 'image-left',
+    points: ['Daily und Weekly Quests', 'XP und Coins als Rewards', 'Claim-Feedback im Header'],
+  },
+  {
     title: 'Ranking macht Fortschritt vergleichbar.',
     text: 'Wer trainiert, sieht nicht nur eigene Zahlen, sondern auch, wie weit die Spitze entfernt ist.',
     image: leaderboardMockup,
@@ -216,10 +202,6 @@ const statsAnimated = ref(false);
 
 const navigateTo = (path: string) => {
   router.push(path);
-};
-
-const scrollToProduct = () => {
-  document.getElementById('product-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
 const animateCounter = (index: number, target: number, duration = 1600) => {
@@ -273,8 +255,10 @@ onUnmounted(() => {
   min-height: 100vh;
   color: #fff;
   background:
-    linear-gradient(115deg, rgba(34, 211, 238, 0.08) 0%, transparent 35%, rgba(236, 72, 153, 0.07) 78%, transparent 100%),
-    linear-gradient(145deg, #030712 0%, #07111f 48%, #101827 100%);
+    radial-gradient(circle at top left, #1a237e, transparent 45%),
+    radial-gradient(circle at bottom right, #311b92, transparent 45%),
+    #050714;
+  background-attachment: fixed;
 }
 
 .container {
@@ -287,8 +271,9 @@ onUnmounted(() => {
   top: 0;
   z-index: 50;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(3, 7, 18, 0.58);
-  backdrop-filter: blur(18px);
+  background: rgba(5, 8, 18, 0.46);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .header-inner {
@@ -308,7 +293,7 @@ onUnmounted(() => {
 }
 
 .logo-image {
-  height: 36px;
+  height: 42px;
   width: auto;
   display: block;
 }
@@ -322,19 +307,22 @@ onUnmounted(() => {
 
 .nav-btn,
 .webplayer-btn,
-.primary-btn,
-.ghost-btn {
-  min-height: 44px;
+.primary-btn {
+  height: 46px;
   border-radius: 12px;
   padding: 0 20px;
-  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 740;
+  line-height: 1;
   color: white;
   cursor: pointer;
+  appearance: none;
   transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 
-.nav-btn,
-.ghost-btn {
+.nav-btn {
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(15, 23, 42, 0.48);
 }
@@ -348,8 +336,7 @@ onUnmounted(() => {
 
 .nav-btn:hover,
 .webplayer-btn:hover,
-.primary-btn:hover,
-.ghost-btn:hover {
+.primary-btn:hover {
   transform: translateY(-2px);
   border-color: rgba(236, 72, 153, 0.55);
 }
@@ -358,7 +345,7 @@ onUnmounted(() => {
   min-height: calc(100vh - 78px);
   display: flex;
   align-items: center;
-  padding: 96px 0 76px;
+  padding: 104px 0 78px;
 }
 
 .hero-content {
@@ -366,43 +353,32 @@ onUnmounted(() => {
   text-align: center;
 }
 
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  margin: 0 0 14px;
-  color: #f9a8d4;
-  font-size: 0.78rem;
-  font-weight: 950;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
 .hero-title {
   max-width: 720px;
   margin: 0 auto;
   font-size: clamp(3rem, 6.2vw, 5.45rem);
-  line-height: 0.96;
-  font-weight: 950;
+  line-height: 1;
+  font-weight: 800;
   letter-spacing: 0;
 }
 
-.hero-description {
-  max-width: 610px;
-  margin: 28px auto 34px;
-  color: rgba(226, 232, 240, 0.76);
-  font-size: clamp(1rem, 1.45vw, 1.16rem);
-  line-height: 1.75;
-  font-weight: 650;
+.hero-subtitle {
+  max-width: 560px;
+  margin: 24px auto 0;
+  color: rgba(226, 232, 240, 0.68);
+  font-size: 1.08rem;
+  line-height: 1.7;
+  font-weight: 500;
 }
 
 .hero-actions {
+  margin-top: 38px;
   flex-wrap: wrap;
   justify-content: center;
 }
 
-.primary-btn,
-.ghost-btn {
-  min-height: 54px;
+.primary-btn {
+  height: 56px;
   padding: 0 28px;
 }
 
@@ -426,7 +402,7 @@ onUnmounted(() => {
 }
 
 .fade-in.delay-2 {
-  animation-delay: 0.3s;
+  animation-delay: 0.28s;
 }
 
 .scroll-reveal {
@@ -470,12 +446,12 @@ onUnmounted(() => {
   color: white;
   font-size: clamp(2.1rem, 4vw, 3.8rem);
   line-height: 1;
-  font-weight: 950;
+  font-weight: 780;
 }
 
 .stat-label {
   color: rgba(226, 232, 240, 0.6);
-  font-weight: 900;
+  font-weight: 650;
   letter-spacing: 0.11em;
   text-transform: uppercase;
   font-size: 0.76rem;
@@ -484,18 +460,6 @@ onUnmounted(() => {
 .product-section {
   scroll-margin-top: 96px;
   padding: 20px 0 72px;
-}
-
-.section-heading {
-  max-width: 720px;
-  margin-bottom: 42px;
-}
-
-.section-heading h2 {
-  margin: 0;
-  font-size: clamp(2.35rem, 5vw, 4.4rem);
-  line-height: 0.98;
-  font-weight: 950;
 }
 
 .showcase-row {
@@ -511,8 +475,8 @@ onUnmounted(() => {
 .showcase-copy h3 {
   margin: 0 0 18px;
   font-size: clamp(2.05rem, 4.4vw, 4.1rem);
-  line-height: 0.98;
-  font-weight: 950;
+  line-height: 1;
+  font-weight: 800;
 }
 
 .showcase-copy p {
@@ -521,7 +485,7 @@ onUnmounted(() => {
   color: rgba(226, 232, 240, 0.72);
   font-size: 1.04rem;
   line-height: 1.75;
-  font-weight: 650;
+  font-weight: 520;
 }
 
 .showcase-copy ul {
@@ -537,7 +501,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   color: rgba(255, 255, 255, 0.86);
-  font-weight: 850;
+  font-weight: 680;
 }
 
 .showcase-copy li::before {
@@ -598,8 +562,8 @@ onUnmounted(() => {
 .avatar-section {
   display: grid;
   justify-items: center;
-  gap: clamp(34px, 5vw, 62px);
-  padding: clamp(48px, 8vw, 96px) 0;
+  gap: clamp(42px, 6vw, 76px);
+  padding: clamp(64px, 9vw, 112px) 0;
 }
 
 .avatar-copy {
@@ -610,8 +574,8 @@ onUnmounted(() => {
 .avatar-copy h3 {
   margin: 0 0 18px;
   font-size: clamp(2.05rem, 4.4vw, 4.1rem);
-  line-height: 0.98;
-  font-weight: 950;
+  line-height: 1;
+  font-weight: 800;
 }
 
 .avatar-copy p {
@@ -620,17 +584,38 @@ onUnmounted(() => {
   color: rgba(226, 232, 240, 0.72);
   font-size: 1.04rem;
   line-height: 1.75;
-  font-weight: 650;
+  font-weight: 520;
 }
 
 .avatar-phases {
   position: relative;
-  width: min(780px, 100%);
+  width: min(980px, 100%);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: end;
-  gap: clamp(12px, 3vw, 34px);
-  padding-bottom: 28px;
+  gap: clamp(16px, 3vw, 46px);
+  padding: 8px 0 34px;
+}
+
+.avatar-phases::before {
+  content: '';
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  bottom: 74px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), rgba(236, 72, 153, 0.2), rgba(255, 255, 255, 0.18), transparent);
+}
+
+.avatar-phases::after {
+  content: '';
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  bottom: 73px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(236, 72, 153, 0.18), transparent);
+  filter: blur(8px);
 }
 
 .phase-item {
@@ -638,9 +623,25 @@ onUnmounted(() => {
   z-index: 1;
   display: grid;
   justify-items: center;
-  gap: 14px;
+  gap: 18px;
   animation: phaseRise 0.7s ease both;
   animation-delay: var(--phase-delay);
+  transition: transform 0.24s ease;
+}
+
+.phase-item::after {
+  content: '';
+  position: absolute;
+  bottom: 70px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 0 18px rgba(236, 72, 153, 0.26);
+}
+
+.phase-item:hover {
+  transform: translateY(-6px);
 }
 
 .avatar-sprite {
@@ -653,15 +654,23 @@ onUnmounted(() => {
 }
 
 .phase-sprite {
-  width: clamp(150px, 17vw, 230px);
-  height: clamp(150px, 17vw, 230px);
+  width: clamp(190px, 18vw, 280px);
+  height: clamp(190px, 18vw, 280px);
   filter: drop-shadow(0 20px 24px rgba(0, 0, 0, 0.42));
+  transition: transform 0.24s ease, filter 0.24s ease;
+  will-change: background-position;
+}
+
+.phase-item:hover .phase-sprite {
+  transform: scale(1.06);
+  filter: drop-shadow(0 26px 32px rgba(0, 0, 0, 0.46));
+  animation: avatarSpritePreview 2.6s steps(1, end) infinite;
 }
 
 .phase-item span {
   color: white;
   font-size: 1rem;
-  font-weight: 950;
+  font-weight: 760;
 }
 
 @keyframes phaseRise {
@@ -672,6 +681,25 @@ onUnmounted(() => {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes avatarSpritePreview {
+  0%,
+  24% {
+    background-position: 0 0;
+  }
+  25%,
+  49% {
+    background-position: 100% 0;
+  }
+  50%,
+  74% {
+    background-position: 0 100%;
+  }
+  75%,
+  100% {
+    background-position: 100% 100%;
   }
 }
 
@@ -686,7 +714,7 @@ onUnmounted(() => {
   margin-bottom: 28px;
   color: rgba(226, 232, 240, 0.56);
   font-size: 0.88rem;
-  font-weight: 950;
+  font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
@@ -710,12 +738,12 @@ onUnmounted(() => {
 
 .marquee::before {
   left: 0;
-  background: linear-gradient(90deg, #07111f, transparent);
+  background: linear-gradient(90deg, #050714, transparent);
 }
 
 .marquee::after {
   right: 0;
-  background: linear-gradient(270deg, #07111f, transparent);
+  background: linear-gradient(270deg, #050714, transparent);
 }
 
 .marquee-content {
@@ -792,7 +820,7 @@ onUnmounted(() => {
   }
 
   .logo-image {
-    height: 28px;
+    height: 34px;
   }
 
   .nav-btn {
@@ -801,20 +829,27 @@ onUnmounted(() => {
 
   .webplayer-btn {
     padding: 0 16px;
-    min-height: 40px;
+    height: 40px;
   }
 
   .hero-section {
-    min-height: auto;
-    padding: 68px 0 44px;
+    min-height: calc(100svh - 68px);
+    padding: 72px 0 56px;
   }
 
   .hero-title {
-    font-size: clamp(2.7rem, 13vw, 4.9rem);
+    font-size: clamp(2.45rem, 11.5vw, 4.4rem);
   }
 
-  .hero-description {
-    margin-bottom: 28px;
+  .hero-subtitle {
+    max-width: 360px;
+    margin-top: 20px;
+    font-size: 0.98rem;
+    line-height: 1.65;
+  }
+
+  .hero-actions {
+    margin-top: 30px;
   }
 
   .stats-box {
@@ -829,22 +864,49 @@ onUnmounted(() => {
 
   .showcase-row {
     min-height: auto;
-    padding: 44px 0;
+    gap: 22px;
+    padding: 54px 0;
+    text-align: center;
+  }
+
+  .showcase-copy {
+    justify-self: center;
+    max-width: 430px;
+  }
+
+  .showcase-copy p {
+    margin-right: auto;
+    margin-left: auto;
+    font-size: 0.98rem;
+    line-height: 1.68;
+  }
+
+  .showcase-copy ul {
+    width: fit-content;
+    margin: 0 auto;
+    text-align: left;
   }
 
   .showcase-media {
-    min-height: 300px;
+    width: 100%;
+    min-height: clamp(300px, 86vw, 430px);
+    justify-content: center;
+  }
+
+  .image-right .showcase-media,
+  .image-left .showcase-media {
+    justify-content: center;
   }
 
   .dashboard-media .mockup-image,
   .leaderboard-media .mockup-image,
   .quests-media .mockup-image {
-    width: min(520px, 92vw);
+    width: min(430px, 84vw);
   }
 
   .workouts-media .mockup-image,
   .shop-media .mockup-image {
-    width: min(310px, 72vw);
+    width: min(255px, 58vw);
   }
 
   .avatar-section {
@@ -856,8 +918,8 @@ onUnmounted(() => {
   }
 
   .phase-sprite {
-    width: clamp(118px, 29vw, 165px);
-    height: clamp(118px, 29vw, 165px);
+    width: clamp(140px, 30vw, 190px);
+    height: clamp(140px, 30vw, 190px);
   }
 
   .tech-logo {
@@ -872,12 +934,12 @@ onUnmounted(() => {
 
 @media (max-width: 520px) {
   .hero-actions {
-    width: 100%;
+    width: auto;
   }
 
-  .primary-btn,
-  .ghost-btn {
-    width: 100%;
+  .primary-btn {
+    width: auto;
+    min-width: 210px;
   }
 
   .stats-box {
@@ -893,13 +955,18 @@ onUnmounted(() => {
   }
 
   .showcase-media {
-    min-height: 280px;
+    min-height: clamp(280px, 92vw, 390px);
   }
 
   .dashboard-media .mockup-image,
   .leaderboard-media .mockup-image,
   .quests-media .mockup-image {
-    width: min(460px, 100%);
+    width: min(350px, 86vw);
+  }
+
+  .workouts-media .mockup-image,
+  .shop-media .mockup-image {
+    width: min(230px, 60vw);
   }
 }
 </style>

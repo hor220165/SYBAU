@@ -235,7 +235,7 @@ const progressPercent = computed(() => {
   gap: 6px;
   font-size: 16px;
   font-weight: 700;
-  color: #fbbf24;
+  color: #60a5fa;
   min-width: 0;
   white-space: nowrap;
 }
@@ -253,7 +253,7 @@ const progressPercent = computed(() => {
   gap: 4px;
   font-size: 15px;
   font-weight: 700;
-  color: #f59e0b;
+  color: #fbbf24;
   min-width: 0;
   white-space: nowrap;
 }
