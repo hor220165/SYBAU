@@ -26,7 +26,7 @@ public class FitnessDbContext:DbContext
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
     public DbSet<Friendship> Friendships => Set<Friendship>();
     public DbSet<FriendChallenge> FriendChallenges => Set<FriendChallenge>();
-    public FitnessDbContext(DbContextOptions<FitnessDbContext> options) : base(options){}
+    public FitnessDbContext(DbContextOptions options) : base(options){}
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

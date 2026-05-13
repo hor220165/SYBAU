@@ -39,7 +39,7 @@ export function useNotifications() {
     // Bereits verbunden oder am Verbinden → nicht nochmal
     if (connection && connection.state !== signalR.HubConnectionState.Disconnected) return;
 
-    const baseUrl = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:5243';
+    const baseUrl = (import.meta.env.VITE_API_BASE_URL as string) || 'https://sybau-xll5.onrender.com';
     const hubUrl = baseUrl.replace(/\/+$/, '').replace(/\/api$/i, '') + '/hubs/notifications';
 
     connection = new signalR.HubConnectionBuilder()

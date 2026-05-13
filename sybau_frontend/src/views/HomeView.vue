@@ -1,325 +1,443 @@
 <template>
   <div class="landing-page">
-    <!-- Header -->
     <header class="landing-header">
-      <div class="container">
-        <div class="logo">
-          <img src="../assets/Sybau_Logo_White.png" alt="SYBAU Logo" class="logo-image">
-        </div>
-        <nav class="nav-buttons">
-          <button class="nav-btn" @click="navigateTo('/auth')">Login</button>
-          <button class="cta-btn" @click="navigateTo('/auth')">
-            <span class="play-icon">▶</span>
-            Kostenlos starten
-          </button>
+      <div class="container header-inner">
+        <button class="logo-button" type="button" @click="navigateTo('/home')" aria-label="SYBAU Home">
+          <img :src="logoWhite" alt="SYBAU Logo" class="logo-image">
+        </button>
+
+        <nav class="nav-buttons" aria-label="Landing Navigation">
+          <button class="nav-btn" type="button" @click="navigateTo('/auth')">Login</button>
+          <button class="webplayer-btn" type="button" @click="navigateTo('/auth')">Webplayer</button>
         </nav>
       </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="hero-section">
-      <div class="container">
-        <h1 class="hero-title fade-in">
-          Fitness trifft auf<br>
-          <span class="gradient-text">Gaming-Power</span>
-        </h1>
-
-        <p class="hero-description fade-in delay-1">
-          Verwandle dein Training in ein episches RPG-Abenteuer. Levele deinen Avatar, sammle
-          XP und Coins, schalte legendäre Items frei und werde zum ultimativen Fitness-Champion!
-        </p>
-
-        <div class="hero-buttons fade-in delay-2">
-          <button class="primary-btn" @click="navigateTo('/auth')">
-            <span class="play-icon">▶</span>
-            Kostenlos starten
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Stats Section - Separate Section -->
-    <section class="stats-section">
-      <div class="container">
-        <div class="stats-box" ref="statsBox">
-          <div class="stat-item scroll-reveal" v-for="(stat, index) in stats" :key="index" :style="{ transitionDelay: `${index * 0.1}s` }">
-            <svg class="stat-icon" xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="stat.icon"></svg>
-            <div class="stat-value">{{ animatedStats[index] }}{{ stat.suffix }}</div>
-            <div class="stat-label">{{ stat.label }}</div>
+    <main>
+      <section class="hero-section">
+        <div class="container hero-content">
+          <p class="eyebrow fade-in">SYBAU Web & Mobile</p>
+          <h1 class="hero-title fade-in">
+            Trainieren, leveln, sichtbar stärker werden.
+          </h1>
+          <p class="hero-description fade-in delay-1">
+            SYBAU verbindet Workouts, Avatar-Fortschritt, Quests, Shop und Ranking zu einem klaren Fitness-Game.
+          </p>
+          <div class="hero-actions fade-in delay-2">
+            <button class="primary-btn" type="button" @click="navigateTo('/auth')">Webplayer öffnen</button>
+            <button class="ghost-btn" type="button" @click="scrollToProduct">Einblicke ansehen</button>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Features Section -->
-    <section class="features-section">
-      <div class="container">
-        <h2 class="section-title scroll-reveal">Warum SYBAU?</h2>
-        <p class="section-subtitle scroll-reveal">Die perfekte Kombination aus Fitness und Gaming</p>
+      <section class="stats-section" ref="statsBox">
+        <div class="container stats-box">
+          <div
+            class="stat-item scroll-reveal"
+            v-for="(stat, index) in stats"
+            :key="stat.label"
+            :style="{ transitionDelay: `${index * 0.08}s` }"
+          >
+            <span class="stat-value">{{ animatedStats[index] }}{{ stat.suffix }}</span>
+            <span class="stat-label">{{ stat.label }}</span>
+          </div>
+        </div>
+      </section>
 
-        <div class="features-grid">
-          <div class="feature-card scroll-reveal" v-for="(feature, index) in features" :key="index" :style="{ transitionDelay: `${index * 0.1}s` }">
-            <div :class="['feature-icon', feature.iconClass]">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="feature.icon"></svg>
+      <section class="product-section" id="product-preview">
+        <div class="container">
+          <div class="section-heading scroll-reveal">
+            <span class="eyebrow">App-Einblicke</span>
+            <h2>Die wichtigsten Screens auf einen Blick.</h2>
+          </div>
+
+          <div
+            class="showcase-row scroll-reveal"
+            :class="section.layout"
+            v-for="section in productSections"
+            :key="section.title"
+          >
+            <div class="showcase-copy">
+              <span class="eyebrow">{{ section.kicker }}</span>
+              <h3>{{ section.title }}</h3>
+              <p>{{ section.text }}</p>
+              <ul>
+                <li v-for="item in section.points" :key="item">{{ item }}</li>
+              </ul>
             </div>
-            <h3 class="feature-title">{{ feature.title }}</h3>
-            <p class="feature-description">{{ feature.description }}</p>
-          </div>
-        </div>
-      </div>
-    </section>
 
-    <!-- How It Works Section -->
-    <section class="how-section">
-      <div class="container">
-        <h2 class="section-title scroll-reveal">So funktioniert's</h2>
-        <p class="section-subtitle scroll-reveal">In 3 einfachen Schritten zum Fitness-Champion</p>
-
-        <div class="steps-grid">
-          <div class="step-card scroll-reveal" v-for="(step, index) in steps" :key="index" :style="{ transitionDelay: `${index * 0.15}s` }">
-            <div class="step-number">{{ index + 1 }}</div>
-            <div :class="['step-icon', step.iconClass]">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="step.icon"></svg>
+            <div class="showcase-media" :class="section.mediaClass" aria-hidden="true">
+              <img :src="section.image" alt="" class="mockup-image">
             </div>
-            <h3 class="step-title">{{ step.title }}</h3>
-            <p class="step-description">{{ step.description }}</p>
+          </div>
+
+          <div class="avatar-section scroll-reveal">
+            <div class="avatar-copy">
+              <span class="eyebrow">Avatar Progress</span>
+              <h3>Drei Phasen, kein abstrakter Fortschritt.</h3>
+              <p>
+                Der Charakter entwickelt sich mit deinem Training. Die Veränderung bleibt bewusst sichtbar und simpel.
+              </p>
+            </div>
+
+            <div class="avatar-phases" aria-label="Avatar Phasen">
+              <div
+                v-for="(phase, index) in avatarPhases"
+                :key="phase.name"
+                class="phase-item"
+                :style="{ '--phase-delay': `${index * 0.08}s` }"
+              >
+                <div
+                  class="avatar-sprite phase-sprite"
+                  :style="{ backgroundImage: `url(${phase.sprite})` }"
+                ></div>
+                <span>{{ phase.name }}</span>
+              </div>
+            </div>
           </div>
         </div>
+      </section>
 
-        <div class="cta-section scroll-reveal">
-          <button class="cta-large-btn" @click="navigateTo('/auth')">
-            <span class="play-icon">▶</span>
-            Jetzt kostenlos starten
-          </button>
+      <section class="tech-section">
+        <div class="tech-title">Made with</div>
+        <div class="marquee" aria-label="Technologien">
+          <div class="marquee-content">
+            <div class="logo-set" v-for="setIndex in 3" :key="setIndex">
+              <img
+                v-for="tech in techStack"
+                :key="`${setIndex}-${tech.name}`"
+                :src="tech.icon"
+                :alt="tech.name"
+                class="tech-logo"
+              >
+            </div>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </main>
 
-<!-- Tech Stack Section -->
-<section class="tech-section">
-  <div class="tech-title">Made with</div>
-
-  <div class="marquee">
-    <div class="marquee-content">
-      <!-- Erste Reihe -->
-      <div class="logo-set">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg" alt="C#" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/dotnetcore/dotnetcore-original.svg" alt=".NET" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vuejs/vuejs-original.svg" alt="Vue" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" alt="TypeScript" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg" alt="HTML" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg" alt="CSS" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" alt="JavaScript" class="tech-logo">
-      </div>
-      <!-- Zweite Reihe (identisch) -->
-      <div class="logo-set">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg" alt="C#" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/dotnetcore/dotnetcore-original.svg" alt=".NET" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vuejs/vuejs-original.svg" alt="Vue" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" alt="TypeScript" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg" alt="HTML" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg" alt="CSS" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" alt="JavaScript" class="tech-logo">
-      </div>
-      <!-- Dritte Reihe (identisch) -->
-      <div class="logo-set">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg" alt="C#" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/dotnetcore/dotnetcore-original.svg" alt=".NET" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vuejs/vuejs-original.svg" alt="Vue" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" alt="TypeScript" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg" alt="HTML" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg" alt="CSS" class="tech-logo">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" alt="JavaScript" class="tech-logo">
-      </div>
-    </div>
-  </div>
-</section>
-
-    <!-- Footer -->
     <FooterComponent />
   </div>
 </template>
 
 <script setup lang="ts">
 import FooterComponent from '@/components/FooterComponent.vue';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import logoWhite from '@/assets/Sybau_Logo_White.png';
+import skinnySprite from '@/assets/Spritesheet_Skinny.png';
+import normalSprite from '@/assets/Spritesheet_Normal.png';
+import bodybuilderSprite from '@/assets/Spritesheet_Bodybuilder.png';
+import dashboardMockup from '@/assets/mockups/Dashboard-Mockup2.png';
+import workoutsMockup from '@/assets/mockups/Workouts-Mockup.png';
+import questsMockup from '@/assets/mockups/Quests-Mockup.png';
+import shopMockup from '@/assets/mockups/Shop-Mockup.png';
+import leaderboardMockup from '@/assets/mockups/Leaderboard-Mockup.png';
 
 const router = useRouter();
 const statsBox = ref<HTMLElement | null>(null);
+let observer: IntersectionObserver | null = null;
 
-const stats = ref([
-  { 
-    value: 100, 
-    suffix: '+', 
-    label: 'Max Level',
-    icon: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>'
+const stats = [
+  { value: 100, suffix: '+', label: 'Max Level' },
+  { value: 100, suffix: '+', label: 'Achievements' },
+  { value: 5000, suffix: '+', label: 'Aktive Nutzer' },
+  { value: 50, suffix: '+', label: 'Workouts' },
+];
+
+const productSections = [
+  {
+    kicker: 'Dashboard',
+    title: 'Alles startet mit deinem Avatar.',
+    text: 'Level, XP, Coins, Items und Tagesfortschritt sitzen direkt im Blick. Der Screen zeigt sofort, was dein Training gebracht hat.',
+    image: dashboardMockup,
+    mediaClass: 'dashboard-media',
+    layout: 'image-right',
+    points: ['Avatar als Mittelpunkt', 'Level- und XP-Fortschritt', 'Streak, Rang und Quests'],
   },
-  { 
-    value: 100, 
-    suffix: '+', 
-    label: 'Achievements',
-    icon: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>'
+  {
+    kicker: 'Workouts',
+    title: 'Eintragen bleibt schnell.',
+    text: 'Timer, Wiederholungen und Belohnungen sind auf Mobile so gestaltet, dass man nach dem Satz nicht lange suchen muss.',
+    image: workoutsMockup,
+    mediaClass: 'workouts-media',
+    layout: 'image-left',
+    points: ['Timer-Modus', 'Reps sauber ändern', 'Belohnung direkt sichtbar'],
   },
-  { 
-    value: 5000, 
-    suffix: '+', 
-    label: 'Aktive Nutzer',
-    icon: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'
+  {
+    kicker: 'Quests',
+    title: 'Klare Ziele statt leere Motivation.',
+    text: 'Quests geben dem Training kleine Aufgaben, Fortschritt und Rewards. So entsteht ein Loop, der nicht kompliziert wirkt.',
+    image: questsMockup,
+    mediaClass: 'quests-media',
+    layout: 'image-right',
+    points: ['Daily und Weekly Quests', 'XP und Coins als Rewards', 'Claim-Feedback im Header'],
   },
-  { 
-    value: 50, 
-    suffix: '+', 
-    label: 'Workouts',
-    icon: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>'
-  }
-]);
+  {
+    kicker: 'Shop',
+    title: 'Chests und Items fühlen sich nach Loot an.',
+    text: 'Der Shop zeigt Booster, Chests und Item-Besitz im gleichen Gaming-Stil wie der Rest der App.',
+    image: shopMockup,
+    mediaClass: 'shop-media',
+    layout: 'image-left',
+    points: ['Chests mit Drop-Idee', 'Items mit XP- und Coin-Boosts', 'Pixel-Art bleibt im Fokus'],
+  },
+  {
+    kicker: 'Leaderboard',
+    title: 'Ranking macht Fortschritt vergleichbar.',
+    text: 'Wer trainiert, sieht nicht nur eigene Zahlen, sondern auch, wie weit die Spitze entfernt ist.',
+    image: leaderboardMockup,
+    mediaClass: 'leaderboard-media',
+    layout: 'image-right',
+    points: ['Top Champions', 'globale Rangliste', 'Level und XP im Vergleich'],
+  },
+];
+
+const avatarPhases = [
+  { name: 'Skinny', sprite: skinnySprite },
+  { name: 'Defined', sprite: normalSprite },
+  { name: 'Bodybuilder', sprite: bodybuilderSprite },
+];
+
+const techStack = [
+  { name: 'C#', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg' },
+  { name: '.NET', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/dotnetcore/dotnetcore-original.svg' },
+  { name: 'Vue', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vuejs/vuejs-original.svg' },
+  { name: 'TypeScript', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg' },
+  { name: 'Flutter', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/flutter/flutter-original.svg' },
+  { name: 'Dart', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/dart/dart-original.svg' },
+  { name: 'HTML', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg' },
+  { name: 'CSS', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg' },
+  { name: 'JavaScript', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg' },
+];
 
 const animatedStats = ref(['0', '0', '0', '0']);
 const statsAnimated = ref(false);
-
-const features = ref([
-  {
-    title: 'RPG-Level-System',
-    description: 'Sammle XP durch Workouts, steige in Levels auf und werde stärker. Jedes Training bringt dich näher an dein nächstes Level!',
-    iconClass: 'icon-red',
-    icon: '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M8 15h8"/>'
-  },
-  {
-    title: 'Avatar & Equipment',
-    description: 'Rüste deinen Avatar mit epischen Items aus! Waffe, Rüstung, Accessoire und Boosts geben dir XP- und Coin-Boni.',
-    iconClass: 'icon-purple',
-    icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'
-  },
-  {
-    title: 'Item Shop',
-    description: 'Kaufe Chests von Starter bis Legendary. Luck Potions und mächtige Boost-Items. Finde seltene legendäre Schätze!',
-    iconClass: 'icon-pink',
-    icon: '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>'
-  },
-  {
-    title: 'Quests & Challenges',
-    description: 'Tägliche und wöchentliche Quests mit epischen Belohnungen. Schließe Herausforderungen ab und verdiene Coins!',
-    iconClass: 'icon-yellow',
-    icon: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>'
-  },
-  {
-    title: 'Leaderboards',
-    description: 'Messe dich mit Spielern weltweit! Kämpfe um die Top-Position und zeige, wer der wahre Champion ist.',
-    iconClass: 'icon-blue',
-    icon: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>'
-  },
-  {
-    title: 'Achievements',
-    description: 'Schalte über 100 Achievements frei! Von \'First Steps\' bis \'Legendary Warrior\' - sammle sie alle!',
-    iconClass: 'icon-green',
-    icon: '<circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>'
-  }
-]);
-
-const steps = ref([
-  {
-    title: 'Erstelle deinen Avatar',
-    description: 'Wähle deinen Charakter, gib ihm einen Namen und starte dein Abenteuer!',
-    iconClass: 'icon-purple',
-    icon: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>'
-  },
-  {
-    title: 'Trainiere & Level auf',
-    description: 'Absolviere Workouts, sammle XP und Coins, rüste deinen Avatar aus und werde stärker!',
-    iconClass: 'icon-pink',
-    icon: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>'
-  },
-  {
-    title: 'Dominiere die Rangliste',
-    description: 'Kämpfe dich an die Spitze, schalte Achievements frei und werde zur Legende!',
-    iconClass: 'icon-green',
-    icon: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>'
-  }
-]);
 
 const navigateTo = (path: string) => {
   router.push(path);
 };
 
-// Counter Animation für Stats
-const animateCounter = (index: number, target: number, duration: number = 2000) => {
-  const start = 0;
-  const increment = target / (duration / 16);
-  let current = start;
+const scrollToProduct = () => {
+  document.getElementById('product-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
 
-  const timer = setInterval(() => {
+const animateCounter = (index: number, target: number, duration = 1600) => {
+  const increment = target / (duration / 16);
+  let current = 0;
+
+  const timer = window.setInterval(() => {
     current += increment;
     if (current >= target) {
       animatedStats.value[index] = target.toLocaleString('de-DE');
-      clearInterval(timer);
-    } else {
-      animatedStats.value[index] = Math.floor(current).toLocaleString('de-DE');
+      window.clearInterval(timer);
+      return;
     }
+
+    animatedStats.value[index] = Math.floor(current).toLocaleString('de-DE');
   }, 16);
 };
 
-// Scroll Reveal Observer
 const observeElements = () => {
-  const observer = new IntersectionObserver(
+  observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          
-          // Stats Counter Animation - nur wenn Stats Box sichtbar wird
-          if (entry.target === statsBox.value && !statsAnimated.value) {
-            statsAnimated.value = true;
-            stats.value.forEach((stat, index) => {
-              setTimeout(() => {
-                animateCounter(index, stat.value);
-              }, index * 100);
-            });
-          }
+        if (!entry.isIntersecting) return;
+
+        entry.target.classList.add('visible');
+
+        if (entry.target === statsBox.value && !statsAnimated.value) {
+          statsAnimated.value = true;
+          stats.forEach((stat, index) => {
+            window.setTimeout(() => animateCounter(index, stat.value), index * 80);
+          });
         }
       });
     },
-    { threshold: 0.3 } // Stats müssen 30% sichtbar sein
+    { threshold: 0.22 }
   );
 
-  // Observe stats
-  if (statsBox.value) {
-    observer.observe(statsBox.value);
-  }
-
-  // Observe all scroll-reveal elements
-  const scrollElements = document.querySelectorAll('.scroll-reveal');
-  scrollElements.forEach((el) => observer.observe(el));
+  if (statsBox.value) observer.observe(statsBox.value);
+  document.querySelectorAll('.scroll-reveal').forEach((element) => observer?.observe(element));
 };
 
-onMounted(() => {
-  observeElements();
-});
+onMounted(observeElements);
 
 onUnmounted(() => {
-  // Cleanup if needed
+  observer?.disconnect();
 });
 </script>
 
 <style scoped>
 .landing-page {
   min-height: 100vh;
-  color: white;
+  color: #fff;
+  background:
+    linear-gradient(115deg, rgba(34, 211, 238, 0.08) 0%, transparent 35%, rgba(236, 72, 153, 0.07) 78%, transparent 100%),
+    linear-gradient(145deg, #030712 0%, #07111f 48%, #101827 100%);
 }
 
-/* Fade-in Animations für Hero */
+.container {
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+.landing-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(3, 7, 18, 0.58);
+  backdrop-filter: blur(18px);
+}
+
+.header-inner {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.logo-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.logo-image {
+  height: 36px;
+  width: auto;
+  display: block;
+}
+
+.nav-buttons,
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-btn,
+.webplayer-btn,
+.primary-btn,
+.ghost-btn {
+  min-height: 44px;
+  border-radius: 12px;
+  padding: 0 20px;
+  font-weight: 900;
+  color: white;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.nav-btn,
+.ghost-btn {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.webplayer-btn,
+.primary-btn {
+  border: 1px solid rgba(244, 63, 94, 0.54);
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
+  box-shadow: 0 14px 32px rgba(244, 63, 94, 0.22);
+}
+
+.nav-btn:hover,
+.webplayer-btn:hover,
+.primary-btn:hover,
+.ghost-btn:hover {
+  transform: translateY(-2px);
+  border-color: rgba(236, 72, 153, 0.55);
+}
+
+.hero-section {
+  min-height: calc(100vh - 78px);
+  display: flex;
+  align-items: center;
+  padding: 96px 0 76px;
+}
+
+.hero-content {
+  max-width: 860px;
+  text-align: center;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 14px;
+  color: #f9a8d4;
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.hero-title {
+  max-width: 720px;
+  margin: 0 auto;
+  font-size: clamp(3rem, 6.2vw, 5.45rem);
+  line-height: 0.96;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.hero-description {
+  max-width: 610px;
+  margin: 28px auto 34px;
+  color: rgba(226, 232, 240, 0.76);
+  font-size: clamp(1rem, 1.45vw, 1.16rem);
+  line-height: 1.75;
+  font-weight: 650;
+}
+
+.hero-actions {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.primary-btn,
+.ghost-btn {
+  min-height: 54px;
+  padding: 0 28px;
+}
+
+.mockup-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 38px 70px rgba(0, 0, 0, 0.36));
+  user-select: none;
+}
+
 .fade-in {
   opacity: 0;
-  transform: translateY(20px);
-  animation: fadeInUp 0.8s ease forwards;
+  transform: translateY(18px);
+  animation: fadeInUp 0.72s ease forwards;
 }
 
 .fade-in.delay-1 {
-  animation-delay: 0.2s;
+  animation-delay: 0.16s;
 }
 
 .fade-in.delay-2 {
-  animation-delay: 0.4s;
+  animation-delay: 0.3s;
+}
+
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.58s ease, transform 0.58s ease;
+}
+
+.scroll-reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 @keyframes fadeInUp {
@@ -329,847 +447,459 @@ onUnmounted(() => {
   }
 }
 
-/* Scroll Reveal Animation */
-.scroll-reveal {
-  opacity: 0;
-  transform: translateY(40px);
-  transition: all 0.6s ease;
-}
-
-.scroll-reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Header */
-.landing-header {
-  padding: 24px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 32px;
-}
-
-.landing-header .container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-left: 0;
-}
-
-
-.logo {
-  display: flex;
-  align-items: center;
-  padding-left: 16px; 
-}
-
-.logo-image {
-  height: 36px;
-  width: auto;
-}
-
-.nav-buttons {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.nav-btn {
-  padding: 10px 24px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: transparent;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.nav-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.cta-btn {
-  padding: 10px 24px;
-  border-radius: 12px;
-  border: none;
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.3s ease;
-}
-
-.cta-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(236, 72, 153, 0.4);
-}
-
-.play-icon {
-  font-size: 12px;
-}
-
-/* Hero Section */
-.hero-section {
-  padding: 120px 0 100px;
-  text-align: center;
-}
-
-.hero-title {
-  font-size: clamp(48px, 8vw, 72px);
-  font-weight: 800;
-  line-height: 1.1;
-  margin: 0 0 32px 0;
-}
-
-.gradient-text {
-  background: linear-gradient(135deg, #a855f7, #ec4899, #f43f5e);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.hero-description {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.8);
-  max-width: 700px;
-  margin: 0 auto 48px;
-  line-height: 1.7;
-}
-
-.hero-buttons {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-}
-
-
-.primary-btn{
-  padding: 16px 40px;
-  border-radius: 14px;
-  font-weight: 700;
-  font-size: 16px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  transition: all 0.3s ease;
-  height: 56px;
-  min-width: 200px;
-}
-
-.primary-btn {
-  border: none;
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
-  color: white;
-  box-shadow: 0 4px 16px rgba(236, 72, 153, 0.3);
-}
-
-.primary-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(236, 72, 153, 0.5);
-}
-
-/* Stats Section - Separate mit mehr Padding */
 .stats-section {
-  padding: 100px 0;
+  padding: 24px 0 80px;
 }
 
 .stats-box {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 48px;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0;
-  background: transparent;
+  gap: clamp(18px, 4vw, 62px);
+  align-items: start;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 34px 0;
 }
 
 .stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 0;
-}
-
-.stat-icon {
-  width: 56px;
-  height: 56px;
-  color: #ec4899;
-  opacity: 0.8;
-  filter: drop-shadow(0 0 20px rgba(236, 72, 153, 0.8));
-  margin-bottom: 16px;
+  display: grid;
+  gap: 6px;
 }
 
 .stat-value {
-  font-size: 52px;
-  font-weight: 900;
-  background: linear-gradient(135deg, #ffffff, #ec4899);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: white;
+  font-size: clamp(2.1rem, 4vw, 3.8rem);
   line-height: 1;
-  letter-spacing: -1px;
+  font-weight: 950;
 }
 
 .stat-label {
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.65);
-  font-weight: 600;
-  text-align: center;
+  color: rgba(226, 232, 240, 0.6);
+  font-weight: 900;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
-  letter-spacing: 1.2px;
+  font-size: 0.76rem;
 }
 
-/* Features Section */
-.features-section {
-  padding: 80px 0;
+.product-section {
+  scroll-margin-top: 96px;
+  padding: 20px 0 72px;
 }
 
-.section-title {
-  font-size: 48px;
-  font-weight: 800;
-  text-align: center;
-  margin: 0 0 16px 0;
+.section-heading {
+  max-width: 720px;
+  margin-bottom: 42px;
 }
 
-.section-subtitle {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.7);
-  text-align: center;
-  margin: 0 0 64px 0;
+.section-heading h2 {
+  margin: 0;
+  font-size: clamp(2.35rem, 5vw, 4.4rem);
+  line-height: 0.98;
+  font-weight: 950;
 }
 
-.features-grid {
+.showcase-row {
+  min-height: 520px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
-}
-
-.feature-card {
-  padding: 32px;
-  background: rgba(30, 41, 59, 0.6);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  transition: all 0.3s ease;
-}
-
-.feature-card:hover {
-  transform: translateY(-8px);
-  border-color: rgba(236, 72, 153, 0.3);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
-}
-
-.feature-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  display: flex;
+  grid-template-columns: minmax(330px, 0.92fr) minmax(420px, 1.08fr);
   align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
-  background: transparent;
-  border: none;
+  gap: clamp(20px, 4vw, 72px);
+  padding: clamp(34px, 6vw, 78px) 0;
+  overflow: visible;
 }
 
-.feature-icon svg {
-  width: 40px;
-  height: 40px;
+.showcase-copy h3 {
+  margin: 0 0 18px;
+  font-size: clamp(2.05rem, 4.4vw, 4.1rem);
+  line-height: 0.98;
+  font-weight: 950;
 }
 
-.icon-red svg {
-  color: #f43f5e;
-  filter: drop-shadow(0 0 10px rgba(244, 63, 94, 0.5));
+.showcase-copy p {
+  margin: 0 0 22px;
+  max-width: 560px;
+  color: rgba(226, 232, 240, 0.72);
+  font-size: 1.04rem;
+  line-height: 1.75;
+  font-weight: 650;
 }
 
-.icon-purple svg {
-  color: #a855f7;
-  filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.5));
-}
-
-.icon-pink svg {
-  color: #ec4899;
-  filter: drop-shadow(0 0 10px rgba(236, 72, 153, 0.5));
-}
-
-.icon-yellow svg {
-  color: #fbbf24;
-  filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.5));
-}
-
-.icon-blue svg {
-  color: #3b82f6;
-  filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));
-}
-
-.icon-green svg {
-  color: #22c55e;
-  filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.5));
-}
-
-.feature-title {
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0 0 12px 0;
-}
-
-.feature-description {
-  font-size: 15px;
-  color: #e371ff;
-  line-height: 1.6;
-  margin: 0;
-}
-
-/* How It Works Section */
-.how-section {
-  padding: 80px 0;
-}
-
-.steps-grid {
+.showcase-copy ul {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
-  margin-bottom: 64px;
-}
-
-.step-card {
-  padding: 40px 32px;
-  background: rgba(30, 41, 59, 0.6);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  text-align: center;
-  position: relative;
-  transition: all 0.3s ease;
-}
-
-.step-card:hover {
-  transform: translateY(-8px);
-  border-color: rgba(236, 72, 153, 0.3);
-}
-
-.step-number {
-  position: absolute;
-  top: -20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: 700;
-  box-shadow: 0 4px 16px rgba(236, 72, 153, 0.4);
-}
-
-.step-icon {
-  width: 80px;
-  height: 80px;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 24px;
-  background: transparent;
-}
-
-.step-icon svg {
-  width: 48px;
-  height: 48px;
-}
-
-.step-title {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 0 0 16px 0;
-}
-
-.step-description {
-  font-size: 15px;
-  color: #e371ff;
-  line-height: 1.6;
+  gap: 10px;
   margin: 0;
-}
-
-.cta-section {
-  text-align: center;
-}
-
-.cta-large-btn {
-  padding: 20px 48px;
-  border-radius: 16px;
-  border: none;
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
-  color: white;
-  font-weight: 700;
-  font-size: 18px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 24px rgba(236, 72, 153, 0.4);
-}
-
-.cta-large-btn:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(236, 72, 153, 0.6);
-}
-
-/* Footer */
-.landing-footer {
-  padding: 32px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  margin-top: 80px;
-}
-
-.footer-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.footer-left {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.footer-brand {
-  font-size: 20px;
-  font-weight: 800;
-  color: white;
-  margin: 0;
-  letter-spacing: 0.5px;
-}
-
-.footer-tagline {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
-  margin: 0;
-}
-
-.footer-right {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.footer-copyright {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 13px;
-  margin: 0;
-}
-
-.footer-link {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.3s ease;
   padding: 0;
-  text-decoration: underline;
+  list-style: none;
 }
 
-.footer-link:hover {
-  color: #ec4899;
+.showcase-copy li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.86);
+  font-weight: 850;
 }
 
-/* Tech Stack Section */
+.showcase-copy li::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #22d3ee;
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.66);
+}
+
+.showcase-media {
+  position: relative;
+  min-height: 440px;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.image-right .showcase-media {
+  justify-content: flex-end;
+}
+
+.image-left {
+  grid-template-columns: minmax(420px, 1.08fr) minmax(330px, 0.92fr);
+}
+
+.image-left .showcase-media {
+  order: 1;
+  justify-content: flex-start;
+}
+
+.image-left .showcase-copy {
+  order: 2;
+}
+
+.dashboard-media .mockup-image,
+.leaderboard-media .mockup-image {
+  width: min(620px, 43vw);
+  max-width: none;
+  margin-right: 0;
+}
+
+.quests-media .mockup-image {
+  width: min(620px, 43vw);
+  max-width: none;
+  margin-right: 0;
+}
+
+.workouts-media .mockup-image,
+.shop-media .mockup-image {
+  width: min(330px, 24vw);
+  max-width: none;
+  margin-left: 0;
+}
+
+.avatar-section {
+  display: grid;
+  justify-items: center;
+  gap: clamp(34px, 5vw, 62px);
+  padding: clamp(48px, 8vw, 96px) 0;
+}
+
+.avatar-copy {
+  max-width: 760px;
+  text-align: center;
+}
+
+.avatar-copy h3 {
+  margin: 0 0 18px;
+  font-size: clamp(2.05rem, 4.4vw, 4.1rem);
+  line-height: 0.98;
+  font-weight: 950;
+}
+
+.avatar-copy p {
+  margin: 0 auto;
+  max-width: 620px;
+  color: rgba(226, 232, 240, 0.72);
+  font-size: 1.04rem;
+  line-height: 1.75;
+  font-weight: 650;
+}
+
+.avatar-phases {
+  position: relative;
+  width: min(780px, 100%);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: clamp(12px, 3vw, 34px);
+  padding-bottom: 28px;
+}
+
+.phase-item {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  animation: phaseRise 0.7s ease both;
+  animation-delay: var(--phase-delay);
+}
+
+.avatar-sprite {
+  width: 128px;
+  height: 128px;
+  background-repeat: no-repeat;
+  background-size: 200% 200%;
+  background-position: 0 0;
+  image-rendering: pixelated;
+}
+
+.phase-sprite {
+  width: clamp(150px, 17vw, 230px);
+  height: clamp(150px, 17vw, 230px);
+  filter: drop-shadow(0 20px 24px rgba(0, 0, 0, 0.42));
+}
+
+.phase-item span {
+  color: white;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+@keyframes phaseRise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .tech-section {
-  padding: 60px 0 40px;
+  padding: 70px 0 64px;
   overflow: hidden;
   text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .tech-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
-  margin-bottom: 32px;
+  margin-bottom: 28px;
+  color: rgba(226, 232, 240, 0.56);
+  font-size: 0.88rem;
+  font-weight: 950;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  letter-spacing: 2px;
 }
 
 .marquee {
+  position: relative;
   overflow: hidden;
   white-space: nowrap;
-  position: relative;
+}
+
+.marquee::before,
+.marquee::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 110px;
+  pointer-events: none;
+}
+
+.marquee::before {
+  left: 0;
+  background: linear-gradient(90deg, #07111f, transparent);
+}
+
+.marquee::after {
+  right: 0;
+  background: linear-gradient(270deg, #07111f, transparent);
 }
 
 .marquee-content {
   display: inline-flex;
-  gap: 80px;
-  animation: scroll 40s linear infinite;
+  gap: 72px;
+  animation: scroll 42s linear infinite;
   will-change: transform;
 }
 
 .logo-set {
   display: flex;
   align-items: center;
-  gap: 60px;
+  gap: 50px;
 }
 
 .tech-logo {
-  height: 100px;
-  width: auto;
-  opacity: 0.7;
-  transition: all 0.3s ease;
-  filter: grayscale(0%);
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  opacity: 0.8;
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 .tech-logo:hover {
   opacity: 1;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 @keyframes scroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
+  to {
     transform: translateX(calc(-100% / 3));
   }
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .tech-logo {
-    height: 72px;  
-  }
-  
-  .logo-set {
-    gap: 40px;
-  }
-  
-  .marquee-content {
-    gap: 60px;
-  }
-}
-
-/* Responsive Breakpoints */
-
-/* Tablet (1024px und kleiner) */
-@media (max-width: 1024px) {
-  .container {
-    padding: 0 24px;
-  }
-
-  .logo-image {
-    height: 32px;
-  }
-
-  .hero-title {
-    font-size: clamp(40px, 7vw, 60px);
-  }
-
-  .hero-description {
-    font-size: 16px;
-    max-width: 600px;
-  }
-
-  .features-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
-  }
-
-  .steps-grid {
+@media (max-width: 1120px) {
+  .showcase-row,
+  .image-left {
     grid-template-columns: 1fr;
-    gap: 24px;
   }
 
-  .stats-box {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 32px;
+  .dashboard-media .mockup-image,
+  .leaderboard-media .mockup-image,
+  .quests-media .mockup-image {
+    width: min(600px, 82vw);
   }
 
-  .section-title {
-    font-size: 40px;
+  .workouts-media .mockup-image,
+  .shop-media .mockup-image {
+    width: min(330px, 68vw);
   }
 
-  .section-subtitle {
-    font-size: 16px;
-  }
-}
-
-/* Mobile (768px und kleiner) */
-@media (max-width: 768px) {
-  .container {
-    padding: 0 20px;
-  }
-
-  /* Header */
-  .landing-header {
-    padding: 16px 0;
-  }
-
-  .logo-image {
-    height: 26px;
-  }
-
-  .nav-buttons {
-    gap: 8px;
-  }
-
-  .nav-btn {
-    padding: 8px 16px;
-    font-size: 13px;
-  }
-
-  .cta-btn {
-    padding: 8px 16px;
-    font-size: 13px;
-    gap: 6px;
-  }
-
-  .play-icon {
-    font-size: 10px;
-  }
-
-  /* Hero Section */
-  .hero-section {
-    padding: 80px 0 60px;
-  }
-
-  .hero-title {
-    font-size: clamp(32px, 9vw, 48px);
-    margin-bottom: 24px;
-  }
-
-  .hero-description {
-    font-size: 15px;
-    margin-bottom: 32px;
-    padding: 0 10px;
-  }
-
-  .hero-buttons {
-    display: flex;
+  .showcase-media {
+    min-height: 390px;
     justify-content: center;
-    align-items: flex-end;
-    gap: 16px;
   }
 
-  .primary-btn{
-    padding: 14px 28px;
-    font-size: 15px;
-    height: 48px;
-    min-width: unset;
-    width: 100%;
+  .image-left .showcase-copy,
+  .image-left .showcase-media {
+    order: 0;
   }
 
-  /* Stats Section */
-  .stats-section {
-    padding: 60px 0;
+  .showcase-copy {
+    max-width: 760px;
+  }
+}
+
+@media (max-width: 820px) {
+  .container {
+    width: min(100% - 32px, 1180px);
   }
 
-  .stats-box {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
+  .header-inner {
+    min-height: 68px;
   }
 
-  .stat-icon {
-    width: 40px;
-    height: 40px;
-    margin-bottom: 12px;
-  }
-
-  .stat-value {
-    font-size: 36px;
-  }
-
-  .stat-label {
-    font-size: 12px;
-    letter-spacing: 1px;
-  }
-
-  /* Features Section */
-  .features-section {
-    padding: 60px 0;
-  }
-
-  .section-title {
-    font-size: 32px;
-    margin-bottom: 12px;
-  }
-
-  .section-subtitle {
-    font-size: 15px;
-    margin-bottom: 48px;
-  }
-
-  .features-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-
-  .feature-card {
-    padding: 24px;
-  }
-
-  .feature-icon {
-    width: 48px;
-    height: 48px;
-    margin-bottom: 16px;
-  }
-
-  .feature-icon svg {
-    width: 28px;
+  .logo-image {
     height: 28px;
   }
 
-  .feature-title {
-    font-size: 18px;
-    margin-bottom: 10px;
+  .nav-btn {
+    display: none;
   }
 
-  .feature-description {
-    font-size: 14px;
-  }
-
-  /* How It Works Section */
-  .how-section {
-    padding: 60px 0;
-  }
-
-  .steps-grid {
-    grid-template-columns: 1fr;
-    gap: 28px;
-    margin-bottom: 48px;
-  }
-
-  .step-card {
-    padding: 32px 24px;
-  }
-
-  .step-number {
-    width: 40px;
-    height: 40px;
-    font-size: 20px;
-    top: -16px;
-  }
-
-  .step-icon {
-    width: 64px;
-    height: 64px;
-    margin-bottom: 20px;
-  }
-
-  .step-icon svg {
-    width: 36px;
-    height: 36px;
-  }
-
-  .step-title {
-    font-size: 20px;
-    margin-bottom: 12px;
-  }
-
-  .step-description {
-    font-size: 14px;
-  }
-
-  .cta-large-btn {
-    padding: 16px 36px;
-    font-size: 16px;
-    gap: 10px;
-  }
-
-  /* Footer */
-  .landing-footer {
-    padding: 24px 0;
-    margin-top: 60px;
-  }
-
-  .footer-content {
-    flex-direction: column;
-    gap: 20px;
-    text-align: center;
-  }
-
-  .footer-left {
-    align-items: center;
-  }
-
-  .footer-brand {
-    font-size: 18px;
-  }
-
-  .footer-tagline {
-    font-size: 12px;
-  }
-
-  .footer-right {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .footer-copyright {
-    font-size: 12px;
-  }
-
-  .footer-link {
-    font-size: 12px;
-  }
-}
-
-/* Small Mobile (480px und kleiner) */
-@media (max-width: 480px) {
-  .container {
+  .webplayer-btn {
     padding: 0 16px;
+    min-height: 40px;
   }
 
-  .logo-image {
-    height: 22px;
+  .hero-section {
+    min-height: auto;
+    padding: 68px 0 44px;
   }
 
   .hero-title {
-    font-size: 28px;
+    font-size: clamp(2.7rem, 13vw, 4.9rem);
   }
 
   .hero-description {
-    font-size: 14px;
+    margin-bottom: 28px;
   }
 
   .stats-box {
-    grid-template-columns: 1fr;
-    gap: 20px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px 32px;
+    padding: 26px 0;
   }
 
-  .stat-value {
-    font-size: 32px;
+  .product-section {
+    padding-top: 8px;
   }
 
-  .section-title {
-    font-size: 28px;
+  .showcase-row {
+    min-height: auto;
+    padding: 44px 0;
   }
 
-  .section-subtitle {
-    font-size: 14px;
+  .showcase-media {
+    min-height: 300px;
   }
 
-  .feature-card {
-    padding: 20px;
+  .dashboard-media .mockup-image,
+  .leaderboard-media .mockup-image,
+  .quests-media .mockup-image {
+    width: min(520px, 92vw);
   }
 
-  .step-card {
-    padding: 28px 20px;
+  .workouts-media .mockup-image,
+  .shop-media .mockup-image {
+    width: min(310px, 72vw);
+  }
+
+  .avatar-section {
+    padding: 54px 0;
+  }
+
+  .avatar-phases {
+    gap: 8px;
+  }
+
+  .phase-sprite {
+    width: clamp(118px, 29vw, 165px);
+    height: clamp(118px, 29vw, 165px);
+  }
+
+  .tech-logo {
+    width: 58px;
+    height: 58px;
+  }
+
+  .logo-set {
+    gap: 34px;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero-actions {
+    width: 100%;
+  }
+
+  .primary-btn,
+  .ghost-btn {
+    width: 100%;
+  }
+
+  .stats-box {
+    gap: 22px;
+  }
+
+  .stat-label {
+    font-size: 0.68rem;
+  }
+
+  .showcase-copy h3 {
+    font-size: 2.05rem;
+  }
+
+  .showcase-media {
+    min-height: 280px;
+  }
+
+  .dashboard-media .mockup-image,
+  .leaderboard-media .mockup-image,
+  .quests-media .mockup-image {
+    width: min(460px, 100%);
   }
 }
 </style>

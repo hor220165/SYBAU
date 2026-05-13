@@ -665,6 +665,8 @@ onMounted(loadPageData);
 }
 
 .chest-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 360px));
+  justify-content: center;
   margin-bottom: 18px;
 }
 

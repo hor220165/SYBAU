@@ -28,6 +28,7 @@ class ApiService {
     'API_BASE_URL',
   );
   static const String _apiHostOverride = String.fromEnvironment('API_HOST');
+  static const String _liveBaseUrl = 'https://sybau-xll5.onrender.com';
   static const String _defaultPort = '5243';
   static const Duration _healthTimeout = Duration(milliseconds: 900);
   static const Duration _discoveryHealthTimeout = Duration(milliseconds: 250);
@@ -57,7 +58,10 @@ class ApiService {
     final cached = prefs.getString(_autoBaseUrlKey)?.trim();
     final legacyManual = prefs.getString(_savedBaseUrlKey)?.trim();
 
-    final discovered = await _discoverLocalBackend(exclude: exclude);
+    final canUseLocalDiscovery = _apiHostOverride.isNotEmpty;
+    final discovered = canUseLocalDiscovery
+        ? await _discoverLocalBackend(exclude: exclude)
+        : null;
     if (discovered != null) {
       await _setResolvedBaseUrl(discovered, prefs);
       return;
@@ -102,31 +106,30 @@ class ApiService {
     }
 
     if (_apiHostOverride.isNotEmpty) {
-      return _normalizeBaseUrl(_apiHostOverride);
+      return _normalizeBaseUrl(_apiHostOverride, appendDefaultPort: true);
     }
 
-    if (kIsWeb) {
-      return 'http://localhost:$_defaultPort';
-    }
-
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.android:
-        return 'http://10.0.2.2:$_defaultPort';
-      case TargetPlatform.iOS:
-        return 'http://${_developmentHostnames.first}:$_defaultPort';
-      default:
-        return 'http://localhost:$_defaultPort';
-    }
+    return _liveBaseUrl;
   }
 
-  static String _normalizeBaseUrl(String input) {
-    final normalizedInput = input.contains('://') ? input : 'http://$input';
+  static String _normalizeBaseUrl(
+    String input, {
+    bool appendDefaultPort = false,
+  }) {
+    final trimmedInput = input.trim().replaceFirst(RegExp(r'/+$'), '');
+    final normalizedInput = trimmedInput.contains('://')
+        ? trimmedInput
+        : 'http://$trimmedInput';
     final uri = Uri.tryParse(normalizedInput);
-    if (uri == null) return normalizedInput;
+    if (uri == null || uri.host.isEmpty) return normalizedInput;
+    final path = uri.path == '/'
+        ? ''
+        : uri.path.replaceFirst(RegExp(r'/+$'), '');
     if (uri.hasPort) {
-      return '${uri.scheme}://${uri.host}:${uri.port}';
+      return '${uri.scheme}://${uri.host}:${uri.port}$path';
     }
-    return '${uri.scheme}://${uri.host}:$_defaultPort';
+    final port = appendDefaultPort ? ':$_defaultPort' : '';
+    return '${uri.scheme}://${uri.host}$port$path';
   }
 
   static List<String> _baseUrlCandidates({
@@ -135,32 +138,35 @@ class ApiService {
   }) {
     final candidates = <String>[];
 
-    void add(String? value) {
+    void add(String? value, {bool appendDefaultPort = false}) {
       final trimmed = value?.trim() ?? '';
       if (trimmed.isEmpty) return;
-      final normalized = _normalizeBaseUrl(trimmed);
+      final normalized = _normalizeBaseUrl(
+        trimmed,
+        appendDefaultPort: appendDefaultPort,
+      );
       if (!candidates.contains(normalized)) {
         candidates.add(normalized);
       }
     }
 
     add(_apiBaseUrlOverride);
-    add(_apiHostOverride);
-    if (!kIsWeb) {
-      add('http://127.0.0.1:$_defaultPort');
-      add('http://localhost:$_defaultPort');
-    }
-    add(cached);
-    add(legacyManual);
+    add(_apiHostOverride, appendDefaultPort: true);
     add(defaultBaseUrl);
-
-    for (final host in _developmentHostnames) {
-      add('http://$host:$_defaultPort');
+    if (!kReleaseMode) {
+      add(cached);
+      add(legacyManual);
     }
 
-    if (!kIsWeb) {
-      add('http://10.0.2.2:$_defaultPort');
-      add('http://localhost:$_defaultPort');
+    if (!kReleaseMode && _apiHostOverride.isNotEmpty) {
+      for (final host in _developmentHostnames) {
+        add('http://$host:$_defaultPort');
+      }
+
+      if (!kIsWeb) {
+        add('http://10.0.2.2:$_defaultPort');
+        add('http://localhost:$_defaultPort');
+      }
     }
 
     return candidates;

@@ -9,6 +9,7 @@ using Scalar.AspNetCore;
 using Sybau_Backend._Services;
 using Sybau_Backend.Data;
 using Sybau_Backend.Hubs;
+using Sybau_Backend.Tools;
 
 var builder = WebApplication.CreateEmptyBuilder(
     new WebApplicationOptions
@@ -18,12 +19,34 @@ var builder = WebApplication.CreateEmptyBuilder(
     }
 );
 builder.WebHost.UseKestrel();
-builder.WebHost.UseUrls("http://0.0.0.0:5243");
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5243";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false)
     .AddEnvironmentVariables()
     .AddCommandLine(args);
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var usePostgres = builder.Environment.IsProduction() || IsPostgresConnectionString(connectionString);
+if (usePostgres && string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("ConnectionStrings:DefaultConnection must be configured for PostgreSQL.");
+}
+
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    throw new InvalidOperationException("Jwt:Key must be configured.");
+}
+
+static bool IsPostgresConnectionString(string? value)
+{
+    if (string.IsNullOrWhiteSpace(value)) return false;
+    return value.Contains("Host=", StringComparison.OrdinalIgnoreCase)
+        || value.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase)
+        || value.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase);
+}
 
 // Add services to the container.
 builder.Services.AddSignalR();
@@ -50,7 +73,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = builder.Configuration["Jwt:Audience"],
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+                Encoding.UTF8.GetBytes(jwtKey)
             ),
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromMinutes(1)
@@ -126,14 +149,30 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
-builder.Services.AddDbContext<FitnessDbContext>(options =>
-    options.UseSqlite(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    )
-);
+if (usePostgres)
+{
+    builder.Services.AddDbContext<PostgresFitnessDbContext>(options =>
+        options.UseNpgsql(connectionString!)
+    );
+    builder.Services.AddScoped<FitnessDbContext>(sp =>
+        sp.GetRequiredService<PostgresFitnessDbContext>()
+    );
+}
+else
+{
+    builder.Services.AddDbContext<FitnessDbContext>(options =>
+        options.UseSqlite(connectionString ?? "Data Source=sybau.db")
+    );
+}
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+if (args.Any(arg => string.Equals(arg, "--import-sqlite", StringComparison.OrdinalIgnoreCase)))
+{
+    await SqliteToPostgresImporter.RunAsync(app.Services, app.Environment, args, app.Logger);
+    return;
+}
 
 using (var scope = app.Services.CreateScope())
 {

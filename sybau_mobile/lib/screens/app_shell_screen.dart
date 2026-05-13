@@ -6809,7 +6809,7 @@ class _ShopTabState extends State<ShopTab> {
 
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -6830,19 +6830,19 @@ class _ShopTabState extends State<ShopTab> {
       child: Stack(
         children: [
           Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(
                   width: double.infinity,
-                  height: 160,
+                  height: 104,
                   child: Center(
                     child: imageUrl.isNotEmpty
                         ? Padding(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                              horizontal: 4,
+                              vertical: 2,
                             ),
                             child: Image.network(
                               ApiService.mediaUrl(imageUrl) ?? '',
@@ -6853,14 +6853,14 @@ class _ShopTabState extends State<ShopTab> {
                               isAntiAlias: false,
                               errorBuilder: (_, __, ___) => const Text(
                                 '📦',
-                                style: TextStyle(fontSize: 54),
+                                style: TextStyle(fontSize: 42),
                               ),
                             ),
                           )
-                        : const Text('📦', style: TextStyle(fontSize: 54)),
+                        : const Text('📦', style: TextStyle(fontSize: 42)),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Text(
                   _string(chest['name']),
                   maxLines: 2,
@@ -6868,15 +6868,15 @@ class _ShopTabState extends State<ShopTab> {
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 21,
+                    fontSize: 14.5,
                     height: 1.05,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
-                  height: 44,
+                  height: 38,
                   child: ElevatedButton(
                     onPressed: canAfford && !isOpening
                         ? () => _requestPurchase(chest, isChest: true)
@@ -6934,7 +6934,7 @@ class _ShopTabState extends State<ShopTab> {
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w800,
-                                      fontSize: 13,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ],
@@ -6947,14 +6947,14 @@ class _ShopTabState extends State<ShopTab> {
             ),
           ),
           Positioned(
-            top: 24,
-            right: 24,
+            top: 10,
+            right: 10,
             child: InkWell(
               onTap: () => _showChestRatesDialog(chest),
               borderRadius: BorderRadius.circular(999),
               child: Container(
-                width: 30,
-                height: 30,
+                width: 26,
+                height: 26,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Color(0xFF0F172A).withOpacity(0.86),
@@ -6965,7 +6965,7 @@ class _ShopTabState extends State<ShopTab> {
                 child: Icon(
                   Icons.info_outline,
                   color: Color(0xFFF9A8D4),
-                  size: 16,
+                  size: 14,
                 ),
               ),
             ),
@@ -7703,11 +7703,24 @@ class _ShopTabState extends State<ShopTab> {
                     ],
                   ),
                 ),
-                ..._displayChests.map(
-                  (c) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _buildChestCard(c),
-                  ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    const spacing = 10.0;
+                    final cardWidth = (constraints.maxWidth - spacing) / 2;
+                    return Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: spacing,
+                      runSpacing: spacing,
+                      children: _displayChests
+                          .map(
+                            (c) => SizedBox(
+                              width: cardWidth,
+                              child: _buildChestCard(c),
+                            ),
+                          )
+                          .toList(growable: false),
+                    );
+                  },
                 ),
                 const SizedBox(height: 18),
               ],
