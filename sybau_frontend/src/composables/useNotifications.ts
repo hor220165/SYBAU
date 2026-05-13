@@ -1,5 +1,6 @@
 import { ref, readonly } from 'vue';
 import * as signalR from '@microsoft/signalr';
+import { API_BASE_URL } from '@/config';
 
 export interface AppNotification {
   id: number;
@@ -39,8 +40,7 @@ export function useNotifications() {
     // Bereits verbunden oder am Verbinden → nicht nochmal
     if (connection && connection.state !== signalR.HubConnectionState.Disconnected) return;
 
-    const baseUrl = (import.meta.env.VITE_API_BASE_URL as string) || 'https://sybau-xll5.onrender.com';
-    const hubUrl = baseUrl.replace(/\/+$/, '').replace(/\/api$/i, '') + '/hubs/notifications';
+    const hubUrl = API_BASE_URL.replace(/\/api$/i, '') + '/hubs/notifications';
 
     connection = new signalR.HubConnectionBuilder()
       .withUrl(hubUrl, {

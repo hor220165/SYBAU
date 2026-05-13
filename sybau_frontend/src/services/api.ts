@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { API_BASE_URL, resolveApiUrl } from '@/config';
 
 const API = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL,
+    baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json'
     }
@@ -9,10 +10,7 @@ const API = axios.create({
 
 export function resolveMediaUrl(path?: string | null) {
     if (!path) return '';
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    const base = String(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    return `${base}${normalizedPath}`;
+    return resolveApiUrl(path);
 }
 
 // Attach token from localStorage (if exists)
