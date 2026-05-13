@@ -1,3 +1,5 @@
+using System.Data;
+using System.Globalization;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -57,7 +59,7 @@ public static class SqliteToPostgresImporter
 
         foreach (var entityType in importOrder)
         {
-            var result = await ImportEntityTypeAsync(source, target, entityType, cancellationToken);
+            var result = await ImportEntityTypeAsync(source, target, entityType, logger, cancellationToken);
             totalInserted += result.Inserted;
             totalUpdated += result.Updated;
 
@@ -129,11 +131,12 @@ public static class SqliteToPostgresImporter
         FitnessDbContext source,
         PostgresFitnessDbContext target,
         IEntityType entityType,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var task = (Task<ImportTableResult>)ImportMethod
             .MakeGenericMethod(entityType.ClrType)
-            .Invoke(null, new object[] { source, target, entityType, cancellationToken })!;
+            .Invoke(null, new object[] { source, target, entityType, logger, cancellationToken })!;
         return await task;
     }
 
@@ -141,22 +144,119 @@ public static class SqliteToPostgresImporter
         FitnessDbContext source,
         PostgresFitnessDbContext target,
         IEntityType entityType,
+        ILogger logger,
         CancellationToken cancellationToken)
         where TEntity : class
     {
         var primaryKey = entityType.FindPrimaryKey()
             ?? throw new InvalidOperationException($"Entity {entityType.DisplayName()} has no primary key.");
-        var rows = await source.Set<TEntity>().ToListAsync(cancellationToken);
+        var tableName = entityType.GetTableName()
+            ?? throw new InvalidOperationException($"Entity {entityType.DisplayName()} has no table name.");
+        var tableIdentifier = StoreObjectIdentifier.Table(tableName, entityType.GetSchema());
+        var sourceColumns = await GetSqliteColumnsAsync(source, tableName, cancellationToken);
+        if (sourceColumns.Count == 0)
+        {
+            logger.LogWarning("SQLite table {Table} was not found or has no columns. Skipping.", tableName);
+            return new ImportTableResult(0, 0);
+        }
+
+        var propertyMappings = entityType.GetProperties()
+            .Select(property => new SourcePropertyMapping(
+                property,
+                property.GetColumnName(tableIdentifier) ?? property.Name))
+            .ToList();
+        var selectedMappings = propertyMappings
+            .Where(mapping => sourceColumns.Contains(mapping.ColumnName))
+            .ToList();
+        var missingMappings = propertyMappings
+            .Where(mapping => !sourceColumns.Contains(mapping.ColumnName))
+            .ToList();
+        var missingKeyColumns = primaryKey.Properties
+            .Select(property => propertyMappings.First(mapping => mapping.Property == property))
+            .Where(mapping => !sourceColumns.Contains(mapping.ColumnName))
+            .ToList();
+
+        if (missingKeyColumns.Count > 0)
+        {
+            logger.LogWarning(
+                "SQLite table {Table} is missing primary key columns {Columns}. Skipping.",
+                tableName,
+                string.Join(", ", missingKeyColumns.Select(mapping => mapping.ColumnName)));
+            return new ImportTableResult(0, 0);
+        }
+
+        if (missingMappings.Count > 0)
+        {
+            var missingNullableColumns = missingMappings
+                .Where(mapping => IsNullableProperty(mapping.Property))
+                .Select(mapping => mapping.ColumnName)
+                .ToList();
+            var missingRequiredColumns = missingMappings
+                .Where(mapping => !IsNullableProperty(mapping.Property))
+                .Select(mapping => mapping.ColumnName)
+                .ToList();
+
+            if (missingNullableColumns.Count > 0)
+            {
+                logger.LogWarning(
+                    "SQLite table {Table} is missing nullable columns {Columns}. They will be imported as null.",
+                    tableName,
+                    string.Join(", ", missingNullableColumns));
+            }
+
+            if (missingRequiredColumns.Count > 0)
+            {
+                logger.LogWarning(
+                    "SQLite table {Table} is missing required columns {Columns}. Type defaults will be used.",
+                    tableName,
+                    string.Join(", ", missingRequiredColumns));
+            }
+        }
+
+        if (selectedMappings.Count == 0)
+        {
+            logger.LogWarning("SQLite table {Table} has no importable columns. Skipping.", tableName);
+            return new ImportTableResult(0, 0);
+        }
+
         var inserted = 0;
         var updated = 0;
         var pending = 0;
+        var selectSql = BuildSelectSql(tableName, selectedMappings, primaryKey, propertyMappings);
 
-        foreach (var sourceEntity in rows)
+        var connection = source.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
         {
-            var sourceEntry = source.Entry(sourceEntity);
-            var keyValues = primaryKey.Properties
-                .Select(property => sourceEntry.Property(property.Name).CurrentValue)
-                .ToArray();
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = selectSql;
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var sourceValues = new Dictionary<IProperty, object?>();
+            foreach (var mapping in selectedMappings)
+            {
+                var ordinal = reader.GetOrdinal(mapping.ColumnName);
+                var rawValue = await reader.IsDBNullAsync(ordinal, cancellationToken)
+                    ? null
+                    : reader.GetValue(ordinal);
+                sourceValues[mapping.Property] = ConvertForProperty(
+                    rawValue,
+                    mapping.Property,
+                    tableName,
+                    mapping.ColumnName,
+                    logger);
+            }
+
+            foreach (var mapping in missingMappings)
+            {
+                sourceValues[mapping.Property] = GetMissingColumnDefault(mapping.Property);
+            }
+
+            var keyValues = primaryKey.Properties.Select(property => sourceValues[property]).ToArray();
 
             var existing = await target.Set<TEntity>().FindAsync(keyValues, cancellationToken);
             var targetEntity = existing ?? (TEntity)Activator.CreateInstance(typeof(TEntity), nonPublic: true)!;
@@ -179,7 +279,7 @@ public static class SqliteToPostgresImporter
                     continue;
                 }
 
-                var value = NormalizeForPostgres(sourceEntry.Property(property.Name).CurrentValue);
+                var value = sourceValues[property];
                 targetEntry.Property(property.Name).CurrentValue = value;
             }
 
@@ -198,20 +298,217 @@ public static class SqliteToPostgresImporter
             target.ChangeTracker.Clear();
         }
 
-        source.ChangeTracker.Clear();
         return new ImportTableResult(inserted, updated);
     }
 
-    private static object? NormalizeForPostgres(object? value)
+    private static async Task<HashSet<string>> GetSqliteColumnsAsync(
+        DbContext source,
+        string tableName,
+        CancellationToken cancellationToken)
     {
-        return value is DateTime dateTime
-            ? dateTime.Kind switch
+        var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var connection = source.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"PRAGMA table_info({QuoteIdentifier(tableName)})";
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var name = reader["name"]?.ToString();
+            if (!string.IsNullOrWhiteSpace(name))
             {
-                DateTimeKind.Utc => dateTime,
-                DateTimeKind.Local => dateTime.ToUniversalTime(),
-                _ => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
+                columns.Add(name);
             }
-            : value;
+        }
+
+        return columns;
+    }
+
+    private static string BuildSelectSql(
+        string tableName,
+        IReadOnlyList<SourcePropertyMapping> selectedMappings,
+        IKey primaryKey,
+        IReadOnlyList<SourcePropertyMapping> propertyMappings)
+    {
+        var selectColumns = selectedMappings
+            .Select(mapping => $"{QuoteIdentifier(mapping.ColumnName)} AS {QuoteIdentifier(mapping.ColumnName)}");
+        var keyColumns = primaryKey.Properties
+            .Select(property => propertyMappings.First(mapping => mapping.Property == property).ColumnName)
+            .ToList();
+        var orderBy = keyColumns.Count == 0
+            ? string.Empty
+            : $" ORDER BY {string.Join(", ", keyColumns.Select(QuoteIdentifier))}";
+
+        return $"SELECT {string.Join(", ", selectColumns)} FROM {QuoteIdentifier(tableName)}{orderBy}";
+    }
+
+    private static object? ConvertForProperty(
+        object? rawValue,
+        IProperty property,
+        string tableName,
+        string columnName,
+        ILogger logger)
+    {
+        if (rawValue is null)
+        {
+            return GetMissingColumnDefault(property);
+        }
+
+        var targetType = Nullable.GetUnderlyingType(property.ClrType) ?? property.ClrType;
+
+        try
+        {
+            if (targetType == typeof(string))
+            {
+                return Convert.ToString(rawValue, CultureInfo.InvariantCulture) ?? string.Empty;
+            }
+
+            if (targetType == typeof(bool))
+            {
+                return rawValue switch
+                {
+                    bool value => value,
+                    byte value => value != 0,
+                    short value => value != 0,
+                    int value => value != 0,
+                    long value => value != 0,
+                    string value when bool.TryParse(value, out var parsed) => parsed,
+                    string value when long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) => parsed != 0,
+                    _ => Convert.ToBoolean(rawValue, CultureInfo.InvariantCulture)
+                };
+            }
+
+            if (targetType == typeof(DateTime))
+            {
+                return NormalizeDateTime(rawValue);
+            }
+
+            if (targetType == typeof(DateOnly))
+            {
+                return NormalizeDateOnly(rawValue);
+            }
+
+            if (targetType.IsEnum)
+            {
+                return ConvertEnum(rawValue, targetType);
+            }
+
+            if (targetType == typeof(Guid))
+            {
+                return rawValue is Guid guid ? guid : Guid.Parse(rawValue.ToString()!);
+            }
+
+            return Convert.ChangeType(rawValue, targetType, CultureInfo.InvariantCulture);
+        }
+        catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException or ArgumentException)
+        {
+            logger.LogWarning(
+                ex,
+                "Could not convert SQLite value for {Table}.{Column} to {Type}. A default value will be used.",
+                tableName,
+                columnName,
+                property.ClrType.Name);
+            return GetMissingColumnDefault(property);
+        }
+    }
+
+    private static object? NormalizeDateTime(object rawValue)
+    {
+        var dateTime = rawValue switch
+        {
+            DateTime value => value,
+            string value when DateTime.TryParse(
+                value,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var parsed) => parsed,
+            _ => Convert.ToDateTime(rawValue, CultureInfo.InvariantCulture)
+        };
+
+        return dateTime.Kind switch
+        {
+            DateTimeKind.Utc => dateTime,
+            DateTimeKind.Local => dateTime.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
+        };
+    }
+
+    private static object NormalizeDateOnly(object rawValue)
+    {
+        return rawValue switch
+        {
+            DateOnly value => value,
+            DateTime value => DateOnly.FromDateTime(value),
+            string value when DateOnly.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed) => parsed,
+            string value when DateTime.TryParse(
+                value,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var parsed) => DateOnly.FromDateTime(parsed),
+            _ => DateOnly.FromDateTime(Convert.ToDateTime(rawValue, CultureInfo.InvariantCulture))
+        };
+    }
+
+    private static object ConvertEnum(object rawValue, Type enumType)
+    {
+        if (rawValue is string value)
+        {
+            if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var numericValue))
+            {
+                return Enum.ToObject(enumType, numericValue);
+            }
+
+            return Enum.Parse(enumType, value, ignoreCase: true);
+        }
+
+        var underlyingType = Enum.GetUnderlyingType(enumType);
+        var numeric = Convert.ChangeType(rawValue, underlyingType, CultureInfo.InvariantCulture);
+        return Enum.ToObject(enumType, numeric!);
+    }
+
+    private static object? GetMissingColumnDefault(IProperty property)
+    {
+        if (IsNullableProperty(property))
+        {
+            return null;
+        }
+
+        var targetType = Nullable.GetUnderlyingType(property.ClrType) ?? property.ClrType;
+        if (targetType == typeof(string))
+        {
+            return string.Empty;
+        }
+
+        if (targetType == typeof(bool))
+        {
+            return false;
+        }
+
+        if (targetType == typeof(DateTime))
+        {
+            return DateTime.UtcNow;
+        }
+
+        if (targetType == typeof(DateOnly))
+        {
+            return DateOnly.FromDateTime(DateTime.UtcNow);
+        }
+
+        if (targetType.IsEnum)
+        {
+            return Enum.ToObject(targetType, 0);
+        }
+
+        return Activator.CreateInstance(targetType);
+    }
+
+    private static bool IsNullableProperty(IProperty property)
+    {
+        return property.IsNullable || Nullable.GetUnderlyingType(property.ClrType) != null;
     }
 
     private static IReadOnlyList<IEntityType> GetImportOrder(IModel model)
@@ -354,4 +651,6 @@ public static class SqliteToPostgresImporter
     }
 
     private sealed record ImportTableResult(int Inserted, int Updated);
+
+    private sealed record SourcePropertyMapping(IProperty Property, string ColumnName);
 }

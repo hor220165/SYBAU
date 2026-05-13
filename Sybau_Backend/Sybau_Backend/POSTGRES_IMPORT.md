@@ -40,6 +40,8 @@ dotnet Sybau_Backend.dll --import-sqlite --sqlite-path /app/sybau.db
 
 Der Import migriert zuerst die PostgreSQL-Datenbank. Danach bricht er ab, falls bereits Daten in Nicht-Seed-Tabellen vorhanden sind. Die Seed-Tabellen `Quests` und `Achievements` duerfen existieren und werden anhand ihrer IDs aktualisiert.
 
+Alte SQLite-Dateien duerfen weniger Spalten haben als das aktuelle EF-Model. Das Import-Tool liest vor jeder Tabelle `PRAGMA table_info`, importiert nur vorhandene SQLite-Spalten und setzt fehlende nullable Spalten auf `null`. Fehlende required Spalten bekommen einen Typ-Default und werden als Warnung geloggt.
+
 Nur falls ihr bewusst bestehende Daten anhand gleicher Primary Keys upserten wollt:
 
 ```bash
