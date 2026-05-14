@@ -8,7 +8,7 @@ public class ChangePasswordDto
     public string OldPassword { get; set; } = string.Empty;
     
     [Required]
-    [MinLength(4, ErrorMessage = "Neues Passwort muss mindestens 4 Zeichen lang sein.")]
+    [MinLength(6, ErrorMessage = "Neues Passwort muss mindestens 6 Zeichen lang sein.")]
     [MaxLength(128)]
     public string NewPassword { get; set; }  = string.Empty;
 }

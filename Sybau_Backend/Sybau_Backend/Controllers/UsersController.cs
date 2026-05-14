@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Sybau_Backend._Services;
 using Sybau_Backend.Data;
@@ -15,6 +16,8 @@ namespace Sybau_Backend.Controllers
     [ApiController]
     public class UsersController : ControllerBase
     {
+        private const int MaxProfileImageBytes = 5 * 1024 * 1024;
+
         private readonly UserService _userService;
         private readonly AchievementService _achievementService;
         private readonly BodyStageService _bodyStageService;
@@ -190,7 +193,7 @@ namespace Sybau_Backend.Controllers
         // POST /users/profile/image
         [Authorize]
         [HttpPost("profile/image")]
-        [RequestSizeLimit(10_000_000)]
+        [RequestSizeLimit(MaxProfileImageBytes)]
         public async Task<IActionResult> UploadProfileImage([FromForm] IFormFile image)
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -198,6 +201,8 @@ namespace Sybau_Backend.Controllers
 
             if (image == null || image.Length == 0)
                 return BadRequest("Kein Bild hochgeladen.");
+            if (image.Length > MaxProfileImageBytes)
+                return BadRequest("Profilbild darf maximal 5 MB groß sein.");
 
             var extension = Path.GetExtension(image.FileName);
             var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -309,6 +314,7 @@ namespace Sybau_Backend.Controllers
         }
         
         [Authorize]
+        [EnableRateLimiting("sensitive")]
         [HttpPost("profile/change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
         {

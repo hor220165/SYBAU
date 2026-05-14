@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -24,6 +25,10 @@ class ApiException implements Exception {
 class ApiService {
   static const String _autoBaseUrlKey = 'server.autoBaseUrl';
   static const String _savedBaseUrlKey = 'server.baseUrl';
+  static const String _tokenKey = 'auth.token';
+  static const String _userKey = 'auth.user';
+  static const String _legacyTokenKey = 'token';
+  static const String _legacyUserKey = 'user';
   static const String _apiBaseUrlOverride = String.fromEnvironment(
     'API_BASE_URL',
   );
@@ -40,8 +45,11 @@ class ApiService {
     'sybau.local',
     'sybau-backend.local',
   ];
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static String? _resolvedBaseUrl;
   static Future<void>? _initializeFuture;
+  static String? _cachedToken;
+  static String? _cachedUserJson;
 
   static Future<void> initialize() async {
     _initializeFuture ??= _resolveHealthyBaseUrl();
@@ -90,6 +98,77 @@ class ApiService {
     debugPrint('SYBAU API resolved baseUrl: $_resolvedBaseUrl');
     await prefs.setString(_autoBaseUrlKey, candidate);
     await prefs.remove(_savedBaseUrlKey);
+  }
+
+  static void _cacheSessionString(String key, String? value) {
+    if (key == _tokenKey) {
+      _cachedToken = value;
+    } else if (key == _userKey) {
+      _cachedUserJson = value;
+    }
+  }
+
+  static String? _cachedSessionString(String key) {
+    if (key == _tokenKey) return _cachedToken;
+    if (key == _userKey) return _cachedUserJson;
+    return null;
+  }
+
+  static Future<String?> _readSessionString(
+    String key,
+    String legacyKey,
+  ) async {
+    final cached = _cachedSessionString(key);
+    if (cached != null && cached.isNotEmpty) return cached;
+
+    try {
+      final secureValue = await _secureStorage.read(key: key);
+      if (secureValue != null && secureValue.isNotEmpty) {
+        _cacheSessionString(key, secureValue);
+        return secureValue;
+      }
+    } catch (_) {
+      // Secure storage is unavailable in some test/desktop contexts. Fall back to legacy storage there.
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final legacyValue = prefs.getString(legacyKey);
+    if (legacyValue == null || legacyValue.isEmpty) return null;
+
+    try {
+      await _secureStorage.write(key: key, value: legacyValue);
+      await prefs.remove(legacyKey);
+    } catch (_) {
+      // Keep legacy value if migration could not complete.
+    }
+    _cacheSessionString(key, legacyValue);
+    return legacyValue;
+  }
+
+  static Future<void> _writeSessionString(
+    String key,
+    String legacyKey,
+    String value,
+  ) async {
+    _cacheSessionString(key, value);
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      await _secureStorage.write(key: key, value: value);
+      await prefs.remove(legacyKey);
+    } catch (_) {
+      await prefs.setString(legacyKey, value);
+    }
+  }
+
+  static Future<void> _deleteSessionString(String key, String legacyKey) async {
+    _cacheSessionString(key, null);
+    try {
+      await _secureStorage.delete(key: key);
+    } catch (_) {
+      // Ignore unavailable secure storage in test/desktop contexts.
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(legacyKey);
   }
 
   static String get baseUrl {
@@ -303,13 +382,20 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final prefs = await SharedPreferences.getInstance();
         final token = data['token'] ?? data['accessToken'];
         if (token != null) {
-          await prefs.setString('token', token as String);
+          await _writeSessionString(
+            _tokenKey,
+            _legacyTokenKey,
+            token as String,
+          );
         }
         if (data['user'] != null) {
-          await prefs.setString('user', jsonEncode(data['user']));
+          await _writeSessionString(
+            _userKey,
+            _legacyUserKey,
+            jsonEncode(data['user']),
+          );
         }
         return data;
       } else {
@@ -360,13 +446,20 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final prefs = await SharedPreferences.getInstance();
         final token = data['token'] ?? data['accessToken'];
         if (token != null) {
-          await prefs.setString('token', token as String);
+          await _writeSessionString(
+            _tokenKey,
+            _legacyTokenKey,
+            token as String,
+          );
         }
         if (data['user'] != null) {
-          await prefs.setString('user', jsonEncode(data['user']));
+          await _writeSessionString(
+            _userKey,
+            _legacyUserKey,
+            jsonEncode(data['user']),
+          );
         }
         return data;
       } else {
@@ -378,9 +471,10 @@ class ApiService {
   }
 
   static Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-    await prefs.remove('user');
+    await Future.wait<void>([
+      _deleteSessionString(_tokenKey, _legacyTokenKey),
+      _deleteSessionString(_userKey, _legacyUserKey),
+    ]);
   }
 
   static bool isUnauthorizedError(Object error) {
@@ -388,13 +482,12 @@ class ApiService {
   }
 
   static Future<bool> isLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.containsKey('token');
+    final token = await _readSessionString(_tokenKey, _legacyTokenKey);
+    return token != null && token.isNotEmpty;
   }
 
   static Future<Map<String, dynamic>?> getStoredUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString('user');
+    final raw = await _readSessionString(_userKey, _legacyUserKey);
     if (raw == null || raw.isEmpty) return null;
     try {
       final parsed = jsonDecode(raw);
@@ -405,8 +498,7 @@ class ApiService {
   }
 
   static Future<Map<String, String>> _authHeaders() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = await _readSessionString(_tokenKey, _legacyTokenKey);
     return {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache',
@@ -578,8 +670,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> getProfile() async {
     final profile = await _authedGetJson('/users/profile');
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user', jsonEncode(profile));
+    await _writeSessionString(_userKey, _legacyUserKey, jsonEncode(profile));
     return profile;
   }
 

@@ -729,6 +729,12 @@ onMounted(() => loadProfile());
   image-rendering: pixelated;
 }
 
+.equip-slot-inner.equipped .equip-item-icon,
+.equip-slot-inner.equipped .equip-item-icon img {
+  width: 40px;
+  height: 40px;
+}
+
 .equip-empty {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.28);
@@ -1426,6 +1432,21 @@ onMounted(() => loadProfile());
     max-height: 50vh;
     padding-right: 0;
   }
+
+  .equip-slot {
+    width: 112px;
+    height: 112px;
+  }
+
+  .equip-slot-inner.equipped .equip-item-icon,
+  .equip-slot-inner.equipped .equip-item-icon img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .equip-slot-inner.equipped .equip-item-icon {
+    font-size: 24px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1443,8 +1464,18 @@ onMounted(() => loadProfile());
   }
 
   .equip-slot {
-    width: 80px;
-    height: 80px;
+    width: 104px;
+    height: 104px;
+  }
+
+  .equip-slot-inner.equipped .equip-item-icon,
+  .equip-slot-inner.equipped .equip-item-icon img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .equip-slot-inner.equipped .equip-item-icon {
+    font-size: 23px;
   }
 
   .equip-slot-inner::before,
@@ -1469,8 +1500,18 @@ onMounted(() => loadProfile());
   }
 
   .equip-slot {
-    width: 64px;
-    height: 64px;
+    width: clamp(76px, 20vw, 92px);
+    height: clamp(76px, 20vw, 92px);
+  }
+
+  .equip-slot-inner.equipped .equip-item-icon,
+  .equip-slot-inner.equipped .equip-item-icon img {
+    width: 26px;
+    height: 26px;
+  }
+
+  .equip-slot-inner.equipped .equip-item-icon {
+    font-size: 20px;
   }
 
   .equip-name { display: none; }
@@ -1548,8 +1589,18 @@ onMounted(() => loadProfile());
 
 @media (max-width: 400px) {
   .equip-slot {
-    width: 56px;
-    height: 56px;
+    width: 72px;
+    height: 72px;
+  }
+
+  .equip-slot-inner.equipped .equip-item-icon,
+  .equip-slot-inner.equipped .equip-item-icon img {
+    width: 22px;
+    height: 22px;
+  }
+
+  .equip-slot-inner.equipped .equip-item-icon {
+    font-size: 18px;
   }
 
   .equip-slot-inner::before,

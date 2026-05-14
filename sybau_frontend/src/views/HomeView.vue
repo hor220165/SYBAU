@@ -59,7 +59,7 @@
             </div>
 
             <div class="showcase-media" :class="section.mediaClass" aria-hidden="true">
-              <img :src="section.image" alt="" class="mockup-image">
+              <img :src="section.image" alt="" class="mockup-image" loading="lazy" decoding="async">
             </div>
           </div>
 
@@ -100,6 +100,8 @@
                 :src="tech.icon"
                 :alt="tech.name"
                 class="tech-logo"
+                loading="lazy"
+                decoding="async"
               >
             </div>
           </div>
