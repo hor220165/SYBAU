@@ -50,7 +50,7 @@
         <Flame class="health-flame" :size="30" />
         <div>
           <span class="health-label">{{ text('Schritte heute', 'Steps today') }}</span>
-          <strong>{{ todayActivity.steps.toLocaleString(locale) }}</strong>
+          <strong>{{ formatNumber(todayActivity.steps) }}</strong>
         </div>
       </article>
       <article class="health-card">
@@ -475,7 +475,7 @@ async function loadTodayActivity() {
 }
 
 function formatNumber(value: number) {
-  if (Math.abs(value) < 10000) return value.toLocaleString(locale.value);
+  if (Math.abs(value) < 1000) return value.toLocaleString(locale.value);
   const units = [
     { amount: 1_000_000_000, suffix: 'B' },
     { amount: 1_000_000, suffix: 'M' },

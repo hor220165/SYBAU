@@ -100,6 +100,28 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
     return _toInt(_profileStats['totalExercises'], fallback: _todayReps);
   }
 
+  String _formatWorkoutStatNumber(int value) {
+    if (value.abs() < 1000) return value.toString();
+
+    const units = <({int amount, String suffix})>[
+      (amount: 1000000000, suffix: 'B'),
+      (amount: 1000000, suffix: 'M'),
+      (amount: 1000, suffix: 'K'),
+    ];
+
+    for (final unit in units) {
+      if (value.abs() >= unit.amount) {
+        final compact = value / unit.amount;
+        final rounded = compact >= 100
+            ? compact.toStringAsFixed(0)
+            : compact.toStringAsFixed(compact % 1 == 0 ? 0 : 1);
+        return '${rounded.replaceAll('.', ',')}${unit.suffix}';
+      }
+    }
+
+    return value.toString();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1452,8 +1474,8 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                   icon: Icons.today,
                   label: _lt(de: 'Heute', en: 'Today'),
                   value: _lt(
-                    de: '$_todayReps Einheiten',
-                    en: '$_todayReps units',
+                    de: '${_formatWorkoutStatNumber(_todayReps)} Einheiten',
+                    en: '${_formatWorkoutStatNumber(_todayReps)} units',
                   ),
                   accent: Color(0xFF60A5FA),
                 ),
@@ -1462,8 +1484,8 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                   icon: Icons.stacked_bar_chart,
                   label: _lt(de: 'Gesamt', en: 'Total'),
                   value: _lt(
-                    de: '$_totalReps Einheiten',
-                    en: '$_totalReps units',
+                    de: '${_formatWorkoutStatNumber(_totalReps)} Einheiten',
+                    en: '${_formatWorkoutStatNumber(_totalReps)} units',
                   ),
                   accent: Color(0xFFA855F7),
                 ),
@@ -1471,7 +1493,7 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                 _buildStatPill(
                   icon: Icons.bolt,
                   label: _lt(de: 'XP Heute', en: 'XP Today'),
-                  value: '+${_formatCompactNumber(_todayXp)} XP',
+                  value: '+${_formatWorkoutStatNumber(_todayXp)} XP',
                   accent: Color(0xFFFBBF24),
                 ),
               ],
@@ -1483,7 +1505,9 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
               _buildHealthMetricCard(
                 iconColor: Color(0xFFFF6B1A),
                 label: _lt(de: 'Schritte heute', en: 'Steps today'),
-                value: '${_toInt(_todayActivity['steps'])}',
+                value: _formatWorkoutStatNumber(
+                  _toInt(_todayActivity['steps']),
+                ),
               ),
               const SizedBox(width: 10),
               _buildHealthMetricCard(

@@ -200,47 +200,57 @@ class _DashboardTabState extends State<DashboardTab> {
         child: FittedBox(
           fit: BoxFit.scaleDown,
           child: isEquipped
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (booster.imageUrl.isNotEmpty)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.network(
-                          _resolvedImageUrl(booster.imageUrl),
-                          width: 38,
-                          height: 38,
-                          fit: BoxFit.contain,
-                          filterQuality: FilterQuality.none,
-                          isAntiAlias: false,
-                          errorBuilder: (_, __, ___) => Text(
-                            '⚡',
-                            style: TextStyle(
-                              fontSize: 28,
-                              color: Color(0xFFC084FC),
-                            ),
+              ? SizedBox(
+                  width: 90,
+                  height: 90,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Transform.translate(
+                        offset: const Offset(0, -6),
+                        child: booster.imageUrl.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.network(
+                                  _resolvedImageUrl(booster.imageUrl),
+                                  width: 46,
+                                  height: 46,
+                                  fit: BoxFit.contain,
+                                  filterQuality: FilterQuality.none,
+                                  isAntiAlias: false,
+                                  errorBuilder: (_, __, ___) => const Text(
+                                    '⚡',
+                                    style: TextStyle(
+                                      fontSize: 32,
+                                      color: Color(0xFFC084FC),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : const Text(
+                                '⚡',
+                                style: TextStyle(
+                                  fontSize: 32,
+                                  color: Color(0xFFC084FC),
+                                ),
+                              ),
+                      ),
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 11,
+                        child: Center(
+                          child: _buildBoosterPercentBadges(
+                            booster,
+                            fontSize: 10,
+                            horizontalPadding: 4,
+                            verticalPadding: 0,
+                            gap: 5,
                           ),
                         ),
-                      )
-                    else
-                      const Text(
-                        '⚡',
-                        style: TextStyle(
-                          fontSize: 28,
-                          color: Color(0xFFC084FC),
-                        ),
                       ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '+${booster.bestBoostPercent}%',
-                      style: const TextStyle(
-                        color: Color(0xFFC084FC),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 )
               : Text(
                   _lt(de: 'Leer', en: 'Empty'),

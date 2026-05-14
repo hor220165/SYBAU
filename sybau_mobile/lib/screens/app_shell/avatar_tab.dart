@@ -619,7 +619,7 @@ class _AvatarTabState extends State<AvatarTab> {
   Widget _buildEquipSlot(int index, {double size = 82}) {
     final item = _slots[index];
     final isFilled = item != null;
-    final iconSize = size * 0.40;
+    final iconSize = size * 0.50;
     final valueSize = size * 0.14;
 
     return GestureDetector(
@@ -641,41 +641,51 @@ class _AvatarTabState extends State<AvatarTab> {
         child: FittedBox(
           fit: BoxFit.scaleDown,
           child: isFilled
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (item.imageUrl.isNotEmpty)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.network(
-                          _resolvedImageUrl(item.imageUrl),
-                          width: iconSize,
-                          height: iconSize,
-                          fit: BoxFit.contain,
-                          filterQuality: FilterQuality.none,
-                          isAntiAlias: false,
-                          errorBuilder: (_, __, ___) => Text(
-                            _boosterIcon(item),
-                            style: TextStyle(fontSize: iconSize),
+              ? SizedBox(
+                  width: size,
+                  height: size,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Transform.translate(
+                        offset: Offset(0, -size * 0.07),
+                        child: item.imageUrl.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.network(
+                                  _resolvedImageUrl(item.imageUrl),
+                                  width: iconSize,
+                                  height: iconSize,
+                                  fit: BoxFit.contain,
+                                  filterQuality: FilterQuality.none,
+                                  isAntiAlias: false,
+                                  errorBuilder: (_, __, ___) => Text(
+                                    _boosterIcon(item),
+                                    style: TextStyle(fontSize: iconSize),
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                _boosterIcon(item),
+                                style: TextStyle(fontSize: iconSize),
+                              ),
+                      ),
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: size * 0.12,
+                        child: Center(
+                          child: _buildBoosterPercentBadges(
+                            item,
+                            fontSize: math.max(8.0, valueSize * 0.78),
+                            horizontalPadding: size < 70 ? 2 : 3,
+                            verticalPadding: 0,
+                            gap: size < 70 ? 4 : 5,
                           ),
                         ),
-                      )
-                    else
-                      Text(
-                        _boosterIcon(item),
-                        style: TextStyle(fontSize: iconSize),
                       ),
-                    SizedBox(height: size * 0.02),
-                    Text(
-                      '+${item.bestBoostPercent}%',
-                      style: TextStyle(
-                        color: Color(0xFFC084FC),
-                        fontSize: valueSize,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 )
               : Text(
                   'Leer',

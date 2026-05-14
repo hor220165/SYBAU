@@ -34,6 +34,73 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
+Widget _buildBoosterPercentBadges(
+  Booster booster, {
+  double fontSize = 10,
+  double horizontalPadding = 6,
+  double verticalPadding = 2,
+  double gap = 4,
+}) {
+  final badges = <Widget>[
+    if (booster.xpBoostPercentage > 0)
+      _buildBoostPercentBadge(
+        value: booster.xpBoostPercentage,
+        color: const Color(0xFF60A5FA),
+        fontSize: fontSize,
+        horizontalPadding: horizontalPadding,
+        verticalPadding: verticalPadding,
+      ),
+    if (booster.coinBoostPercentage > 0)
+      _buildBoostPercentBadge(
+        value: booster.coinBoostPercentage,
+        color: const Color(0xFFFACC15),
+        fontSize: fontSize,
+        horizontalPadding: horizontalPadding,
+        verticalPadding: verticalPadding,
+      ),
+  ];
+
+  if (badges.isEmpty) return const SizedBox.shrink();
+
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      for (var i = 0; i < badges.length; i++) ...[
+        if (i > 0) SizedBox(width: gap),
+        badges[i],
+      ],
+    ],
+  );
+}
+
+Widget _buildBoostPercentBadge({
+  required int value,
+  required Color color,
+  required double fontSize,
+  required double horizontalPadding,
+  required double verticalPadding,
+}) {
+  return Padding(
+    padding: EdgeInsets.symmetric(
+      horizontal: horizontalPadding * 0.2,
+      vertical: verticalPadding * 0.2,
+    ),
+    child: Text(
+      '+$value%',
+      maxLines: 1,
+      overflow: TextOverflow.visible,
+      style: TextStyle(
+        color: color,
+        fontSize: fontSize,
+        fontWeight: FontWeight.w900,
+        height: 1.0,
+        shadows: [Shadow(color: color.withOpacity(0.45), blurRadius: 8)],
+      ),
+    ),
+  );
+}
+
 class _AchievementCard extends StatelessWidget {
   const _AchievementCard({required this.achievement});
 

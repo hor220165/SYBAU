@@ -20,7 +20,16 @@
                     <img v-if="getBoostImage(boostSlots[slotIdx])" :src="getBoostImage(boostSlots[slotIdx])" alt="" />
                     <span v-else>⚡</span>
                   </div>
-                  <span class="equip-badge">+{{ boostSlots[slotIdx]!.xpBoostPercentage || boostSlots[slotIdx]!.coinBoostPercentage || 0 }}%</span>
+                  <div class="equip-badges">
+                    <span
+                      v-for="badge in getBoostBadges(boostSlots[slotIdx])"
+                      :key="badge.kind"
+                      class="equip-badge"
+                      :class="badge.kind"
+                    >
+                      {{ badge.label }}
+                    </span>
+                  </div>
                 </template>
                 <template v-else>
                   <span class="equip-empty">{{ text('Leer', 'Empty') }}</span>
@@ -53,7 +62,16 @@
                     <img v-if="getBoostImage(boostSlots[slotIdx])" :src="getBoostImage(boostSlots[slotIdx])" alt="" />
                     <span v-else>⚡</span>
                   </div>
-                  <span class="equip-badge">+{{ boostSlots[slotIdx]!.xpBoostPercentage || boostSlots[slotIdx]!.coinBoostPercentage || 0 }}%</span>
+                  <div class="equip-badges">
+                    <span
+                      v-for="badge in getBoostBadges(boostSlots[slotIdx])"
+                      :key="badge.kind"
+                      class="equip-badge"
+                      :class="badge.kind"
+                    >
+                      {{ badge.label }}
+                    </span>
+                  </div>
                 </template>
                 <template v-else>
                   <span class="equip-empty">Leer</span>
@@ -175,7 +193,16 @@
                 </div>
                 <div class="boost-item-info">
                   <span class="boost-item-name">{{ translate(booster.name) }}</span>
-                  <span class="boost-item-desc">+{{ booster.xpBoostPercentage }}% XP Boost</span>
+                  <div class="boost-item-badges">
+                    <span
+                      v-for="badge in getBoostBadges(booster)"
+                      :key="badge.kind"
+                      class="boost-item-badge"
+                      :class="badge.kind"
+                    >
+                      {{ badge.label }} {{ badge.name }}
+                    </span>
+                  </div>
                 </div>
                 <span class="boost-item-qty">{{ availableQuantity(booster) }}x</span>
               </div>
@@ -220,6 +247,14 @@ const router = useRouter();
 const { text, translate, locale } = useLanguage();
 
 const getBoostImage = (booster: item | null) => resolveMediaUrl(booster?.imageUrl ?? (booster as any)?.ImageUrl ?? '');
+const getBoostBadges = (booster: item | null) => {
+  const xp = booster?.xpBoostPercentage ?? 0;
+  const coin = booster?.coinBoostPercentage ?? 0;
+  return [
+    ...(xp > 0 ? [{ kind: 'xp', label: `+${xp}%`, name: 'XP' }] : []),
+    ...(coin > 0 ? [{ kind: 'coin', label: `+${coin}%`, name: 'Coins' }] : []),
+  ];
+};
 
 // Stats vom Backend
 const currentStreak = ref(0);
@@ -662,6 +697,12 @@ onMounted(async () => {
 @media (max-width: 768px) {
   .main-content { padding: 24px 16px; }
   .equip-slot { width: 80px; height: 80px; }
+  .equip-slot-inner.equipped .equip-item-icon,
+  .equip-slot-inner.equipped .equip-item-icon img {
+    width: 48px;
+    height: 48px;
+  }
+  .equip-slot-inner.equipped .equip-item-icon { font-size: 34px; }
   .equip-slot-inner::before,
   .equip-slot-inner::after { width: 7px; height: 7px; }
   .stats-bar-item { padding: 0 12px; }
@@ -683,8 +724,27 @@ onMounted(async () => {
   }
 
   .equip-slot {
-    width: 68px;
-    height: 68px;
+    width: 74px;
+    height: 74px;
+  }
+
+  .equip-slot-inner.equipped .equip-item-icon,
+  .equip-slot-inner.equipped .equip-item-icon img {
+    width: 42px;
+    height: 42px;
+  }
+
+  .equip-slot-inner.equipped .equip-item-icon {
+    font-size: 30px;
+  }
+
+  .equip-badges {
+    bottom: 8px;
+    gap: 6px;
+  }
+
+  .equip-badge {
+    font-size: 11px;
   }
 
   .equip-slot-inner::before,
@@ -772,14 +832,81 @@ onMounted(async () => {
   image-rendering: pixelated;
 }
 
+.equip-slot-inner.equipped .equip-item-icon,
+.equip-slot-inner.equipped .equip-item-icon img {
+  width: 56px;
+  height: 56px;
+}
+
+.equip-slot-inner.equipped .equip-item-icon {
+  transform: translateY(-7px);
+}
+
+.equip-badges {
+  position: absolute;
+  right: 0;
+  bottom: 10px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
 .equip-badge {
-  font-size: 11px;
-  font-weight: 700;
-  color: rgba(168, 85, 247, 0.95);
-  background: rgba(168, 85, 247, 0.15);
-  padding: 2px 6px;
-  border-radius: 8px;
-  letter-spacing: 0.5px;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow: 0 0 9px currentColor;
+}
+
+.equip-badge.xp {
+  color: #60a5fa;
+}
+
+.equip-badge.coin {
+  color: #facc15;
+}
+
+@media (max-width: 768px) {
+  .equip-slot-inner.equipped .equip-item-icon,
+  .equip-slot-inner.equipped .equip-item-icon img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .equip-slot-inner.equipped .equip-item-icon {
+    font-size: 34px;
+  }
+
+  .equip-badge {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 600px) {
+  .equip-slot-inner.equipped .equip-item-icon,
+  .equip-slot-inner.equipped .equip-item-icon img {
+    width: 42px;
+    height: 42px;
+  }
+
+  .equip-slot-inner.equipped .equip-item-icon {
+    font-size: 30px;
+  }
+
+  .equip-badges {
+    bottom: 8px;
+    gap: 5px;
+  }
+
+  .equip-badge {
+    font-size: 10px;
+  }
 }
 
 /* ══════════════════════════════
@@ -924,5 +1051,31 @@ onMounted(async () => {
   font-size: 11px;
   color: rgba(168, 85, 247, 0.7);
   font-weight: 500;
+}
+
+.boost-item-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.boost-item-badge {
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.boost-item-badge.xp {
+  border: 1px solid rgba(59, 130, 246, 0.34);
+  background: rgba(37, 99, 235, 0.16);
+  color: #60a5fa;
+}
+
+.boost-item-badge.coin {
+  border: 1px solid rgba(245, 158, 11, 0.34);
+  background: rgba(245, 158, 11, 0.16);
+  color: #facc15;
 }
 </style>

@@ -64,7 +64,10 @@
                   </div>
                   <span class="equip-empty" v-if="!slot.item && selectingSlotFor === null">{{ text('Leer', 'Empty') }}</span>
                   <span class="equip-select-hint" v-if="!slot.item && selectingSlotFor !== null">{{ text('Hier', 'Here') }}</span>
-                  <span class="equip-badge" v-if="slot.item">+{{ slot.item.boostValue }}%</span>
+                  <div class="equip-badges" v-if="slot.item">
+                    <span v-if="slot.item.xpBoost > 0" class="equip-badge xp">+{{ slot.item.xpBoost }}%</span>
+                    <span v-if="slot.item.coinBoost > 0" class="equip-badge coin">+{{ slot.item.coinBoost }}%</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -102,7 +105,10 @@
                   </div>
                   <span class="equip-empty" v-if="!slot.item && selectingSlotFor === null">{{ text('Leer', 'Empty') }}</span>
                   <span class="equip-select-hint" v-if="!slot.item && selectingSlotFor !== null">{{ text('Hier', 'Here') }}</span>
-                  <span class="equip-badge" v-if="slot.item">+{{ slot.item.boostValue }}%</span>
+                  <div class="equip-badges" v-if="slot.item">
+                    <span v-if="slot.item.xpBoost > 0" class="equip-badge xp">+{{ slot.item.xpBoost }}%</span>
+                    <span v-if="slot.item.coinBoost > 0" class="equip-badge coin">+{{ slot.item.coinBoost }}%</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -259,7 +265,6 @@ interface BoosterItem {
   description: string;
   xpBoost: number;
   coinBoost: number;
-  boostValue: number;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   quantity: number;
   price: number;
@@ -317,7 +322,6 @@ function mapBooster(b: any): BoosterItem {
     description: b.description ?? '',
     xpBoost: xp,
     coinBoost: coin,
-    boostValue: xp + coin,
     rarity,
     quantity: b.quantity ?? 1,
     price: Number(b.price ?? b.Price ?? 0)
@@ -731,8 +735,12 @@ onMounted(() => loadProfile());
 
 .equip-slot-inner.equipped .equip-item-icon,
 .equip-slot-inner.equipped .equip-item-icon img {
-  width: 40px;
-  height: 40px;
+  width: 54px;
+  height: 54px;
+}
+
+.equip-slot-inner.equipped .equip-item-icon {
+  transform: translateY(-7px);
 }
 
 .equip-empty {
@@ -754,11 +762,35 @@ onMounted(() => loadProfile());
   50% { opacity: 1; }
 }
 
+.equip-badges {
+  position: absolute;
+  right: 0;
+  bottom: 10px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
 .equip-badge {
-  font-size: 11px;
-  font-weight: 700;
-  color: #a855f7;
-  letter-spacing: 0.5px;
+  min-width: 0;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow: 0 0 9px currentColor;
+}
+
+.equip-badge.xp {
+  color: #60a5fa;
+}
+
+.equip-badge.coin {
+  color: #facc15;
 }
 
 /* Slot selection banner */
@@ -1440,12 +1472,12 @@ onMounted(() => loadProfile());
 
   .equip-slot-inner.equipped .equip-item-icon,
   .equip-slot-inner.equipped .equip-item-icon img {
-    width: 32px;
-    height: 32px;
+    width: 54px;
+    height: 54px;
   }
 
   .equip-slot-inner.equipped .equip-item-icon {
-    font-size: 24px;
+    font-size: 38px;
   }
 }
 
@@ -1470,12 +1502,12 @@ onMounted(() => loadProfile());
 
   .equip-slot-inner.equipped .equip-item-icon,
   .equip-slot-inner.equipped .equip-item-icon img {
-    width: 30px;
-    height: 30px;
+    width: 52px;
+    height: 52px;
   }
 
   .equip-slot-inner.equipped .equip-item-icon {
-    font-size: 23px;
+    font-size: 36px;
   }
 
   .equip-slot-inner::before,
@@ -1506,18 +1538,21 @@ onMounted(() => loadProfile());
 
   .equip-slot-inner.equipped .equip-item-icon,
   .equip-slot-inner.equipped .equip-item-icon img {
-    width: 26px;
-    height: 26px;
+    width: 42px;
+    height: 42px;
   }
 
   .equip-slot-inner.equipped .equip-item-icon {
-    font-size: 20px;
+    font-size: 30px;
   }
 
   .equip-name { display: none; }
   .equip-empty { display: none; }
-  .equip-badge { display: none; }
   .equip-select-hint { display: none; }
+
+  .equip-badge {
+    font-size: 10px;
+  }
 
   .avatar-sprite {
     display: flex;
@@ -1595,12 +1630,21 @@ onMounted(() => loadProfile());
 
   .equip-slot-inner.equipped .equip-item-icon,
   .equip-slot-inner.equipped .equip-item-icon img {
-    width: 22px;
-    height: 22px;
+    width: 36px;
+    height: 36px;
   }
 
   .equip-slot-inner.equipped .equip-item-icon {
-    font-size: 18px;
+    font-size: 26px;
+  }
+
+  .equip-badges {
+    bottom: 8px;
+    gap: 5px;
+  }
+
+  .equip-badge {
+    font-size: 9px;
   }
 
   .equip-slot-inner::before,

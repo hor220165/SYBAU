@@ -686,17 +686,39 @@ class _ShopTabState extends State<ShopTab> {
                           ),
                           if (xpBoost > 0 || coinBoost > 0) ...[
                             const SizedBox(height: 11),
-                            if (xpBoost > 0)
+                            if (xpBoost > 0 && coinBoost > 0)
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildBoostPill(
+                                      iconAsset: 'assets/XP_Pixel.png',
+                                      label: '+$xpBoost% XP',
+                                      textColor: Color(0xFF60A5FA),
+                                      borderColor: Color(0xFF3B82F6),
+                                      backgroundColor: Color(0xFF2563EB),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: _buildBoostPill(
+                                      iconAsset: 'assets/SYBAU_Coin.png',
+                                      label: '+$coinBoost% Coins',
+                                      textColor: Color(0xFFFACC15),
+                                      borderColor: Color(0xFFF59E0B),
+                                      backgroundColor: Color(0xFFF59E0B),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            else if (xpBoost > 0)
                               _buildBoostPill(
                                 iconAsset: 'assets/XP_Pixel.png',
                                 label: '+$xpBoost% XP',
                                 textColor: Color(0xFF60A5FA),
                                 borderColor: Color(0xFF3B82F6),
                                 backgroundColor: Color(0xFF2563EB),
-                              ),
-                            if (xpBoost > 0 && coinBoost > 0)
-                              const SizedBox(height: 5),
-                            if (coinBoost > 0)
+                              )
+                            else if (coinBoost > 0)
                               _buildBoostPill(
                                 iconAsset: 'assets/SYBAU_Coin.png',
                                 label: '+$coinBoost% Coins',
