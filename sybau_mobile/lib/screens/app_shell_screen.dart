@@ -143,6 +143,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
   Set<String> _knownNotificationKeys = <String>{};
   Timer? _notificationPollTimer;
   Timer? _rewardFlashTimer;
+  bool _headerRefreshInFlight = false;
   int _rewardFlashXp = 0;
   int _rewardFlashCoins = 0;
   int _rewardFlashToken = 0;
@@ -204,7 +205,9 @@ class _AppShellScreenState extends State<AppShellScreen> {
     }
   }
 
-  Future<void> _loadHeaderProfile() async {
+  Future<void> _loadHeaderProfile({bool showError = true}) async {
+    if (_headerRefreshInFlight) return;
+    _headerRefreshInFlight = true;
     try {
       final profile = await ApiService.getProfile();
       var notificationsEnabled = _notificationsEnabled;
@@ -241,8 +244,24 @@ class _AppShellScreenState extends State<AppShellScreen> {
         _loadingHeader = false;
       });
       debugPrint('SYBAU Header load failed: $e');
-      _showSnack('Header-Daten konnten nicht geladen werden.');
+      if (showError) {
+        _showSnack('Header-Daten konnten nicht geladen werden.');
+      }
+    } finally {
+      _headerRefreshInFlight = false;
     }
+  }
+
+  Future<void> _refreshHeaderData({bool showError = true}) async {
+    await _loadHeaderProfile(showError: showError);
+    await _refreshQuestBadge();
+  }
+
+  void _selectTab(AppTab tab) {
+    if (_currentTab != tab) {
+      setState(() => _currentTab = tab);
+    }
+    unawaited(_refreshHeaderData(showError: false));
   }
 
   void _startNotificationPolling() {
@@ -603,7 +622,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
                     ),
                     onTap: () {
                       Navigator.of(ctx).pop();
-                      setState(() => _currentTab = AppTab.friends);
+                      _selectTab(AppTab.friends);
                     },
                   ),
                 );
@@ -618,43 +637,43 @@ class _AppShellScreenState extends State<AppShellScreen> {
     switch (_currentTab) {
       case AppTab.dashboard:
         return DashboardTab(
-          onRefreshHeader: _loadHeaderProfile,
-          onOpenAvatar: () => setState(() => _currentTab = AppTab.avatar),
+          onRefreshHeader: () => _loadHeaderProfile(),
+          onOpenAvatar: () => _selectTab(AppTab.avatar),
           showSnack: _showSnack,
         );
       case AppTab.workouts:
         return WorkoutsTab(
-          onRefreshHeader: _loadHeaderProfile,
+          onRefreshHeader: () => _loadHeaderProfile(),
           onRewardEarned: _showHeaderReward,
           onQuestStatusChanged: _refreshQuestBadge,
           showSnack: _showSnack,
         );
       case AppTab.quests:
         return QuestsTab(
-          onRefreshHeader: _loadHeaderProfile,
+          onRefreshHeader: () => _loadHeaderProfile(),
           onQuestStatusChanged: _refreshQuestBadge,
           showSnack: _showSnack,
         );
       case AppTab.avatar:
         return AvatarTab(
-          onRefreshHeader: _loadHeaderProfile,
+          onRefreshHeader: () => _loadHeaderProfile(),
           showSnack: _showSnack,
         );
       case AppTab.shop:
         return ShopTab(
-          onRefreshHeader: _loadHeaderProfile,
+          onRefreshHeader: () => _loadHeaderProfile(),
           showSnack: _showSnack,
         );
       case AppTab.friends:
         return FriendsTab(
-          onRefreshHeader: _loadHeaderProfile,
+          onRefreshHeader: () => _loadHeaderProfile(),
           showSnack: _showSnack,
         );
       case AppTab.leaderboard:
         return LeaderboardTab(showSnack: _showSnack);
       case AppTab.profile:
         return ProfileTab(
-          onRefreshHeader: _loadHeaderProfile,
+          onRefreshHeader: () => _loadHeaderProfile(),
           showSnack: _showSnack,
         );
     }
@@ -694,7 +713,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 6),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(10),
-                        onTap: () => setState(() => _currentTab = entry.tab),
+                        onTap: () => _selectTab(entry.tab),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
