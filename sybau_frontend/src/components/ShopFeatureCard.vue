@@ -3,6 +3,9 @@ import { computed } from 'vue';
 import coinIcon from '@/assets/SYBAU_Coin.png';
 import xpIcon from '@/assets/XP_Pixel.png';
 import type { ShopDisplayItem } from '@/models/ShopDisplayItem';
+import { useLanguage } from '@/composables/useLanguage';
+
+const { translate, locale } = useLanguage();
 
 const props = defineProps<{
   item: ShopDisplayItem;
@@ -20,9 +23,9 @@ const formatPrice = (value: number) => {
   const amount = Number(value || 0);
   const sign = amount < 0 ? '-' : '';
   const absolute = Math.abs(amount);
-  if (absolute >= 1_000_000) return `${sign}${Number((absolute / 1_000_000).toFixed(1)).toString().replace('.', ',')}M`;
-  if (absolute >= 10_000) return `${sign}${Number((absolute / 1_000).toFixed(1)).toString().replace('.', ',')}K`;
-  return `${sign}${Math.round(absolute).toLocaleString('de-DE')}`;
+  if (absolute >= 1_000_000) return `${sign}${Number((absolute / 1_000_000).toFixed(1)).toLocaleString(locale.value)}M`;
+  if (absolute >= 10_000) return `${sign}${Number((absolute / 1_000).toFixed(1)).toLocaleString(locale.value)}K`;
+  return `${sign}${Math.round(absolute).toLocaleString(locale.value)}`;
 };
 const priceText = computed(() => formatPrice(props.item.price));
 const priceSizeClass = computed(() => {
@@ -45,8 +48,8 @@ const priceSizeClass = computed(() => {
       </div>
 
       <div class="feature-copy">
-        <h4 class="feature-title">{{ item.name }}</h4>
-        <span class="rarity-label">{{ item.rarity }}</span>
+        <h4 class="feature-title">{{ translate(item.name) }}</h4>
+        <span class="rarity-label">{{ translate(item.rarity) }}</span>
       </div>
     </div>
 

@@ -9,8 +9,8 @@
   <main class="workouts-content">
     <section class="page-heading">
       <span class="page-kicker">Workouts</span>
-      <h1 class="page-title">Deine Übungen</h1>
-      <p class="page-subtitle">Wähle eine Übung und trage deine Wiederholungen ein.</p>
+      <h1 class="page-title">{{ text('Deine Übungen', 'Your Exercises') }}</h1>
+      <p class="page-subtitle">{{ text('Wähle eine Übung und trage deine Wiederholungen ein.', 'Choose an exercise and log your progress.') }}</p>
     </section>
 
     <section class="mobile-stats-panel">
@@ -20,8 +20,8 @@
             <CalendarDays :size="24" />
           </span>
           <span class="stat-copy">
-            <span class="stat-label">Heute</span>
-            <span class="stat-value">{{ formatNumber(todayReps) }} Einheiten</span>
+            <span class="stat-label">{{ text('Heute', 'Today') }}</span>
+            <span class="stat-value">{{ formatNumber(todayReps) }} {{ text('Einheiten', 'units') }}</span>
           </span>
         </article>
         <article class="stat-card">
@@ -29,8 +29,8 @@
             <BarChart3 :size="24" />
           </span>
           <span class="stat-copy">
-            <span class="stat-label">Gesamt</span>
-            <span class="stat-value">{{ formatNumber(totalExercises) }} Einheiten</span>
+            <span class="stat-label">{{ text('Gesamt', 'Total') }}</span>
+            <span class="stat-value">{{ formatNumber(totalExercises) }} {{ text('Einheiten', 'units') }}</span>
           </span>
         </article>
         <article class="stat-card">
@@ -38,7 +38,7 @@
             <Zap :size="24" />
           </span>
           <span class="stat-copy">
-            <span class="stat-label">XP Heute</span>
+            <span class="stat-label">{{ text('XP Heute', 'XP Today') }}</span>
             <span class="stat-value">+{{ formatNumber(todayXp) }} XP</span>
           </span>
         </article>
@@ -49,14 +49,14 @@
       <article class="health-card">
         <Flame class="health-flame" :size="30" />
         <div>
-          <span class="health-label">Schritte heute</span>
-          <strong>{{ todayActivity.steps.toLocaleString('de-DE') }}</strong>
+          <span class="health-label">{{ text('Schritte heute', 'Steps today') }}</span>
+          <strong>{{ todayActivity.steps.toLocaleString(locale) }}</strong>
         </div>
       </article>
       <article class="health-card">
         <Flame class="health-flame" :size="30" />
         <div>
-          <span class="health-label">Kilometer heute</span>
+          <span class="health-label">{{ text('Kilometer heute', 'Kilometers today') }}</span>
           <strong>{{ Number(todayActivity.kilometers || 0).toFixed(1) }} km</strong>
         </div>
       </article>
@@ -71,7 +71,7 @@
           :class="{ active: activeFilter === filter }"
           @click="activeFilter = filter"
       >
-        {{ filter }}
+        {{ translate(filter) }}
       </button>
     </div>
 
@@ -80,11 +80,11 @@
       <WorkoutCard
           v-for="exercise in filteredExercises"
           :key="exercise.id"
-          :category="exercise.category"
-          :title="exercise.name"
+          :category="translate(exercise.category)"
+          :title="translate(exercise.name)"
           :duration="0"
           :calories="0"
-          :exercises="[exercise.description]"
+          :exercises="[translate(exercise.description)]"
           :difficulty="exercise.difficulty"
           :xp="exercise.xpPerRep"
           :unit="exercise.unit"
@@ -109,17 +109,17 @@
     <!-- Create Custom Workout Card -->
     <div class="custom-workout-card">
       <div class="custom-content">
-        <h3>Erstelle dein eigenes Workout</h3>
-        <p>Kombiniere Übungen und verdiene Bonus-XP</p>
+        <h3>{{ text('Erstelle dein eigenes Workout', 'Create your own workout') }}</h3>
+        <p>{{ text('Kombiniere Übungen und verdiene Bonus-XP', 'Combine exercises and earn bonus XP') }}</p>
       </div>
       <button class="create-btn" @click="showCreateWorkout = true">
-        Workout erstellen
+        {{ text('Workout erstellen', 'Create workout') }}
       </button>
     </div>
 
     <!-- Saved Workouts Section -->
     <div v-if="workouts.length > 0" class="workouts-section">
-      <h2 class="section-title">Deine Workouts</h2>
+      <h2 class="section-title">{{ text('Deine Workouts', 'Your Workouts') }}</h2>
       <div class="workouts-grid">
         <div v-for="wo in filteredWorkouts" :key="wo.id" class="workout-plan-card" @click="toggleWorkoutExpand(wo.id)">
           <div class="workout-plan-header">
@@ -132,17 +132,17 @@
           <div class="workout-plan-meta">
             <span class="asset-meta">
               <img src="../assets/Pixel_Hantel.png" alt="" />
-              {{ wo.exercises?.length ?? 0 }} Übungen
+              {{ wo.exercises?.length ?? 0 }} {{ text('Übungen', 'exercises') }}
             </span>
             <span class="expand-icon">{{ expandedWorkout === wo.id ? '▲' : '▼' }}</span>
           </div>
           <div v-if="expandedWorkout === wo.id" class="workout-exercises-list">
             <div v-for="ex in wo.exercises" :key="ex.exerciseId" class="workout-exercise-item">
-              <span class="exercise-name-label">{{ ex.exerciseName }}</span>
-              <span class="exercise-meta-label">{{ mapDifficulty(ex.difficulty) }} · Limit: {{ ex.dailyLimit }}</span>
+              <span class="exercise-name-label">{{ translate(ex.exerciseName) }}</span>
+              <span class="exercise-meta-label">{{ translate(mapDifficulty(ex.difficulty)) }} · {{ text('Limit', 'Limit') }}: {{ ex.dailyLimit }}</span>
             </div>
             <button class="start-workout-btn" @click.stop="startWorkoutSession(wo)">
-              Workout starten
+              {{ text('Workout starten', 'Start workout') }}
             </button>
           </div>
         </div>
@@ -157,22 +157,22 @@
   <div v-if="showCreateWorkout" class="workout-modal-overlay" @click.self="showCreateWorkout = false">
     <div class="create-workout-modal">
       <div class="modal-header-cw">
-        <h2>Neues Workout erstellen</h2>
+        <h2>{{ text('Neues Workout erstellen', 'Create new workout') }}</h2>
         <button class="close-btn-cw" @click="showCreateWorkout = false">&times;</button>
       </div>
       <form @submit.prevent="handleCreateWorkout">
         <div class="form-group-cw">
-          <label>Name</label>
-          <input v-model="newWorkout.name" type="text" required placeholder="z.B. Oberkörper Power">
+          <label>{{ text('Name', 'Name') }}</label>
+          <input v-model="newWorkout.name" type="text" required :placeholder="text('z.B. Oberkörper Power', 'e.g. Upper body power')">
         </div>
         <div class="form-group-cw">
-          <label>Beschreibung</label>
-          <input v-model="newWorkout.description" type="text" placeholder="Optional">
+          <label>{{ text('Beschreibung', 'Description') }}</label>
+          <input v-model="newWorkout.description" type="text" :placeholder="text('Optional', 'Optional')">
         </div>
         <div class="form-group-cw">
-          <label>Kategorie</label>
+          <label>{{ text('Kategorie', 'Category') }}</label>
           <select v-model.number="newWorkout.category" required>
-            <option value="" disabled>-- Wähle Kategorie --</option>
+            <option value="" disabled>-- {{ text('Wähle Kategorie', 'Choose category') }} --</option>
             <option :value="0">Strength</option>
             <option :value="1">Core</option>
             <option :value="2">Cardio</option>
@@ -180,20 +180,20 @@
           </select>
         </div>
         <div class="form-group-cw">
-          <label>Übungen</label>
+          <label>{{ text('Übungen', 'Exercises') }}</label>
           <div v-for="(entry, idx) in newWorkout.exercises" :key="idx" class="exercise-row-cw">
             <select v-model.number="entry.exerciseId" required>
-              <option value="0" disabled>-- Übung wählen --</option>
-              <option v-for="ex in exercises" :key="ex.id" :value="ex.id">{{ ex.name }}</option>
+              <option value="0" disabled>-- {{ text('Übung wählen', 'Choose exercise') }} --</option>
+              <option v-for="ex in exercises" :key="ex.id" :value="ex.id">{{ translate(ex.name) }}</option>
             </select>
-            <input v-model.number="entry.dailyLimit" type="number" min="1" placeholder="Limit" class="limit-input-cw">
+            <input v-model.number="entry.dailyLimit" type="number" min="1" :placeholder="text('Limit', 'Limit')" class="limit-input-cw">
             <button type="button" class="remove-btn-cw" @click="newWorkout.exercises.splice(idx, 1)" v-if="newWorkout.exercises.length > 1">✕</button>
           </div>
-          <button type="button" class="add-exercise-btn" @click="newWorkout.exercises.push({ exerciseId: 0, dailyLimit: 50 })">+ Übung hinzufügen</button>
+          <button type="button" class="add-exercise-btn" @click="newWorkout.exercises.push({ exerciseId: 0, dailyLimit: 50 })">+ {{ text('Übung hinzufügen', 'Add exercise') }}</button>
         </div>
         <div class="modal-actions-cw">
-          <button type="button" class="btn-cancel-cw" @click="showCreateWorkout = false">Abbrechen</button>
-          <button type="submit" class="btn-create-cw">Erstellen</button>
+          <button type="button" class="btn-cancel-cw" @click="showCreateWorkout = false">{{ text('Abbrechen', 'Cancel') }}</button>
+          <button type="submit" class="btn-create-cw">{{ text('Erstellen', 'Create') }}</button>
         </div>
       </form>
     </div>
@@ -209,7 +209,7 @@
           <div class="finish-icon">
             <img src="../assets/Star_Pixel.png" alt="" />
           </div>
-          <h2 class="finish-title">Workout abgeschlossen!</h2>
+          <h2 class="finish-title">{{ text('Workout abgeschlossen!', 'Workout complete!') }}</h2>
           <p class="finish-subtitle">{{ workoutSession.name }}</p>
 
           <div class="finish-stats">
@@ -218,24 +218,24 @@
                 <img src="../assets/XP_Pixel.png" alt="" />
               </span>
               <span class="finish-stat-value">+{{ sessionTotalXp }}</span>
-              <span class="finish-stat-label">XP verdient</span>
+              <span class="finish-stat-label">{{ text('XP verdient', 'XP earned') }}</span>
             </div>
             <div class="finish-stat">
               <span class="finish-stat-icon">
                 <img src="../assets/SYBAU_Coin.png" alt="" />
               </span>
               <span class="finish-stat-value">+{{ sessionTotalCoins }}</span>
-              <span class="finish-stat-label">Coins verdient</span>
+              <span class="finish-stat-label">{{ text('Coins verdient', 'Coins earned') }}</span>
             </div>
           </div>
 
           <div class="finish-details">
             <div class="finish-detail-row">
-              <span>Übungen abgeschlossen</span>
+              <span>{{ text('Übungen abgeschlossen', 'Exercises completed') }}</span>
               <span>{{ sessionActiveCount }}</span>
             </div>
             <div v-if="sessionSkippedCount > 0" class="finish-detail-row finish-detail-skipped">
-              <span>Übersprungen (Limit erreicht)</span>
+              <span>{{ text('Übersprungen (Limit erreicht)', 'Skipped (limit reached)') }}</span>
               <span>{{ sessionSkippedCount }}</span>
             </div>
           </div>
@@ -243,9 +243,9 @@
           <!-- Einzelne Ergebnisse -->
           <div class="finish-exercises">
             <div v-for="ex in workoutSession.exercises" :key="ex.exerciseId" class="finish-exercise-row">
-              <span class="finish-ex-name">{{ ex.exerciseName }}</span>
+              <span class="finish-ex-name">{{ translate(ex.exerciseName) }}</span>
               <template v-if="ex.skipped">
-                <span class="finish-ex-skipped">Limit erreicht</span>
+                <span class="finish-ex-skipped">{{ text('Limit erreicht', 'Limit reached') }}</span>
               </template>
               <template v-else>
                 <span class="finish-ex-reward">{{ formatSessionAmount(ex) }} · +{{ ex.xpEarned }} XP · +{{ ex.coinsEarned }} Coins</span>
@@ -253,7 +253,7 @@
             </div>
           </div>
 
-          <button class="finish-close-btn" @click="closeWorkoutSession">Fertig</button>
+          <button class="finish-close-btn" @click="closeWorkoutSession">{{ text('Fertig', 'Done') }}</button>
         </div>
       </template>
 
@@ -266,7 +266,7 @@
 
         <!-- Limit-Hinweis oben -->
         <div v-if="sessionSkippedCount > 0" class="session-limit-notice">
-          ⚠️ {{ sessionSkippedCount }} Übung{{ sessionSkippedCount > 1 ? 'en' : '' }} übersprungen – Tageslimit bereits erreicht
+          ⚠️ {{ sessionSkippedNotice }}
         </div>
 
         <div class="session-exercises">
@@ -275,14 +275,14 @@
             <div class="session-exercise-info">
               <span class="session-exercise-num">{{ Number(idx) + 1 }}</span>
               <div>
-                <span class="session-exercise-name">{{ ex.exerciseName }}</span>
-                <span class="session-exercise-detail">{{ mapDifficulty(ex.difficulty) }} · Limit: {{ formatSessionLimit(ex) }}</span>
+                <span class="session-exercise-name">{{ translate(ex.exerciseName) }}</span>
+                <span class="session-exercise-detail">{{ translate(mapDifficulty(ex.difficulty)) }} · {{ text('Limit', 'Limit') }}: {{ formatSessionLimit(ex) }}</span>
               </div>
             </div>
             <div class="session-exercise-action">
               <!-- Limit erreicht -->
               <template v-if="ex.skipped">
-                <span class="session-limit-badge">Limit erreicht</span>
+                <span class="session-limit-badge">{{ text('Limit erreicht', 'Limit reached') }}</span>
               </template>
               <!-- Bereits geloggt -->
               <template v-else-if="ex.logged">
@@ -292,13 +292,13 @@
               <!-- Noch offen -->
               <template v-else>
                 <span v-if="ex.remaining < ex.dailyLimit" class="session-remaining-hint">
-                  Noch {{ formatSessionRemaining(ex) }} möglich
+                  {{ text('Noch', 'Still') }} {{ formatSessionRemaining(ex) }} {{ text('möglich', 'possible') }}
                 </span>
                 <div v-if="ex.unit === 'Reps'" class="session-input-row">
                   <input v-model.number="ex.repsInput" type="number" min="1" :max="ex.remaining" 
-                         placeholder="Reps" class="session-reps-input">
+                         :placeholder="text('Reps', 'Reps')" class="session-reps-input">
                   <button class="session-log-btn" @click="logWorkoutExercise(ex)" :disabled="!ex.repsInput || ex.repsInput < 1">
-                    Eintragen
+                    {{ text('Eintragen', 'Log') }}
                   </button>
                 </div>
                 <div v-else-if="ex.unit === 'Time'" class="session-input-row">
@@ -306,18 +306,18 @@
                          class="session-reps-input session-time-input"
                          @input="ex.timeInput = formatTimeInput(($event.target as HTMLInputElement).value)">
                   <button class="session-log-btn" @click="logWorkoutExercise(ex)" :disabled="!ex.timeInput || ex.timeInput === '00:00:00'">
-                    Eintragen
+                    {{ text('Eintragen', 'Log') }}
                   </button>
                 </div>
                 <div v-else class="session-input-row session-distance-row">
                   <input v-model.number="ex.distanceInput" type="number" min="0" step="0.01"
-                         placeholder="Distanz" class="session-reps-input">
+                         :placeholder="text('Distanz', 'Distance')" class="session-reps-input">
                   <select v-model="ex.distanceUnit" class="session-distance-select">
                     <option value="m">m</option>
                     <option value="km">km</option>
                   </select>
                   <button class="session-log-btn" @click="logWorkoutExercise(ex)" :disabled="!ex.distanceInput || ex.distanceInput <= 0">
-                    Eintragen
+                    {{ text('Eintragen', 'Log') }}
                   </button>
                 </div>
               </template>
@@ -328,26 +328,26 @@
         <!-- Session Summary -->
         <div class="session-summary">
           <div class="session-summary-row">
-            <span>Fortschritt</span>
-            <span>{{ sessionCompletedCount }} / {{ workoutSession.exercises.length }} Übungen</span>
+            <span>{{ text('Fortschritt', 'Progress') }}</span>
+            <span>{{ sessionCompletedCount }} / {{ workoutSession.exercises.length }} {{ text('Übungen', 'exercises') }}</span>
           </div>
           <div class="session-progress-bar">
             <div class="session-progress-fill" :style="{ width: sessionProgressPercent + '%' }"></div>
           </div>
           <div class="session-summary-row">
-            <span>Gesamt XP</span>
+            <span>{{ text('Gesamt XP', 'Total XP') }}</span>
             <span class="session-total-xp">+{{ sessionTotalXp }}</span>
           </div>
           <div class="session-summary-row">
-            <span>Gesamt Coins</span>
+            <span>{{ text('Gesamt Coins', 'Total Coins') }}</span>
             <span class="session-total-coins">+{{ sessionTotalCoins }}</span>
           </div>
         </div>
 
         <div class="modal-actions-cw">
-          <button class="btn-cancel-cw" @click="closeWorkoutSession">Schließen</button>
+          <button class="btn-cancel-cw" @click="closeWorkoutSession">{{ text('Schließen', 'Close') }}</button>
           <button v-if="sessionCompletedCount === workoutSession.exercises.length" class="btn-create-cw" @click="finishWorkoutSession">
-            Workout abgeschlossen
+            {{ text('Workout abgeschlossen', 'Workout completed') }}
           </button>
         </div>
       </template>
@@ -385,9 +385,11 @@ import MessagePopup from '@/components/MessagePopup.vue';
 import ExerciseTimerOverlay from '@/components/ExerciseTimerOverlay.vue';
 import { workoutService, achievementService, questService } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
+import { useLanguage } from '@/composables/useLanguage';
 import { BarChart3, CalendarDays, Flame, Zap } from 'lucide-vue-next';
 
 const { refreshProfile } = useAuth();
+const { text, translate, locale } = useLanguage();
 
 const activeFilter = ref('Alle');
 const loading = ref(true);
@@ -473,14 +475,14 @@ async function loadTodayActivity() {
 }
 
 function formatNumber(value: number) {
-  if (Math.abs(value) < 10000) return value.toLocaleString('de-DE');
+  if (Math.abs(value) < 10000) return value.toLocaleString(locale.value);
   const units = [
     { amount: 1_000_000_000, suffix: 'B' },
     { amount: 1_000_000, suffix: 'M' },
     { amount: 1_000, suffix: 'K' }
   ];
   const unit = units.find((u) => Math.abs(value) >= u.amount);
-  if (!unit) return value.toLocaleString('de-DE');
+  if (!unit) return value.toLocaleString(locale.value);
   const compact = value / unit.amount;
   const digits = compact >= 100 || Number.isInteger(compact) ? 0 : 1;
   return `${compact.toFixed(digits).replace('.', ',')}${unit.suffix}`;
@@ -489,6 +491,12 @@ function formatNumber(value: number) {
 // Stats berechnen
 const todayReps = computed(() => exercises.value.reduce((sum, e) => sum + e.todayCount, 0));
 const todayXp = computed(() => exercises.value.reduce((sum, e) => sum + (e.todayCount * e.xpPerRep), 0));
+const sessionSkippedNotice = computed(() =>
+  text(
+    `${sessionSkippedCount.value} Übung${sessionSkippedCount.value > 1 ? 'en' : ''} übersprungen - Tageslimit bereits erreicht`,
+    `${sessionSkippedCount.value} exercise${sessionSkippedCount.value > 1 ? 's' : ''} skipped - daily limit already reached`
+  )
+);
 
 function remainingFor(exercise: ExerciseLocal) {
   return Math.max(0, Number(exercise.dailyLimit ?? 0) - Number(exercise.todayCount ?? 0));
@@ -602,7 +610,7 @@ async function handleTimerConfirm(data: { reps: number; elapsedSeconds: number }
     flashHeaderReward(rewards);
     refreshQuestBadge();
   } catch (err: any) {
-    const errorMsg = err.response?.data || 'Fehler beim Eintragen';
+    const errorMsg = err.response?.data || text('Fehler beim Eintragen', 'Could not log exercise');
     popupType.value = 'error';
     popupMessage.value = errorMsg;
   }
@@ -685,10 +693,10 @@ function formatAmount(value: number, unit: ExerciseLocal['unit']) {
   if (unit === 'Time') return secondsToTime(value);
   if (unit === 'Distance') {
     return value >= 1000
-      ? `${(value / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 })} km`
-      : `${value.toLocaleString('de-DE')} m`;
+      ? `${(value / 1000).toLocaleString(locale.value, { maximumFractionDigits: 2 })} km`
+      : `${value.toLocaleString(locale.value)} m`;
   }
-  return `${value.toLocaleString('de-DE')} Reps`;
+  return `${value.toLocaleString(locale.value)} Reps`;
 }
 
 function numberFromResult(result: any, ...keys: string[]) {
@@ -784,7 +792,7 @@ async function handleCreateWorkout() {
     await loadWorkouts();
   } catch (err: any) {
     popupType.value = 'error';
-    popupMessage.value = err.response?.data || 'Fehler beim Erstellen des Workouts';
+    popupMessage.value = err.response?.data || text('Fehler beim Erstellen des Workouts', 'Could not create workout');
   }
 }
 
@@ -883,7 +891,7 @@ async function logWorkoutExercise(ex: any) {
     refreshQuestBadge();
   } catch (err: any) {
     popupType.value = 'error';
-    popupMessage.value = err.response?.data || 'Fehler beim Eintragen';
+    popupMessage.value = err.response?.data || text('Fehler beim Eintragen', 'Could not log exercise');
   }
 }
 
@@ -941,7 +949,7 @@ const submitInlineExercise = async (exercise: ExerciseLocal) => {
     flashHeaderReward(rewards);
     refreshQuestBadge();
   } catch (err: any) {
-    const errorMsg = err.response?.data || 'Fehler beim Eintragen';
+    const errorMsg = err.response?.data || text('Fehler beim Eintragen', 'Could not log exercise');
     popupType.value = 'error';
     popupMessage.value = errorMsg;
   }

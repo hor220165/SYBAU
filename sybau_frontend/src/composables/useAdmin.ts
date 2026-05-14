@@ -100,7 +100,7 @@ export const useAdmin = () => {
     isLoading.value = true;
     error.value = '';
     try {
-      const response = await API.post('/challenge/add', data);
+      const response = await API.post('/challenges/add', data);
       return response.data;
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Fehler beim Erstellen der Challenge';
@@ -299,9 +299,7 @@ export const useAdmin = () => {
     isLoading.value = true;
     error.value = '';
     try {
-      console.log(data);
       const response = await API.put(`/admin/users/${userId}`, data);
-      console.log('Benutzer aktualisiert:', data);
       return response.data;
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Fehler beim Aktualisieren des Benutzers';

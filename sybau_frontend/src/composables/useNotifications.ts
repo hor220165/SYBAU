@@ -60,13 +60,10 @@ export function useNotifications() {
       listeners.forEach(cb => cb('friend_accepted', data));
     });
 
-    connection.onclose(() => {
-      console.log('[SignalR] Verbindung geschlossen');
-    });
-
     connection.start()
-      .then(() => console.log('[SignalR] Verbunden'))
-      .catch(err => console.error('[SignalR] Verbindung fehlgeschlagen:', err));
+      .catch(() => {
+        connection = null;
+      });
   };
 
   const disconnect = () => {

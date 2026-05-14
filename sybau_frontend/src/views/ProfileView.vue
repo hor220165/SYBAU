@@ -17,14 +17,14 @@
             <Pencil :size="14" />
           </button>
           <div v-if="showImageActions" class="avatar-action-menu">
-            <button type="button" @click="openImagePicker">Foto auswählen</button>
+          <button type="button" @click="openImagePicker">{{ settingsCopy.choosePhoto }}</button>
             <button
               v-if="profileImageUrl"
               type="button"
               class="danger"
               @click="removeProfileImage"
             >
-              Aktuelles Foto entfernen
+              {{ settingsCopy.removeCurrentPhoto }}
             </button>
           </div>
           <input
@@ -52,26 +52,26 @@
     <div class="stats-overview">
       <StatCard
         :icon="`<circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/>`"
-        label="Workouts gesamt"
+        :label="settingsCopy.totalWorkouts"
         :value="String(profileStats.totalWorkouts)"
         cardClass="stat-purple"
       />
       <StatCard
         :icon="`<rect width='18' height='18' x='3' y='4' rx='2' ry='2'/><line x1='16' x2='16' y1='2' y2='6'/><line x1='8' x2='8' y1='2' y2='6'/><line x1='3' x2='21' y1='10' y2='10'/>`"
-        label="Trainingszeit"
+        :label="settingsCopy.trainingTime"
         :value="profileStats.trainingHours + 'h'"
         cardClass="stat-blue"
       />
       <StatCard
         :icon="`<path d='M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'/>`"
-        label="Kalorien verbrannt"
-        :value="profileStats.caloriesBurned.toLocaleString('de-DE')"
+        :label="settingsCopy.caloriesBurned"
+        :value="profileStats.caloriesBurned.toLocaleString(locale)"
         cardClass="stat-orange"
       />
       <StatCard
         :icon="`<polyline points='22 7 13.5 15.5 8.5 10.5 2 17'/><polyline points='16 7 22 7 22 13'/>`"
-        label="Längster Streak"
-        :value="profileStats.longestStreak + ' Tage'"
+        :label="settingsCopy.longestStreak"
+        :value="profileStats.longestStreak + ' ' + settingsCopy.days"
         cardClass="stat-green"
       />
     </div>
@@ -82,7 +82,7 @@
           <div class="section-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/></svg>`"></div>
           <h2>Achievements</h2>
         </div>
-        <span class="achievement-count">{{ unlockedCount }} / {{ totalAchievements }} freigeschaltet</span>
+        <span class="achievement-count">{{ unlockedCount }} / {{ totalAchievements }} {{ settingsCopy.unlocked }}</span>
       </div>
 
       <div class="achievements-carousel">
@@ -115,7 +115,7 @@
       <div class="section-header">
         <div class="title-row">
           <div class="section-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='4' rx='2' ry='2'/><line x1='16' x2='16' y1='2' y2='6'/><line x1='8' x2='8' y1='2' y2='6'/><line x1='3' x2='21' y1='10' y2='10'/></svg>`"></div>
-          <h2>Wöchentliche Aktivität</h2>
+          <h2>{{ settingsCopy.weeklyActivity }}</h2>
         </div>
         <div class="week-label">{{ weekLabel }}</div>
       </div>
@@ -146,7 +146,7 @@
       <div class="section-header">
         <div class="title-row">
           <div class="section-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='18' x2='18' y1='20' y2='4'/><line x1='12' x2='12' y1='20' y2='10'/><line x1='6' x2='6' y1='20' y2='16'/></svg>`"></div>
-          <h2>Letzte Aktivitäten</h2>
+          <h2>{{ settingsCopy.recentActivities }}</h2>
         </div>
       </div>
       <div v-if="recentActivities.length" class="activities-list">
@@ -160,7 +160,7 @@
           :type="activity.type"
         />
       </div>
-      <p v-else class="empty-activity-text">Noch keine letzten Aktivitäten vorhanden.</p>
+      <p v-else class="empty-activity-text">{{ settingsCopy.noRecentActivities }}</p>
     </section>
   </main>
 
@@ -196,17 +196,6 @@
                   <input :value="user?.email ?? user?.Email ?? ''" readonly />
                 </div>
                 <button class="btn-primary" @click="saveProfile" :disabled="savingProfile || usernameUnchanged">{{ settingsCopy.save }}</button>
-              </section>
-
-              <section class="settings-section">
-                <h3>{{ settingsCopy.language }}</h3>
-                <div class="settings-language-row">
-                  <div class="settings-language-copy">
-                    <strong>{{ settingsCopy.appLanguage }}</strong>
-                    <span>{{ settingsCopy.languageHint }}</span>
-                  </div>
-                  <LanguageSwitch show-labels />
-                </div>
               </section>
 
               <section class="settings-section">
@@ -303,13 +292,11 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import Header from '@/components/Header.vue';
-import LanguageSwitch from '@/components/LanguageSwitch.vue';
 import Navbar from '@/components/Navbar.vue';
 import StatCard from '@/components/StatCard.vue';
 import AchievementCard from '@/components/AchievementCard.vue';
 import ActivityItem from '@/components/ActivityItem.vue';
 import { useAuth } from '@/composables/useAuth';
-import { useLanguage } from '@/composables/useLanguage';
 import { useLeaderboard } from '@/composables/useLeaderboard';
 import { userService, achievementService, resolveMediaUrl } from '@/services/api';
 import FooterComponent from '@/components/FooterComponent.vue';
@@ -320,7 +307,7 @@ import { ArrowLeft, ChevronRight, LockKeyhole, Pencil } from 'lucide-vue-next';
 
 const router = useRouter();
 const { user, logout, refreshProfile } = useAuth();
-const { language } = useLanguage();
+const locale = 'de-DE';
 const { sortedLeaderboard, loadLeaderboard } = useLeaderboard();
 
 const longestStreak = ref(0);
@@ -332,55 +319,7 @@ const settingsView = ref<'main' | 'password'>('main');
 const editingUsername = ref('');
 const savingProfile = ref(false);
 
-const settingsCopy = computed(() => {
-  if (language.value === 'en') {
-    return {
-      myProfile: 'My Profile',
-      userFallback: 'User',
-      settings: 'Settings',
-      back: 'Back',
-      profile: 'Profile',
-      username: 'Username',
-      email: 'Email',
-      save: 'Save',
-      language: 'Language',
-      appLanguage: 'App language',
-      languageHint: 'Choose German or English.',
-      progress: 'Progress',
-      completedChallenges: 'Completed challenges',
-      leaderboardPosition: 'Leaderboard position',
-      security: 'Security',
-      changePassword: 'Change password',
-      passwordTitle: 'Change password',
-      passwordHint: 'Opens a separate secure view.',
-      account: 'Account',
-      logout: 'Log out',
-      logoutHint: 'You will be logged out in this browser.',
-      deleteAccount: 'Delete account',
-      deleteHint: 'This action cannot be undone.',
-      passwordSubtitle: 'Enter your current password and then set a new one.',
-      oldPassword: 'Old password',
-      newPassword: 'New password',
-      savePassword: 'Save password',
-      noEmail: 'No email',
-      profileSaved: 'Profile saved!',
-      sessionExpired: 'Session expired. Please sign in again.',
-      saveError: 'Saving failed: ',
-      profileImageUpdated: 'Profile image updated!',
-      profileImageFailed: 'Profile image could not be saved.',
-      removeProfileImageConfirm: 'Remove profile image? The default image will be shown afterwards.',
-      profileImageRemoved: 'Profile image removed!',
-      profileImageRemoveFailed: 'Profile image could not be removed.',
-      fillBothFields: 'Please fill in both fields.',
-      samePassword: 'The new password must be different from the old one.',
-      passwordChanged: 'Password changed successfully!',
-      passwordChangeFailed: 'Password change failed.',
-      deleteConfirm: 'Really delete account? This action is permanent.',
-      deleteError: 'Delete failed: ',
-    };
-  }
-
-  return {
+const settingsCopy = computed(() => ({
     myProfile: 'Mein Profil',
     userFallback: 'Benutzer',
     settings: 'Einstellungen',
@@ -389,9 +328,6 @@ const settingsCopy = computed(() => {
     username: 'Benutzername',
     email: 'E-Mail',
     save: 'Speichern',
-    language: 'Sprache',
-    appLanguage: 'App-Sprache',
-    languageHint: 'Wähle Deutsch oder Englisch.',
     progress: 'Fortschritt',
     completedChallenges: 'Absolvierte Challenges',
     leaderboardPosition: 'Leaderboard-Position',
@@ -423,8 +359,18 @@ const settingsCopy = computed(() => {
     passwordChangeFailed: 'Fehler beim Ändern des Passworts.',
     deleteConfirm: 'Account wirklich löschen? Diese Aktion ist endgültig.',
     deleteError: 'Fehler beim Löschen: ',
-  };
-});
+    choosePhoto: 'Foto auswählen',
+    removeCurrentPhoto: 'Aktuelles Foto entfernen',
+    totalWorkouts: 'Workouts gesamt',
+    trainingTime: 'Trainingszeit',
+    caloriesBurned: 'Kalorien verbrannt',
+    longestStreak: 'Längster Streak',
+    days: 'Tage',
+    unlocked: 'freigeschaltet',
+    weeklyActivity: 'Wöchentliche Aktivität',
+    recentActivities: 'Letzte Aktivitäten',
+    noRecentActivities: 'Noch keine letzten Aktivitäten vorhanden.',
+}));
 
 const currentUsername = computed(() => user.value?.userName ?? user.value?.UserName ?? user.value?.username ?? '');
 
@@ -1349,28 +1295,6 @@ onMounted(async () => {
 }
 
 .progress-stats { display: flex; flex-direction: column; gap: 12px; }
-
-.settings-language-row {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-
-.settings-language-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.settings-language-copy strong {
-  color: white;
-  font-size: 15px;
-}
-
-.settings-language-copy span {
-  color: rgba(255, 255, 255, 0.58);
-  font-size: 12px;
-}
 
 .stat-row {
   display: flex;

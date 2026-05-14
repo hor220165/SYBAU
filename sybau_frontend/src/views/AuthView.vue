@@ -3,7 +3,7 @@
   <div class="auth-page">
     <!-- Back Button - Text Only -->
     <button class="back-button" @click="goToHome">
-      Zurück zur Startseite
+      {{ text('Zurück zur Startseite', 'Back to home') }}
     </button>
 
     <!-- Zentrale Layout-Spalte -->
@@ -22,7 +22,7 @@
             Login
           </button>
           <button :class="{ active: !isLogin }" @click="isLogin = false">
-            Register
+            {{ text('Registrieren', 'Register') }}
           </button>
         </div>
         <!-- Formular -->
@@ -42,7 +42,7 @@
               required
             />
             
-            <label>Passwort</label>
+            <label>{{ text('Passwort', 'Password') }}</label>
             <div class="password-input-wrapper">
               <input 
                 :type="showPassword ? 'text' : 'password'" 
@@ -74,9 +74,9 @@
             </button>
             <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
             <div class="switch-text">
-              <label>Noch kein Account?</label>
+              <label>{{ text('Noch kein Account?', 'No account yet?') }}</label>
               <label class="switch-link" @click="isLogin = false"
-                >jetzt registrieren</label
+                >{{ text('jetzt registrieren', 'register now') }}</label
               >
             </div>
           </form>
@@ -86,7 +86,7 @@
             class="form"
             @submit.prevent="handleRegister"
           >
-            <label>Benutzername</label>
+            <label>{{ text('Benutzername', 'Username') }}</label>
             <input
               placeholder="example01"
               v-model="username"
@@ -102,7 +102,7 @@
               required
             />
             
-            <label>Passwort</label>
+            <label>{{ text('Passwort', 'Password') }}</label>
             <div class="password-input-wrapper">
               <input 
                 :type="showPassword ? 'text' : 'password'" 
@@ -130,7 +130,7 @@
             
             <button type="submit" class="primary-btn" :disabled="loading">
               <span v-if="loading" class="spinner"></span>
-              <span v-else>Account erstellen</span>
+              <span v-else>{{ text('Account erstellen', 'Create account') }}</span>
             </button>
             <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
           </form>
@@ -145,9 +145,11 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router'; 
 import { useAuth } from '@/composables/useAuth';
 import { userService } from '@/services/api';
+import { useLanguage } from '@/composables/useLanguage';
 
 const router = useRouter(); 
 const { login, googleLogin } = useAuth();
+const { text } = useLanguage();
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 

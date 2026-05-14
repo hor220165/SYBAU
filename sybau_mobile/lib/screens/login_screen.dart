@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import '../services/api_service.dart';
 import 'app_shell_screen.dart';
 
@@ -16,94 +15,10 @@ class _LoginScreenState extends State<LoginScreen> {
   AuthState _authState = AuthState.landing;
   bool _showPassword = false;
   bool _isLoading = false;
-  bool _isGoogleLoading = false;
 
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-
-  static const String _googleServerClientId = String.fromEnvironment(
-    'GOOGLE_SERVER_CLIENT_ID',
-    defaultValue: '',
-  );
-  static const String _googleIosClientId = String.fromEnvironment(
-    'GOOGLE_IOS_CLIENT_ID',
-    defaultValue: '',
-  );
-
-  Future<void> _handleGoogleSignIn() async {
-    if (_isGoogleLoading) return;
-    if (_googleServerClientId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Google Login ist noch nicht fertig konfiguriert. GOOGLE_SERVER_CLIENT_ID fehlt.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    if (Theme.of(context).platform == TargetPlatform.iOS &&
-        _googleIosClientId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Google Login ist auf iPhone noch nicht fertig konfiguriert. GOOGLE_IOS_CLIENT_ID fehlt.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    setState(() => _isGoogleLoading = true);
-    try {
-      final googleSignIn = GoogleSignIn(
-        clientId: _googleIosClientId.isNotEmpty ? _googleIosClientId : null,
-        serverClientId: _googleServerClientId,
-        scopes: const [
-          'openid',
-          'email',
-          'profile',
-        ],
-      );
-
-      final googleUser = await googleSignIn.signIn();
-      if (googleUser == null) {
-        // User cancelled
-        setState(() => _isGoogleLoading = false);
-        return;
-      }
-
-      final auth = await googleUser.authentication;
-      final idToken = auth.idToken;
-      if (idToken == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Google Login failed: No ID token received. Make sure serverClientId is configured.')),
-          );
-        }
-        setState(() => _isGoogleLoading = false);
-        return;
-      }
-
-      await ApiService.googleLogin(idToken);
-
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const AppShellScreen()),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google Login fehlgeschlagen: ${e.toString()}')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isGoogleLoading = false);
-    }
-  }
 
   Future<void> _handleSubmit() async {
     final email = _emailController.text.trim();
@@ -454,7 +369,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           color: Colors.white,
                                           letterSpacing: 1,
                                         ),
-                                ),
+                                      ),
                               ),
                             ),
                             const SizedBox(height: 24),

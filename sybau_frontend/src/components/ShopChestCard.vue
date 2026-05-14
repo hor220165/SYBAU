@@ -3,6 +3,9 @@ import { computed, ref } from 'vue';
 import { Info } from 'lucide-vue-next';
 import coinIcon from '@/assets/SYBAU_Coin.png';
 import type { Chest } from '@/models/Chest';
+import { useLanguage } from '@/composables/useLanguage';
+
+const { text, translate, locale } = useLanguage();
 
 const props = defineProps<{
   chest: Chest;
@@ -20,9 +23,9 @@ const formatPrice = (value: number) => {
   const amount = Number(value || 0);
   const sign = amount < 0 ? '-' : '';
   const absolute = Math.abs(amount);
-  if (absolute >= 1_000_000) return `${sign}${Number((absolute / 1_000_000).toFixed(1)).toString().replace('.', ',')}M`;
-  if (absolute >= 10_000) return `${sign}${Number((absolute / 1_000).toFixed(1)).toString().replace('.', ',')}K`;
-  return `${sign}${Math.round(absolute).toLocaleString('de-DE')}`;
+  if (absolute >= 1_000_000) return `${sign}${Number((absolute / 1_000_000).toFixed(1)).toLocaleString(locale.value)}M`;
+  if (absolute >= 10_000) return `${sign}${Number((absolute / 1_000).toFixed(1)).toLocaleString(locale.value)}K`;
+  return `${sign}${Math.round(absolute).toLocaleString(locale.value)}`;
 };
 const priceText = computed(() => formatPrice(Number(props.chest.price ?? 0)));
 const priceSizeClass = computed(() => {
@@ -35,7 +38,7 @@ const priceSizeClass = computed(() => {
 <template>
   <article class="chest-card">
     <div class="chest-bg"></div>
-    <button class="info-btn" type="button" @click="showRates = !showRates" aria-label="Drop-Rates anzeigen">
+    <button class="info-btn" type="button" @click="showRates = !showRates" :aria-label="text('Drop-Rates anzeigen', 'Show drop rates')">
       <Info :size="18" />
     </button>
 
@@ -44,8 +47,8 @@ const priceSizeClass = computed(() => {
     </div>
 
     <div class="chest-copy">
-      <h3>{{ chest.name }}</h3>
-      <p>{{ chest.items?.length ?? 0 }} mögliche Items</p>
+      <h3>{{ translate(chest.name) }}</h3>
+      <p>{{ chest.items?.length ?? 0 }} {{ text('mögliche Items', 'possible items') }}</p>
     </div>
 
     <div v-if="showRates" class="rates-popover">

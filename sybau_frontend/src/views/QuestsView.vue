@@ -6,14 +6,14 @@
     <!-- Loading State -->
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
-      <p>Quests werden geladen...</p>
+      <p>{{ text('Quests werden geladen...', 'Loading quests...') }}</p>
     </div>
 
     <template v-else>
       <section class="page-heading">
         <span class="page-kicker">Quests</span>
-        <h1 class="page-title">Quest Log</h1>
-        <p class="page-subtitle">Schließe Quests ab und sammle Belohnungen.</p>
+        <h1 class="page-title">{{ text('Quest Log', 'Quest Log') }}</h1>
+        <p class="page-subtitle">{{ text('Schließe Quests ab und sammle Belohnungen.', 'Complete quests and collect rewards.') }}</p>
       </section>
 
       <section class="mobile-stats-panel">
@@ -23,7 +23,7 @@
               <Trophy :size="24" />
             </span>
             <span class="stat-copy">
-              <span class="stat-label">Abgeschlossen</span>
+              <span class="stat-label">{{ text('Abgeschlossen', 'Completed') }}</span>
               <span class="stat-value">{{ formatNumber(stats.completed) }}</span>
             </span>
           </article>
@@ -32,7 +32,7 @@
               <Flag :size="24" />
             </span>
             <span class="stat-copy">
-              <span class="stat-label">Aktiv</span>
+              <span class="stat-label">{{ text('Aktiv', 'Active') }}</span>
               <span class="stat-value">{{ formatNumber(stats.active) }}</span>
             </span>
           </article>
@@ -41,7 +41,7 @@
               <Zap :size="24" />
             </span>
             <span class="stat-copy">
-              <span class="stat-label">Verdient</span>
+              <span class="stat-label">{{ text('Verdient', 'Earned') }}</span>
               <span class="stat-value">{{ formatNumber(stats.totalXpEarned) }} XP</span>
             </span>
           </article>
@@ -52,7 +52,7 @@
       <section class="quest-section" v-if="dailyQuests.length">
         <div class="section-header">
           <div class="section-title">
-            <h2>Tägliche Quests</h2>
+            <h2>{{ text('Tägliche Quests', 'Daily Quests') }}</h2>
           </div>
           <span class="renewal-badge">{{ dailyQuests[0]?.timeLeft }}</span>
         </div>
@@ -61,8 +61,8 @@
             v-for="quest in dailyQuests"
             :key="quest.id"
             :rarity="quest.rarity"
-            :title="quest.name"
-            :description="quest.description"
+            :title="translate(quest.name)"
+            :description="translate(quest.description)"
             :progress="quest.progress"
             :max-progress="quest.targetValue"
             :xp-reward="quest.xpReward"
@@ -79,7 +79,7 @@
       <section class="quest-section" v-if="weeklyQuests.length">
         <div class="section-header">
           <div class="section-title">
-            <h2>Wöchentliche Quests</h2>
+            <h2>{{ text('Wöchentliche Quests', 'Weekly Quests') }}</h2>
           </div>
           <span class="renewal-badge renewal-weekly">{{ weeklyQuests[0]?.timeLeft }}</span>
         </div>
@@ -88,8 +88,8 @@
             v-for="quest in weeklyQuests"
             :key="quest.id"
             :rarity="quest.rarity"
-            :title="quest.name"
-            :description="quest.description"
+            :title="translate(quest.name)"
+            :description="translate(quest.description)"
             :progress="quest.progress"
             :max-progress="quest.targetValue"
             :xp-reward="quest.xpReward"
@@ -106,7 +106,7 @@
       <section class="quest-section" v-if="monthlyQuests.length">
         <div class="section-header">
           <div class="section-title">
-            <h2>Monatliche Quests</h2>
+            <h2>{{ text('Monatliche Quests', 'Monthly Quests') }}</h2>
           </div>
           <span class="renewal-badge renewal-monthly">{{ monthlyQuests[0]?.timeLeft }}</span>
         </div>
@@ -115,8 +115,8 @@
             v-for="quest in monthlyQuests"
             :key="quest.id"
             :rarity="quest.rarity"
-            :title="quest.name"
-            :description="quest.description"
+            :title="translate(quest.name)"
+            :description="translate(quest.description)"
             :progress="quest.progress"
             :max-progress="quest.targetValue"
             :xp-reward="quest.xpReward"
@@ -146,10 +146,12 @@ import FooterComponent from '@/components/FooterComponent.vue';
 import MessagePopup from '@/components/MessagePopup.vue';
 import { questService } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
+import { useLanguage } from '@/composables/useLanguage';
 import type { UserQuest, QuestStats } from '@/models/Quest';
 import { Flag, Trophy, Zap } from 'lucide-vue-next';
 
 const { refreshProfile } = useAuth();
+const { text, translate, locale } = useLanguage();
 
 const allQuests = ref<UserQuest[]>([]);
 const stats = ref<QuestStats>({ completed: 0, active: 0, totalXpEarned: 0 });
@@ -165,14 +167,14 @@ const showPopup = (message: string, type: 'success' | 'error') => {
 };
 
 const formatNumber = (value: number) => {
-  if (Math.abs(value) < 10000) return value.toLocaleString('de-DE');
+  if (Math.abs(value) < 10000) return value.toLocaleString(locale.value);
   const units = [
     { amount: 1_000_000_000, suffix: 'B' },
     { amount: 1_000_000, suffix: 'M' },
     { amount: 1_000, suffix: 'K' }
   ];
   const unit = units.find((item) => Math.abs(value) >= item.amount);
-  if (!unit) return value.toLocaleString('de-DE');
+  if (!unit) return value.toLocaleString(locale.value);
   const compact = value / unit.amount;
   const digits = compact >= 100 || Number.isInteger(compact) ? 0 : 1;
   return `${compact.toFixed(digits).replace('.', ',')}${unit.suffix}`;
@@ -188,7 +190,7 @@ const loadQuests = async () => {
     stats.value = statsRes.data;
     notifyQuestBadge();
   } catch (e: any) {
-    showPopup(e.response?.data?.message || 'Fehler beim Laden der Quests.', 'error');
+    showPopup(e.response?.data?.message || text('Fehler beim Laden der Quests.', 'Could not load quests.'), 'error');
   }
 };
 
@@ -203,7 +205,7 @@ const claimReward = async (quest: UserQuest) => {
     showPopup(data.message, 'success');
     await Promise.all([loadQuests(), refreshProfile()]);
   } catch (e: any) {
-    showPopup(e.response?.data?.message || 'Fehler beim Einfordern.', 'error');
+    showPopup(e.response?.data?.message || text('Fehler beim Einfordern.', 'Could not claim reward.'), 'error');
   }
 };
 

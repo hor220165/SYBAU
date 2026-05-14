@@ -2,7 +2,7 @@
   <div class="quest-card" :class="[`rarity-${rarity.toLowerCase()}`, { completed: isCompleted, claimed: isRewardClaimed }]">
     <!-- Rarity Badge -->
     <div class="rarity-badge" :class="`badge-${rarity.toLowerCase()}`">
-      {{ rarity }}
+      {{ translate(rarity) }}
     </div>
 
     <!-- Time Left -->
@@ -11,8 +11,8 @@
     </div>
 
     <!-- Quest Info -->
-    <h3 class="quest-title">{{ title }}</h3>
-    <p class="quest-description">{{ description }}</p>
+    <h3 class="quest-title">{{ translate(title) }}</h3>
+    <p class="quest-description">{{ translate(description) }}</p>
 
     <!-- Progress -->
     <div class="progress-section">
@@ -43,15 +43,18 @@
         class="claim-btn"
         @click.stop="$emit('claim')"
       >
-        Einfordern
+        {{ text('Einfordern', 'Claim') }}
       </button>
-      <span v-else-if="isRewardClaimed" class="claimed-badge">Erhalten</span>
+      <span v-else-if="isRewardClaimed" class="claimed-badge">{{ text('Erhalten', 'Claimed') }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useLanguage } from '@/composables/useLanguage';
+
+const { text, translate } = useLanguage();
 
 const props = defineProps<{
   rarity: string;

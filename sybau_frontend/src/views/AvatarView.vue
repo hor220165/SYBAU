@@ -62,8 +62,8 @@
                     <img v-if="slot.item.imageUrl" :src="slot.item.imageUrl" alt="" />
                     <span v-else>{{ slot.item.icon }}</span>
                   </div>
-                  <span class="equip-empty" v-if="!slot.item && selectingSlotFor === null">Leer</span>
-                  <span class="equip-select-hint" v-if="!slot.item && selectingSlotFor !== null">Hier</span>
+                  <span class="equip-empty" v-if="!slot.item && selectingSlotFor === null">{{ text('Leer', 'Empty') }}</span>
+                  <span class="equip-select-hint" v-if="!slot.item && selectingSlotFor !== null">{{ text('Hier', 'Here') }}</span>
                   <span class="equip-badge" v-if="slot.item">+{{ slot.item.boostValue }}%</span>
                 </div>
               </div>
@@ -100,8 +100,8 @@
                     <img v-if="slot.item.imageUrl" :src="slot.item.imageUrl" alt="" />
                     <span v-else>{{ slot.item.icon }}</span>
                   </div>
-                  <span class="equip-empty" v-if="!slot.item && selectingSlotFor === null">Leer</span>
-                  <span class="equip-select-hint" v-if="!slot.item && selectingSlotFor !== null">Hier</span>
+                  <span class="equip-empty" v-if="!slot.item && selectingSlotFor === null">{{ text('Leer', 'Empty') }}</span>
+                  <span class="equip-select-hint" v-if="!slot.item && selectingSlotFor !== null">{{ text('Hier', 'Here') }}</span>
                   <span class="equip-badge" v-if="slot.item">+{{ slot.item.boostValue }}%</span>
                 </div>
               </div>
@@ -112,8 +112,8 @@
           <Transition name="fade">
             <div v-if="selectingSlotFor !== null" class="slot-select-banner">
               <Zap :size="16" />
-              <span>Wähle einen Slot für <strong>{{ selectingSlotFor.name }}</strong></span>
-              <button class="cancel-select" @click="selectingSlotFor = null">Abbrechen</button>
+              <span>{{ text('Wähle einen Slot für', 'Choose a slot for') }} <strong>{{ translate(selectingSlotFor.name) }}</strong></span>
+              <button class="cancel-select" @click="selectingSlotFor = null">{{ text('Abbrechen', 'Cancel') }}</button>
             </div>
           </Transition>
         </div>
@@ -123,16 +123,16 @@
       <div class="inventory-panel">
         <div class="section-header">
           <div class="section-title">
-            <h2>Inventar</h2>
+            <h2>{{ text('Inventar', 'Inventory') }}</h2>
           </div>
-          <span class="inventory-count">{{ inventory.reduce((sum, b) => sum + b.quantity, 0) }} Booster ({{ inventory.length }} verschiedene)</span>
+          <span class="inventory-count">{{ inventory.reduce((sum, b) => sum + b.quantity, 0) }} Booster ({{ inventory.length }} {{ text('verschiedene', 'different') }})</span>
         </div>
 
         <div v-if="availableBoosters.length === 0" class="empty-inventory">
           <ShoppingBag :size="48" class="empty-icon" />
-          <p>Keine Booster vorhanden</p>
-          <span>Kaufe Booster im Shop!</span>
-          <button class="shop-btn" @click="$router.push('/shop')">Zum Shop</button>
+          <p>{{ text('Keine Booster vorhanden', 'No boosters available') }}</p>
+          <span>{{ text('Kaufe Booster im Shop!', 'Buy boosters in the shop!') }}</span>
+          <button class="shop-btn" @click="$router.push('/shop')">{{ text('Zum Shop', 'Go to Shop') }}</button>
         </div>
 
         <div v-else class="booster-list inventory-grid">
@@ -154,8 +154,8 @@
                   <span v-else class="booster-icon">{{ booster.icon }}</span>
                 </div>
                 <div class="booster-meta">
-                  <h3>{{ booster.name }}</h3>
-                  <div class="booster-rarity-tag" :class="'tag-' + booster.rarity">{{ booster.rarity }}</div>
+                  <h3>{{ translate(booster.name) }}</h3>
+                  <div class="booster-rarity-tag" :class="'tag-' + booster.rarity">{{ translate(booster.rarity) }}</div>
                 </div>
               </div>
 
@@ -176,7 +176,7 @@
                   type="button"
                   @click="requestSellBooster(booster)"
                 >
-                  Verkauf
+                  {{ text('Verkauf', 'Sell') }}
                 </button>
                 <button
                   class="equip-btn"
@@ -186,7 +186,7 @@
                 >
                   <Zap v-if="canEquipMore(booster)" :size="14" />
                   <Shield v-else :size="14" />
-                  {{ canEquipMore(booster) ? 'Ausrüsten' : 'Ausgerüstet' }}
+                  {{ canEquipMore(booster) ? text('Ausrüsten', 'Equip') : text('Ausgerüstet', 'Equipped') }}
                 </button>
               </div>
             </div>
@@ -199,19 +199,19 @@
     <Transition name="confirm-pop">
       <div v-if="pendingSell" class="confirm-overlay" @click.self="pendingSell = null">
         <div class="confirm-dialog">
-          <h3>Sind Sie sicher?</h3>
-          <p>{{ pendingSell.name }} verkaufen</p>
+          <h3>{{ text('Bist du sicher?', 'Are you sure?') }}</h3>
+          <p>{{ translate(pendingSell.name) }} {{ text('verkaufen', 'sell') }}</p>
           <div class="confirm-price">
-            <span>Du bekommst</span>
+            <span>{{ text('Du bekommst', 'You get') }}</span>
             <strong>
               <img :src="coinIcon" alt="" />
               {{ pendingSellPrice }}
             </strong>
           </div>
           <div class="confirm-actions">
-            <button class="confirm-cancel" type="button" @click="pendingSell = null">Abbrechen</button>
+            <button class="confirm-cancel" type="button" @click="pendingSell = null">{{ text('Abbrechen', 'Cancel') }}</button>
             <button class="confirm-sell" type="button" :disabled="sellingBoosterId === pendingSell.id" @click="confirmSellBooster">
-              {{ sellingBoosterId === pendingSell.id ? '...' : 'Verkaufen' }}
+              {{ sellingBoosterId === pendingSell.id ? '...' : text('Verkaufen', 'Sell') }}
             </button>
           </div>
         </div>
@@ -242,10 +242,12 @@ import FooterComponent from '@/components/FooterComponent.vue';
 import MessagePopup from '@/components/MessagePopup.vue';
 import { itemService, resolveMediaUrl, userService } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
+import { useLanguage } from '@/composables/useLanguage';
 import xpIcon from '@/assets/XP_Pixel.png';
 import coinIcon from '@/assets/SYBAU_Coin.png';
 
 const { refreshProfile } = useAuth();
+const { text, translate } = useLanguage();
 const userName = ref('');
 const bodyStage = ref('skinny');
 

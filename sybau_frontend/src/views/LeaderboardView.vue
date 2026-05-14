@@ -10,8 +10,10 @@ import { useLeaderboard } from '@/composables/useLeaderboard';
 import { userService } from '@/services/api';
 import type { LeaderboardDisplayEntry } from '@/models/LeaderboardDisplayEntry';
 import FooterComponent from '@/components/FooterComponent.vue';
+import { useLanguage } from '@/composables/useLanguage';
 
 const { sortedLeaderboard, loading, error, loadLeaderboard } = useLeaderboard();
+const { text } = useLanguage();
 const currentUserName = ref('');
 const viewedProfileId = ref<number | null>(null);
 const showProfileSheet = ref(false);
@@ -78,19 +80,18 @@ onMounted(loadPageData);
       <section class="hero-card">
         <div class="hero-copy">
           <span class="hero-kicker">Leaderboard</span>
-          <h1>Globales Ranking</h1>
+          <h1>{{ text('Globales Ranking', 'Global Ranking') }}</h1>
           <p>
-            Kämpfe dich durch Workouts und Quests nach oben. Dein aktueller Fortschritt wird live
-            mit dem globalen Ranking abgeglichen.
+            {{ text('Kämpfe dich durch Workouts und Quests nach oben. Dein aktueller Fortschritt wird live mit dem globalen Ranking abgeglichen.', 'Climb through workouts and quests. Your current progress is synced with the global ranking live.') }}
           </p>
         </div>
 
       </section>
 
-      <div v-if="loading" class="state-box">Lade Leaderboard…</div>
+      <div v-if="loading" class="state-box">{{ text('Lade Leaderboard…', 'Loading leaderboard…') }}</div>
       <div v-else-if="error" class="state-box state-box-error">
         <span>{{ error }}</span>
-        <button class="retry-button" @click="loadPageData">Erneut versuchen</button>
+        <button class="retry-button" @click="loadPageData">{{ text('Erneut versuchen', 'Try again') }}</button>
       </div>
 
       <template v-else>
@@ -98,9 +99,9 @@ onMounted(loadPageData);
           <div class="section-heading">
             <div class="title-with-icon">
               <Crown :size="20" />
-              <h2>Top Champions</h2>
+              <h2>{{ text('Top Champions', 'Top Champions') }}</h2>
             </div>
-            <p>Das aktuelle Podium auf einen Blick.</p>
+            <p>{{ text('Das aktuelle Podium auf einen Blick.', 'The current podium at a glance.') }}</p>
           </div>
 
           <div class="podium-grid" :class="{ 'podium-grid-compact': podiumPlayers.length < 3 }">
@@ -115,9 +116,9 @@ onMounted(loadPageData);
             <div>
               <div class="title-with-icon">
                 <Trophy :size="20" />
-                <h2>Globale Rangliste</h2>
+                <h2>{{ text('Globale Rangliste', 'Global Leaderboard') }}</h2>
               </div>
-              <p>Alle Spieler nach Erfahrungspunkten sortiert.</p>
+              <p>{{ text('Alle Spieler nach Erfahrungspunkten sortiert.', 'All players sorted by experience points.') }}</p>
             </div>
           </div>
 
@@ -131,7 +132,7 @@ onMounted(loadPageData);
           </div>
           <div v-else class="empty-box">
             <Sparkles :size="18" />
-            Noch keine Leaderboard-Daten vorhanden.
+            {{ text('Noch keine Leaderboard-Daten vorhanden.', 'No leaderboard data yet.') }}
           </div>
         </section>
       </template>

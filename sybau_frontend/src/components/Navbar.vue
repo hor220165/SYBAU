@@ -10,33 +10,33 @@
     </button>
     <button class="nav-item" :class="{ active: isActiveRoute('/workouts') }" @click="navigateAndClose('/workouts')">
       <Dumbbell class="nav-icon" :size="20" />
-      <span>Workouts</span>
+      <span>{{ text('Workouts', 'Workouts') }}</span>
     </button>
     <button class="nav-item nav-item-quests" :class="{ active: isActiveRoute('/quests') }" @click="navigateAndClose('/quests')">
       <Flag class="nav-icon" :size="20" />
-      <span>Quests</span>
-      <span v-if="hasClaimableQuest" class="nav-alert-dot" aria-label="Abgeschlossene Quest verfügbar"></span>
+      <span>{{ text('Quests', 'Quests') }}</span>
+      <span v-if="hasClaimableQuest" class="nav-alert-dot" :aria-label="text('Abgeschlossene Quest verfügbar', 'Completed quest available')"></span>
     </button>
     <button class="nav-item" :class="{ active: isActiveRoute('/avatar') }" @click="navigateAndClose('/avatar')">
       <Accessibility class="nav-icon" :size="20" />
-      <span>Avatar</span>
+      <span>{{ text('Avatar', 'Avatar') }}</span>
     </button>
     <button class="nav-item" :class="{ active: isActiveRoute('/shop') }" @click="navigateAndClose('/shop')">
       <Store class="nav-icon" :size="20" />
-      <span>Shop</span>
+      <span>{{ text('Shop', 'Shop') }}</span>
     </button>
     <button class="nav-item" :class="{ active: isActiveRoute('/friends') }" @click="navigateAndClose('/friends')">
       <Users class="nav-icon" :size="20" />
-      <span>Friends</span>
+      <span>{{ text('Freunde', 'Friends') }}</span>
     </button>
     <button class="nav-item" :class="{ active: isActiveRoute('/leaderboard') }"
       @click="navigateAndClose('/leaderboard')">
       <Trophy class="nav-icon" :size="20" />
-      <span>Leaderboard</span>
+      <span>{{ text('Leaderboard', 'Leaderboard') }}</span>
     </button>
     <button class="nav-item" :class="{ active: isActiveRoute('/profile') }" @click="navigateAndClose('/profile')">
       <User class="nav-icon" :size="20" />
-      <span>Profile</span>
+      <span>{{ text('Profil', 'Profile') }}</span>
     </button>
     <button v-if="isAdmin" class="nav-item admin-btn" :class="{ active: isActiveRoute('/admin') }"
       @click="navigateAndClose('/admin')">
@@ -50,6 +50,7 @@
 import { useNavigation } from "@/composables/useNavigation.ts";
 import { ref, onMounted, onUnmounted } from 'vue';
 import { questService } from '@/services/api';
+import { useLanguage } from '@/composables/useLanguage';
 import {
   Accessibility,
   Dumbbell,
@@ -63,6 +64,7 @@ import {
 } from 'lucide-vue-next';
 
 const { navigateTo, isActiveRoute } = useNavigation();
+const { text } = useLanguage();
 const isAdmin = ref(false);
 const mobileMenuOpen = ref(false);
 const headerVisible = ref(true);

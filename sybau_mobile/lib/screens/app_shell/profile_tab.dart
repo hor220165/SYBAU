@@ -1,0 +1,1956 @@
+part of '../app_shell_screen.dart';
+
+class ProfileTab extends StatefulWidget {
+  const ProfileTab({
+    required this.onRefreshHeader,
+    required this.showSnack,
+    super.key,
+  });
+
+  final Future<void> Function() onRefreshHeader;
+  final void Function(String) showSnack;
+
+  @override
+  State<ProfileTab> createState() => _ProfileTabState();
+}
+
+class _ProfileTabState extends State<ProfileTab> {
+  static const Duration _usernameChangeCooldown = Duration(days: 14);
+
+  bool _loading = true;
+
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _oldPasswordController = TextEditingController();
+  final TextEditingController _newPasswordController = TextEditingController();
+  final TextEditingController _serverUrlController = TextEditingController();
+
+  Map<String, dynamic> _profile = <String, dynamic>{};
+  List<dynamic> _achievements = <dynamic>[];
+  Map<String, dynamic> _profileStats = <String, dynamic>{};
+  List<dynamic> _recentActivities = <dynamic>[];
+  List<dynamic> _weeklyActivity = <dynamic>[];
+  String? _profileImageUrl;
+  Uint8List? _pickedProfileImageBytes;
+  int _profileImageVersion = 0;
+  int _currentAchievementIndex = 0;
+  int _currentWeekOffset = 0;
+  bool _notificationsEnabled = false;
+  bool _healthSyncEnabled = false;
+  bool _settingsBusy = false;
+  NotificationReminderTime _notificationReminderTime =
+      const NotificationReminderTime(hour: 20, minute: 0);
+  DateTime? _usernameChangedAt;
+
+  String _tr({required String de, required String en}) {
+    return de;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _oldPasswordController.dispose();
+    _newPasswordController.dispose();
+    _serverUrlController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final week = _weekBounds(_currentWeekOffset);
+      final results = await Future.wait<dynamic>([
+        ApiService.getProfile(),
+        ApiService.getAchievements(),
+        ApiService.getProfileStats(),
+        ApiService.getRecentActivities(limit: 10),
+        ApiService.getWeeklyActivity(from: week.$1, to: week.$2),
+        NotificationService.isEnabled(),
+        NotificationService.reminderTime(),
+        HealthSyncService.isEnabled(),
+      ]);
+
+      final profile = results[0] as Map<String, dynamic>;
+      final achievements = results[1] as List<dynamic>;
+      final stats = results[2] as Map<String, dynamic>;
+      final recent = results[3] as List<dynamic>;
+      final weeklyRaw = (results[4] as List<dynamic>?) ?? <dynamic>[];
+      final weekDays = _normalizeWeeklyActivity(weeklyRaw, week.$1);
+      final profileImageUrl = _string(
+        profile['profileImageUrl'],
+        fallback: _string(profile['ProfileImageUrl']),
+      );
+      final usernameChangedAt = await _loadUsernameChangedAt(profile);
+
+      if (!mounted) return;
+      setState(() {
+        _profile = profile;
+        _usernameController.text = _string(
+          profile['userName'],
+          fallback: _string(profile['UserName']),
+        );
+        _achievements = achievements;
+        _profileStats = stats;
+        _recentActivities = recent;
+        _weeklyActivity = weekDays;
+        _profileImageUrl = profileImageUrl;
+        _pickedProfileImageBytes = null;
+        _currentAchievementIndex = 0;
+        _notificationsEnabled = results[5] as bool;
+        _notificationReminderTime = results[6] as NotificationReminderTime;
+        _healthSyncEnabled = results[7] as bool;
+        _usernameChangedAt = usernameChangedAt;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      widget.showSnack(
+        _tr(
+          de: 'Profil konnte nicht geladen werden.',
+          en: 'Profile could not be loaded.',
+        ),
+      );
+    }
+  }
+
+  Future<void> _setNotificationsEnabled(
+    bool enabled,
+    StateSetter modalSetState,
+  ) async {
+    modalSetState(() => _settingsBusy = true);
+    try {
+      final applied = await NotificationService.setEnabled(enabled);
+      final scheduled = applied
+          ? await NotificationService.isDailyReminderScheduled()
+          : false;
+      if (!mounted) return;
+      setState(() => _notificationsEnabled = applied);
+      modalSetState(() => _notificationsEnabled = applied);
+      if (enabled && !applied) {
+        widget.showSnack(
+          _tr(
+            de: 'Bitte erlaube Notifications in iOS.',
+            en: 'Please allow notifications in iOS.',
+          ),
+        );
+      } else {
+        widget.showSnack(
+          applied && scheduled
+              ? _tr(
+                  de: 'Workout-Erinnerung geplant.',
+                  en: 'Workout reminder scheduled.',
+                )
+              : applied
+              ? _tr(
+                  de: 'Notifications erlaubt, Reminder aber nicht gefunden.',
+                  en: 'Notifications allowed, but reminder was not found.',
+                )
+              : _tr(
+                  de: 'Workout-Erinnerung deaktiviert.',
+                  en: 'Workout reminder disabled.',
+                ),
+        );
+      }
+    } catch (_) {
+      widget.showSnack(
+        _tr(
+          de: 'Benachrichtigungen konnten nicht aktiviert werden.',
+          en: 'Notifications could not be updated.',
+        ),
+      );
+    } finally {
+      if (mounted) {
+        modalSetState(() => _settingsBusy = false);
+      }
+    }
+  }
+
+  String _formatReminderTime(NotificationReminderTime time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  Future<void> _openReminderTimePicker(StateSetter modalSetState) async {
+    var selected = DateTime(
+      2026,
+      1,
+      1,
+      _notificationReminderTime.hour,
+      _notificationReminderTime.minute,
+    );
+
+    final picked = await showCupertinoModalPopup<DateTime>(
+      context: context,
+      builder: (pickerContext) => Container(
+        height: 300,
+        decoration: const BoxDecoration(
+          color: Color(0xFF0F172A),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 10, 6),
+                child: Row(
+                  children: [
+                    const Spacer(),
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(_tr(de: 'Fertig', en: 'Done')),
+                      onPressed: () =>
+                          Navigator.of(pickerContext).pop(selected),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: CupertinoTheme(
+                  data: const CupertinoThemeData(
+                    brightness: Brightness.dark,
+                    primaryColor: Color(0xFFEC4899),
+                  ),
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.time,
+                    use24hFormat: true,
+                    initialDateTime: selected,
+                    onDateTimeChanged: (value) => selected = value,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (picked == null) return;
+
+    final nextTime = NotificationReminderTime(
+      hour: picked.hour,
+      minute: picked.minute,
+    );
+
+    modalSetState(() => _settingsBusy = true);
+    try {
+      await NotificationService.setReminderTime(nextTime);
+      final scheduled = _notificationsEnabled
+          ? await NotificationService.isDailyReminderScheduled()
+          : false;
+      if (!mounted) return;
+      setState(() => _notificationReminderTime = nextTime);
+      modalSetState(() => _notificationReminderTime = nextTime);
+      widget.showSnack(
+        scheduled
+            ? _tr(
+                de: 'Erinnerung auf ${_formatReminderTime(nextTime)} geplant.',
+                en: 'Reminder scheduled for ${_formatReminderTime(nextTime)}.',
+              )
+            : _tr(
+                de: 'Erinnerungszeit auf ${_formatReminderTime(nextTime)} gesetzt.',
+                en: 'Reminder time set to ${_formatReminderTime(nextTime)}.',
+              ),
+      );
+    } catch (_) {
+      widget.showSnack(
+        _tr(
+          de: 'Erinnerungszeit konnte nicht gespeichert werden.',
+          en: 'Reminder time could not be saved.',
+        ),
+      );
+    } finally {
+      if (mounted) {
+        modalSetState(() => _settingsBusy = false);
+      }
+    }
+  }
+
+  Future<void> _setHealthSyncEnabled(
+    bool enabled,
+    StateSetter modalSetState,
+  ) async {
+    modalSetState(() => _settingsBusy = true);
+    try {
+      if (!enabled) {
+        await HealthSyncService.setEnabled(false);
+        if (!mounted) return;
+        setState(() => _healthSyncEnabled = false);
+        modalSetState(() => _healthSyncEnabled = false);
+        widget.showSnack(
+          _tr(de: 'Health Sync deaktiviert.', en: 'Health sync disabled.'),
+        );
+        return;
+      }
+
+      final granted = await HealthSyncService.requestAuthorization();
+      if (!granted) {
+        if (!mounted) return;
+        setState(() => _healthSyncEnabled = false);
+        modalSetState(() => _healthSyncEnabled = false);
+        widget.showSnack(
+          _tr(
+            de: 'Health Zugriff wurde nicht freigegeben. Bitte Berechtigung erlauben, um automatisch zu synchronisieren.',
+            en: 'Health access was not granted. Please allow permission to sync automatically.',
+          ),
+        );
+        return;
+      }
+
+      await HealthSyncService.setEnabled(enabled);
+      if (!mounted) return;
+      setState(() => _healthSyncEnabled = enabled);
+      modalSetState(() => _healthSyncEnabled = enabled);
+      final result = await HealthSyncService.syncToday(
+        requestPermissions: false,
+      );
+      if (!mounted) return;
+      await _load();
+      await widget.onRefreshHeader();
+      final rewardText = result.hasRewards
+          ? ' +${_formatCompactNumber(result.xpEarned)} XP, +${_formatCompactNumber(result.coinsEarned)} Coins.'
+          : '';
+      widget.showSnack(
+        result.hasNewData
+            ? _tr(
+                de: 'Health Sync aktiviert und synchronisiert.$rewardText',
+                en: 'Health sync enabled and synced.$rewardText',
+              )
+            : _tr(
+                de: 'Health Sync aktiviert. Keine neuen Daten gefunden.',
+                en: 'Health sync enabled. No new data found.',
+              ),
+      );
+    } catch (_) {
+      widget.showSnack(
+        _tr(
+          de: 'Health Sync konnte nicht aktiviert werden.',
+          en: 'Health sync could not be enabled.',
+        ),
+      );
+    } finally {
+      if (mounted) {
+        modalSetState(() => _settingsBusy = false);
+      }
+    }
+  }
+
+  Future<bool> _saveProfile() async {
+    final userName = _usernameController.text.trim();
+    if (userName.isEmpty) return false;
+    final currentUserName = _currentProfileUserName;
+    final usernameChanged =
+        userName.toLowerCase() != currentUserName.toLowerCase();
+    if (usernameChanged && _isUsernameChangeLocked) {
+      widget.showSnack(
+        _tr(
+          de: 'Benutzername kann nur alle 14 Tage geändert werden.',
+          en: 'Username can only be changed every 14 days.',
+        ),
+      );
+      _usernameController.text = currentUserName;
+      return false;
+    }
+
+    try {
+      await ApiService.updateProfile(userName: userName);
+      _profile['userName'] = userName;
+      if (usernameChanged) {
+        final now = DateTime.now();
+        await _storeUsernameChangedAt(now);
+        _usernameChangedAt = now;
+      }
+      widget.showSnack(_tr(de: 'Profil gespeichert.', en: 'Profile saved.'));
+      await widget.onRefreshHeader();
+      if (!mounted) return true;
+      setState(() {});
+      return true;
+    } catch (_) {
+      widget.showSnack(
+        _tr(de: 'Speichern fehlgeschlagen.', en: 'Save failed.'),
+      );
+      return false;
+    }
+  }
+
+  String get _currentProfileUserName {
+    return _string(
+      _profile['userName'],
+      fallback: _string(_profile['UserName']),
+    );
+  }
+
+  bool get _isUsernameChangeLocked {
+    final changedAt = _usernameChangedAt;
+    if (changedAt == null) return false;
+    return DateTime.now().difference(changedAt) < _usernameChangeCooldown;
+  }
+
+  String get _usernameChangeHint {
+    final changedAt = _usernameChangedAt;
+    if (changedAt == null || !_isUsernameChangeLocked) {
+      return _tr(
+        de: 'Kann alle 14 Tage geändert werden.',
+        en: 'Can be changed every 14 days.',
+      );
+    }
+    final nextDate = changedAt.add(_usernameChangeCooldown);
+    return _tr(
+      de: 'Wieder möglich ab ${_formatShortDate(nextDate)}.',
+      en: 'Available again from ${_formatShortDate(nextDate)}.',
+    );
+  }
+
+  String get _usernameChangePreferenceKey {
+    final userId = _toInt(_profile['id'], fallback: _toInt(_profile['Id']));
+    return 'username_changed_at_${userId > 0 ? userId : _currentProfileUserName.toLowerCase()}';
+  }
+
+  Future<DateTime?> _loadUsernameChangedAt(Map<String, dynamic> profile) async {
+    final userId = _toInt(profile['id'], fallback: _toInt(profile['Id']));
+    final userName = _string(
+      profile['userName'],
+      fallback: _string(profile['UserName']),
+    ).toLowerCase();
+    final key = 'username_changed_at_${userId > 0 ? userId : userName}';
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(key);
+    return raw == null ? null : DateTime.tryParse(raw);
+  }
+
+  Future<void> _storeUsernameChangedAt(DateTime value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _usernameChangePreferenceKey,
+      value.toIso8601String(),
+    );
+  }
+
+  String _formatShortDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day.$month.${date.year}';
+  }
+
+  Future<bool> _changePassword() async {
+    final oldPassword = _oldPasswordController.text;
+    final newPassword = _newPasswordController.text;
+    if (oldPassword.isEmpty || newPassword.isEmpty) {
+      widget.showSnack(
+        _tr(
+          de: 'Bitte beide Passwortfelder ausfüllen.',
+          en: 'Please fill in both password fields.',
+        ),
+      );
+      return false;
+    }
+    if (oldPassword == newPassword) {
+      widget.showSnack(
+        _tr(
+          de: 'Das neue Passwort muss anders sein.',
+          en: 'The new password must be different.',
+        ),
+      );
+      return false;
+    }
+    try {
+      await ApiService.changePassword(
+        oldPassword: oldPassword,
+        newPassword: newPassword,
+      );
+      _oldPasswordController.clear();
+      _newPasswordController.clear();
+      widget.showSnack(_tr(de: 'Passwort geändert.', en: 'Password changed.'));
+      return true;
+    } catch (_) {
+      widget.showSnack(
+        _tr(
+          de: 'Passwortwechsel fehlgeschlagen.',
+          en: 'Password change failed.',
+        ),
+      );
+      return false;
+    }
+  }
+
+  Future<void> _deleteAccount() async {
+    try {
+      await ApiService.deleteAccount();
+      await ApiService.logout();
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (_) => false,
+      );
+    } catch (_) {
+      widget.showSnack(
+        _tr(
+          de: 'Account konnte nicht geloescht werden.',
+          en: 'Account could not be deleted.',
+        ),
+      );
+    }
+  }
+
+  ({DateTime $1, DateTime $2}) _weekBounds(int offset) {
+    final today = DateTime.now();
+    final normalizedToday = DateTime(today.year, today.month, today.day);
+    final monday = normalizedToday
+        .subtract(Duration(days: normalizedToday.weekday - 1))
+        .add(Duration(days: offset * 7));
+    final sunday = monday.add(const Duration(days: 6));
+    return ($1: monday, $2: sunday);
+  }
+
+  String _dateKey(DateTime date) {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  List<Map<String, dynamic>> _normalizeWeeklyActivity(
+    List<dynamic> raw,
+    DateTime monday,
+  ) {
+    final repsByDate = <String, int>{};
+    for (final item in raw) {
+      final map = _map(item);
+      final rawDate = _string(
+        map['date'],
+        fallback: _string(map['Date'], fallback: _string(map['day'])),
+      );
+      if (rawDate.isEmpty) continue;
+      final dateKey = rawDate.contains('T')
+          ? rawDate.split('T').first
+          : rawDate;
+      final reps = _toInt(
+        map['reps'],
+        fallback: _toInt(
+          map['Reps'],
+          fallback: _toInt(map['count'], fallback: _toInt(map['totalReps'])),
+        ),
+      );
+      repsByDate[dateKey] = reps;
+    }
+
+    const weekdayNames = <String>['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    final today = DateTime.now();
+    final todayKey = _dateKey(today);
+    return List<Map<String, dynamic>>.generate(7, (int index) {
+      final day = monday.add(Duration(days: index));
+      final key = _dateKey(day);
+      final reps = repsByDate[key] ?? 0;
+      return <String, dynamic>{
+        'name': weekdayNames[index],
+        'date': key,
+        'dateDisplay':
+            '${day.day.toString().padLeft(2, '0')}.${day.month.toString().padLeft(2, '0')}',
+        'reps': reps,
+        'workoutDone': reps > 0,
+        'isToday': key == todayKey,
+      };
+    });
+  }
+
+  String get _weekLabel {
+    if (_weeklyActivity.isEmpty) return '';
+    final first = _map(_weeklyActivity.first);
+    final last = _map(_weeklyActivity.last);
+    return '${_string(first['dateDisplay'])} - ${_string(last['dateDisplay'])}';
+  }
+
+  List<dynamic> get _visibleAchievements {
+    if (_achievements.isEmpty) return <dynamic>[];
+    final start = math.min(
+      _currentAchievementIndex,
+      _lastAchievementPageStart(_achievements.length),
+    );
+    final end = math.min(start + _achievementPageSize, _achievements.length);
+    return _achievements.sublist(start, end);
+  }
+
+  Future<void> _changeWeek(int delta) async {
+    if (delta > 0 && _currentWeekOffset == 0) return;
+    final nextOffset = _currentWeekOffset + delta;
+    final bounds = _weekBounds(nextOffset);
+    setState(() {
+      _currentWeekOffset = nextOffset;
+    });
+    try {
+      final weeklyRaw = await ApiService.getWeeklyActivity(
+        from: bounds.$1,
+        to: bounds.$2,
+      );
+      if (!mounted) return;
+      setState(() {
+        _weeklyActivity = _normalizeWeeklyActivity(
+          (weeklyRaw as List<dynamic>?) ?? <dynamic>[],
+          bounds.$1,
+        );
+      });
+    } catch (_) {
+      if (!mounted) return;
+      widget.showSnack('Wöchentliche Aktivität konnte nicht geladen werden.');
+    }
+  }
+
+  Future<void> _pickProfileImage() async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (pickedFile == null) return;
+
+      final pickedBytes = await pickedFile.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _pickedProfileImageBytes = pickedBytes;
+      });
+
+      final updatedProfile = await ApiService.uploadProfileImage(
+        pickedFile.path,
+      );
+      if (!mounted) return;
+      setState(() {
+        final nextUrl = _string(
+          updatedProfile['profileImageUrl'],
+          fallback: _string(updatedProfile['ProfileImageUrl']),
+        );
+        _profile['profileImageUrl'] = nextUrl;
+        _profileImageUrl = nextUrl;
+        _profileImageVersion = DateTime.now().millisecondsSinceEpoch;
+      });
+      await widget.onRefreshHeader();
+      widget.showSnack('Profilbild aktualisiert.');
+    } catch (e) {
+      if (mounted) {
+        setState(() => _pickedProfileImageBytes = null);
+      }
+      widget.showSnack('Profilbild konnte nicht gespeichert werden.');
+    }
+  }
+
+  Future<void> _openProfileImageActions() async {
+    final imageUrl = ApiService.mediaUrl(_profileImageUrl);
+    final hasPhoto =
+        (imageUrl != null && imageUrl.isNotEmpty) ||
+        _pickedProfileImageBytes != null;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  color: Colors.white.withOpacity(0.16),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(
+                  Icons.photo_library_rounded,
+                  color: Colors.white,
+                ),
+                title: const Text(
+                  'Foto auswählen',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  await _pickProfileImage();
+                },
+              ),
+              if (hasPhoto)
+                ListTile(
+                  leading: const Icon(
+                    Icons.delete_rounded,
+                    color: Color(0xFFF87171),
+                  ),
+                  title: const Text(
+                    'Aktuelles Foto entfernen',
+                    style: TextStyle(
+                      color: Color(0xFFFCA5A5),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  onTap: () async {
+                    Navigator.of(ctx).pop();
+                    await _removeProfileImage();
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _removeProfileImage() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Color(0xFF0F172A),
+        title: const Text(
+          'Profilbild entfernen?',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          'Danach wird wieder das Standardbild angezeigt.',
+          style: TextStyle(color: Colors.white.withOpacity(0.72)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Entfernen'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final profile = await ApiService.removeProfileImage();
+      if (!mounted) return;
+      setState(() {
+        _profile = profile;
+        _profileImageUrl = null;
+        _pickedProfileImageBytes = null;
+        _profileImageVersion = DateTime.now().millisecondsSinceEpoch;
+      });
+      await widget.onRefreshHeader();
+      widget.showSnack('Profilbild entfernt.');
+    } catch (_) {
+      widget.showSnack('Profilbild konnte nicht entfernt werden.');
+    }
+  }
+
+  Widget _buildProfileAvatar(String userName) {
+    final imageUrl = ApiService.mediaUrl(_profileImageUrl);
+    final versionedImageUrl = imageUrl == null
+        ? null
+        : _isDataImageUrl(imageUrl)
+        ? imageUrl
+        : '$imageUrl${imageUrl.contains('?') ? '&' : '?'}v=$_profileImageVersion';
+    final hasPhoto = imageUrl != null && imageUrl.isNotEmpty;
+    final pickedProfileImageBytes = _pickedProfileImageBytes;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: hasPhoto ? null : Color(0xFF1E293B),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xFFEC4899).withOpacity(0.24),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: pickedProfileImageBytes != null
+                ? Image.memory(
+                    pickedProfileImageBytes,
+                    fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                  )
+                : hasPhoto
+                ? _buildProfileImageFromUrl(
+                    versionedImageUrl!,
+                    key: ValueKey(versionedImageUrl),
+                    fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                  )
+                : _buildNoProfilePicture(),
+          ),
+        ),
+        Positioned(
+          right: -2,
+          bottom: -2,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _openProfileImageActions,
+              borderRadius: BorderRadius.circular(999),
+              child: Ink(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFEC4899),
+                ),
+                child: const Icon(
+                  Icons.edit_rounded,
+                  size: 14,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNoProfilePicture() {
+    return Image.asset(_noProfilePictureAsset, fit: BoxFit.cover);
+  }
+
+  void _openSettings() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.72),
+      builder: (ctx) {
+        final topInset = MediaQuery.of(ctx).padding.top;
+        final email = _string(
+          _profile['email'],
+          fallback: _string(_profile['Email']),
+        );
+        final canEditUsername = !_isUsernameChangeLocked;
+        var settingsPage = 'main';
+        return StatefulBuilder(
+          builder: (ctx, modalSetState) {
+            Widget sectionTitle(String title) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 18, bottom: 10),
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.92),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              );
+            }
+
+            Widget passwordPage() {
+              return Column(
+                key: const ValueKey<String>('settings-password'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  sectionTitle(_tr(de: 'Sicherheit', en: 'Security')),
+                  TextField(
+                    controller: _oldPasswordController,
+                    style: const TextStyle(color: Colors.white),
+                    obscureText: true,
+                    decoration: _settingsInputDecoration(
+                      _tr(de: 'Altes Passwort', en: 'Old password'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _newPasswordController,
+                    style: const TextStyle(color: Colors.white),
+                    obscureText: true,
+                    decoration: _settingsInputDecoration(
+                      _tr(de: 'Neues Passwort', en: 'New password'),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: _GradientActionButton(
+                      onPressed: () async {
+                        final changed = await _changePassword();
+                        if (changed && mounted) {
+                          modalSetState(() => settingsPage = 'main');
+                        }
+                      },
+                      label: _tr(de: 'Passwort speichern', en: 'Save password'),
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            Widget mainPage() {
+              return Column(
+                key: const ValueKey<String>('settings-main'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  sectionTitle(_tr(de: 'Profil', en: 'Profile')),
+                  TextField(
+                    controller: _usernameController,
+                    readOnly: !canEditUsername,
+                    style: TextStyle(
+                      color: canEditUsername ? Colors.white : Colors.white54,
+                    ),
+                    decoration: _settingsInputDecoration(
+                      _tr(de: 'Benutzername', en: 'Username'),
+                    ).copyWith(helperText: _usernameChangeHint),
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    enabled: false,
+                    initialValue: email,
+                    style: const TextStyle(color: Colors.white38),
+                    decoration: _disabledSettingsInputDecoration(
+                      _tr(de: 'E-Mail', en: 'Email'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: _GradientActionButton(
+                      onPressed: () async {
+                        final saved = await _saveProfile();
+                        if (saved && ctx.mounted) {
+                          Navigator.of(ctx).pop();
+                        }
+                      },
+                      label: _tr(de: 'Speichern', en: 'Save'),
+                    ),
+                  ),
+                  sectionTitle(_tr(de: 'Fortschritt', en: 'Progress')),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      color: const Color(0xFF050914),
+                      border: Border.all(color: Colors.white.withOpacity(0.07)),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildProgressRow(
+                          'Level',
+                          '${_toInt(_map(_profile['avatar'])['level'], fallback: 1)}',
+                        ),
+                        _buildProgressRow(
+                          'XP',
+                          _formatCompactNumber(
+                            _toInt(
+                              _profile['totalXp'],
+                              fallback: _toInt(
+                                _map(_profile['avatar'])['experience'],
+                              ),
+                            ),
+                          ),
+                        ),
+                        _buildProgressRow(
+                          _tr(de: 'Challenges', en: 'Challenges'),
+                          '${_toInt(_profileStats['completedChallenges'])}',
+                        ),
+                        _buildProgressRow(
+                          'Streak',
+                          _tr(
+                            de: '${_toInt(_profileStats['currentStreak'])} Tage',
+                            en: '${_toInt(_profileStats['currentStreak'])} days',
+                          ),
+                          isLast: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                  sectionTitle(
+                    _tr(de: 'Benachrichtigungen', en: 'Notifications'),
+                  ),
+                  _buildSettingsTile(
+                    icon: Icons.notifications_active_rounded,
+                    iconColor: Color(0xFFFDA4AF),
+                    title: _tr(de: 'iPhone-Reminder', en: 'iPhone reminder'),
+                    subtitle: _notificationsEnabled
+                        ? _tr(de: 'Aktiv', en: 'Active')
+                        : null,
+                    trailing: Switch.adaptive(
+                      value: _notificationsEnabled,
+                      activeThumbColor: Color(0xFFEC4899),
+                      onChanged: _settingsBusy
+                          ? null
+                          : (value) =>
+                                _setNotificationsEnabled(value, modalSetState),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildReminderTimeTile(modalSetState),
+                  sectionTitle(_tr(de: 'Health Sync', en: 'Health sync')),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      color: const Color(0xFF050914),
+                      border: Border.all(color: Colors.white.withOpacity(0.07)),
+                    ),
+                    child: ListTile(
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 2,
+                      ),
+                      leading: _buildSettingsImageIcon(_appleHealthLogoAsset),
+                      title: const Text(
+                        'Apple Health',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                      trailing: Switch.adaptive(
+                        value: _healthSyncEnabled,
+                        activeThumbColor: Color(0xFFEC4899),
+                        onChanged: _settingsBusy
+                            ? null
+                            : (value) =>
+                                  _setHealthSyncEnabled(value, modalSetState),
+                      ),
+                    ),
+                  ),
+                  sectionTitle(_tr(de: 'Sicherheit', en: 'Security')),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () =>
+                          modalSetState(() => settingsPage = 'password'),
+                      icon: const Icon(Icons.lock_reset_rounded, size: 18),
+                      label: Text(
+                        _tr(de: 'Passwort ändern', en: 'Change password'),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(
+                          color: const Color(0xFFF472B6).withOpacity(0.32),
+                        ),
+                        backgroundColor: const Color(0xFF050914),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                  sectionTitle(_tr(de: 'Account', en: 'Account')),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      color: const Color(0xFF050914),
+                      border: Border.all(color: Colors.white.withOpacity(0.07)),
+                    ),
+                    child: Column(
+                      children: [
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 2,
+                          ),
+                          leading: _buildSettingsIcon(
+                            Icons.logout_rounded,
+                            const Color(0xFFFDA4AF),
+                          ),
+                          title: Text(
+                            _tr(de: 'Abmelden', en: 'Log out'),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          trailing: const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Colors.white38,
+                          ),
+                          onTap: () async {
+                            await ApiService.logout();
+                            if (!mounted) return;
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (_) => const LoginScreen(),
+                              ),
+                              (_) => false,
+                            );
+                          },
+                        ),
+                        Divider(
+                          height: 1,
+                          color: Colors.white.withOpacity(0.08),
+                        ),
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 2,
+                          ),
+                          leading: _buildSettingsIcon(
+                            Icons.delete_outline_rounded,
+                            const Color(0xFFFCA5A5),
+                          ),
+                          title: Text(
+                            _tr(de: 'Account löschen', en: 'Delete account'),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          trailing: const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Colors.white38,
+                          ),
+                          onTap: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (dctx) => AlertDialog(
+                                title: Text(
+                                  _tr(
+                                    de: 'Account löschen',
+                                    en: 'Delete account',
+                                  ),
+                                ),
+                                content: Text(
+                                  _tr(
+                                    de: 'Möchtest du deinen Account wirklich löschen? Diese Aktion ist endgültig.',
+                                    en: 'Do you really want to delete your account? This action is permanent.',
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(dctx).pop(false),
+                                    child: Text(
+                                      _tr(de: 'Abbrechen', en: 'Cancel'),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(dctx).pop(true),
+                                    child: Text(
+                                      _tr(de: 'Löschen', en: 'Delete'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true) {
+                              await _deleteAccount();
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            return ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(26),
+              ),
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF03050A),
+                      Color(0xFF050812),
+                      Color(0xFF020308),
+                    ],
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    top: topInset + 48,
+                    bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                  ),
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    if (settingsPage == 'password') ...[
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.arrow_back_rounded,
+                                          color: Colors.white,
+                                        ),
+                                        onPressed: () => modalSetState(
+                                          () => settingsPage = 'main',
+                                        ),
+                                      ),
+                                      const SizedBox(width: 2),
+                                    ],
+                                    Expanded(
+                                      child: Text(
+                                        settingsPage == 'password'
+                                            ? _tr(
+                                                de: 'Passwort ändern',
+                                                en: 'Change password',
+                                              )
+                                            : _tr(
+                                                de: 'Einstellungen',
+                                                en: 'Settings',
+                                              ),
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Colors.white70,
+                                ),
+                                onPressed: () => Navigator.of(ctx).pop(),
+                              ),
+                            ],
+                          ),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 260),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            layoutBuilder:
+                                (
+                                  Widget? currentChild,
+                                  List<Widget> previousChildren,
+                                ) {
+                                  return Stack(
+                                    alignment: Alignment.topCenter,
+                                    children: <Widget>[
+                                      ...previousChildren,
+                                      if (currentChild != null) currentChild,
+                                    ],
+                                  );
+                                },
+                            transitionBuilder:
+                                (Widget child, Animation<double> animation) {
+                                  final slide = Tween<Offset>(
+                                    begin: const Offset(0, 0.08),
+                                    end: Offset.zero,
+                                  ).animate(animation);
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: SlideTransition(
+                                      position: slide,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                            child: settingsPage == 'password'
+                                ? passwordPage()
+                                : mainPage(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSettingsTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    String? subtitle,
+    required Widget trailing,
+    VoidCallback? onTap,
+  }) {
+    final hasSubtitle = subtitle != null && subtitle.trim().isNotEmpty;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFF050914),
+        border: Border.all(color: Colors.white.withOpacity(0.07)),
+      ),
+      child: ListTile(
+        dense: true,
+        visualDensity: VisualDensity.compact,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: hasSubtitle ? 2 : 6,
+        ),
+        leading: _buildSettingsIcon(icon, iconColor),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: hasSubtitle
+            ? Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.54),
+                  fontSize: 12,
+                ),
+              )
+            : null,
+        trailing: trailing,
+        onTap: onTap,
+      ),
+    );
+  }
+
+  Widget _buildReminderTimeTile(StateSetter modalSetState) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFF050914),
+        border: Border.all(color: Colors.white.withOpacity(0.07)),
+      ),
+      child: ListTile(
+        dense: true,
+        visualDensity: VisualDensity.compact,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+        leading: _buildSettingsIcon(
+          Icons.schedule_rounded,
+          const Color(0xFF60A5FA),
+        ),
+        title: Text(
+          _tr(de: 'Erinnerungszeit', en: 'Reminder time'),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: Text(
+          _notificationsEnabled
+              ? _tr(de: 'Täglich', en: 'Daily')
+              : _tr(de: 'Inaktiv', en: 'Inactive'),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: Colors.white.withOpacity(0.54), fontSize: 12),
+        ),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: const Color(0xFFEC4899).withOpacity(0.14),
+            border: Border.all(
+              color: const Color(0xFFF472B6).withOpacity(0.28),
+            ),
+          ),
+          child: Text(
+            _formatReminderTime(_notificationReminderTime),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+            ),
+          ),
+        ),
+        onTap: _settingsBusy
+            ? null
+            : () => _openReminderTimePicker(modalSetState),
+      ),
+    );
+  }
+
+  Widget _buildSettingsIcon(IconData icon, Color color) {
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: color.withOpacity(0.14),
+      ),
+      child: Icon(icon, color: color, size: 20),
+    );
+  }
+
+  Widget _buildSettingsImageIcon(String asset) {
+    return SizedBox(
+      width: 42,
+      height: 42,
+      child: Center(
+        child: Image.asset(asset, width: 34, height: 34, fit: BoxFit.contain),
+      ),
+    );
+  }
+
+  InputDecoration _settingsInputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(color: Colors.white.withOpacity(0.72)),
+      helperStyle: TextStyle(
+        color: Colors.white.withOpacity(0.46),
+        fontSize: 11,
+      ),
+      filled: true,
+      fillColor: const Color(0xFF050914),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.09)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.09)),
+      ),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        borderSide: BorderSide(color: Color(0xFFEC4899)),
+      ),
+    );
+  }
+
+  InputDecoration _disabledSettingsInputDecoration(String label) {
+    return _settingsInputDecoration(label).copyWith(
+      filled: true,
+      fillColor: const Color(0xFF030611),
+      labelStyle: TextStyle(color: Colors.white.withOpacity(0.38)),
+      disabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.07)),
+      ),
+    );
+  }
+
+  Widget _buildProgressRow(String label, String value, {bool isLast = false}) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required String label,
+    required String value,
+    required Widget icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withOpacity(0.04),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          icon,
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.66),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+
+    final userName = _usernameController.text.isNotEmpty
+        ? _usernameController.text
+        : _tr(de: 'Benutzer', en: 'User');
+    final email = _string(
+      _profile['email'],
+      fallback: _string(
+        _profile['Email'],
+        fallback: _tr(de: 'Keine E-Mail', en: 'No email'),
+      ),
+    );
+    final unlockedCount = _achievements
+        .where((dynamic item) => _map(item)['unlocked'] == true)
+        .length;
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.all(14),
+        children: [
+          _SectionCard(
+            title: _tr(de: 'Mein Profil', en: 'My Profile'),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _buildProfileAvatar(userName),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        userName,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        email,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.settings_rounded,
+                    color: Colors.white70,
+                  ),
+                  onPressed: _openSettings,
+                  tooltip: _tr(de: 'Einstellungen', en: 'Settings'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Stats overview (mobile-friendly)
+          _SectionCard(
+            title: _tr(de: 'Statistiken', en: 'Statistics'),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isTablet = constraints.maxWidth >= 720;
+                final crossAxisCount = isTablet ? 4 : 2;
+                final spacing = 8.0;
+                final itemWidth =
+                    (constraints.maxWidth - spacing * (crossAxisCount - 1)) /
+                    crossAxisCount;
+
+                final cards = [
+                  _buildStatCard(
+                    label: _tr(de: 'Workouts gesamt', en: 'Total workouts'),
+                    value: '${_profileStats['totalWorkouts'] ?? 0}',
+                    icon: const Icon(
+                      Icons.fitness_center,
+                      color: Color(0xFFA855F7),
+                    ),
+                  ),
+                  _buildStatCard(
+                    label: _tr(de: 'Trainingszeit', en: 'Training time'),
+                    value: '${_profileStats['trainingHours'] ?? 0}h',
+                    icon: const Icon(Icons.timer, color: Color(0xFF60A5FA)),
+                  ),
+                  _buildStatCard(
+                    label: _tr(de: 'Kalorien', en: 'Calories'),
+                    value: '${_profileStats['caloriesBurned'] ?? 0}',
+                    icon: const Icon(
+                      Icons.local_fire_department,
+                      color: Color(0xFFF97316),
+                    ),
+                  ),
+                  _buildStatCard(
+                    label: _tr(de: 'Längster Streak', en: 'Longest streak'),
+                    value: _tr(
+                      de: '${_profileStats['longestStreak'] ?? 0} Tage',
+                      en: '${_profileStats['longestStreak'] ?? 0} days',
+                    ),
+                    icon: const Icon(
+                      Icons.emoji_events,
+                      color: Color(0xFF22C55E),
+                    ),
+                  ),
+                ];
+
+                return Wrap(
+                  spacing: spacing,
+                  runSpacing: spacing,
+                  children: cards
+                      .map((card) => SizedBox(width: itemWidth, child: card))
+                      .toList(growable: false),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Achievements carousel
+          _SectionCard(
+            title: 'Achievements',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '$unlockedCount / ${_achievements.length} freigeschaltet',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.68),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: _currentAchievementIndex == 0
+                          ? null
+                          : () {
+                              setState(() {
+                                _currentAchievementIndex = math.max(
+                                  0,
+                                  _currentAchievementIndex -
+                                      _achievementPageSize,
+                                );
+                              });
+                            },
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 18,
+                      ),
+                      color: Colors.white70,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    IconButton(
+                      onPressed:
+                          _currentAchievementIndex >=
+                              _lastAchievementPageStart(_achievements.length)
+                          ? null
+                          : () {
+                              setState(() {
+                                _currentAchievementIndex = math.min(
+                                  _lastAchievementPageStart(
+                                    _achievements.length,
+                                  ),
+                                  _currentAchievementIndex +
+                                      _achievementPageSize,
+                                );
+                              });
+                            },
+                      icon: const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 18,
+                      ),
+                      color: Colors.white70,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    const spacing = 8.0;
+                    const columns = 2;
+                    final cardHeight = constraints.maxWidth < 380
+                        ? 158.0
+                        : 148.0;
+                    final itemCount = _visibleAchievements.length;
+                    final itemWidth = itemCount == 0
+                        ? constraints.maxWidth
+                        : (constraints.maxWidth - spacing) / columns;
+
+                    if (itemCount == 0) {
+                      return const Text(
+                        'Noch keine Achievements vorhanden.',
+                        style: TextStyle(color: Colors.white70),
+                      );
+                    }
+
+                    return Wrap(
+                      spacing: spacing,
+                      runSpacing: spacing,
+                      children: _visibleAchievements
+                          .map((dynamic item) {
+                            return SizedBox(
+                              width: itemWidth,
+                              height: cardHeight,
+                              child: _AchievementCard(achievement: _map(item)),
+                            );
+                          })
+                          .toList(growable: false),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Weekly activity (simple horizontal week view)
+          _SectionCard(
+            title: 'Wöchentliche Aktivität',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      _weekLabel,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.68),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => _changeWeek(-1),
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 18,
+                      ),
+                      color: Colors.white70,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    IconButton(
+                      onPressed: _currentWeekOffset == 0
+                          ? null
+                          : () => _changeWeek(1),
+                      icon: const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 18,
+                      ),
+                      color: Colors.white70,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    const spacing = 8.0;
+                    final cardWidth =
+                        (constraints.maxWidth - spacing * 2).clamp(
+                          0.0,
+                          9999.0,
+                        ) /
+                        3;
+
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _weeklyActivity
+                            .asMap()
+                            .entries
+                            .map((entry) {
+                              final isLast =
+                                  entry.key == _weeklyActivity.length - 1;
+                              final day = _map(entry.value);
+                              final reps = _toInt(day['reps']);
+                              final done = day['workoutDone'] == true;
+                              final isToday = day['isToday'] == true;
+                              return Container(
+                                width: cardWidth,
+                                margin: EdgeInsets.only(
+                                  right: isLast ? 0 : spacing,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: done
+                                      ? Color(0xFF14532D)
+                                      : Colors.white.withOpacity(0.04),
+                                  border: Border.all(
+                                    color: isToday
+                                        ? Color(0xFFFBBF24)
+                                        : done
+                                        ? Color(0xFF22C55E).withOpacity(0.6)
+                                        : Colors.white.withOpacity(0.08),
+                                  ),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      _string(day['name']),
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.84),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _string(day['dateDisplay']),
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.62),
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    done
+                                        ? Image.asset(
+                                            'assets/Star_Pixel.png',
+                                            width: 20,
+                                            height: 20,
+                                            fit: BoxFit.contain,
+                                          )
+                                        : const Icon(
+                                            Icons.remove,
+                                            color: Colors.white24,
+                                          ),
+                                    const SizedBox(height: 8),
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        done ? '$reps Einheiten' : '-',
+                                        maxLines: 1,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            })
+                            .toList(growable: false),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Recent activities
+          _SectionCard(
+            title: 'Letzte Aktivitäten',
+            child: Column(
+              children: _recentActivities
+                  .map((act) {
+                    final a = _map(act);
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: Colors.white.withOpacity(0.04),
+                            ),
+                            child: Center(child: Text(a['icon'] ?? '⚡')),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  a['title'] ?? '',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  a['time'] ?? '',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          SizedBox(
+                            height: 44,
+                            child: Center(
+                              child: Text(
+                                '${_formatCompactNumber(_toInt(a['xp']))} XP',
+                                style: const TextStyle(
+                                  color: Color(0xFFFDE047),
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  })
+                  .toList(growable: false),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -23,7 +23,7 @@
                   <span class="equip-badge">+{{ boostSlots[slotIdx]!.xpBoostPercentage || boostSlots[slotIdx]!.coinBoostPercentage || 0 }}%</span>
                 </template>
                 <template v-else>
-                  <span class="equip-empty">Leer</span>
+                  <span class="equip-empty">{{ text('Leer', 'Empty') }}</span>
                 </template>
               </div>
             </div>
@@ -83,7 +83,7 @@
           </svg>
           <div class="arc-center">
             <span class="arc-percent">{{ progressPercent }}%</span>
-            <span class="arc-next">{{ xpForNextLevel - currentXp }} bis Lv{{ level + 1 }}</span>
+            <span class="arc-next">{{ xpForNextLevel - currentXp }} {{ text('bis', 'to') }} Lv{{ level + 1 }}</span>
           </div>
         </div>
 
@@ -95,8 +95,8 @@
           </span>
           <span class="arc-meta-sep"></span>
           <span class="arc-meta-item">
-            <span class="arc-meta-label">Gesamt XP</span>
-            <span class="arc-meta-value">{{ totalXp.toLocaleString('de-DE') }}</span>
+            <span class="arc-meta-label">{{ text('Gesamt XP', 'Total XP') }}</span>
+            <span class="arc-meta-value">{{ totalXp.toLocaleString(locale) }}</span>
           </span>
         </div>
 
@@ -104,7 +104,7 @@
         <div class="stats-bar">
           <div class="stats-bar-item">
             <div class="stats-bar-icon flame" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'/></svg>`"></div>
-            <span class="stats-bar-value">{{ currentStreak }} Tage</span>
+            <span class="stats-bar-value">{{ currentStreak }} {{ text('Tage', 'days') }}</span>
             <span class="stats-bar-label">Streak</span>
           </div>
           <div class="stats-bar-sep"></div>
@@ -123,7 +123,7 @@
           <div class="stats-bar-item">
             <div class="stats-bar-icon rank" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='8' r='6'/><path d='M15.477 12.89 17 22l-5-3-5 3 1.523-9.11'/></svg>`"></div>
             <span class="stats-bar-value"><span class="stats-bar-value">{{ leaderboardRank }}</span></span>
-            <span class="stats-bar-label">Rang</span>
+            <span class="stats-bar-label">{{ text('Rang', 'Rank') }}</span>
           </div>
         </div>
 
@@ -133,7 +133,7 @@
       <div class="stats-grid">
         <StatCard
           :icon="`<path d='M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'/>`"
-          label="Streak" :value="currentStreak + ' Tage'" cardClass="streak-card"
+          label="Streak" :value="currentStreak + ' ' + text('Tage', 'days')" cardClass="streak-card"
         />
         <StatCard
           :icon="`<path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/>`"
@@ -141,11 +141,11 @@
         />
         <StatCard
           :icon="`<circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/>`"
-          label="Quests" :value="completedQuests + '/' + totalQuests" :trend="activeQuests + ' aktiv'" cardClass="quests-card"
+          label="Quests" :value="completedQuests + '/' + totalQuests" :trend="activeQuests + ' ' + text('aktiv', 'active')" cardClass="quests-card"
         />
         <StatCard
           :icon="`<polyline points='22 7 13.5 15.5 8.5 10.5 2 17'/><polyline points='16 7 22 7 22 13'/>`"
-          label="Gesamt XP" :value="totalXp.toLocaleString('de-DE')" :trend="'+' + todayXp + ' XP heute'" cardClass="xp-card"
+          :label="text('Gesamt XP', 'Total XP')" :value="totalXp.toLocaleString(locale)" :trend="'+' + todayXp + ' XP ' + text('heute', 'today')" cardClass="xp-card"
         />
       </div>
     </main>
@@ -155,12 +155,12 @@
       <div v-if="showBoostModal" class="boost-modal-overlay" @click.self="showBoostModal = false">
         <div class="boost-modal">
           <div class="boost-modal-header">
-            <h3>Booster auswählen — Slot {{ selectedSlotIndex + 1 }}</h3>
+            <h3>{{ text('Booster auswählen', 'Choose booster') }} - Slot {{ selectedSlotIndex + 1 }}</h3>
             <button class="boost-modal-close" @click="showBoostModal = false">&times;</button>
           </div>
           <div class="boost-modal-body">
             <div v-if="ownedBoosters.length === 0" class="boost-modal-empty">
-              Du besitzt noch keine Booster. Kaufe welche im Shop!
+              {{ text('Du besitzt noch keine Booster. Kaufe welche im Shop!', 'You do not own any boosters yet. Buy some in the shop!') }}
             </div>
             <div v-else class="boost-list">
               <div
@@ -174,7 +174,7 @@
                   <span v-else>⚡</span>
                 </div>
                 <div class="boost-item-info">
-                  <span class="boost-item-name">{{ booster.name }}</span>
+                  <span class="boost-item-name">{{ translate(booster.name) }}</span>
                   <span class="boost-item-desc">+{{ booster.xpBoostPercentage }}% XP Boost</span>
                 </div>
                 <span class="boost-item-qty">{{ availableQuantity(booster) }}x</span>
@@ -182,8 +182,8 @@
               <div class="boost-item boost-item-remove" @click="unequipSlot()" v-if="boostSlots[selectedSlotIndex]">
                 <div class="boost-item-icon">🗑️</div>
                 <div class="boost-item-info">
-                  <span class="boost-item-name">Slot leeren</span>
-                  <span class="boost-item-desc">Booster entfernen</span>
+                  <span class="boost-item-name">{{ text('Slot leeren', 'Clear slot') }}</span>
+                  <span class="boost-item-desc">{{ text('Booster entfernen', 'Remove booster') }}</span>
                 </div>
               </div>
             </div>
@@ -207,6 +207,7 @@ import { userService, achievementService, questService, resolveMediaUrl } from '
 import FooterComponent from "@/components/FooterComponent.vue";
 import { useLeaderboard } from '@/composables/useLeaderboard';
 import { useRouter } from 'vue-router';
+import { useLanguage } from '@/composables/useLanguage';
 
 const userName = ref('');
 const email = ref('');
@@ -216,6 +217,7 @@ const currentXp = ref(0);
 const xpForNextLevel = ref(1000);
 const bodyStage = ref('skinny');
 const router = useRouter();
+const { text, translate, locale } = useLanguage();
 
 const getBoostImage = (booster: item | null) => resolveMediaUrl(booster?.imageUrl ?? (booster as any)?.ImageUrl ?? '');
 

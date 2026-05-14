@@ -2,19 +2,19 @@
   <div class="workout-card" :class="{ 'is-editing': editorOpen, completed }">
     <!-- Category Badge mit dynamischer Farbe -->
     <div class="category-badge" :class="`category-${category.toLowerCase()}`">
-      {{ category }}
+      {{ translate(category) }}
     </div>
     
     <!-- Title -->
-    <h3 class="workout-title">{{ title }}</h3>
+    <h3 class="workout-title">{{ translate(title) }}</h3>
     
     <!-- Description -->
-    <p class="workout-description">{{ exercises[0] }}</p>
+    <p class="workout-description">{{ translate(exercises[0] ?? '') }}</p>
     
     <!-- Bottom Row -->
     <div class="workout-meta">
       <span class="difficulty" :class="`difficulty-${difficulty.toLowerCase()}`">
-        {{ difficulty }}
+        {{ translate(difficulty) }}
       </span>
       <span class="unit-badge" :class="`unit-${unitLabel.toLowerCase()}`">
         {{ unitLabel }}
@@ -25,22 +25,22 @@
       </span>
     </div>
     
-    <button v-if="editorOpen" class="inline-close-btn" @click.stop="$emit('closeEditor')" aria-label="Schließen">
+    <button v-if="editorOpen" class="inline-close-btn" @click.stop="$emit('closeEditor')" :aria-label="text('Schließen', 'Close')">
       &times;
     </button>
 
     <div v-if="completed || remaining <= 0" class="limit-reached">
-      Tageslimit erreicht
+      {{ text('Tageslimit erreicht', 'Daily limit reached') }}
     </div>
     <button v-else-if="usesTimer" class="log-btn" @click.stop="$emit('submitLog')">
-      Eintragen
+      {{ text('Eintragen', 'Log') }}
     </button>
     <button v-else-if="!editorOpen" class="log-btn" @click.stop="$emit('openEditor')">
-      Training eintragen
+      {{ text('Training eintragen', 'Log training') }}
     </button>
     <div v-else class="inline-log-panel" @click.stop>
       <div v-if="unit === 'Reps'" class="rep-stepper">
-        <button type="button" @click="$emit('changeDraft', -1)" aria-label="Weniger Reps">−</button>
+        <button type="button" @click="$emit('changeDraft', -1)" :aria-label="text('Weniger Reps', 'Fewer reps')">−</button>
         <label class="rep-value-label">
           <input
             :value="draftReps"
@@ -50,9 +50,9 @@
             inputmode="numeric"
             @input="$emit('setReps', Number(($event.target as HTMLInputElement).value))"
           />
-          <span>Reps</span>
+          <span>{{ text('Reps', 'Reps') }}</span>
         </label>
-        <button type="button" @click="$emit('changeDraft', 1)" aria-label="Mehr Reps">+</button>
+        <button type="button" @click="$emit('changeDraft', 1)" :aria-label="text('Mehr Reps', 'More reps')">+</button>
       </div>
       <input
         v-else-if="unit === 'Time'"
@@ -61,7 +61,7 @@
         inputmode="numeric"
         maxlength="8"
         placeholder="00:00:00"
-        aria-label="Zeit im Format 00:00:00"
+        :aria-label="text('Zeit im Format 00:00:00', 'Time in 00:00:00 format')"
         @input="$emit('setTime', ($event.target as HTMLInputElement).value)"
       />
       <div v-else class="distance-entry">
@@ -71,7 +71,7 @@
           type="number"
           min="0"
           step="0.01"
-          placeholder="Distanz"
+          :placeholder="text('Distanz', 'Distance')"
           @input="$emit('setDistance', Number(($event.target as HTMLInputElement).value))"
         />
         <select :value="distanceUnit" @change="$emit('setDistanceUnit', ($event.target as HTMLSelectElement).value as 'm' | 'km')">
@@ -80,15 +80,18 @@
         </select>
       </div>
       <button class="submit-log-btn" type="button" :disabled="!canSubmit" @click="$emit('submitLog')">
-        Eintragen
+        {{ text('Eintragen', 'Log') }}
       </button>
-      <p class="remaining-hint">Noch {{ remainingLabel }} möglich heute</p>
+      <p class="remaining-hint">{{ text('Noch', 'Still') }} {{ remainingLabel }} {{ text('möglich heute', 'possible today') }}</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useLanguage } from '@/composables/useLanguage';
+
+const { text, translate, locale } = useLanguage();
 
 const props = withDefaults(defineProps<{
   category: string;
@@ -132,7 +135,7 @@ const unitLabel = computed(() => {
 });
 
 const unitSingular = computed(() => {
-  if (props.unit === 'Time') return 'Sek';
+  if (props.unit === 'Time') return text('Sek', 'sec');
   if (props.unit === 'Distance') return 'm';
   return 'Rep';
 });
@@ -143,10 +146,10 @@ const remainingLabel = computed(() => {
   if (props.unit === 'Time') return formatTime(props.remaining);
   if (props.unit === 'Distance') {
     return props.remaining >= 1000
-      ? `${(props.remaining / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 })} km`
-      : `${props.remaining.toLocaleString('de-DE')} m`;
+      ? `${(props.remaining / 1000).toLocaleString(locale.value, { maximumFractionDigits: 2 })} km`
+      : `${props.remaining.toLocaleString(locale.value)} m`;
   }
-  return `${props.remaining.toLocaleString('de-DE')} Wiederholungen`;
+  return `${props.remaining.toLocaleString(locale.value)} ${text('Wiederholungen', 'reps')}`;
 });
 
 const canSubmit = computed(() => {

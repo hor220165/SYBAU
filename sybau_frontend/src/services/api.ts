@@ -122,48 +122,9 @@ export const itemService = {
     getShopItems: () => API.get('/shop/items'),
     getChests: () => API.get('/shop/chests'),
     getUserItems: () => API.get('/users/items'),
-    getBoosts: () => API.get('/boosts'),
     buyItem: (itemId: number) => API.post(`/shop/buy-item/${itemId}`),
     sellItem: (itemId: number) => API.post(`/shop/sell-item/${itemId}`),
     openChest: (chestId: number) => API.post(`/shop/chests/${chestId}/open`)
-};
-
-export const boostService = {
-    getBoosts: () => API.get('/boosts'),
-    getUserBoosts: () => API.get('/users/boosts')
-};
-
-export const adminService = {
-    // Challenges
-    getChallenges: () => API.get('/admin/challenges'),
-    createChallenge: (data: any) => API.post('/admin/challenges', data),
-    updateChallenge: (id: number, data: any) => API.put(`/admin/challenges/${id}`, data),
-    deleteChallenge: (id: number) => API.delete(`/admin/challenges/${id}`),
-    
-    // Items (Shop)
-    getItems: () => API.get('/admin/items'),
-    createShopItem: (data: any) => API.post('/shop/items/add', data, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-    }),
-    updateShopItem: (id: number, data: any) => API.post(`/shop/items/${id}/update`, data, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-    }),
-    deleteShopItem: (id: number) => API.delete(`/shop/items/${id}`),
-    createChest: (data: any) => API.post('/shop/chests/add', data),
-    updateChest: (id: number, data: any) => API.post(`/shop/chests/${id}/update`, data),
-    deleteChest: (id: number) => API.delete(`/shop/chests/${id}`),
-    getChests: () => API.get('/shop/chests'),
-    
-    // Users
-    getAllUsers: () => API.get('/admin/users'),
-    getUserStats: (id: number) => API.get(`/admin/users/${id}/stats`),
-    updateUserRole: (id: number, data: any) => API.put(`/admin/users/${id}/role`, data),
-    updateUser: (id: number, data: any) => API.put(`/admin/users/${id}`, data),
-    deleteUser: (id: number) => API.delete(`/admin/users/${id}`),
-    createExercise: (data: any) => API.post('/workouts/exercises', data),
-    updateExercise: (id: number, data: any) => API.put(`/workouts/exercises/${id}`, data),
-    updateExerciseUnit: (id: number, unit: string) => API.put(`/workouts/exercises/${id}/unit`, { unit }),
-    deleteExercise: (id: number) => API.delete(`/workouts/exercises/${id}`)
 };
 
 export const workoutService = {

@@ -15,6 +15,7 @@ import { itemService, resolveMediaUrl, userService } from '@/services/api';
 import FooterComponent from '@/components/FooterComponent.vue';
 import { useAuth } from '@/composables/useAuth';
 import MessagePopup from '@/components/MessagePopup.vue';
+import { useLanguage } from '@/composables/useLanguage';
 
 const items = ref<ShopDisplayItem[]>([]);
 const chests = ref<Chest[]>([]);
@@ -29,6 +30,7 @@ const chestOpening = ref<Chest | null>(null);
 const openedReward = ref<any | null>(null);
 const pendingPurchase = ref<{ type: 'item'; item: ShopDisplayItem } | { type: 'chest'; chest: Chest } | null>(null);
 const { refreshUser } = useAuth();
+const { text, translate } = useLanguage();
 
 const popupMessage = ref("");
 const popupType = ref<"success" | "error">("success");
@@ -131,14 +133,14 @@ const buildHighlights = (shopItem: item, category: ShopDisplayItem['category']) 
   }
 
   if (category === 'chest') {
-    highlights.push('Loot-Reward Item');
-    highlights.push('Ideal für neue Drops');
+    highlights.push(text('Loot-Reward Item', 'Loot reward item'));
+    highlights.push(text('Ideal für neue Drops', 'Ideal for new drops'));
   } else if (category === 'boost') {
-    highlights.push('Direkter Fortschritts-Boost');
-    highlights.push('Perfekt für schnelle XP-Runs');
+    highlights.push(text('Direkter Fortschritts-Boost', 'Direct progress boost'));
+    highlights.push(text('Perfekt für schnelle XP-Runs', 'Perfect for fast XP runs'));
   } else {
-    highlights.push('Kosmetisches Upgrade');
-    highlights.push('Für Avatar und Sammlung');
+    highlights.push(text('Kosmetisches Upgrade', 'Cosmetic upgrade'));
+    highlights.push(text('Für Avatar und Sammlung', 'For avatar and collection'));
   }
 
   if (shopItem.description && !highlights.includes(shopItem.description)) {
@@ -163,7 +165,7 @@ const toDisplayItem = (shopItem: item): ShopDisplayItem => {
     xpBoostPercentage,
     coinBoostPercentage,
     category,
-    categoryLabel: category === 'chest' ? 'Chest' : category === 'boost' ? 'Boost' : 'Item',
+    categoryLabel: category === 'chest' ? text('Chest', 'Chest') : category === 'boost' ? text('Boost', 'Boost') : text('Item', 'Item'),
     rarity,
     icon: getIcon(category, rarity),
     imageUrl: resolveMediaUrl(shopItem.imageUrl ?? (shopItem as any).ImageUrl ?? ''),
@@ -210,7 +212,7 @@ const loadShopItems = async () => {
     items.value = rawItems.map(toDisplayItem);
   } catch (shopError: any) {
     console.error('Fehler beim Laden der Shop-Items:', shopError);
-    error.value = shopError.response?.data?.message || shopError.response?.data || 'Fehler beim Laden der Shop-Items';
+    error.value = shopError.response?.data?.message || shopError.response?.data || text('Fehler beim Laden der Shop-Items', 'Could not load shop items');
   } finally {
     loading.value = false;
   }
@@ -265,7 +267,7 @@ const openChest = async (chest: Chest) => {
   } catch (openError: any) {
     chestOpening.value = null;
     popupType.value = 'error';
-    popupMessage.value = openError.response?.data?.message || openError.response?.data || 'Chest konnte nicht geöffnet werden';
+    popupMessage.value = openError.response?.data?.message || openError.response?.data || text('Chest konnte nicht geöffnet werden', 'Chest could not be opened');
   } finally {
     openingChestId.value = null;
   }
@@ -292,7 +294,10 @@ const buyItem = async (shopItem: ShopDisplayItem) => {
   items.value = items.value.map(i => ({ ...i, ownedQuantity: ownedItems.value[i.id] ?? 0 }));
 
   popupType.value = "success";
-  popupMessage.value = `${shopItem.name} gekauft! Verbleibende Coins: ${currentCoins.value}`;
+  popupMessage.value = text(
+    `${shopItem.name} gekauft! Verbleibende Coins: ${currentCoins.value}`,
+    `${shopItem.name} purchased! Remaining coins: ${currentCoins.value}`
+  );
 } catch (buyError: any) {
   console.error("Fehler beim Kauf:", buyError);
 
@@ -300,7 +305,7 @@ const buyItem = async (shopItem: ShopDisplayItem) => {
   popupMessage.value =
     buyError.response?.data?.message ||
     buyError.response?.data ||
-    "Kauf fehlgeschlagen";
+    text("Kauf fehlgeschlagen", "Purchase failed");
 } finally {
   buyingItemId.value = null;
 }
@@ -382,16 +387,15 @@ onMounted(loadPageData);
       <section class="shop-hero-card">
         <div class="hero-copy">
           <span class="hero-kicker">Shop</span>
-          <h1>Item Shop</h1>
+          <h1>{{ text('Item Shop', 'Item Shop') }}</h1>
           <p>
-            Kaufe Chests, Booster und kosmetische Upgrades im Figma-Look – aber direkt auf deine
-            echte Shop-API gemappt.
+            {{ text('Kaufe Chests, Booster und kosmetische Upgrades direkt aus deiner echten Shop-API.', 'Buy chests, boosters and cosmetic upgrades directly from your live shop API.') }}
           </p>
         </div>
 
       </section>
 
-      <div v-if="loading" class="state-box">Lade Shop-Items…</div>
+      <div v-if="loading" class="state-box">{{ text('Lade Shop-Items…', 'Loading shop items…') }}</div>
       <div v-if="error" class="state-box state-box-error">{{ error }}</div>
 
       <template v-if="!loading">
@@ -400,9 +404,9 @@ onMounted(loadPageData);
             <div>
               <div class="title-with-icon">
                 <Sparkles :size="20" />
-                <h2>Highlights</h2>
+                <h2>{{ text('Highlights', 'Highlights') }}</h2>
               </div>
-              <p>Die stärksten oder seltensten Shop-Items aus deinem aktuellen Backend.</p>
+              <p>{{ text('Die stärksten oder seltensten Shop-Items aus deinem aktuellen Backend.', 'The strongest or rarest shop items from your current backend.') }}</p>
             </div>
           </div>
 
@@ -425,7 +429,7 @@ onMounted(loadPageData);
                 <Package :size="20" />
                 <h2>Chests</h2>
               </div>
-              <p>Open chests for a chance at rare and legendary loot.</p>
+              <p>{{ text('Öffne Chests für seltene und legendäre Drops.', 'Open chests for a chance at rare and legendary loot.') }}</p>
             </div>
           </div>
 
@@ -448,7 +452,7 @@ onMounted(loadPageData);
                 <Package :size="20" />
                 <h2>Items</h2>
               </div>
-              <p>Browse boosts, cosmetics, and other shop items.</p>
+              <p>{{ text('Durchsuche Booster, Cosmetics und andere Shop-Items.', 'Browse boosters, cosmetics and other shop items.') }}</p>
             </div>
           </div>
 
@@ -468,8 +472,8 @@ onMounted(loadPageData);
           <div class="earn-copy">
             <div class="earn-title">
               <div>
-                <h2>Coins verdienen</h2>
-                <p>Schließe Aktivitäten ab. Die Coins werden danach automatisch deinem Konto gutgeschrieben.</p>
+                <h2>{{ text('Coins verdienen', 'Earn coins') }}</h2>
+                <p>{{ text('Schließe Aktivitäten ab. Die Coins werden danach automatisch deinem Konto gutgeschrieben.', 'Complete activities. Coins are added to your account automatically afterwards.') }}</p>
               </div>
             </div>
           </div>
@@ -477,7 +481,7 @@ onMounted(loadPageData);
           <div class="earn-stats">
             <article class="earn-pill">
               <div>
-                <span>Workout abschließen</span>
+                <span>{{ text('Workout abschließen', 'Complete workout') }}</span>
                 <strong>
                   <img :src="coinIcon" alt="" class="earn-coin" />
                   50–150
@@ -486,7 +490,7 @@ onMounted(loadPageData);
             </article>
             <article class="earn-pill">
               <div>
-                <span>Quest erledigen</span>
+                <span>{{ text('Quest erledigen', 'Complete quest') }}</span>
                 <strong>
                   <img :src="coinIcon" alt="" class="earn-coin" />
                   100–500
@@ -504,18 +508,18 @@ onMounted(loadPageData);
       <Transition name="confirm-pop">
         <div v-if="pendingPurchase" class="confirm-overlay" @click.self="pendingPurchase = null">
           <div class="confirm-dialog">
-            <h3>Sind Sie sicher?</h3>
-            <p>{{ pendingPurchaseName }} kaufen</p>
+            <h3>{{ text('Bist du sicher?', 'Are you sure?') }}</h3>
+            <p>{{ translate(pendingPurchaseName) }} {{ text('kaufen', 'buy') }}</p>
             <div class="confirm-price">
-              <span>Kosten</span>
+              <span>{{ text('Kosten', 'Cost') }}</span>
               <strong>
                 <img :src="coinIcon" alt="" />
                 {{ pendingPurchasePrice }}
               </strong>
             </div>
             <div class="confirm-actions">
-              <button class="confirm-cancel" type="button" @click="pendingPurchase = null">Abbrechen</button>
-              <button class="confirm-buy" type="button" @click="confirmPurchase">Kaufen</button>
+              <button class="confirm-cancel" type="button" @click="pendingPurchase = null">{{ text('Abbrechen', 'Cancel') }}</button>
+              <button class="confirm-buy" type="button" @click="confirmPurchase">{{ text('Kaufen', 'Buy') }}</button>
             </div>
           </div>
         </div>
@@ -526,7 +530,7 @@ onMounted(loadPageData);
           <div class="chest-open-stage" :class="{ revealed: openedReward }">
             <button v-if="openedReward" class="chest-open-close" type="button" @click="closeChestOpening">&times;</button>
             <img v-if="!openedReward" :src="chestOpening.imageUrl" alt="" class="opening-chest-image" />
-            <div v-if="!openedReward" class="opening-text">Öffnet...</div>
+            <div v-if="!openedReward" class="opening-text">{{ text('Öffnet...', 'Opening...') }}</div>
             <div v-else class="reward-card">
               <div class="reward-burst"></div>
               <div class="reward-image">
@@ -537,9 +541,9 @@ onMounted(loadPageData);
                 />
                 <span v-else>✨</span>
               </div>
-              <span class="reward-kicker">Du hast erhalten</span>
-              <h3>{{ openedReward.name ?? openedReward.Name }}</h3>
-              <p :class="`reward-rarity-${rewardRarity}`">{{ rewardRarity }}</p>
+              <span class="reward-kicker">{{ text('Du hast erhalten', 'You received') }}</span>
+              <h3>{{ translate(openedReward.name ?? openedReward.Name) }}</h3>
+              <p :class="`reward-rarity-${rewardRarity}`">{{ translate(rewardRarity) }}</p>
             </div>
           </div>
         </div>
