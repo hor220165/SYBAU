@@ -1338,15 +1338,15 @@ class _ShopTabState extends State<ShopTab> {
                         ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(999),
-                          color: Color(0xFFFACC15).withOpacity(0.12),
+                          color: Color(0xFFEC4899).withOpacity(0.12),
                           border: Border.all(
-                            color: Color(0xFFFACC15).withOpacity(0.24),
+                            color: Color(0xFFEC4899).withOpacity(0.3),
                           ),
                         ),
                         child: Text(
                           _dailyCountdown,
                           style: const TextStyle(
-                            color: Color(0xFFFACC15),
+                            color: Color(0xFFF9A8D4),
                             fontSize: 12,
                             fontFeatures: [ui.FontFeature.tabularFigures()],
                             fontWeight: FontWeight.w900,

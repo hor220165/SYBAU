@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { Package, Sparkles } from 'lucide-vue-next';
+import { Package } from 'lucide-vue-next';
 import Navbar from '@/components/Navbar.vue';
 import Header from '@/components/Header.vue';
 import ShopFeatureCard from '@/components/ShopFeatureCard.vue';
@@ -431,14 +431,14 @@ onUnmounted(() => {
 
       <template v-if="!loading">
         <section v-if="items.length" class="section-card">
-          <div class="section-heading section-heading-spread">
+          <div class="section-heading section-heading-spread daily-section-heading">
             <div>
               <div class="title-with-icon">
-                <Sparkles :size="20" />
                 <h2>{{ text('Tägliche Items', 'Daily items') }}</h2>
               </div>
-              <p>{{ text('3 Items direkt kaufbar. Reset in', '3 items available directly. Reset in') }} <span class="daily-reset-timer">{{ dailyCountdown }}</span></p>
+              <p>{{ text('3 Items direkt kaufbar.', '3 items available directly.') }}</p>
             </div>
+            <span class="daily-reset-timer">{{ dailyCountdown }}</span>
           </div>
 
           <div class="feature-grid">
@@ -641,6 +641,10 @@ onUnmounted(() => {
   color: #facc15;
 }
 
+.daily-section-heading > div {
+  min-width: 0;
+}
+
 .mini-pill {
   display: inline-flex;
   align-items: center;
@@ -653,9 +657,17 @@ onUnmounted(() => {
 }
 
 .daily-reset-timer {
-  color: #facc15;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: #f9a8d4;
+  background: rgba(236, 72, 153, 0.12);
+  border: 1px solid rgba(236, 72, 153, 0.3);
   font-weight: 900;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
   white-space: nowrap;
 }
 
