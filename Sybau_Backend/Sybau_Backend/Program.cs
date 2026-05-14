@@ -140,7 +140,24 @@ builder.Services.AddCors(options =>
             .ToArray();
         if (allowedOrigins is { Length: > 0 } && !allowedOrigins.Contains("*"))
         {
-            policy.WithOrigins(allowedOrigins)
+            bool IsAllowedOrigin(string origin)
+            {
+                if (allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                {
+                    return false;
+                }
+
+                return uri.Scheme == Uri.UriSchemeHttps
+                    && uri.Host.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase)
+                    && uri.Host.Contains("sybau", StringComparison.OrdinalIgnoreCase);
+            }
+
+            policy.SetIsOriginAllowed(IsAllowedOrigin)
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials();
@@ -226,6 +243,32 @@ app.UseExceptionHandler(errorApp =>
 
 // CORS muss VOR Auth und MapControllers stehen
 app.UseCors("Default");
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path;
+    var isDynamicApiResponse =
+        path.StartsWithSegments("/auth") ||
+        path.StartsWithSegments("/users") ||
+        path.StartsWithSegments("/friends") ||
+        path.StartsWithSegments("/quests") ||
+        path.StartsWithSegments("/achievements") ||
+        path.StartsWithSegments("/workouts") ||
+        path.StartsWithSegments("/shop") ||
+        path.StartsWithSegments("/admin");
+
+    if (isDynamicApiResponse)
+    {
+        context.Response.OnStarting(() =>
+        {
+            context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+            context.Response.Headers.Pragma = "no-cache";
+            context.Response.Headers.Expires = "0";
+            return Task.CompletedTask;
+        });
+    }
+
+    await next();
+});
 var staticFileContentTypes = new FileExtensionContentTypeProvider();
 staticFileContentTypes.Mappings[".heic"] = "image/heic";
 staticFileContentTypes.Mappings[".heif"] = "image/heif";

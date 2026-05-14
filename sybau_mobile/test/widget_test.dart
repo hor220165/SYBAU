@@ -10,8 +10,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:sybau_mobile/main.dart';
+import 'package:sybau_mobile/services/api_service.dart';
 
 void main() {
+  test('mediaUrl leaves inline profile image URLs untouched', () {
+    const imageUrl = 'data:image/png;base64,abc123';
+
+    expect(ApiService.mediaUrl(imageUrl), imageUrl);
+  });
+
+  test('mediaUrl leaves absolute remote URLs untouched', () {
+    const imageUrl = 'https://example.test/avatar.png';
+
+    expect(ApiService.mediaUrl(imageUrl), imageUrl);
+  });
+
+  test('mediaUrl resolves backend-relative upload paths', () {
+    expect(
+      ApiService.mediaUrl('/uploads/profile-images/avatar.png'),
+      'https://sybau-xll5.onrender.com/uploads/profile-images/avatar.png',
+    );
+  });
+
   testWidgets('App starts and builds', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
 

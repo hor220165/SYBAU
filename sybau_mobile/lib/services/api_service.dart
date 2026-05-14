@@ -274,9 +274,17 @@ class ApiService {
   }
 
   static String? mediaUrl(String? path) {
-    if (path == null || path.isEmpty) return null;
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    final normalizedPath = path.startsWith('/') ? path : '/$path';
+    final trimmedPath = path?.trim();
+    if (trimmedPath == null || trimmedPath.isEmpty) return null;
+    if (RegExp(
+      r'^(https?:|data:|blob:)',
+      caseSensitive: false,
+    ).hasMatch(trimmedPath)) {
+      return trimmedPath;
+    }
+    final normalizedPath = trimmedPath.startsWith('/')
+        ? trimmedPath
+        : '/$trimmedPath';
     return '$baseUrl$normalizedPath';
   }
 
@@ -401,6 +409,8 @@ class ApiService {
     final token = prefs.getString('token');
     return {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache',
       if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
     };
   }

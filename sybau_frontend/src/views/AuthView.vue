@@ -34,7 +34,13 @@
             @submit.prevent="handleLogin"
           >
             <label>E-Mail</label>
-            <input type="email" placeholder="example@gmail.com" v-model="email" />
+            <input
+              type="email"
+              placeholder="example@gmail.com"
+              v-model="email"
+              autocomplete="email"
+              required
+            />
             
             <label>Passwort</label>
             <div class="password-input-wrapper">
@@ -42,6 +48,8 @@
                 :type="showPassword ? 'text' : 'password'" 
                 placeholder="••••••••" 
                 v-model="password" 
+                autocomplete="current-password"
+                required
               />
               <button 
                 type="button" 
@@ -79,9 +87,20 @@
             @submit.prevent="handleRegister"
           >
             <label>Benutzername</label>
-            <input placeholder="example01" v-model="username" />
+            <input
+              placeholder="example01"
+              v-model="username"
+              autocomplete="username"
+              required
+            />
             <label>E-Mail</label>
-            <input placeholder="example@gmail.com" type="email" v-model="email" />
+            <input
+              placeholder="example@gmail.com"
+              type="email"
+              v-model="email"
+              autocomplete="email"
+              required
+            />
             
             <label>Passwort</label>
             <div class="password-input-wrapper">
@@ -89,6 +108,8 @@
                 :type="showPassword ? 'text' : 'password'" 
                 placeholder="••••••••" 
                 v-model="password" 
+                autocomplete="new-password"
+                required
               />
               <button 
                 type="button" 
@@ -235,7 +256,7 @@ const handleRegister = async () => {
     await register(username.value, email.value, password.value); 
     await login(email.value, password.value); 
     await userService.getProfile();
-    router.push('/home');
+    router.push('/dashboard');
   } catch (err: any) { 
     errorMessage.value = parseError(err, 'Registrierung fehlgeschlagen.');
   } finally {
@@ -380,9 +401,12 @@ body {
 /* === Vollbild-Container === */
 .auth-page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow-y: auto;
+  padding: 88px 0 32px;
 }
 
 /* === Zentrale Spalte === */
@@ -701,8 +725,22 @@ body {
     font-size: 14px;
   }
 
+  .auth-page {
+    align-items: flex-start;
+    padding: 72px 0 24px;
+  }
+
+  .auth-layout {
+    padding: 16px;
+  }
+
+  .auth-header {
+    margin-bottom: 20px;
+  }
+
   .auth-card {
-    padding: 24px;
+    border-radius: 18px;
+    padding: 20px;
   }
 
   .brand-name {
