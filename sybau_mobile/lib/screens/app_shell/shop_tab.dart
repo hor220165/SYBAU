@@ -392,21 +392,32 @@ class _ShopTabState extends State<ShopTab> {
 
   // ---------- Image / placeholder builders ----------
 
+  Widget _buildShopImageFromUrl(
+    String? imageUrl, {
+    double? width,
+    double? height,
+    BoxFit fit = BoxFit.contain,
+    required Widget Function() fallback,
+  }) {
+    return _buildMediaImageFromUrl(
+      imageUrl,
+      width: width,
+      height: height,
+      fit: fit,
+      fallback: fallback,
+    );
+  }
+
   Widget _buildItemImage(String? imageUrl, {double size = 86}) {
-    final resolved = ApiService.mediaUrl(imageUrl);
-    if (resolved != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: Image.network(
-          resolved,
-          width: size,
-          height: size,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => _buildEmojiPlaceholder(size),
-        ),
-      );
-    }
-    return _buildEmojiPlaceholder(size);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: _buildShopImageFromUrl(
+        imageUrl,
+        width: size,
+        height: size,
+        fallback: () => _buildEmojiPlaceholder(size),
+      ),
+    );
   }
 
   Widget _buildEmojiPlaceholder(double size) {
@@ -472,14 +483,11 @@ class _ShopTabState extends State<ShopTab> {
                               horizontal: 4,
                               vertical: 2,
                             ),
-                            child: Image.network(
-                              ApiService.mediaUrl(imageUrl) ?? '',
-                              width: double.infinity,
-                              height: double.infinity,
-                              fit: BoxFit.contain,
-                              filterQuality: FilterQuality.none,
-                              isAntiAlias: false,
-                              errorBuilder: (_, __, ___) => const Text(
+                            child: _buildShopImageFromUrl(
+                              imageUrl,
+                              width: 104,
+                              height: 104,
+                              fallback: () => const Text(
                                 '📦',
                                 style: TextStyle(fontSize: 42),
                               ),
@@ -718,14 +726,11 @@ class _ShopTabState extends State<ShopTab> {
                     ),
                     child: Center(
                       child: imageUrl.isNotEmpty
-                          ? Image.network(
-                              ApiService.mediaUrl(imageUrl) ?? '',
+                          ? _buildShopImageFromUrl(
+                              imageUrl,
                               width: 74,
                               height: 74,
-                              fit: BoxFit.contain,
-                              filterQuality: FilterQuality.none,
-                              isAntiAlias: false,
-                              errorBuilder: (_, __, ___) => Text(
+                              fallback: () => Text(
                                 icon,
                                 style: const TextStyle(fontSize: 40),
                               ),
@@ -781,20 +786,28 @@ class _ShopTabState extends State<ShopTab> {
                                 ],
                               )
                             else if (xpBoost > 0)
-                              _buildBoostPill(
-                                iconAsset: 'assets/XP_Pixel.png',
-                                label: '+$xpBoost% XP',
-                                textColor: Color(0xFF60A5FA),
-                                borderColor: Color(0xFF3B82F6),
-                                backgroundColor: Color(0xFF2563EB),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: _buildBoostPill(
+                                  iconAsset: 'assets/XP_Pixel.png',
+                                  label: '+$xpBoost% XP',
+                                  textColor: Color(0xFF60A5FA),
+                                  borderColor: Color(0xFF3B82F6),
+                                  backgroundColor: Color(0xFF2563EB),
+                                  compact: true,
+                                ),
                               )
                             else if (coinBoost > 0)
-                              _buildBoostPill(
-                                iconAsset: 'assets/SYBAU_Coin.png',
-                                label: '+$coinBoost% Coins',
-                                textColor: Color(0xFFFACC15),
-                                borderColor: Color(0xFFF59E0B),
-                                backgroundColor: Color(0xFFF59E0B),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: _buildBoostPill(
+                                  iconAsset: 'assets/SYBAU_Coin.png',
+                                  label: '+$coinBoost% Coins',
+                                  textColor: Color(0xFFFACC15),
+                                  borderColor: Color(0xFFF59E0B),
+                                  backgroundColor: Color(0xFFF59E0B),
+                                  compact: true,
+                                ),
                               ),
                           ],
                         ],
@@ -890,38 +903,56 @@ class _ShopTabState extends State<ShopTab> {
     required Color textColor,
     required Color borderColor,
     required Color backgroundColor,
+    bool compact = false,
   }) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      width: compact ? null : double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(11),
         color: backgroundColor.withOpacity(0.16),
         border: Border.all(color: borderColor.withOpacity(0.38)),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.max,
+        mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
         children: [
           Image.asset(
             iconAsset,
-            width: 16,
-            height: 16,
+            width: 15,
+            height: 15,
             fit: BoxFit.contain,
             filterQuality: FilterQuality.none,
             isAntiAlias: false,
           ),
-          const SizedBox(width: 7),
-          Expanded(
-            child: Text(
+          const SizedBox(width: 5),
+          if (compact)
+            Text(
               label,
-              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              softWrap: false,
               style: TextStyle(
                 color: textColor,
                 fontWeight: FontWeight.w900,
                 fontSize: 12,
               ),
+            )
+          else
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -1172,14 +1203,11 @@ class _ShopTabState extends State<ShopTab> {
                             child: Transform.scale(
                               scale: imageScale,
                               child: rewardImageUrl.isNotEmpty
-                                  ? Image.network(
-                                      ApiService.mediaUrl(rewardImageUrl) ?? '',
+                                  ? _buildShopImageFromUrl(
+                                      rewardImageUrl,
                                       width: 118,
                                       height: 118,
-                                      fit: BoxFit.contain,
-                                      filterQuality: FilterQuality.none,
-                                      isAntiAlias: false,
-                                      errorBuilder: (_, __, ___) => Text(
+                                      fallback: () => Text(
                                         _rarityIcon(rarity),
                                         style: const TextStyle(fontSize: 72),
                                       ),

@@ -172,11 +172,6 @@ class _DashboardTabState extends State<DashboardTab> {
     }
   }
 
-  String _resolvedImageUrl(String? path) {
-    final resolved = ApiService.mediaUrl(path);
-    return resolved ?? '';
-  }
-
   Widget _buildEquipmentSlot(int index) {
     final booster = _boostSlots[index];
     final isEquipped = booster != null;
@@ -211,14 +206,12 @@ class _DashboardTabState extends State<DashboardTab> {
                         child: booster.imageUrl.isNotEmpty
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
-                                child: Image.network(
-                                  _resolvedImageUrl(booster.imageUrl),
+                                child: _buildMediaImageFromUrl(
+                                  booster.imageUrl,
                                   width: 46,
                                   height: 46,
                                   fit: BoxFit.contain,
-                                  filterQuality: FilterQuality.none,
-                                  isAntiAlias: false,
-                                  errorBuilder: (_, __, ___) => const Text(
+                                  fallback: () => const Text(
                                     '⚡',
                                     style: TextStyle(
                                       fontSize: 32,

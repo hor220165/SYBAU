@@ -122,11 +122,6 @@ class _AvatarTabState extends State<AvatarTab> {
     return '⚡';
   }
 
-  String _resolvedImageUrl(String? path) {
-    final resolved = ApiService.mediaUrl(path);
-    return resolved ?? '';
-  }
-
   int _sellPriceForBooster(Booster booster) {
     return math.max(1, (booster.price * 0.5).floor());
   }
@@ -413,14 +408,12 @@ class _AvatarTabState extends State<AvatarTab> {
                                 child: booster.imageUrl.isNotEmpty
                                     ? ClipRRect(
                                         borderRadius: BorderRadius.circular(10),
-                                        child: Image.network(
-                                          _resolvedImageUrl(booster.imageUrl),
+                                        child: _buildMediaImageFromUrl(
+                                          booster.imageUrl,
                                           width: 30,
                                           height: 30,
                                           fit: BoxFit.contain,
-                                          filterQuality: FilterQuality.none,
-                                          isAntiAlias: false,
-                                          errorBuilder: (_, __, ___) => Text(
+                                          fallback: () => Text(
                                             _boosterIcon(booster),
                                             style: const TextStyle(
                                               fontSize: 20,
@@ -663,14 +656,12 @@ class _AvatarTabState extends State<AvatarTab> {
                         child: item.imageUrl.isNotEmpty
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
-                                child: Image.network(
-                                  _resolvedImageUrl(item.imageUrl),
+                                child: _buildMediaImageFromUrl(
+                                  item.imageUrl,
                                   width: iconSize,
                                   height: iconSize,
                                   fit: BoxFit.contain,
-                                  filterQuality: FilterQuality.none,
-                                  isAntiAlias: false,
-                                  errorBuilder: (_, __, ___) => Text(
+                                  fallback: () => Text(
                                     _boosterIcon(item),
                                     style: TextStyle(fontSize: iconSize),
                                   ),
@@ -1004,20 +995,17 @@ class _AvatarTabState extends State<AvatarTab> {
                                             ? ClipRRect(
                                                 borderRadius:
                                                     BorderRadius.circular(10),
-                                                child: Image.network(
-                                                  _resolvedImageUrl(
-                                                    booster.imageUrl,
-                                                  ),
+                                                child: _buildMediaImageFromUrl(
+                                                  booster.imageUrl,
                                                   width: 34,
                                                   height: 34,
                                                   fit: BoxFit.contain,
-                                                  errorBuilder: (_, _, _) =>
-                                                      Text(
-                                                        _boosterIcon(booster),
-                                                        style: const TextStyle(
-                                                          fontSize: 18,
-                                                        ),
-                                                      ),
+                                                  fallback: () => Text(
+                                                    _boosterIcon(booster),
+                                                    style: const TextStyle(
+                                                      fontSize: 18,
+                                                    ),
+                                                  ),
                                                 ),
                                               )
                                             : Text(
@@ -1171,12 +1159,12 @@ class _AvatarTabState extends State<AvatarTab> {
                   height: 72,
                   child: Center(
                     child: booster.imageUrl.isNotEmpty
-                        ? Image.network(
-                            ApiService.mediaUrl(booster.imageUrl) ?? '',
+                        ? _buildMediaImageFromUrl(
+                            booster.imageUrl,
                             width: 58,
                             height: 58,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const Icon(
+                            fallback: () => const Icon(
                               Icons.inventory_2_rounded,
                               color: Colors.white38,
                               size: 34,

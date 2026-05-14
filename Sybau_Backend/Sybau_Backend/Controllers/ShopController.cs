@@ -78,7 +78,7 @@ namespace Sybau_Backend.Controllers
             try
             {
                 dto.ItemIds = ReadChestItemIds(dto);
-                var imageUrl = await SaveShopUploadAsync(image, "chests");
+                var imageUrl = await SaveShopUploadAsync(image);
                 var chest = await _shopService.AddChestAsync(dto, imageUrl);
                 return Ok(chest);
             }
@@ -115,7 +115,7 @@ namespace Sybau_Backend.Controllers
                 var image = ReadChestImage(dto);
                 if (image is { Length: > 0 })
                 {
-                    imageUrl = await SaveShopUploadAsync(image, "chests");
+                    imageUrl = await SaveShopUploadAsync(image);
                 }
 
                 var chest = await _shopService.UpdateChestAsync(chestId, dto, imageUrl);
@@ -157,7 +157,7 @@ namespace Sybau_Backend.Controllers
 
             try
             {
-                var imageUrl = await SaveShopUploadAsync(dto.Image, "shop-items");
+                var imageUrl = await SaveShopUploadAsync(dto.Image);
                 var item = await _shopService.AddItemAsync(ToItemDto(dto, imageUrl));
                 return Ok(item);
             }
@@ -192,7 +192,7 @@ namespace Sybau_Backend.Controllers
                 string? imageUrl = null;
                 if (dto.Image is { Length: > 0 })
                 {
-                    imageUrl = await SaveShopUploadAsync(dto.Image, "shop-items");
+                    imageUrl = await SaveShopUploadAsync(dto.Image);
                 }
 
                 var item = await _shopService.UpdateItemAsync(itemId, ToItemDto(dto, imageUrl));
@@ -270,7 +270,7 @@ namespace Sybau_Backend.Controllers
             };
         }
 
-        private async Task<string> SaveShopUploadAsync(IFormFile image, string folderName)
+        private async Task<string> SaveShopUploadAsync(IFormFile image)
         {
             var extension = Path.GetExtension(image.FileName);
             var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -290,33 +290,45 @@ namespace Sybau_Backend.Controllers
             if (!hasImageContentType && !hasAllowedExtension)
                 throw new ArgumentException("Nur Bilddateien sind erlaubt.");
 
-            if (string.IsNullOrWhiteSpace(extension))
+            var contentType = (image.ContentType ?? string.Empty).ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(contentType) || !contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
             {
-                extension = (image.ContentType ?? string.Empty).ToLowerInvariant() switch
+                contentType = extension.ToLowerInvariant() switch
                 {
-                    "image/png" => ".png",
-                    "image/jpeg" => ".jpg",
-                    "image/webp" => ".webp",
-                    "image/gif" => ".gif",
-                    _ => ".png"
+                    ".jpg" or ".jpeg" => "image/jpeg",
+                    ".webp" => "image/webp",
+                    ".gif" => "image/gif",
+                    _ => "image/png"
                 };
             }
 
-            var uploadDirectory = Path.Combine(
-                _environment.ContentRootPath,
-                "wwwroot",
-                "uploads",
-                folderName);
-            Directory.CreateDirectory(uploadDirectory);
+            await using var memory = new MemoryStream();
+            await image.CopyToAsync(memory);
+            return $"data:{contentType};base64,{Convert.ToBase64String(memory.ToArray())}";
+        }
 
-            var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
-            var fullPath = Path.Combine(uploadDirectory, fileName);
-            await using (var stream = System.IO.File.Create(fullPath))
+        private void DeleteLocalUpload(string? imageUrl)
+        {
+            if (string.IsNullOrWhiteSpace(imageUrl) ||
+                !imageUrl.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase))
             {
-                await image.CopyToAsync(stream);
+                return;
             }
 
-            return $"/uploads/{folderName}/{fileName}";
+            var relativePath = imageUrl.TrimStart('/')
+                .Replace('/', Path.DirectorySeparatorChar);
+            var uploadsRoot = Path.GetFullPath(Path.Combine(_environment.ContentRootPath, "wwwroot", "uploads"));
+            var fullPath = Path.GetFullPath(Path.Combine(_environment.ContentRootPath, "wwwroot", relativePath));
+
+            if (!fullPath.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            if (System.IO.File.Exists(fullPath))
+            {
+                System.IO.File.Delete(fullPath);
+            }
         }
 
         private List<int> ReadChestItemIds(ChestFormDto dto)
@@ -354,18 +366,6 @@ namespace Sybau_Backend.Controllers
                 file.Length > 0 &&
                 (file.Name.Equals("image", StringComparison.OrdinalIgnoreCase) ||
                  file.Name.Equals("Image", StringComparison.OrdinalIgnoreCase)));
-        }
-
-        private void DeleteLocalUpload(string? imageUrl)
-        {
-            if (string.IsNullOrWhiteSpace(imageUrl)) return;
-            var relativePath = imageUrl.TrimStart('/')
-                .Replace('/', Path.DirectorySeparatorChar);
-            var fullPath = Path.Combine(_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot"), relativePath);
-            if (System.IO.File.Exists(fullPath))
-            {
-                System.IO.File.Delete(fullPath);
-            }
         }
     }
 }

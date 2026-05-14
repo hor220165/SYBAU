@@ -94,6 +94,46 @@ Widget _buildProfileImageFromUrl(
   );
 }
 
+Widget _buildMediaImageFromUrl(
+  String? imageUrl, {
+  double? width,
+  double? height,
+  BoxFit fit = BoxFit.contain,
+  FilterQuality filterQuality = FilterQuality.none,
+  bool isAntiAlias = false,
+  bool gaplessPlayback = true,
+  required Widget Function() fallback,
+}) {
+  final resolved = ApiService.mediaUrl(imageUrl);
+  final dataBytes = _decodeDataImageUrl(resolved);
+  if (dataBytes != null) {
+    return Image.memory(
+      dataBytes,
+      width: width,
+      height: height,
+      fit: fit,
+      filterQuality: filterQuality,
+      isAntiAlias: isAntiAlias,
+      gaplessPlayback: gaplessPlayback,
+    );
+  }
+
+  if (resolved == null || resolved.trim().isEmpty) {
+    return fallback();
+  }
+
+  return Image.network(
+    resolved,
+    width: width,
+    height: height,
+    fit: fit,
+    filterQuality: filterQuality,
+    isAntiAlias: isAntiAlias,
+    gaplessPlayback: gaplessPlayback,
+    errorBuilder: (_, _, _) => fallback(),
+  );
+}
+
 String _formatCompactNumber(int value) {
   if (value.abs() < 10000) return value.toString();
 
