@@ -161,7 +161,7 @@
                 </div>
                 <div class="booster-meta">
                   <h3>{{ translate(booster.name) }}</h3>
-                  <div class="booster-rarity-tag" :class="'tag-' + booster.rarity">{{ translate(booster.rarity) }}</div>
+                  <div class="booster-rarity-tag" :class="'tag-' + booster.rarity">{{ rarityLabel(booster.rarity) }}</div>
                 </div>
               </div>
 
@@ -265,7 +265,7 @@ interface BoosterItem {
   description: string;
   xpBoost: number;
   coinBoost: number;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
   quantity: number;
   price: number;
 }
@@ -290,13 +290,17 @@ const popupMessage = ref('');
 const popupType = ref<'success' | 'error'>('success');
 
 // Rarity basierend auf Gesamt-Boost ableiten
-function getRarity(xp: number, coin: number): 'common' | 'rare' | 'epic' | 'legendary' {
+function getRarity(xp: number, coin: number): 'common' | 'rare' | 'epic' | 'legendary' | 'mythic' {
   const total = xp + coin;
+  if (total >= 100) return 'mythic';
   if (total >= 60) return 'legendary';
   if (total >= 40) return 'epic';
   if (total >= 20) return 'rare';
   return 'common';
 }
+
+const rarityLabel = (rarity: BoosterItem['rarity']) =>
+  rarity === 'mythic' ? 'Mythisch' : translate(rarity);
 
 // Icon basierend auf Boost-Typ ableiten
 function getIcon(xp: number, coin: number): string {
@@ -311,7 +315,7 @@ function mapBooster(b: any): BoosterItem {
   const coin = b.coinBoostPercentage ?? b.coinBoostPercent ?? b.CoinBoostPercentage ?? b.CoinBoostPercent ?? 0;
   const rawRarity = String(b.rarity ?? b.Rarity ?? '').toLowerCase();
   const rarity =
-    rawRarity === 'rare' || rawRarity === 'epic' || rawRarity === 'legendary'
+    rawRarity === 'rare' || rawRarity === 'epic' || rawRarity === 'legendary' || rawRarity === 'mythic'
       ? rawRarity
       : getRarity(xp, coin);
   return {
@@ -988,6 +992,12 @@ onMounted(() => loadProfile());
   --rarity-border: rgba(245, 158, 11, 0.42);
 }
 
+.rarity-mythic {
+  --rarity-color: #f472b6;
+  --rarity-bg: rgba(236, 72, 153, 0.18);
+  --rarity-border: rgba(244, 114, 182, 0.44);
+}
+
 .booster-card:hover {
   transform: translateY(-2px);
   filter: brightness(1.08);
@@ -1020,6 +1030,10 @@ onMounted(() => loadProfile());
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.5), rgba(249, 115, 22, 0.3));
   box-shadow: 0 0 30px rgba(245, 158, 11, 0.3);
 }
+.rarity-mythic .booster-glow {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.5), rgba(34, 211, 238, 0.26));
+  box-shadow: 0 0 30px rgba(236, 72, 153, 0.3);
+}
 
 .booster-card-inner {
   position: relative;
@@ -1048,6 +1062,10 @@ onMounted(() => loadProfile());
   border-color: rgba(255, 255, 255, 0.075);
 }
 .rarity-legendary .booster-card-inner {
+  background: rgba(2, 6, 23, 0.42);
+  border-color: rgba(255, 255, 255, 0.075);
+}
+.rarity-mythic .booster-card-inner {
   background: rgba(2, 6, 23, 0.42);
   border-color: rgba(255, 255, 255, 0.075);
 }
@@ -1134,6 +1152,11 @@ onMounted(() => loadProfile());
   border: 1px solid var(--rarity-border);
   box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);
 }
+.rarity-icon-mythic {
+  background: var(--rarity-bg);
+  border: 1px solid var(--rarity-border);
+  box-shadow: 0 0 16px rgba(236, 72, 153, 0.2);
+}
 
 .booster-meta {
   display: flex;
@@ -1171,6 +1194,7 @@ onMounted(() => loadProfile());
 .tag-rare { color: #60a5fa; }
 .tag-epic { color: #c084fc; }
 .tag-legendary { color: #fbbf24; }
+.tag-mythic { color: #f472b6; }
 
 .booster-stat-row {
   display: flex;

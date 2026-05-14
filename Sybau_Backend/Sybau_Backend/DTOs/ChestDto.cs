@@ -13,6 +13,7 @@ public class ChestDto
     public int RareChance { get; set; }
     public int EpicChance { get; set; }
     public int LegendaryChance { get; set; }
+    public int MythicChance { get; set; }
     public List<ItemDto> Items { get; set; } = new();
 }
 
@@ -20,10 +21,11 @@ public class ChestFormDto
 {
     public string Name { get; set; } = string.Empty;
     public int Price { get; set; }
-    public int CommonChance { get; set; } = 70;
+    public int CommonChance { get; set; } = 69;
     public int RareChance { get; set; } = 20;
     public int EpicChance { get; set; } = 8;
     public int LegendaryChance { get; set; } = 2;
+    public int MythicChance { get; set; } = 1;
     public List<int> ItemIds { get; set; } = new();
     public IFormFile? Image { get; set; }
 }

@@ -22,10 +22,11 @@ public class Chest : BaseEntity<int>
     public string Name { get; set; }
     public int Price { get; set; }
     public string ImageUrl { get; set; }
-    public int CommonChance { get; set; } = 70;
+    public int CommonChance { get; set; } = 69;
     public int RareChance { get; set; } = 20;
     public int EpicChance { get; set; } = 8;
     public int LegendaryChance { get; set; } = 2;
+    public int MythicChance { get; set; } = 1;
     public ICollection<ChestItem> ChestItems { get; set; } = new List<ChestItem>();
 
     public int ChanceFor(ItemRarity rarity) => rarity switch
@@ -34,6 +35,7 @@ public class Chest : BaseEntity<int>
         ItemRarity.Rare => RareChance,
         ItemRarity.Epic => EpicChance,
         ItemRarity.Legendary => LegendaryChance,
+        ItemRarity.Mythic => MythicChance,
         _ => 0
     };
 }

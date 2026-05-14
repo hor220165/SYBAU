@@ -9,5 +9,6 @@ export interface Chest {
   rareChance: number;
   epicChance: number;
   legendaryChance: number;
+  mythicChance: number;
   items: item[];
 }

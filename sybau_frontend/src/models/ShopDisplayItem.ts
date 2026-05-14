@@ -10,7 +10,7 @@ export interface ShopDisplayItem {
   coinBoostPercentage: number;
   category: 'chest' | 'boost' | 'item';
   categoryLabel: string;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
   icon: string;
   imageUrl?: string;
   highlights: string[];

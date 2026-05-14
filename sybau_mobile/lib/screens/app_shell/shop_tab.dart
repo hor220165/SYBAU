@@ -26,11 +26,25 @@ class _ShopTabState extends State<ShopTab> {
   Map<String, dynamic>? _openedReward;
   bool _openingChest = false;
   int? _openingChestId;
+  DateTime? _dailyShopExpiresAtUtc;
+  Duration _dailyShopServerOffset = Duration.zero;
+  Timer? _dailyShopTimer;
+  String _dailyCountdown = '00:00:00';
 
   @override
   void initState() {
     super.initState();
+    _dailyShopTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _tickDailyCountdown(),
+    );
     unawaited(_load());
+  }
+
+  @override
+  void dispose() {
+    _dailyShopTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -38,9 +52,9 @@ class _ShopTabState extends State<ShopTab> {
     try {
       final profile = await ApiService.getProfile();
       final results = await Future.wait<dynamic>([
-        ApiService.getShopItems().catchError((error) {
-          debugPrint('Shop items load error: $error');
-          return <dynamic>[];
+        ApiService.getDailyShop().catchError((error) {
+          debugPrint('Daily shop load error: $error');
+          return <String, dynamic>{};
         }),
         ApiService.getChests().catchError((error) {
           debugPrint('Chest load error: $error');
@@ -52,12 +66,26 @@ class _ShopTabState extends State<ShopTab> {
         }),
       ]);
       if (!mounted) return;
+      final dailyShop = _map(results[0]);
+      final serverTime = _parseUtc(
+        dailyShop['serverTimeUtc'] ?? dailyShop['ServerTimeUtc'],
+      );
+      final expiresAt = _parseUtc(
+        dailyShop['expiresAtUtc'] ?? dailyShop['ExpiresAtUtc'],
+      );
       setState(() {
         _profile = _map(profile);
         _currentCoins = _toInt(_profile['coins']);
-        _items = results[0] as List<dynamic>;
+        _items =
+            (dailyShop['items'] ?? dailyShop['Items'] ?? <dynamic>[])
+                as List<dynamic>;
         _chests = results[1] as List<dynamic>;
         _ownedItems = results[2] as List<dynamic>;
+        _dailyShopExpiresAtUtc = expiresAt;
+        _dailyShopServerOffset = serverTime == null
+            ? Duration.zero
+            : serverTime.difference(DateTime.now().toUtc());
+        _dailyCountdown = _formatCountdown(_remainingDailyShopTime());
         _loading = false;
       });
     } catch (e) {
@@ -70,6 +98,41 @@ class _ShopTabState extends State<ShopTab> {
           en: 'Shop could not be loaded.',
         ),
       );
+    }
+  }
+
+  DateTime? _parseUtc(dynamic value) {
+    if (value == null) return null;
+    return DateTime.tryParse(value.toString())?.toUtc();
+  }
+
+  Duration _remainingDailyShopTime() {
+    final expiresAt = _dailyShopExpiresAtUtc;
+    if (expiresAt == null) return Duration.zero;
+    final serverNow = DateTime.now().toUtc().add(_dailyShopServerOffset);
+    final remaining = expiresAt.difference(serverNow);
+    return remaining.isNegative ? Duration.zero : remaining;
+  }
+
+  String _formatCountdown(Duration duration) {
+    final totalSeconds = duration.inSeconds.clamp(0, 24 * 60 * 60);
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+    return [
+      hours,
+      minutes,
+      seconds,
+    ].map((value) => value.toString().padLeft(2, '0')).join(':');
+  }
+
+  void _tickDailyCountdown() {
+    if (!mounted || _dailyShopExpiresAtUtc == null) return;
+    final remaining = _remainingDailyShopTime();
+    setState(() => _dailyCountdown = _formatCountdown(remaining));
+    if (remaining == Duration.zero && !_loading) {
+      _dailyShopExpiresAtUtc = null;
+      unawaited(_load());
     }
   }
 
@@ -213,10 +276,12 @@ class _ShopTabState extends State<ShopTab> {
     if (explicit == 'common' ||
         explicit == 'rare' ||
         explicit == 'epic' ||
-        explicit == 'legendary') {
+        explicit == 'legendary' ||
+        explicit == 'mythic') {
       return explicit;
     }
     final price = _toInt(item['price']);
+    if (price >= 1800) return 'mythic';
     if (price >= 1200) return 'legendary';
     if (price >= 700) return 'epic';
     if (price >= 350) return 'rare';
@@ -225,6 +290,8 @@ class _ShopTabState extends State<ShopTab> {
 
   Color _rarityAccent(String rarity) {
     switch (rarity) {
+      case 'mythic':
+        return Color(0xFFF472B6);
       case 'rare':
         return Color(0xFF60A5FA);
       case 'epic':
@@ -236,9 +303,16 @@ class _ShopTabState extends State<ShopTab> {
     }
   }
 
+  String _rarityLabel(String rarity) {
+    if (rarity == 'mythic') return 'Mythisch';
+    return _td(rarity);
+  }
+
   String _rarityIcon(String rarity, {String category = 'item'}) {
     if (category == 'chest') {
       switch (rarity) {
+        case 'mythic':
+          return '🌌';
         case 'legendary':
           return '👑';
         case 'epic':
@@ -251,6 +325,8 @@ class _ShopTabState extends State<ShopTab> {
     }
     if (category == 'boost') {
       switch (rarity) {
+        case 'mythic':
+          return '🌠';
         case 'legendary':
           return '✨';
         case 'epic':
@@ -307,6 +383,7 @@ class _ShopTabState extends State<ShopTab> {
             'legendaryChance': _toInt(
               m['legendaryChance'] ?? m['LegendaryChance'],
             ),
+            'mythicChance': _toInt(m['mythicChance'] ?? m['MythicChance']),
             'items': (m['items'] ?? m['Items'] ?? []) as List<dynamic>,
           };
         })
@@ -573,6 +650,11 @@ class _ShopTabState extends State<ShopTab> {
                     'Legendary',
                     _toInt(chest['legendaryChance']),
                     Color(0xFFFBBF24),
+                  ),
+                  _buildRateChip(
+                    'Mythisch',
+                    _toInt(chest['mythicChance']),
+                    Color(0xFFF472B6),
                   ),
                 ],
               ),
@@ -1098,20 +1180,12 @@ class _ShopTabState extends State<ShopTab> {
                                       filterQuality: FilterQuality.none,
                                       isAntiAlias: false,
                                       errorBuilder: (_, __, ___) => Text(
-                                        rarity == 'legendary'
-                                            ? '👑'
-                                            : rarity == 'epic'
-                                            ? '💎'
-                                            : '⭐',
+                                        _rarityIcon(rarity),
                                         style: const TextStyle(fontSize: 72),
                                       ),
                                     )
                                   : Text(
-                                      rarity == 'legendary'
-                                          ? '👑'
-                                          : rarity == 'epic'
-                                          ? '💎'
-                                          : '⭐',
+                                      _rarityIcon(rarity),
                                       style: const TextStyle(fontSize: 72),
                                     ),
                             ),
@@ -1134,7 +1208,7 @@ class _ShopTabState extends State<ShopTab> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                _td(rarity).toUpperCase(),
+                                _rarityLabel(rarity).toUpperCase(),
                                 style: TextStyle(
                                   color: accent,
                                   fontSize: 14,
@@ -1230,6 +1304,67 @@ class _ShopTabState extends State<ShopTab> {
               ),
               const SizedBox(height: 16),
 
+              // ---- Daily items section ----
+              if (_displayItems.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(2),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFEC4899), Color(0xFFF43F5E)],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _lt(de: 'Tägliche Items', en: 'Daily items'),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(999),
+                          color: Color(0xFFFACC15).withOpacity(0.12),
+                          border: Border.all(
+                            color: Color(0xFFFACC15).withOpacity(0.24),
+                          ),
+                        ),
+                        child: Text(
+                          _dailyCountdown,
+                          style: const TextStyle(
+                            color: Color(0xFFFACC15),
+                            fontSize: 12,
+                            fontFeatures: [ui.FontFeature.tabularFigures()],
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ..._displayItems.map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _buildShopItemCard(item),
+                  ),
+                ),
+                const SizedBox(height: 18),
+              ],
+
               // ---- Chests section ----
               if (_displayChests.isNotEmpty) ...[
                 Padding(
@@ -1278,42 +1413,6 @@ class _ShopTabState extends State<ShopTab> {
                   },
                 ),
                 const SizedBox(height: 18),
-              ],
-
-              // ---- Items section ----
-              if (_displayItems.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 4,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(2),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFEC4899), Color(0xFFF43F5E)],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _lt(de: 'Items', en: 'Items'),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                ..._displayItems.map(
-                  (item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _buildShopItemCard(item),
-                  ),
-                ),
               ],
 
               if (_displayChests.isEmpty && _displayItems.isEmpty)

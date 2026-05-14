@@ -8,7 +8,7 @@ export interface item{
     type: ItemType,
     xpBoostPercentage: number,
     coinBoostPercentage: number,
-    rarity?: 'common' | 'rare' | 'epic' | 'legendary',
+    rarity?: 'common' | 'rare' | 'epic' | 'legendary' | 'mythic',
     quantity?: number,
     maxQuantity?: number,
     imageUrl?: string

@@ -33,6 +33,9 @@ const priceSizeClass = computed(() => {
   if (priceText.value.length >= 5) return 'price-medium';
   return 'price-large';
 });
+const rarityLabel = computed(() =>
+  props.item.rarity === 'mythic' ? 'Mythisch' : translate(props.item.rarity),
+);
 </script>
 
 <template>
@@ -49,7 +52,7 @@ const priceSizeClass = computed(() => {
 
       <div class="feature-copy">
         <h4 class="feature-title">{{ translate(item.name) }}</h4>
-        <span class="rarity-label">{{ translate(item.rarity) }}</span>
+        <span class="rarity-label">{{ rarityLabel }}</span>
       </div>
     </div>
 
@@ -133,6 +136,14 @@ const priceSizeClass = computed(() => {
 
 .rarity-legendary {
   --rarity-color: #fbbf24;
+}
+
+.rarity-mythic::before {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.34), rgba(34, 211, 238, 0.12) 55%, transparent 72%);
+}
+
+.rarity-mythic {
+  --rarity-color: #f472b6;
 }
 
 .feature-count {

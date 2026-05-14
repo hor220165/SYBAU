@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { Package, Sparkles } from 'lucide-vue-next';
 import Navbar from '@/components/Navbar.vue';
 import Header from '@/components/Header.vue';
-import ShopItemCard from '@/components/ShopItemCard.vue';
 import ShopFeatureCard from '@/components/ShopFeatureCard.vue';
 import ShopChestCard from '@/components/ShopChestCard.vue';
 import coinIcon from '@/assets/SYBAU_Coin.png';
@@ -29,8 +28,12 @@ const openingChestId = ref<number | null>(null);
 const chestOpening = ref<Chest | null>(null);
 const openedReward = ref<any | null>(null);
 const pendingPurchase = ref<{ type: 'item'; item: ShopDisplayItem } | { type: 'chest'; chest: Chest } | null>(null);
+const dailyShopExpiresAtUtc = ref('');
+const dailyShopServerOffsetMs = ref(0);
+const dailyCountdownNowMs = ref(Date.now());
 const { refreshUser } = useAuth();
 const { text, translate } = useLanguage();
+let dailyCountdownTimer: number | undefined;
 
 const popupMessage = ref("");
 const popupType = ref<"success" | "error">("success");
@@ -87,14 +90,17 @@ const getRarity = (shopItem: item): ShopDisplayItem['rarity'] => {
   // Rarity aus Backend nutzen wenn vorhanden
   if (shopItem.rarity) {
     const rarity = String(shopItem.rarity).toLowerCase();
-    if (rarity === 'rare' || rarity === 'epic' || rarity === 'legendary') return rarity;
+    if (rarity === 'rare' || rarity === 'epic' || rarity === 'legendary' || rarity === 'mythic') return rarity;
     return 'common';
   }
 
   const searchBase = `${shopItem.name} ${shopItem.description}`.toLowerCase();
   const xpBoost = getXpBoostValue(shopItem);
 
-  if (/legend|legendary|mythic/.test(searchBase) || shopItem.price >= 1200 || xpBoost >= 100) {
+  if (/mythic|mythisch/.test(searchBase) || shopItem.price >= 1800 || xpBoost >= 140) {
+    return 'mythic';
+  }
+  if (/legend|legendary/.test(searchBase) || shopItem.price >= 1200 || xpBoost >= 100) {
     return 'legendary';
   }
   if (/epic|gold|premium/.test(searchBase) || shopItem.price >= 700 || xpBoost >= 60) {
@@ -108,6 +114,7 @@ const getRarity = (shopItem: item): ShopDisplayItem['rarity'] => {
 
 const getIcon = (category: ShopDisplayItem['category'], rarity: ShopDisplayItem['rarity']) => {
   if (category === 'chest') {
+    if (rarity === 'mythic') return '🌌';
     if (rarity === 'legendary') return '👑';
     if (rarity === 'epic') return '💎';
     if (rarity === 'rare') return '🎁';
@@ -115,6 +122,7 @@ const getIcon = (category: ShopDisplayItem['category'], rarity: ShopDisplayItem[
   }
 
   if (category === 'boost') {
+    if (rarity === 'mythic') return '🌠';
     if (rarity === 'legendary') return '✨';
     if (rarity === 'epic') return '⚡';
     if (rarity === 'rare') return '🧪';
@@ -174,22 +182,29 @@ const toDisplayItem = (shopItem: item): ShopDisplayItem => {
   };
 };
 
-const rarityScore: Record<ShopDisplayItem['rarity'], number> = {
-  common: 1,
-  rare: 2,
-  epic: 3,
-  legendary: 4,
-};
+const dailyCountdown = computed(() => {
+  const expiresAt = Date.parse(dailyShopExpiresAtUtc.value);
+  if (!Number.isFinite(expiresAt)) return '00:00:00';
 
-const featuredItems = computed(() =>
-  [...items.value]
-    .sort((a, b) => {
-      const rarityDifference = rarityScore[b.rarity] - rarityScore[a.rarity];
-      if (rarityDifference !== 0) return rarityDifference;
-      return b.price - a.price;
-    })
-    .slice(0, 3),
-);
+  const serverNow = dailyCountdownNowMs.value + dailyShopServerOffsetMs.value;
+  const remainingSeconds = Math.max(0, Math.floor((expiresAt - serverNow) / 1000));
+  const hours = Math.floor(remainingSeconds / 3600);
+  const minutes = Math.floor((remainingSeconds % 3600) / 60);
+  const seconds = remainingSeconds % 60;
+  return [hours, minutes, seconds].map(value => String(value).padStart(2, '0')).join(':');
+});
+
+const tickDailyCountdown = () => {
+  dailyCountdownNowMs.value = Date.now();
+  const expiresAt = Date.parse(dailyShopExpiresAtUtc.value);
+  if (!Number.isFinite(expiresAt) || loading.value) return;
+
+  const serverNow = dailyCountdownNowMs.value + dailyShopServerOffsetMs.value;
+  if (serverNow >= expiresAt) {
+    dailyShopExpiresAtUtc.value = '';
+    void loadShopItems();
+  }
+};
 
 const loadProfile = async () => {
   try {
@@ -207,8 +222,15 @@ const loadShopItems = async () => {
   error.value = '';
 
   try {
-    const response = await itemService.getShopItems();
-    const rawItems = Array.isArray(response.data) ? response.data : [];
+    const response = await itemService.getDailyShop();
+    const dailyShop = response.data ?? {};
+    const rawItems = dailyShop.items ?? dailyShop.Items ?? [];
+    const serverTime = dailyShop.serverTimeUtc ?? dailyShop.ServerTimeUtc;
+    const expiresAt = dailyShop.expiresAtUtc ?? dailyShop.ExpiresAtUtc;
+
+    dailyShopExpiresAtUtc.value = String(expiresAt ?? '');
+    dailyShopServerOffsetMs.value = serverTime ? Date.parse(serverTime) - Date.now() : 0;
+    dailyCountdownNowMs.value = Date.now();
     items.value = rawItems.map(toDisplayItem);
   } catch (shopError: any) {
     console.error('Fehler beim Laden der Shop-Items:', shopError);
@@ -227,6 +249,7 @@ const toDisplayChest = (raw: any): Chest => ({
   rareChance: Number(raw.rareChance ?? raw.RareChance ?? 0),
   epicChance: Number(raw.epicChance ?? raw.EpicChance ?? 0),
   legendaryChance: Number(raw.legendaryChance ?? raw.LegendaryChance ?? 0),
+  mythicChance: Number(raw.mythicChance ?? raw.MythicChance ?? 0),
   items: (raw.items ?? raw.Items ?? []).map((item: any) => ({
     ...item,
     id: item.id ?? item.Id,
@@ -342,9 +365,11 @@ const pendingPurchasePrice = computed(() => {
 
 const rewardRarity = computed(() => {
   const raw = String(openedReward.value?.rarity ?? openedReward.value?.Rarity ?? 'common').toLowerCase();
-  if (raw === 'rare' || raw === 'epic' || raw === 'legendary') return raw;
+  if (raw === 'rare' || raw === 'epic' || raw === 'legendary' || raw === 'mythic') return raw;
   return 'common';
 });
+
+const rarityLabel = (rarity: string) => (rarity === 'mythic' ? 'Mythisch' : translate(rarity));
 
 const loadOwnedItems = async () => {
   try {
@@ -367,7 +392,16 @@ const loadPageData = async () => {
   await Promise.all([loadShopItems(), loadChests()]);
 };
 
-onMounted(loadPageData);
+onMounted(() => {
+  void loadPageData();
+  dailyCountdownTimer = window.setInterval(tickDailyCountdown, 1000);
+});
+
+onUnmounted(() => {
+  if (dailyCountdownTimer !== undefined) {
+    window.clearInterval(dailyCountdownTimer);
+  }
+});
 </script>
 
 <template>
@@ -396,21 +430,21 @@ onMounted(loadPageData);
       <div v-if="error" class="state-box state-box-error">{{ error }}</div>
 
       <template v-if="!loading">
-        <section v-if="featuredItems.length" class="section-card">
+        <section v-if="items.length" class="section-card">
           <div class="section-heading section-heading-spread">
             <div>
               <div class="title-with-icon">
                 <Sparkles :size="20" />
-                <h2>{{ text('Highlights', 'Highlights') }}</h2>
+                <h2>{{ text('Tägliche Items', 'Daily items') }}</h2>
               </div>
-              <p>{{ text('Die stärksten oder seltensten Shop-Items aus deinem aktuellen Backend.', 'The strongest or rarest shop items from your current backend.') }}</p>
+              <p>{{ text('3 Items direkt kaufbar. Reset in', '3 items available directly. Reset in') }} <span class="daily-reset-timer">{{ dailyCountdown }}</span></p>
             </div>
           </div>
 
           <div class="feature-grid">
             <ShopFeatureCard
-              v-for="shopItem in featuredItems"
-              :key="`featured-${shopItem.id}`"
+              v-for="shopItem in items"
+              :key="`daily-${shopItem.id}`"
               :item="shopItem"
               :current-coins="currentCoins"
               :busy="buyingItemId === shopItem.id"
@@ -426,7 +460,7 @@ onMounted(loadPageData);
                 <Package :size="20" />
                 <h2>Chests</h2>
               </div>
-              <p>{{ text('Öffne Chests für seltene und legendäre Drops.', 'Open chests for a chance at rare and legendary loot.') }}</p>
+              <p>{{ text('Öffne Chests für seltene, legendäre und mythische Drops.', 'Open chests for a chance at rare, legendary and mythic loot.') }}</p>
             </div>
           </div>
 
@@ -438,29 +472,6 @@ onMounted(loadPageData);
               :current-coins="currentCoins"
               :busy="openingChestId === chest.id"
               @open="requestOpenChest"
-            />
-          </div>
-        </section>
-
-        <section v-if="items.length" class="section-card">
-          <div class="section-heading section-heading-spread">
-            <div>
-              <div class="title-with-icon">
-                <Package :size="20" />
-                <h2>Items</h2>
-              </div>
-              <p>{{ text('Durchsuche Booster, Cosmetics und andere Shop-Items.', 'Browse boosters, cosmetics and other shop items.') }}</p>
-            </div>
-          </div>
-
-          <div class="items-grid">
-            <ShopItemCard
-              v-for="shopItem in items"
-              :key="shopItem.id"
-              :item="shopItem"
-              :current-coins="currentCoins"
-              :busy="buyingItemId === shopItem.id"
-              @buy="requestBuyItem"
             />
           </div>
         </section>
@@ -539,7 +550,7 @@ onMounted(loadPageData);
                 <span v-else>✨</span>
               </div>
               <h3>{{ translate(openedReward.name ?? openedReward.Name) }}</h3>
-              <p :class="`reward-rarity-${rewardRarity}`">{{ translate(rewardRarity) }}</p>
+              <p :class="`reward-rarity-${rewardRarity}`">{{ rarityLabel(rewardRarity) }}</p>
             </div>
           </div>
         </div>
@@ -638,6 +649,13 @@ onMounted(loadPageData);
   color: #fde68a;
   background: rgba(250, 204, 21, 0.1);
   border: 1px solid rgba(250, 204, 21, 0.2);
+  white-space: nowrap;
+}
+
+.daily-reset-timer {
+  color: #facc15;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -911,6 +929,10 @@ onMounted(loadPageData);
 
 .reward-rarity-legendary {
   --reward-rarity-color: #fbbf24;
+}
+
+.reward-rarity-mythic {
+  --reward-rarity-color: #f472b6;
 }
 
 .chest-open-enter-active,

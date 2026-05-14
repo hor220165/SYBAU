@@ -56,6 +56,7 @@ const priceSizeClass = computed(() => {
       <div class="rate-rare"><span>Rare</span><strong>{{ chest.rareChance }}%</strong></div>
       <div class="rate-epic"><span>Epic</span><strong>{{ chest.epicChance }}%</strong></div>
       <div class="rate-legendary"><span>Legendary</span><strong>{{ chest.legendaryChance }}%</strong></div>
+      <div class="rate-mythic"><span>Mythisch</span><strong>{{ chest.mythicChance }}%</strong></div>
     </div>
 
     <button
@@ -208,6 +209,10 @@ const priceSizeClass = computed(() => {
 
 .rate-legendary {
   --rate-color: #fbbf24;
+}
+
+.rate-mythic {
+  --rate-color: #f472b6;
 }
 
 .open-btn {

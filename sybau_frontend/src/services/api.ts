@@ -121,6 +121,7 @@ export const userService = {
 
 export const itemService = {
     getShopItems: () => API.get('/shop/items'),
+    getDailyShop: () => API.get('/shop/daily'),
     getChests: () => API.get('/shop/chests'),
     getUserItems: () => API.get('/users/items'),
     buyItem: (itemId: number) => API.post(`/shop/buy-item/${itemId}`),

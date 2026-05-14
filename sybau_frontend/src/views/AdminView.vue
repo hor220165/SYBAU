@@ -280,6 +280,7 @@
                     <option value="Rare">Rare</option>
                     <option value="Epic">Epic</option>
                     <option value="Legendary">Legendary</option>
+                    <option value="Mythic">Mythisch</option>
                   </select>
                 </div>
                 <div class="form-group boost-form-group">
@@ -396,6 +397,10 @@
                     <label>Legendary</label>
                     <input v-model.number="chestForm.legendaryChance" type="number" min="0" max="100">
                   </div>
+                  <div>
+                    <label>Mythisch</label>
+                    <input v-model.number="chestForm.mythicChance" type="number" min="0" max="100">
+                  </div>
                 </div>
               </div>
 
@@ -453,6 +458,7 @@
                   <span>Rare {{ chest.rareChance ?? chest.RareChance }}%</span>
                   <span>Epic {{ chest.epicChance ?? chest.EpicChance }}%</span>
                   <span>Legendary {{ chest.legendaryChance ?? chest.LegendaryChance }}%</span>
+                  <span>Mythisch {{ chest.mythicChance ?? chest.MythicChance ?? 0 }}%</span>
                 </div>
               </div>
             </div>
@@ -721,10 +727,11 @@ const editingChest = ref<any | null>(null);
 const chestForm = ref({
   name: '',
   price: 0,
-  commonChance: 70,
+  commonChance: 69,
   rareChance: 20,
   epicChance: 8,
   legendaryChance: 2,
+  mythicChance: 1,
   itemIds: [] as number[]
 });
 const chestImageFile = ref<File | null>(null);
@@ -734,7 +741,8 @@ const chestChanceTotal = computed(() =>
   Number(chestForm.value.commonChance ?? 0) +
   Number(chestForm.value.rareChance ?? 0) +
   Number(chestForm.value.epicChance ?? 0) +
-  Number(chestForm.value.legendaryChance ?? 0)
+  Number(chestForm.value.legendaryChance ?? 0) +
+  Number(chestForm.value.mythicChance ?? 0)
 );
 
 // Exercise Management
@@ -934,6 +942,7 @@ const normalizeRarity = (value: unknown) => {
   if (raw === 'rare') return 'Rare';
   if (raw === 'epic') return 'Epic';
   if (raw === 'legendary') return 'Legendary';
+  if (raw === 'mythic') return 'Mythic';
   return 'Common';
 };
 
@@ -1014,10 +1023,11 @@ const openChestForm = () => {
   chestForm.value = {
     name: '',
     price: 0,
-    commonChance: 70,
+    commonChance: 69,
     rareChance: 20,
     epicChance: 8,
     legendaryChance: 2,
+    mythicChance: 1,
     itemIds: []
   };
   showChestForm.value = true;
@@ -1041,6 +1051,7 @@ const editChest = (chest: any) => {
     rareChance: Number(chest.rareChance ?? chest.RareChance ?? 20),
     epicChance: Number(chest.epicChance ?? chest.EpicChance ?? 8),
     legendaryChance: Number(chest.legendaryChance ?? chest.LegendaryChance ?? 2),
+    mythicChance: Number(chest.mythicChance ?? chest.MythicChance ?? 0),
     itemIds: getChestItems(chest).map((item: any) => Number(item.id ?? item.Id)).filter(Boolean)
   };
   showChestForm.value = true;
@@ -1625,7 +1636,7 @@ onMounted(async () => {
 
 .rarity-rate-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 14px;
 }
 

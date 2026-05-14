@@ -33,6 +33,13 @@ namespace Sybau_Backend.Controllers
             return Ok(item);
         }
 
+        [HttpGet("daily")]
+        public async Task<IActionResult> GetDailyShop()
+        {
+            var dailyShop = await _shopService.GetDailyShopAsync();
+            return Ok(dailyShop);
+        }
+
         [HttpGet("chests")]
         public async Task<IActionResult> GetChests()
         {

@@ -35,3 +35,17 @@ public class ShopItemFormDto
     public int MaxQuantity { get; set; }
     public IFormFile? Image { get; set; }
 }
+
+public class DailyShopItemDto : ItemDto
+{
+    public int BasePrice { get; set; }
+}
+
+public class DailyShopDto
+{
+    public List<DailyShopItemDto> Items { get; set; } = new();
+    public DateTime ResetAtUtc { get; set; }
+    public DateTime ExpiresAtUtc { get; set; }
+    public DateTime ServerTimeUtc { get; set; }
+    public int ResetHourUtc { get; set; }
+}

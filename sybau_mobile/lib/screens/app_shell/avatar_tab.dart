@@ -98,7 +98,16 @@ class _AvatarTabState extends State<AvatarTab> {
   }
 
   String _rarityOf(Booster booster) {
+    final explicit = booster.rarity.toLowerCase();
+    if (explicit == 'mythic' ||
+        explicit == 'legendary' ||
+        explicit == 'epic' ||
+        explicit == 'rare' ||
+        explicit == 'common') {
+      return explicit;
+    }
     final total = booster.xpBoostPercentage + booster.coinBoostPercentage;
+    if (total >= 100) return 'mythic';
     if (total >= 60) return 'legendary';
     if (total >= 40) return 'epic';
     if (total >= 20) return 'rare';
@@ -127,6 +136,8 @@ class _AvatarTabState extends State<AvatarTab> {
   Color _boosterAccent(Booster booster) {
     final rarity = _rarityOf(booster);
     switch (rarity) {
+      case 'mythic':
+        return Color(0xFFF472B6);
       case 'legendary':
         return Color(0xFFFBBF24);
       case 'epic':

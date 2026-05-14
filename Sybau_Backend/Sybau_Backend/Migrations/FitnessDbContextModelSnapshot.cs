@@ -378,6 +378,9 @@ namespace Sybau_Backend.Migrations
                     b.Property<int>("LegendaryChance")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("MythicChance")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");

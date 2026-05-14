@@ -789,6 +789,10 @@ class ApiService {
     return _authedGetList('/shop/items');
   }
 
+  static Future<Map<String, dynamic>> getDailyShop() async {
+    return _authedGetJson('/shop/daily');
+  }
+
   static Future<void> buyItem(int itemId) async {
     await _authedPost('/shop/buy-item/$itemId', <String, dynamic>{});
   }

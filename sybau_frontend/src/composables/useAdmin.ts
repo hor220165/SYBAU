@@ -37,6 +37,7 @@ export interface CreateChestDto {
   rareChance: number;
   epicChance: number;
   legendaryChance: number;
+  mythicChance: number;
   itemIds: number[];
   imageFile?: File | null;
 }
@@ -64,6 +65,7 @@ const chestToFormData = (data: CreateChestDto) => {
   formData.append('rareChance', String(data.rareChance));
   formData.append('epicChance', String(data.epicChance));
   formData.append('legendaryChance', String(data.legendaryChance));
+  formData.append('mythicChance', String(data.mythicChance ?? 0));
   data.itemIds.map(Number).filter(Boolean).forEach((id, index) => {
     formData.append('itemIds', String(id));
     formData.append('ItemIds', String(id));
