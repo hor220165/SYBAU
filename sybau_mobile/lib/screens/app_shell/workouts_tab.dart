@@ -2435,14 +2435,6 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                     },
                   ),
                   const SizedBox(height: 12),
-                  Text(
-                    _lt(de: 'Übungen', en: 'Exercises'),
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.85),
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
                   ..._newWorkoutExercises.asMap().entries.map((entry) {
                     final idx = entry.key;
                     final row = entry.value;
@@ -2606,15 +2598,6 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
           ),
           if (_filteredWorkouts.isNotEmpty) ...[
             const SizedBox(height: 18),
-            Text(
-              _lt(de: 'Deine Workouts', en: 'Your Workouts'),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
             ..._filteredWorkouts.map((dynamic w) {
               final m = _map(w);
               final category = _categoryLabel(m['category']);

@@ -1612,6 +1612,27 @@ class _FriendsTabState extends State<FriendsTab> {
       child: ListView(
         padding: const EdgeInsets.all(14),
         children: [
+          Text(
+            _lt(de: 'Freunde', en: 'Friends'),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _lt(
+              de: 'Finde Freunde, verwalte Anfragen und starte Challenges.',
+              en: 'Find friends, manage requests and start challenges.',
+            ),
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.72),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 14),
           _buildSectionTabs(),
           const SizedBox(height: 12),
           if (_activeSection == 'friends') ...[

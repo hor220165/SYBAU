@@ -8,7 +8,6 @@
   <!-- Main Content -->
   <main class="workouts-content">
     <section class="page-heading">
-      <span class="page-kicker">Workouts</span>
       <h1 class="page-title">{{ text('Deine Übungen', 'Your Exercises') }}</h1>
       <p class="page-subtitle">{{ text('Wähle eine Übung und trage deine Wiederholungen ein.', 'Choose an exercise and log your progress.') }}</p>
     </section>
@@ -965,18 +964,6 @@ const submitInlineExercise = async (exercise: ExerciseLocal) => {
 
 .page-heading {
   margin-bottom: 24px;
-}
-
-.page-kicker {
-  display: inline-flex;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  color: #f9a8d4;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  margin-bottom: 14px;
 }
 
 .page-title {

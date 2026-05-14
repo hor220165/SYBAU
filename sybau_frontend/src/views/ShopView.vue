@@ -386,11 +386,8 @@ onMounted(loadPageData);
     <main class="shop-page">
       <section class="shop-hero-card">
         <div class="hero-copy">
-          <span class="hero-kicker">Shop</span>
           <h1>{{ text('Item Shop', 'Item Shop') }}</h1>
-          <p>
-            {{ text('Kaufe Chests, Booster und kosmetische Upgrades direkt aus deiner echten Shop-API.', 'Buy chests, boosters and cosmetic upgrades directly from your live shop API.') }}
-          </p>
+          <p>{{ text('Booster, Chests und mehr.', 'Boosters, chests and more.') }}</p>
         </div>
 
       </section>
@@ -541,7 +538,6 @@ onMounted(loadPageData);
                 />
                 <span v-else>✨</span>
               </div>
-              <span class="reward-kicker">{{ text('Du hast erhalten', 'You received') }}</span>
               <h3>{{ translate(openedReward.name ?? openedReward.Name) }}</h3>
               <p :class="`reward-rarity-${rewardRarity}`">{{ translate(rewardRarity) }}</p>
             </div>
@@ -581,17 +577,6 @@ onMounted(loadPageData);
   display: block;
   padding: 0;
   background: transparent;
-}
-
-.hero-kicker {
-  display: inline-flex;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  color: #f9a8d4;
-  font-size: 0.82rem;
-  font-weight: 700;
-  margin-bottom: 14px;
 }
 
 .hero-copy h1 {
@@ -887,16 +872,6 @@ onMounted(loadPageData);
 .reward-image span {
   font-size: clamp(5rem, 12vw, 8rem);
   filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.45));
-}
-
-.reward-kicker {
-  position: relative;
-  z-index: 1;
-  color: #f9a8d4;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 0.86rem;
 }
 
 .reward-card h3 {

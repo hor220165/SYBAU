@@ -37,7 +37,6 @@
         </div>
 
         <div class="profile-summary-copy">
-          <p class="profile-eyebrow">{{ settingsCopy.myProfile }}</p>
           <h1 class="profile-title">{{ currentUsername || settingsCopy.userFallback }}</h1>
           <p class="profile-email">{{ currentEmail }}</p>
         </div>
@@ -832,15 +831,6 @@ onMounted(async () => {
 
 .profile-summary-copy {
   min-width: 0;
-}
-
-.profile-eyebrow {
-  margin: 0 0 4px;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .profile-email {

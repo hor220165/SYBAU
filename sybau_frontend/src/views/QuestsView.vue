@@ -11,7 +11,6 @@
 
     <template v-else>
       <section class="page-heading">
-        <span class="page-kicker">Quests</span>
         <h1 class="page-title">{{ text('Quest Log', 'Quest Log') }}</h1>
         <p class="page-subtitle">{{ text('Schließe Quests ab und sammle Belohnungen.', 'Complete quests and collect rewards.') }}</p>
       </section>
@@ -248,18 +247,6 @@ onMounted(async () => {
 
 .page-heading {
   margin-bottom: 24px;
-}
-
-.page-kicker {
-  display: inline-flex;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  color: #f9a8d4;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  margin-bottom: 14px;
 }
 
 .page-title {

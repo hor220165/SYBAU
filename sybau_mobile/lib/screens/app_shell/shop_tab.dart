@@ -1209,39 +1209,24 @@ class _ShopTabState extends State<ShopTab> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
             children: [
-              // Hero section
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Shop',
-                    style: TextStyle(
-                      color: Color(0xFFF9A8D4),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _lt(de: 'Item Shop', en: 'Item Shop'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _lt(
-                      de: 'Booster, Chests und mehr.',
-                      en: 'Boosters, chests and more.',
-                    ),
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.68),
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
+              Text(
+                _lt(de: 'Item Shop', en: 'Item Shop'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _lt(
+                  de: 'Booster, Chests und mehr.',
+                  en: 'Boosters, chests and more.',
+                ),
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.68),
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 16),
 

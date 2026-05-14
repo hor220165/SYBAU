@@ -79,7 +79,6 @@ onMounted(loadPageData);
     <main class="leaderboard-page">
       <section class="hero-card">
         <div class="hero-copy">
-          <span class="hero-kicker">Leaderboard</span>
           <h1>{{ text('Globales Ranking', 'Global Ranking') }}</h1>
           <p>
             {{ text('Kämpfe dich durch Workouts und Quests nach oben. Dein aktueller Fortschritt wird live mit dem globalen Ranking abgeglichen.', 'Climb through workouts and quests. Your current progress is synced with the global ranking live.') }}
@@ -176,18 +175,6 @@ onMounted(loadPageData);
   display: block;
   padding: 0;
   background: transparent;
-}
-
-.hero-kicker {
-  display: inline-flex;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  color: #f9a8d4;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  margin-bottom: 14px;
 }
 
 .hero-copy h1 {

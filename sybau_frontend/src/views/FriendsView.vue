@@ -479,6 +479,11 @@ onUnmounted(() => {
     <Navbar />
 
     <main class="friends-page">
+      <section class="page-heading">
+        <h1 class="page-title">Freunde</h1>
+        <p class="page-subtitle">Finde Freunde, verwalte Anfragen und starte Challenges.</p>
+      </section>
+
       <!-- Tabs -->
       <div class="tab-bar">
         <button class="tab-btn" :class="{ active: activeTab === 'friends' }" @click="activeTab = 'friends'">
@@ -906,6 +911,24 @@ onUnmounted(() => {
   padding: 24px 0 48px;
   display: grid;
   gap: 14px;
+}
+
+.page-heading {
+  margin-bottom: 10px;
+}
+
+.page-title {
+  margin: 0;
+  color: white;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1;
+  font-weight: 900;
+}
+
+.page-subtitle {
+  margin: 16px 0 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
 }
 
 .section-card,
