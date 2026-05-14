@@ -37,15 +37,15 @@
         </div>
 
         <div class="profile-summary-copy">
-          <p class="profile-eyebrow">Mein Profil</p>
-          <h1 class="profile-title">{{ currentUsername || 'Benutzer' }}</h1>
+          <p class="profile-eyebrow">{{ settingsCopy.myProfile }}</p>
+          <h1 class="profile-title">{{ currentUsername || settingsCopy.userFallback }}</h1>
           <p class="profile-email">{{ currentEmail }}</p>
         </div>
       </div>
 
       <button class="settings-btn" @click="openSettings" type="button">
         <div v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z'/><circle cx='12' cy='12' r='3'/></svg>`"></div>
-        <span>Einstellungen</span>
+        <span>{{ settingsCopy.settings }}</span>
       </button>
     </section>
 
@@ -175,31 +175,42 @@
                 class="settings-back-btn"
                 @click="settingsView = 'main'"
                 type="button"
-                aria-label="Zurück"
+                :aria-label="settingsCopy.back"
               >
                 <ArrowLeft :size="18" />
               </button>
-              <h2>{{ settingsView === 'password' ? 'Passwort ändern' : 'Einstellungen' }}</h2>
+              <h2>{{ settingsView === 'password' ? settingsCopy.passwordTitle : settingsCopy.settings }}</h2>
             </div>
             <button class="close-btn" @click="closeSettings">&#10005;</button>
           </div>
           <div class="settings-content">
             <template v-if="settingsView === 'main'">
               <section class="settings-section">
-                <h3>Profil</h3>
+                <h3>{{ settingsCopy.profile }}</h3>
                 <div class="field">
-                  <label>Benutzername</label>
+                  <label>{{ settingsCopy.username }}</label>
                   <input v-model="editingUsername" />
                 </div>
                 <div class="field">
-                  <label>E-Mail</label>
+                  <label>{{ settingsCopy.email }}</label>
                   <input :value="user?.email ?? user?.Email ?? ''" readonly />
                 </div>
-                <button class="btn-primary" @click="saveProfile" :disabled="savingProfile || usernameUnchanged">Speichern</button>
+                <button class="btn-primary" @click="saveProfile" :disabled="savingProfile || usernameUnchanged">{{ settingsCopy.save }}</button>
               </section>
 
               <section class="settings-section">
-                <h3>Fortschritt</h3>
+                <h3>{{ settingsCopy.language }}</h3>
+                <div class="settings-language-row">
+                  <div class="settings-language-copy">
+                    <strong>{{ settingsCopy.appLanguage }}</strong>
+                    <span>{{ settingsCopy.languageHint }}</span>
+                  </div>
+                  <LanguageSwitch show-labels />
+                </div>
+              </section>
+
+              <section class="settings-section">
+                <h3>{{ settingsCopy.progress }}</h3>
                 <div class="progress-stats">
                   <div class="stat-row">
                     <span class="stat-label">Level</span>
@@ -210,46 +221,46 @@
                     <span class="stat-value">{{ experience }}</span>
                   </div>
                   <div class="stat-row">
-                    <span class="stat-label">Absolvierte Challenges</span>
+                    <span class="stat-label">{{ settingsCopy.completedChallenges }}</span>
                     <span class="stat-value">{{ completedChallenges }}</span>
                   </div>
                   <div class="stat-row">
-                    <span class="stat-label">Leaderboard-Position</span>
+                    <span class="stat-label">{{ settingsCopy.leaderboardPosition }}</span>
                     <span class="stat-value">{{ leaderboardPosition }}</span>
                   </div>
                 </div>
               </section>
 
               <section class="settings-section">
-                <h3>Sicherheit</h3>
+                <h3>{{ settingsCopy.security }}</h3>
                 <button class="settings-nav-row" @click="settingsView = 'password'" type="button">
                   <span class="settings-nav-icon">
                     <LockKeyhole :size="18" />
                   </span>
                   <span class="settings-nav-copy">
-                    <strong>Passwort ändern</strong>
-                    <span>Öffnet eine eigene sichere Ansicht.</span>
+                    <strong>{{ settingsCopy.changePassword }}</strong>
+                    <span>{{ settingsCopy.passwordHint }}</span>
                   </span>
                   <ChevronRight :size="18" />
                 </button>
               </section>
 
               <section class="settings-section">
-                <h3>Account</h3>
+                <h3>{{ settingsCopy.account }}</h3>
                 <div class="account-actions">
                   <button class="account-action-btn" @click="handleLogout" type="button">
                     <div class="account-action-icon logout-icon">↪</div>
                     <div class="account-action-copy">
-                      <strong>Abmelden</strong>
-                      <span>Du wirst in diesem Browser ausgeloggt.</span>
+                      <strong>{{ settingsCopy.logout }}</strong>
+                      <span>{{ settingsCopy.logoutHint }}</span>
                     </div>
                   </button>
 
                   <button class="account-action-btn account-action-danger" @click="deleteAccount" type="button">
                     <div class="account-action-icon delete-icon">×</div>
                     <div class="account-action-copy">
-                      <strong>Account löschen</strong>
-                      <span>Diese Aktion kann nicht rückgängig gemacht werden.</span>
+                      <strong>{{ settingsCopy.deleteAccount }}</strong>
+                      <span>{{ settingsCopy.deleteHint }}</span>
                     </div>
                   </button>
                 </div>
@@ -258,16 +269,16 @@
 
             <template v-else>
               <section class="settings-section password-panel">
-                <p class="settings-subtitle">Gib dein aktuelles Passwort ein und setze danach ein neues.</p>
+                <p class="settings-subtitle">{{ settingsCopy.passwordSubtitle }}</p>
                 <div class="field">
-                  <label>Altes Passwort</label>
+                  <label>{{ settingsCopy.oldPassword }}</label>
                   <input type="password" v-model="oldPassword" />
                 </div>
                 <div class="field">
-                  <label>Neues Passwort</label>
+                  <label>{{ settingsCopy.newPassword }}</label>
                   <input type="password" v-model="newPassword" />
                 </div>
-                <button class="btn-primary" @click="changePassword" :disabled="changingPassword">Passwort speichern</button>
+                <button class="btn-primary" @click="changePassword" :disabled="changingPassword">{{ settingsCopy.savePassword }}</button>
               </section>
             </template>
           </div>
@@ -292,11 +303,13 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import Header from '@/components/Header.vue';
+import LanguageSwitch from '@/components/LanguageSwitch.vue';
 import Navbar from '@/components/Navbar.vue';
 import StatCard from '@/components/StatCard.vue';
 import AchievementCard from '@/components/AchievementCard.vue';
 import ActivityItem from '@/components/ActivityItem.vue';
 import { useAuth } from '@/composables/useAuth';
+import { useLanguage } from '@/composables/useLanguage';
 import { useLeaderboard } from '@/composables/useLeaderboard';
 import { userService, achievementService, resolveMediaUrl } from '@/services/api';
 import FooterComponent from '@/components/FooterComponent.vue';
@@ -307,6 +320,7 @@ import { ArrowLeft, ChevronRight, LockKeyhole, Pencil } from 'lucide-vue-next';
 
 const router = useRouter();
 const { user, logout, refreshProfile } = useAuth();
+const { language } = useLanguage();
 const { sortedLeaderboard, loadLeaderboard } = useLeaderboard();
 
 const longestStreak = ref(0);
@@ -317,6 +331,100 @@ const showSettings = ref(false);
 const settingsView = ref<'main' | 'password'>('main');
 const editingUsername = ref('');
 const savingProfile = ref(false);
+
+const settingsCopy = computed(() => {
+  if (language.value === 'en') {
+    return {
+      myProfile: 'My Profile',
+      userFallback: 'User',
+      settings: 'Settings',
+      back: 'Back',
+      profile: 'Profile',
+      username: 'Username',
+      email: 'Email',
+      save: 'Save',
+      language: 'Language',
+      appLanguage: 'App language',
+      languageHint: 'Choose German or English.',
+      progress: 'Progress',
+      completedChallenges: 'Completed challenges',
+      leaderboardPosition: 'Leaderboard position',
+      security: 'Security',
+      changePassword: 'Change password',
+      passwordTitle: 'Change password',
+      passwordHint: 'Opens a separate secure view.',
+      account: 'Account',
+      logout: 'Log out',
+      logoutHint: 'You will be logged out in this browser.',
+      deleteAccount: 'Delete account',
+      deleteHint: 'This action cannot be undone.',
+      passwordSubtitle: 'Enter your current password and then set a new one.',
+      oldPassword: 'Old password',
+      newPassword: 'New password',
+      savePassword: 'Save password',
+      noEmail: 'No email',
+      profileSaved: 'Profile saved!',
+      sessionExpired: 'Session expired. Please sign in again.',
+      saveError: 'Saving failed: ',
+      profileImageUpdated: 'Profile image updated!',
+      profileImageFailed: 'Profile image could not be saved.',
+      removeProfileImageConfirm: 'Remove profile image? The default image will be shown afterwards.',
+      profileImageRemoved: 'Profile image removed!',
+      profileImageRemoveFailed: 'Profile image could not be removed.',
+      fillBothFields: 'Please fill in both fields.',
+      samePassword: 'The new password must be different from the old one.',
+      passwordChanged: 'Password changed successfully!',
+      passwordChangeFailed: 'Password change failed.',
+      deleteConfirm: 'Really delete account? This action is permanent.',
+      deleteError: 'Delete failed: ',
+    };
+  }
+
+  return {
+    myProfile: 'Mein Profil',
+    userFallback: 'Benutzer',
+    settings: 'Einstellungen',
+    back: 'Zurück',
+    profile: 'Profil',
+    username: 'Benutzername',
+    email: 'E-Mail',
+    save: 'Speichern',
+    language: 'Sprache',
+    appLanguage: 'App-Sprache',
+    languageHint: 'Wähle Deutsch oder Englisch.',
+    progress: 'Fortschritt',
+    completedChallenges: 'Absolvierte Challenges',
+    leaderboardPosition: 'Leaderboard-Position',
+    security: 'Sicherheit',
+    changePassword: 'Passwort ändern',
+    passwordTitle: 'Passwort ändern',
+    passwordHint: 'Öffnet eine eigene sichere Ansicht.',
+    account: 'Account',
+    logout: 'Abmelden',
+    logoutHint: 'Du wirst in diesem Browser ausgeloggt.',
+    deleteAccount: 'Account löschen',
+    deleteHint: 'Diese Aktion kann nicht rückgängig gemacht werden.',
+    passwordSubtitle: 'Gib dein aktuelles Passwort ein und setze danach ein neues.',
+    oldPassword: 'Altes Passwort',
+    newPassword: 'Neues Passwort',
+    savePassword: 'Passwort speichern',
+    noEmail: 'Keine E-Mail',
+    profileSaved: 'Profil gespeichert!',
+    sessionExpired: 'Session abgelaufen. Bitte melden Sie sich erneut an.',
+    saveError: 'Fehler beim Speichern: ',
+    profileImageUpdated: 'Profilbild aktualisiert!',
+    profileImageFailed: 'Profilbild konnte nicht gespeichert werden.',
+    removeProfileImageConfirm: 'Profilbild entfernen? Danach wird wieder das Standardbild angezeigt.',
+    profileImageRemoved: 'Profilbild entfernt!',
+    profileImageRemoveFailed: 'Profilbild konnte nicht entfernt werden.',
+    fillBothFields: 'Bitte beide Felder ausfüllen.',
+    samePassword: 'Das neue Passwort darf nicht mit dem alten übereinstimmen.',
+    passwordChanged: 'Passwort erfolgreich geändert!',
+    passwordChangeFailed: 'Fehler beim Ändern des Passworts.',
+    deleteConfirm: 'Account wirklich löschen? Diese Aktion ist endgültig.',
+    deleteError: 'Fehler beim Löschen: ',
+  };
+});
 
 const currentUsername = computed(() => user.value?.userName ?? user.value?.UserName ?? user.value?.username ?? '');
 
@@ -342,7 +450,7 @@ const usernameUnchanged = computed(() => {
   return editingUsername.value.trim() === currentUsername.value;
 });
 
-const currentEmail = computed(() => user.value?.email ?? user.value?.Email ?? 'Keine E-Mail');
+const currentEmail = computed(() => user.value?.email ?? user.value?.Email ?? settingsCopy.value.noEmail);
 const profileImageUrl = computed(() => resolveMediaUrl(user.value?.profileImageUrl ?? user.value?.ProfileImageUrl ?? ''));
 
 async function saveProfile() {
@@ -351,16 +459,16 @@ async function saveProfile() {
     await userService.updateProfile({ UserName: editingUsername.value });
     await refreshProfile();
     popupType.value = 'success';
-    popupMessage.value = 'Profil gespeichert!';
+    popupMessage.value = settingsCopy.value.profileSaved;
   } catch (err: any) {
     if (err.response?.status === 401) {
       popupType.value = 'error';
-      popupMessage.value = 'Session abgelaufen. Bitte melden Sie sich erneut an.';
+      popupMessage.value = settingsCopy.value.sessionExpired;
       logout();
       router.push('/auth');
     } else {
       popupType.value = 'error';
-      popupMessage.value = 'Fehler beim Speichern: ' + (err.response?.data?.message || err.message);
+      popupMessage.value = settingsCopy.value.saveError + (err.response?.data?.message || err.message);
     }
   } finally {
     savingProfile.value = false;
@@ -386,17 +494,17 @@ async function onProfileImageChange(event: Event) {
     await refreshProfile();
     await loadLeaderboard();
     popupType.value = 'success';
-    popupMessage.value = 'Profilbild aktualisiert!';
+    popupMessage.value = settingsCopy.value.profileImageUpdated;
   } catch (err: any) {
     popupType.value = 'error';
-    popupMessage.value = err.response?.data?.message || err.message || 'Profilbild konnte nicht gespeichert werden.';
+    popupMessage.value = err.response?.data?.message || err.message || settingsCopy.value.profileImageFailed;
   } finally {
     if (input) input.value = '';
   }
 }
 
 async function removeProfileImage() {
-  if (!confirm('Profilbild entfernen? Danach wird wieder das Standardbild angezeigt.')) return;
+  if (!confirm(settingsCopy.value.removeProfileImageConfirm)) return;
 
   try {
     showImageActions.value = false;
@@ -404,10 +512,10 @@ async function removeProfileImage() {
     await refreshProfile();
     await loadLeaderboard();
     popupType.value = 'success';
-    popupMessage.value = 'Profilbild entfernt!';
+    popupMessage.value = settingsCopy.value.profileImageRemoved;
   } catch (err: any) {
     popupType.value = 'error';
-    popupMessage.value = err.response?.data?.message || err.message || 'Profilbild konnte nicht entfernt werden.';
+    popupMessage.value = err.response?.data?.message || err.message || settingsCopy.value.profileImageRemoveFailed;
   }
 }
 
@@ -431,12 +539,12 @@ const changingPassword = ref(false);
 async function changePassword() {
   if (!oldPassword.value || !newPassword.value) {
     popupType.value = 'error';
-    popupMessage.value = 'Bitte beide Felder ausfüllen.';
+    popupMessage.value = settingsCopy.value.fillBothFields;
     return;
   }
   if (oldPassword.value === newPassword.value) {
     popupType.value = 'error';
-    popupMessage.value = 'Das neue Passwort darf nicht mit dem alten übereinstimmen.';
+    popupMessage.value = settingsCopy.value.samePassword;
     return;
   }
   changingPassword.value = true;
@@ -446,16 +554,16 @@ async function changePassword() {
     newPassword.value = '';
     settingsView.value = 'main';
     popupType.value = 'success';
-    popupMessage.value = 'Passwort erfolgreich geändert!';
+    popupMessage.value = settingsCopy.value.passwordChanged;
   } catch (err: any) {
     if (err.response?.status === 401) {
       popupType.value = 'error';
-      popupMessage.value = 'Session abgelaufen. Bitte melden Sie sich erneut an.';
+      popupMessage.value = settingsCopy.value.sessionExpired;
       logout();
       router.push('/auth');
     } else {
       popupType.value = 'error';
-      popupMessage.value = err.response?.data || 'Fehler beim Ändern des Passworts.';
+      popupMessage.value = err.response?.data || settingsCopy.value.passwordChangeFailed;
     }
   } finally {
     changingPassword.value = false;
@@ -463,7 +571,7 @@ async function changePassword() {
 }
 
 async function deleteAccount() {
-  if (!confirm('Account wirklich löschen? Diese Aktion ist endgültig.')) return;
+  if (!confirm(settingsCopy.value.deleteConfirm)) return;
   try {
     await userService.deleteAccount();
     localStorage.removeItem('token');
@@ -472,7 +580,7 @@ async function deleteAccount() {
     router.push('/auth');
   } catch (err: any) {
     popupType.value = 'error';
-    popupMessage.value = 'Fehler beim Löschen: ' + (err.response?.data?.message || err.message);
+    popupMessage.value = settingsCopy.value.deleteError + (err.response?.data?.message || err.message);
   }
 }
 
@@ -1241,6 +1349,28 @@ onMounted(async () => {
 }
 
 .progress-stats { display: flex; flex-direction: column; gap: 12px; }
+
+.settings-language-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.settings-language-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-language-copy strong {
+  color: white;
+  font-size: 15px;
+}
+
+.settings-language-copy span {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 12px;
+}
 
 .stat-row {
   display: flex;

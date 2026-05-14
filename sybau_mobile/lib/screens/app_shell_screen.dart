@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/api_service.dart';
 import '../services/health_sync_service.dart';
+import '../services/language_service.dart';
 import '../services/notification_service.dart';
 import 'login_screen.dart';
 
@@ -10461,6 +10462,26 @@ class _ProfileTabState extends State<ProfileTab> {
       const NotificationReminderTime(hour: 20, minute: 0);
   DateTime? _usernameChangedAt;
 
+  String _tr({required String de, required String en}) {
+    return LanguageService.text(de: de, en: en);
+  }
+
+  Future<void> _setAppLanguage(
+    SybauLanguage language,
+    StateSetter modalSetState,
+  ) async {
+    if (LanguageService.current.value == language) return;
+    await LanguageService.setLanguage(language);
+    if (!mounted) return;
+    setState(() {});
+    modalSetState(() {});
+    widget.showSnack(
+      language == SybauLanguage.en
+          ? 'Language changed to English.'
+          : 'Sprache auf Deutsch geändert.',
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -10526,7 +10547,12 @@ class _ProfileTabState extends State<ProfileTab> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
-      widget.showSnack('Profil konnte nicht geladen werden.');
+      widget.showSnack(
+        _tr(
+          de: 'Profil konnte nicht geladen werden.',
+          en: 'Profile could not be loaded.',
+        ),
+      );
     }
   }
 
@@ -10544,18 +10570,37 @@ class _ProfileTabState extends State<ProfileTab> {
       setState(() => _notificationsEnabled = applied);
       modalSetState(() => _notificationsEnabled = applied);
       if (enabled && !applied) {
-        widget.showSnack('Bitte erlaube Notifications in iOS.');
+        widget.showSnack(
+          _tr(
+            de: 'Bitte erlaube Notifications in iOS.',
+            en: 'Please allow notifications in iOS.',
+          ),
+        );
       } else {
         widget.showSnack(
           applied && scheduled
-              ? 'Workout-Erinnerung geplant.'
+              ? _tr(
+                  de: 'Workout-Erinnerung geplant.',
+                  en: 'Workout reminder scheduled.',
+                )
               : applied
-              ? 'Notifications erlaubt, Reminder aber nicht gefunden.'
-              : 'Workout-Erinnerung deaktiviert.',
+              ? _tr(
+                  de: 'Notifications erlaubt, Reminder aber nicht gefunden.',
+                  en: 'Notifications allowed, but reminder was not found.',
+                )
+              : _tr(
+                  de: 'Workout-Erinnerung deaktiviert.',
+                  en: 'Workout reminder disabled.',
+                ),
         );
       }
     } catch (_) {
-      widget.showSnack('Benachrichtigungen konnten nicht aktiviert werden.');
+      widget.showSnack(
+        _tr(
+          de: 'Benachrichtigungen konnten nicht aktiviert werden.',
+          en: 'Notifications could not be updated.',
+        ),
+      );
     } finally {
       if (mounted) {
         modalSetState(() => _settingsBusy = false);
@@ -10597,7 +10642,7 @@ class _ProfileTabState extends State<ProfileTab> {
                     const Spacer(),
                     CupertinoButton(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: const Text('Fertig'),
+                      child: Text(_tr(de: 'Fertig', en: 'Done')),
                       onPressed: () =>
                           Navigator.of(pickerContext).pop(selected),
                     ),
@@ -10642,11 +10687,22 @@ class _ProfileTabState extends State<ProfileTab> {
       modalSetState(() => _notificationReminderTime = nextTime);
       widget.showSnack(
         scheduled
-            ? 'Erinnerung auf ${_formatReminderTime(nextTime)} geplant.'
-            : 'Erinnerungszeit auf ${_formatReminderTime(nextTime)} gesetzt.',
+            ? _tr(
+                de: 'Erinnerung auf ${_formatReminderTime(nextTime)} geplant.',
+                en: 'Reminder scheduled for ${_formatReminderTime(nextTime)}.',
+              )
+            : _tr(
+                de: 'Erinnerungszeit auf ${_formatReminderTime(nextTime)} gesetzt.',
+                en: 'Reminder time set to ${_formatReminderTime(nextTime)}.',
+              ),
       );
     } catch (_) {
-      widget.showSnack('Erinnerungszeit konnte nicht gespeichert werden.');
+      widget.showSnack(
+        _tr(
+          de: 'Erinnerungszeit konnte nicht gespeichert werden.',
+          en: 'Reminder time could not be saved.',
+        ),
+      );
     } finally {
       if (mounted) {
         modalSetState(() => _settingsBusy = false);
@@ -10665,7 +10721,9 @@ class _ProfileTabState extends State<ProfileTab> {
         if (!mounted) return;
         setState(() => _healthSyncEnabled = false);
         modalSetState(() => _healthSyncEnabled = false);
-        widget.showSnack('Health Sync deaktiviert.');
+        widget.showSnack(
+          _tr(de: 'Health Sync deaktiviert.', en: 'Health sync disabled.'),
+        );
         return;
       }
 
@@ -10675,7 +10733,10 @@ class _ProfileTabState extends State<ProfileTab> {
         setState(() => _healthSyncEnabled = false);
         modalSetState(() => _healthSyncEnabled = false);
         widget.showSnack(
-          'Health Zugriff wurde nicht freigegeben. Bitte Berechtigung erlauben, um automatisch zu synchronisieren.',
+          _tr(
+            de: 'Health Zugriff wurde nicht freigegeben. Bitte Berechtigung erlauben, um automatisch zu synchronisieren.',
+            en: 'Health access was not granted. Please allow permission to sync automatically.',
+          ),
         );
         return;
       }
@@ -10695,11 +10756,22 @@ class _ProfileTabState extends State<ProfileTab> {
           : '';
       widget.showSnack(
         result.hasNewData
-            ? 'Health Sync aktiviert und synchronisiert.$rewardText'
-            : 'Health Sync aktiviert. Keine neuen Daten gefunden.',
+            ? _tr(
+                de: 'Health Sync aktiviert und synchronisiert.$rewardText',
+                en: 'Health sync enabled and synced.$rewardText',
+              )
+            : _tr(
+                de: 'Health Sync aktiviert. Keine neuen Daten gefunden.',
+                en: 'Health sync enabled. No new data found.',
+              ),
       );
     } catch (_) {
-      widget.showSnack('Health Sync konnte nicht aktiviert werden.');
+      widget.showSnack(
+        _tr(
+          de: 'Health Sync konnte nicht aktiviert werden.',
+          en: 'Health sync could not be enabled.',
+        ),
+      );
     } finally {
       if (mounted) {
         modalSetState(() => _settingsBusy = false);
@@ -10714,7 +10786,12 @@ class _ProfileTabState extends State<ProfileTab> {
     final usernameChanged =
         userName.toLowerCase() != currentUserName.toLowerCase();
     if (usernameChanged && _isUsernameChangeLocked) {
-      widget.showSnack('Benutzername kann nur alle 14 Tage geändert werden.');
+      widget.showSnack(
+        _tr(
+          de: 'Benutzername kann nur alle 14 Tage geändert werden.',
+          en: 'Username can only be changed every 14 days.',
+        ),
+      );
       _usernameController.text = currentUserName;
       return false;
     }
@@ -10727,13 +10804,15 @@ class _ProfileTabState extends State<ProfileTab> {
         await _storeUsernameChangedAt(now);
         _usernameChangedAt = now;
       }
-      widget.showSnack('Profil gespeichert.');
+      widget.showSnack(_tr(de: 'Profil gespeichert.', en: 'Profile saved.'));
       await widget.onRefreshHeader();
       if (!mounted) return true;
       setState(() {});
       return true;
     } catch (_) {
-      widget.showSnack('Speichern fehlgeschlagen.');
+      widget.showSnack(
+        _tr(de: 'Speichern fehlgeschlagen.', en: 'Save failed.'),
+      );
       return false;
     }
   }
@@ -10754,10 +10833,16 @@ class _ProfileTabState extends State<ProfileTab> {
   String get _usernameChangeHint {
     final changedAt = _usernameChangedAt;
     if (changedAt == null || !_isUsernameChangeLocked) {
-      return 'Kann alle 14 Tage geändert werden.';
+      return _tr(
+        de: 'Kann alle 14 Tage geändert werden.',
+        en: 'Can be changed every 14 days.',
+      );
     }
     final nextDate = changedAt.add(_usernameChangeCooldown);
-    return 'Wieder möglich ab ${_formatShortDate(nextDate)}.';
+    return _tr(
+      de: 'Wieder möglich ab ${_formatShortDate(nextDate)}.',
+      en: 'Available again from ${_formatShortDate(nextDate)}.',
+    );
   }
 
   String get _usernameChangePreferenceKey {
@@ -10795,11 +10880,21 @@ class _ProfileTabState extends State<ProfileTab> {
     final oldPassword = _oldPasswordController.text;
     final newPassword = _newPasswordController.text;
     if (oldPassword.isEmpty || newPassword.isEmpty) {
-      widget.showSnack('Bitte beide Passwortfelder ausfüllen.');
+      widget.showSnack(
+        _tr(
+          de: 'Bitte beide Passwortfelder ausfüllen.',
+          en: 'Please fill in both password fields.',
+        ),
+      );
       return false;
     }
     if (oldPassword == newPassword) {
-      widget.showSnack('Das neue Passwort muss anders sein.');
+      widget.showSnack(
+        _tr(
+          de: 'Das neue Passwort muss anders sein.',
+          en: 'The new password must be different.',
+        ),
+      );
       return false;
     }
     try {
@@ -10809,10 +10904,15 @@ class _ProfileTabState extends State<ProfileTab> {
       );
       _oldPasswordController.clear();
       _newPasswordController.clear();
-      widget.showSnack('Passwort geändert.');
+      widget.showSnack(_tr(de: 'Passwort geändert.', en: 'Password changed.'));
       return true;
     } catch (_) {
-      widget.showSnack('Passwortwechsel fehlgeschlagen.');
+      widget.showSnack(
+        _tr(
+          de: 'Passwortwechsel fehlgeschlagen.',
+          en: 'Password change failed.',
+        ),
+      );
       return false;
     }
   }
@@ -10827,7 +10927,12 @@ class _ProfileTabState extends State<ProfileTab> {
         (_) => false,
       );
     } catch (_) {
-      widget.showSnack('Account konnte nicht geloescht werden.');
+      widget.showSnack(
+        _tr(
+          de: 'Account konnte nicht geloescht werden.',
+          en: 'Account could not be deleted.',
+        ),
+      );
     }
   }
 
@@ -11206,19 +11311,23 @@ class _ProfileTabState extends State<ProfileTab> {
                 key: const ValueKey<String>('settings-password'),
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  sectionTitle('Sicherheit'),
+                  sectionTitle(_tr(de: 'Sicherheit', en: 'Security')),
                   TextField(
                     controller: _oldPasswordController,
                     style: const TextStyle(color: Colors.white),
                     obscureText: true,
-                    decoration: _settingsInputDecoration('Altes Passwort'),
+                    decoration: _settingsInputDecoration(
+                      _tr(de: 'Altes Passwort', en: 'Old password'),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   TextField(
                     controller: _newPasswordController,
                     style: const TextStyle(color: Colors.white),
                     obscureText: true,
-                    decoration: _settingsInputDecoration('Neues Passwort'),
+                    decoration: _settingsInputDecoration(
+                      _tr(de: 'Neues Passwort', en: 'New password'),
+                    ),
                   ),
                   const SizedBox(height: 14),
                   SizedBox(
@@ -11230,7 +11339,7 @@ class _ProfileTabState extends State<ProfileTab> {
                           modalSetState(() => settingsPage = 'main');
                         }
                       },
-                      label: 'Passwort speichern',
+                      label: _tr(de: 'Passwort speichern', en: 'Save password'),
                     ),
                   ),
                 ],
@@ -11242,7 +11351,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 key: const ValueKey<String>('settings-main'),
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  sectionTitle('Profil'),
+                  sectionTitle(_tr(de: 'Profil', en: 'Profile')),
                   TextField(
                     controller: _usernameController,
                     readOnly: !canEditUsername,
@@ -11250,7 +11359,7 @@ class _ProfileTabState extends State<ProfileTab> {
                       color: canEditUsername ? Colors.white : Colors.white54,
                     ),
                     decoration: _settingsInputDecoration(
-                      'Benutzername',
+                      _tr(de: 'Benutzername', en: 'Username'),
                     ).copyWith(helperText: _usernameChangeHint),
                   ),
                   const SizedBox(height: 10),
@@ -11258,7 +11367,9 @@ class _ProfileTabState extends State<ProfileTab> {
                     enabled: false,
                     initialValue: email,
                     style: const TextStyle(color: Colors.white38),
-                    decoration: _disabledSettingsInputDecoration('E-Mail'),
+                    decoration: _disabledSettingsInputDecoration(
+                      _tr(de: 'E-Mail', en: 'Email'),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -11270,10 +11381,12 @@ class _ProfileTabState extends State<ProfileTab> {
                           Navigator.of(ctx).pop();
                         }
                       },
-                      label: 'Speichern',
+                      label: _tr(de: 'Speichern', en: 'Save'),
                     ),
                   ),
-                  sectionTitle('Fortschritt'),
+                  sectionTitle(_tr(de: 'Sprache', en: 'Language')),
+                  _buildLanguageSelector(modalSetState),
+                  sectionTitle(_tr(de: 'Fortschritt', en: 'Progress')),
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
@@ -11299,23 +11412,30 @@ class _ProfileTabState extends State<ProfileTab> {
                           ),
                         ),
                         _buildProgressRow(
-                          'Challenges',
+                          _tr(de: 'Challenges', en: 'Challenges'),
                           '${_toInt(_profileStats['completedChallenges'])}',
                         ),
                         _buildProgressRow(
                           'Streak',
-                          '${_toInt(_profileStats['currentStreak'])} Tage',
+                          _tr(
+                            de: '${_toInt(_profileStats['currentStreak'])} Tage',
+                            en: '${_toInt(_profileStats['currentStreak'])} days',
+                          ),
                           isLast: true,
                         ),
                       ],
                     ),
                   ),
-                  sectionTitle('Benachrichtigungen'),
+                  sectionTitle(
+                    _tr(de: 'Benachrichtigungen', en: 'Notifications'),
+                  ),
                   _buildSettingsTile(
                     icon: Icons.notifications_active_rounded,
                     iconColor: Color(0xFFFDA4AF),
-                    title: 'iPhone-Reminder',
-                    subtitle: _notificationsEnabled ? 'Aktiv' : null,
+                    title: _tr(de: 'iPhone-Reminder', en: 'iPhone reminder'),
+                    subtitle: _notificationsEnabled
+                        ? _tr(de: 'Aktiv', en: 'Active')
+                        : null,
                     trailing: Switch.adaptive(
                       value: _notificationsEnabled,
                       activeThumbColor: Color(0xFFEC4899),
@@ -11327,7 +11447,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   ),
                   const SizedBox(height: 10),
                   _buildReminderTimeTile(modalSetState),
-                  sectionTitle('Health Sync'),
+                  sectionTitle(_tr(de: 'Health Sync', en: 'Health sync')),
                   Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
@@ -11360,14 +11480,16 @@ class _ProfileTabState extends State<ProfileTab> {
                       ),
                     ),
                   ),
-                  sectionTitle('Sicherheit'),
+                  sectionTitle(_tr(de: 'Sicherheit', en: 'Security')),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () =>
                           modalSetState(() => settingsPage = 'password'),
                       icon: const Icon(Icons.lock_reset_rounded, size: 18),
-                      label: const Text('Passwort ändern'),
+                      label: Text(
+                        _tr(de: 'Passwort ändern', en: 'Change password'),
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
                         side: BorderSide(
@@ -11381,7 +11503,7 @@ class _ProfileTabState extends State<ProfileTab> {
                       ),
                     ),
                   ),
-                  sectionTitle('Account'),
+                  sectionTitle(_tr(de: 'Account', en: 'Account')),
                   Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
@@ -11399,9 +11521,9 @@ class _ProfileTabState extends State<ProfileTab> {
                             Icons.logout_rounded,
                             const Color(0xFFFDA4AF),
                           ),
-                          title: const Text(
-                            'Abmelden',
-                            style: TextStyle(
+                          title: Text(
+                            _tr(de: 'Abmelden', en: 'Log out'),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
                             ),
@@ -11434,9 +11556,9 @@ class _ProfileTabState extends State<ProfileTab> {
                             Icons.delete_outline_rounded,
                             const Color(0xFFFCA5A5),
                           ),
-                          title: const Text(
-                            'Account löschen',
-                            style: TextStyle(
+                          title: Text(
+                            _tr(de: 'Account löschen', en: 'Delete account'),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
                             ),
@@ -11449,20 +11571,32 @@ class _ProfileTabState extends State<ProfileTab> {
                             final confirm = await showDialog<bool>(
                               context: context,
                               builder: (dctx) => AlertDialog(
-                                title: const Text('Account löschen'),
-                                content: const Text(
-                                  'Möchtest du deinen Account wirklich löschen? Diese Aktion ist endgültig.',
+                                title: Text(
+                                  _tr(
+                                    de: 'Account löschen',
+                                    en: 'Delete account',
+                                  ),
+                                ),
+                                content: Text(
+                                  _tr(
+                                    de: 'Möchtest du deinen Account wirklich löschen? Diese Aktion ist endgültig.',
+                                    en: 'Do you really want to delete your account? This action is permanent.',
+                                  ),
                                 ),
                                 actions: [
                                   TextButton(
                                     onPressed: () =>
                                         Navigator.of(dctx).pop(false),
-                                    child: const Text('Abbrechen'),
+                                    child: Text(
+                                      _tr(de: 'Abbrechen', en: 'Cancel'),
+                                    ),
                                   ),
                                   TextButton(
                                     onPressed: () =>
                                         Navigator.of(dctx).pop(true),
-                                    child: const Text('Löschen'),
+                                    child: Text(
+                                      _tr(de: 'Löschen', en: 'Delete'),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -11528,8 +11662,14 @@ class _ProfileTabState extends State<ProfileTab> {
                                     Expanded(
                                       child: Text(
                                         settingsPage == 'password'
-                                            ? 'Passwort ändern'
-                                            : 'Einstellungen',
+                                            ? _tr(
+                                                de: 'Passwort ändern',
+                                                en: 'Change password',
+                                              )
+                                            : _tr(
+                                                de: 'Einstellungen',
+                                                en: 'Settings',
+                                              ),
                                         style: const TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.w800,
@@ -11581,6 +11721,74 @@ class _ProfileTabState extends State<ProfileTab> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildLanguageSelector(StateSetter modalSetState) {
+    Widget languageButton({
+      required SybauLanguage language,
+      required String flag,
+      required String label,
+    }) {
+      final selected = LanguageService.current.value == language;
+      return Expanded(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _setAppLanguage(language, modalSetState),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              color: selected
+                  ? const Color(0xFFEC4899).withValues(alpha: 0.2)
+                  : const Color(0xFF050914),
+              border: Border.all(
+                color: selected
+                    ? const Color(0xFFF472B6).withValues(alpha: 0.42)
+                    : Colors.white.withValues(alpha: 0.07),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(flag, style: const TextStyle(fontSize: 22)),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withValues(
+                        alpha: selected ? 0.96 : 0.72,
+                      ),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        languageButton(
+          language: SybauLanguage.de,
+          flag: '🇩🇪',
+          label: 'Deutsch',
+        ),
+        const SizedBox(width: 10),
+        languageButton(
+          language: SybauLanguage.en,
+          flag: '🇬🇧',
+          label: 'English',
+        ),
+      ],
     );
   }
 
@@ -11647,16 +11855,18 @@ class _ProfileTabState extends State<ProfileTab> {
           Icons.schedule_rounded,
           const Color(0xFF60A5FA),
         ),
-        title: const Text(
-          'Erinnerungszeit',
-          style: TextStyle(
+        title: Text(
+          _tr(de: 'Erinnerungszeit', en: 'Reminder time'),
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w700,
             fontSize: 14,
           ),
         ),
         subtitle: Text(
-          _notificationsEnabled ? 'Täglich' : 'Inaktiv',
+          _notificationsEnabled
+              ? _tr(de: 'Täglich', en: 'Daily')
+              : _tr(de: 'Inaktiv', en: 'Inactive'),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(color: Colors.white.withOpacity(0.54), fontSize: 12),
@@ -11816,10 +12026,13 @@ class _ProfileTabState extends State<ProfileTab> {
 
     final userName = _usernameController.text.isNotEmpty
         ? _usernameController.text
-        : 'Benutzer';
+        : _tr(de: 'Benutzer', en: 'User');
     final email = _string(
       _profile['email'],
-      fallback: _string(_profile['Email'], fallback: 'Keine E-Mail'),
+      fallback: _string(
+        _profile['Email'],
+        fallback: _tr(de: 'Keine E-Mail', en: 'No email'),
+      ),
     );
     final unlockedCount = _achievements
         .where((dynamic item) => _map(item)['unlocked'] == true)
@@ -11830,7 +12043,7 @@ class _ProfileTabState extends State<ProfileTab> {
         padding: const EdgeInsets.all(14),
         children: [
           _SectionCard(
-            title: 'Mein Profil',
+            title: _tr(de: 'Mein Profil', en: 'My Profile'),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -11865,7 +12078,7 @@ class _ProfileTabState extends State<ProfileTab> {
                     color: Colors.white70,
                   ),
                   onPressed: _openSettings,
-                  tooltip: 'Einstellungen',
+                  tooltip: _tr(de: 'Einstellungen', en: 'Settings'),
                 ),
               ],
             ),
@@ -11874,7 +12087,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
           // Stats overview (mobile-friendly)
           _SectionCard(
-            title: 'Statistiken',
+            title: _tr(de: 'Statistiken', en: 'Statistics'),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final isTablet = constraints.maxWidth >= 720;
@@ -11886,7 +12099,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
                 final cards = [
                   _buildStatCard(
-                    label: 'Workouts gesamt',
+                    label: _tr(de: 'Workouts gesamt', en: 'Total workouts'),
                     value: '${_profileStats['totalWorkouts'] ?? 0}',
                     icon: const Icon(
                       Icons.fitness_center,
@@ -11894,12 +12107,12 @@ class _ProfileTabState extends State<ProfileTab> {
                     ),
                   ),
                   _buildStatCard(
-                    label: 'Trainingszeit',
+                    label: _tr(de: 'Trainingszeit', en: 'Training time'),
                     value: '${_profileStats['trainingHours'] ?? 0}h',
                     icon: const Icon(Icons.timer, color: Color(0xFF60A5FA)),
                   ),
                   _buildStatCard(
-                    label: 'Kalorien',
+                    label: _tr(de: 'Kalorien', en: 'Calories'),
                     value: '${_profileStats['caloriesBurned'] ?? 0}',
                     icon: const Icon(
                       Icons.local_fire_department,
@@ -11907,8 +12120,11 @@ class _ProfileTabState extends State<ProfileTab> {
                     ),
                   ),
                   _buildStatCard(
-                    label: 'Längster Streak',
-                    value: '${_profileStats['longestStreak'] ?? 0} Tage',
+                    label: _tr(de: 'Längster Streak', en: 'Longest streak'),
+                    value: _tr(
+                      de: '${_profileStats['longestStreak'] ?? 0} Tage',
+                      en: '${_profileStats['longestStreak'] ?? 0} days',
+                    ),
                     icon: const Icon(
                       Icons.emoji_events,
                       color: Color(0xFF22C55E),

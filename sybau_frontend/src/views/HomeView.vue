@@ -7,8 +7,9 @@
         </button>
 
         <nav class="nav-buttons" aria-label="Landing Navigation">
-          <button class="nav-btn" type="button" @click="navigateTo('/auth')">Login</button>
-          <button class="webplayer-btn" type="button" @click="navigateTo('/auth')">Webplayer</button>
+          <LanguageSwitch compact />
+          <button class="nav-btn" type="button" @click="navigateTo('/auth')">{{ copy.login }}</button>
+          <button class="webplayer-btn" type="button" @click="navigateTo('/auth')">{{ copy.webplayer }}</button>
         </nav>
       </div>
     </header>
@@ -17,13 +18,13 @@
       <section class="hero-section">
         <div class="container hero-content">
           <h1 class="hero-title fade-in">
-            Trainieren, leveln, sichtbar stärker werden.
+            {{ copy.heroTitle }}
           </h1>
           <p class="hero-subtitle fade-in delay-1">
-            Dein Training wird zu Fortschritt, den du jeden Tag direkt siehst.
+            {{ copy.heroSubtitle }}
           </p>
           <div class="hero-actions fade-in delay-2">
-            <button class="primary-btn" type="button" @click="navigateTo('/auth')">Webplayer öffnen</button>
+            <button class="primary-btn" type="button" @click="navigateTo('/auth')">{{ copy.primaryAction }}</button>
           </div>
         </div>
       </section>
@@ -65,13 +66,13 @@
 
           <div class="avatar-section scroll-reveal">
             <div class="avatar-copy">
-              <h3>Drei Phasen, kein abstrakter Fortschritt.</h3>
+              <h3>{{ copy.avatarTitle }}</h3>
               <p>
-                Der Charakter entwickelt sich mit deinem Training. Die Veränderung bleibt bewusst sichtbar und simpel.
+                {{ copy.avatarText }}
               </p>
             </div>
 
-            <div class="avatar-phases" aria-label="Avatar Phasen">
+            <div class="avatar-phases" :aria-label="copy.avatarAria">
               <div
                 v-for="(phase, index) in avatarPhases"
                 :key="phase.name"
@@ -90,8 +91,8 @@
       </section>
 
       <section class="tech-section">
-        <div class="tech-title">Made with</div>
-        <div class="marquee" aria-label="Technologien">
+        <div class="tech-title">{{ copy.techTitle }}</div>
+        <div class="marquee" :aria-label="copy.techAria">
           <div class="marquee-content">
             <div class="logo-set" v-for="setIndex in 3" :key="setIndex">
               <img
@@ -113,8 +114,10 @@
 
 <script setup lang="ts">
 import FooterComponent from '@/components/FooterComponent.vue';
-import { onMounted, onUnmounted, ref } from 'vue';
+import LanguageSwitch from '@/components/LanguageSwitch.vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useLanguage } from '@/composables/useLanguage';
 import shortLogo from '@/assets/Sybau_logo_short.png';
 import skinnySprite from '@/assets/Spritesheet_Skinny.png';
 import normalSprite from '@/assets/Spritesheet_Normal.png';
@@ -126,64 +129,151 @@ import shopMockup from '@/assets/mockups/Shop-Mockup.png';
 import leaderboardMockup from '@/assets/mockups/Leaderboard-Mockup.png';
 
 const router = useRouter();
+const { language } = useLanguage();
 const statsBox = ref<HTMLElement | null>(null);
 let observer: IntersectionObserver | null = null;
 
-const stats = [
-  { value: 100, suffix: '+', label: 'Max Level' },
-  { value: 100, suffix: '+', label: 'Achievements' },
-  { value: 5000, suffix: '+', label: 'Aktive Nutzer' },
-  { value: 50, suffix: '+', label: 'Workouts' },
-];
+const copy = computed(() => {
+  if (language.value === 'en') {
+    return {
+      login: 'Login',
+      webplayer: 'Webplayer',
+      heroTitle: 'Train, level up, become visibly stronger.',
+      heroSubtitle: 'Your workout turns into progress you can see every single day.',
+      primaryAction: 'Open Webplayer',
+      avatarTitle: 'Three phases, no abstract progress.',
+      avatarText: 'Your character develops with your training. The change stays clear, visible and simple.',
+      avatarAria: 'Avatar phases',
+      techTitle: 'Made with',
+      techAria: 'Technologies',
+    };
+  }
 
-const productSections = [
-  {
-    title: 'Alles startet mit deinem Avatar.',
-    text: 'Level, XP, Coins, Items und Tagesfortschritt sitzen direkt im Blick. Der Screen zeigt sofort, was dein Training gebracht hat.',
-    image: dashboardMockup,
-    mediaClass: 'dashboard-media',
-    layout: 'image-right',
-    points: ['Avatar als Mittelpunkt', 'Level- und XP-Fortschritt', 'Streak, Rang und Quests'],
-  },
-  {
-    title: 'Eintragen bleibt schnell.',
-    text: 'Timer, Wiederholungen und Belohnungen sind auf Mobile so gestaltet, dass man nach dem Satz nicht lange suchen muss.',
-    image: workoutsMockup,
-    mediaClass: 'workouts-media',
-    layout: 'image-left',
-    points: ['Timer-Modus', 'Reps sauber ändern', 'Belohnung direkt sichtbar'],
-  },
-  {
-    title: 'Chests und Items fühlen sich nach Loot an.',
-    text: 'Der Shop zeigt Booster, Chests und Item-Besitz im gleichen Gaming-Stil wie der Rest der App.',
-    image: shopMockup,
-    mediaClass: 'shop-media',
-    layout: 'image-right',
-    points: ['Chests mit Drop-Idee', 'Items mit XP- und Coin-Boosts', 'Pixel-Art bleibt im Fokus'],
-  },
-  {
-    title: 'Klare Ziele statt leere Motivation.',
-    text: 'Quests geben dem Training kleine Aufgaben, Fortschritt und Rewards. So entsteht ein Loop, der nicht kompliziert wirkt.',
-    image: questsMockup,
-    mediaClass: 'quests-media',
-    layout: 'image-left',
-    points: ['Daily und Weekly Quests', 'XP und Coins als Rewards', 'Claim-Feedback im Header'],
-  },
-  {
-    title: 'Ranking macht Fortschritt vergleichbar.',
-    text: 'Wer trainiert, sieht nicht nur eigene Zahlen, sondern auch, wie weit die Spitze entfernt ist.',
-    image: leaderboardMockup,
-    mediaClass: 'leaderboard-media',
-    layout: 'image-right',
-    points: ['Top Champions', 'globale Rangliste', 'Level und XP im Vergleich'],
-  },
-];
+  return {
+    login: 'Login',
+    webplayer: 'Webplayer',
+    heroTitle: 'Trainieren, leveln, sichtbar stärker werden.',
+    heroSubtitle: 'Dein Training wird zu Fortschritt, den du jeden Tag direkt siehst.',
+    primaryAction: 'Webplayer öffnen',
+    avatarTitle: 'Drei Phasen, kein abstrakter Fortschritt.',
+    avatarText: 'Der Charakter entwickelt sich mit deinem Training. Die Veränderung bleibt bewusst sichtbar und simpel.',
+    avatarAria: 'Avatar Phasen',
+    techTitle: 'Made with',
+    techAria: 'Technologien',
+  };
+});
 
-const avatarPhases = [
-  { name: 'Skinny', sprite: skinnySprite },
-  { name: 'Defined', sprite: normalSprite },
-  { name: 'Bodybuilder', sprite: bodybuilderSprite },
-];
+const stats = computed(() => language.value === 'en'
+  ? [
+      { value: 100, suffix: '+', label: 'Max Level' },
+      { value: 100, suffix: '+', label: 'Achievements' },
+      { value: 5000, suffix: '+', label: 'Active Users' },
+      { value: 50, suffix: '+', label: 'Workouts' },
+    ]
+  : [
+      { value: 100, suffix: '+', label: 'Max Level' },
+      { value: 100, suffix: '+', label: 'Achievements' },
+      { value: 5000, suffix: '+', label: 'Aktive Nutzer' },
+      { value: 50, suffix: '+', label: 'Workouts' },
+    ]);
+
+const productSections = computed(() => language.value === 'en'
+  ? [
+      {
+        title: 'Everything starts with your avatar.',
+        text: 'Level, XP, coins, items and daily progress stay right in view. The screen instantly shows what your training achieved.',
+        image: dashboardMockup,
+        mediaClass: 'dashboard-media',
+        layout: 'image-right',
+        points: ['Avatar as the center', 'Level and XP progress', 'Streak, rank and quests'],
+      },
+      {
+        title: 'Logging stays fast.',
+        text: 'Timers, reps and rewards are designed for mobile so you do not have to search after a set.',
+        image: workoutsMockup,
+        mediaClass: 'workouts-media',
+        layout: 'image-left',
+        points: ['Timer mode', 'Clean rep editing', 'Rewards visible right away'],
+      },
+      {
+        title: 'Chests and items feel like loot.',
+        text: 'The shop shows boosters, chests and owned items in the same gaming style as the rest of the app.',
+        image: shopMockup,
+        mediaClass: 'shop-media',
+        layout: 'image-right',
+        points: ['Chests with drop logic', 'Items with XP and coin boosts', 'Pixel art stays in focus'],
+      },
+      {
+        title: 'Clear goals instead of empty motivation.',
+        text: 'Quests give training small tasks, progress and rewards. That creates a loop without making it complicated.',
+        image: questsMockup,
+        mediaClass: 'quests-media',
+        layout: 'image-left',
+        points: ['Daily and weekly quests', 'XP and coins as rewards', 'Claim feedback in the header'],
+      },
+      {
+        title: 'Ranking makes progress comparable.',
+        text: 'When you train, you see your own numbers and how far away the top still is.',
+        image: leaderboardMockup,
+        mediaClass: 'leaderboard-media',
+        layout: 'image-right',
+        points: ['Top champions', 'Global leaderboard', 'Level and XP comparison'],
+      },
+    ]
+  : [
+      {
+        title: 'Alles startet mit deinem Avatar.',
+        text: 'Level, XP, Coins, Items und Tagesfortschritt sitzen direkt im Blick. Der Screen zeigt sofort, was dein Training gebracht hat.',
+        image: dashboardMockup,
+        mediaClass: 'dashboard-media',
+        layout: 'image-right',
+        points: ['Avatar als Mittelpunkt', 'Level- und XP-Fortschritt', 'Streak, Rang und Quests'],
+      },
+      {
+        title: 'Eintragen bleibt schnell.',
+        text: 'Timer, Wiederholungen und Belohnungen sind auf Mobile so gestaltet, dass man nach dem Satz nicht lange suchen muss.',
+        image: workoutsMockup,
+        mediaClass: 'workouts-media',
+        layout: 'image-left',
+        points: ['Timer-Modus', 'Reps sauber ändern', 'Belohnung direkt sichtbar'],
+      },
+      {
+        title: 'Chests und Items fühlen sich nach Loot an.',
+        text: 'Der Shop zeigt Booster, Chests und Item-Besitz im gleichen Gaming-Stil wie der Rest der App.',
+        image: shopMockup,
+        mediaClass: 'shop-media',
+        layout: 'image-right',
+        points: ['Chests mit Drop-Idee', 'Items mit XP- und Coin-Boosts', 'Pixel-Art bleibt im Fokus'],
+      },
+      {
+        title: 'Klare Ziele statt leere Motivation.',
+        text: 'Quests geben dem Training kleine Aufgaben, Fortschritt und Rewards. So entsteht ein Loop, der nicht kompliziert wirkt.',
+        image: questsMockup,
+        mediaClass: 'quests-media',
+        layout: 'image-left',
+        points: ['Daily und Weekly Quests', 'XP und Coins als Rewards', 'Claim-Feedback im Header'],
+      },
+      {
+        title: 'Ranking macht Fortschritt vergleichbar.',
+        text: 'Wer trainiert, sieht nicht nur eigene Zahlen, sondern auch, wie weit die Spitze entfernt ist.',
+        image: leaderboardMockup,
+        mediaClass: 'leaderboard-media',
+        layout: 'image-right',
+        points: ['Top Champions', 'globale Rangliste', 'Level und XP im Vergleich'],
+      },
+    ]);
+
+const avatarPhases = computed(() => language.value === 'en'
+  ? [
+      { name: 'Skinny', sprite: skinnySprite },
+      { name: 'Defined', sprite: normalSprite },
+      { name: 'Bodybuilder', sprite: bodybuilderSprite },
+    ]
+  : [
+      { name: 'Skinny', sprite: skinnySprite },
+      { name: 'Defined', sprite: normalSprite },
+      { name: 'Bodybuilder', sprite: bodybuilderSprite },
+    ]);
 
 const techStack = [
   { name: 'C#', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg' },
@@ -199,6 +289,7 @@ const techStack = [
 
 const animatedStats = ref(['0', '0', '0', '0']);
 const statsAnimated = ref(false);
+const numberLocale = computed(() => (language.value === 'en' ? 'en-US' : 'de-DE'));
 
 const navigateTo = (path: string) => {
   router.push(path);
@@ -211,14 +302,19 @@ const animateCounter = (index: number, target: number, duration = 1600) => {
   const timer = window.setInterval(() => {
     current += increment;
     if (current >= target) {
-      animatedStats.value[index] = target.toLocaleString('de-DE');
+      animatedStats.value[index] = target.toLocaleString(numberLocale.value);
       window.clearInterval(timer);
       return;
     }
 
-    animatedStats.value[index] = Math.floor(current).toLocaleString('de-DE');
+    animatedStats.value[index] = Math.floor(current).toLocaleString(numberLocale.value);
   }, 16);
 };
+
+watch(language, () => {
+  if (!statsAnimated.value) return;
+  animatedStats.value = stats.value.map((stat) => stat.value.toLocaleString(numberLocale.value));
+});
 
 const observeElements = () => {
   observer = new IntersectionObserver(
@@ -230,7 +326,7 @@ const observeElements = () => {
 
         if (entry.target === statsBox.value && !statsAnimated.value) {
           statsAnimated.value = true;
-          stats.forEach((stat, index) => {
+          stats.value.forEach((stat, index) => {
             window.setTimeout(() => animateCounter(index, stat.value), index * 80);
           });
         }

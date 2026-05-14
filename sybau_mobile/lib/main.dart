@@ -1,13 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'screens/login_screen.dart';
 import 'screens/app_shell_screen.dart';
 import 'services/api_service.dart';
+import 'services/language_service.dart';
 import 'services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await LanguageService.initialize();
   unawaited(ApiService.initialize());
   unawaited(NotificationService.initialize());
   unawaited(NotificationService.syncScheduledReminder());
@@ -19,22 +22,34 @@ class SybauApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Sybau',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        textTheme: ThemeData.dark().textTheme,
-        primaryTextTheme: ThemeData.dark().primaryTextTheme,
-        scaffoldBackgroundColor: const Color(0xFF0f0c29),
-        colorScheme: ColorScheme.fromSeed(
-          brightness: Brightness.dark,
-          seedColor: const Color(0xFF00ffff),
-          background: const Color(0xFF0f0c29),
-        ),
-        useMaterial3: true,
-      ),
-      home: const AuthCheck(),
+    return ValueListenableBuilder<SybauLanguage>(
+      valueListenable: LanguageService.current,
+      builder: (context, language, _) {
+        return MaterialApp(
+          title: 'Sybau',
+          debugShowCheckedModeBanner: false,
+          locale: Locale(language.code),
+          supportedLocales: const [Locale('de'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+          theme: ThemeData(
+            brightness: Brightness.dark,
+            textTheme: ThemeData.dark().textTheme,
+            primaryTextTheme: ThemeData.dark().primaryTextTheme,
+            scaffoldBackgroundColor: const Color(0xFF0f0c29),
+            colorScheme: ColorScheme.fromSeed(
+              brightness: Brightness.dark,
+              seedColor: const Color(0xFF00ffff),
+              surface: const Color(0xFF0f0c29),
+            ),
+            useMaterial3: true,
+          ),
+          home: const AuthCheck(),
+        );
+      },
     );
   }
 }
