@@ -672,18 +672,6 @@ class _ShopTabState extends State<ShopTab> {
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            _td(rarity).toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: accent,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 2.2,
-                            ),
-                          ),
                           if (xpBoost > 0 || coinBoost > 0) ...[
                             const SizedBox(height: 11),
                             if (xpBoost > 0 && coinBoost > 0)

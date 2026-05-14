@@ -389,6 +389,10 @@ const priceSizeClass = computed(() => {
 }
 
 @media (max-width: 560px) {
+  .rarity-label {
+    display: none;
+  }
+
   .card-top-row,
   .item-footer {
     flex-direction: column;

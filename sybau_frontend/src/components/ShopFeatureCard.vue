@@ -385,6 +385,10 @@ const priceSizeClass = computed(() => {
 }
 
 @media (max-width: 680px) {
+  .rarity-label {
+    display: none;
+  }
+
   .feature-price-row {
     flex-direction: column;
     align-items: stretch;
