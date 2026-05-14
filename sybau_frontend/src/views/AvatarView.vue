@@ -1411,6 +1411,9 @@ onMounted(() => loadProfile());
 
   .avatar-panel {
     position: static;
+    justify-self: center;
+    width: 100%;
+    max-width: none;
   }
 
   .avatar-section {
@@ -1459,7 +1462,8 @@ onMounted(() => loadProfile());
   }
 
   .avatar-row {
-    gap: 6px;
+    width: 100%;
+    gap: 8px;
   }
 
   .equip-slot {
@@ -1473,17 +1477,21 @@ onMounted(() => loadProfile());
   .equip-select-hint { display: none; }
 
   .avatar-sprite {
-    transform: scale(0.75);
-    transform-origin: center bottom;
-    margin-left: -110px;
-    margin-right: -110px;
-    margin-top: -70px;
+    display: flex;
+    justify-content: center;
+    width: clamp(184px, 52vw, 220px);
+    margin-top: -28px;
+  }
+
+  .avatar-sprite :deep(canvas) {
+    width: clamp(184px, 52vw, 220px);
+    height: clamp(184px, 52vw, 220px);
   }
 
   .avatar-ground {
     width: 110px;
     height: 14px;
-    margin-top: -28px;
+    margin-top: -34px;
   }
 
   .avatar-glow-bg {

@@ -1246,7 +1246,31 @@ const submitInlineExercise = async (exercise: ExerciseLocal) => {
   }
 
   .health-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .health-card {
+    min-height: 108px;
+    gap: 9px;
+    padding: 16px 14px;
+    border-radius: 18px;
+  }
+
+  .health-flame {
+    width: 20px;
+    height: 20px;
+  }
+
+  .health-label {
+    font-size: 13px;
+    line-height: 1.15;
+    margin-bottom: 6px;
+  }
+
+  .health-card strong {
+    font-size: 20px;
+    line-height: 1.05;
   }
 
   .stat-label {
@@ -1317,6 +1341,24 @@ const submitInlineExercise = async (exercise: ExerciseLocal) => {
 
   .stats-grid {
     gap: 8px;
+  }
+
+  .health-grid {
+    gap: 8px;
+  }
+
+  .health-card {
+    min-height: 92px;
+    padding: 12px 10px;
+    border-radius: 16px;
+  }
+
+  .health-label {
+    font-size: 11px;
+  }
+
+  .health-card strong {
+    font-size: 17px;
   }
 
   .stat-icon {
