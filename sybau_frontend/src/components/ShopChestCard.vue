@@ -128,8 +128,8 @@ const priceSizeClass = computed(() => {
 .chest-image-shell {
   position: relative;
   z-index: 1;
-  width: 128px;
-  height: 128px;
+  width: 136px;
+  height: 136px;
   display: grid;
   place-items: center;
   border-radius: 22px;
@@ -139,8 +139,8 @@ const priceSizeClass = computed(() => {
 }
 
 .chest-image {
-  width: 98px;
-  height: 98px;
+  width: 112px;
+  height: 112px;
   object-fit: contain;
   image-rendering: pixelated;
   filter: drop-shadow(0 16px 20px rgba(0, 0, 0, 0.38));
@@ -230,7 +230,7 @@ const priceSizeClass = computed(() => {
   align-items: center;
   overflow: hidden;
   border: 1px solid rgba(74, 222, 128, 0.42);
-  border-radius: 10px;
+  border-radius: 8px;
   background:
     linear-gradient(135deg, rgba(34, 197, 94, 0.24), rgba(20, 83, 45, 0.86)),
     rgba(6, 78, 59, 0.7);
@@ -313,5 +313,72 @@ const priceSizeClass = computed(() => {
   border-color: rgba(148, 163, 184, 0.18);
   color: rgba(255, 255, 255, 0.62);
   box-shadow: none;
+}
+
+@media (max-width: 760px) {
+  .chest-card {
+    min-height: 194px;
+    padding: 10px;
+    border-radius: 18px;
+  }
+
+  .info-btn {
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .chest-image-shell {
+    width: 100%;
+    height: 88px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .chest-image {
+    width: 86px;
+    height: 86px;
+  }
+
+  .chest-copy {
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  .chest-copy h3 {
+    font-size: clamp(0.82rem, 3.6vw, 1rem);
+    line-height: 1.05;
+  }
+
+  .chest-copy p {
+    display: none;
+  }
+
+  .open-btn {
+    align-self: stretch;
+    width: 100%;
+    min-width: 0;
+    min-height: 36px;
+    padding: 0 8px;
+    border-radius: 8px;
+  }
+
+  .button-price {
+    gap: 5px;
+    font-size: 0.95rem;
+  }
+
+  .button-price img {
+    width: 16px;
+    height: 16px;
+  }
+
+  .rates-popover {
+    right: 8px;
+    top: 44px;
+    width: min(190px, calc(100vw - 40px));
+  }
 }
 </style>

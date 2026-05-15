@@ -6,6 +6,12 @@ import Header from '@/components/Header.vue';
 import ShopFeatureCard from '@/components/ShopFeatureCard.vue';
 import ShopChestCard from '@/components/ShopChestCard.vue';
 import coinIcon from '@/assets/SYBAU_Coin.png';
+import starterPackImage from '@/assets/Starter_Pack.png';
+import plusPackImage from '@/assets/Plus_Pack.png';
+import proPackImage from '@/assets/Pro_Pack.png';
+import starterChestOpenImage from '@/assets/Starter_Chest_open.png';
+import goldChestOpenImage from '@/assets/Gold_Chest_open.png';
+import prestigeChestOpenImage from '@/assets/Prestige_Chest_open.png';
 import { ItemType } from '@/models/ItemType';
 import type { item } from '@/models/Item';
 import type { ShopDisplayItem } from '@/models/ShopDisplayItem';
@@ -27,6 +33,7 @@ const buyingItemId = ref<number | null>(null);
 const openingChestId = ref<number | null>(null);
 const chestOpening = ref<Chest | null>(null);
 const openedReward = ref<any | null>(null);
+const chestRevealStarted = ref(false);
 const pendingPurchase = ref<{ type: 'item'; item: ShopDisplayItem } | { type: 'chest'; chest: Chest } | null>(null);
 const dailyShopExpiresAtUtc = ref('');
 const dailyShopServerOffsetMs = ref(0);
@@ -38,6 +45,11 @@ let dailyCountdownTimer: number | undefined;
 const popupMessage = ref("");
 const popupType = ref<"success" | "error">("success");
 
+const coinPacks = [
+  { name: 'Starter Pack', coins: '750', price: '1,99 €', image: starterPackImage },
+  { name: 'Plus Pack', coins: '2.250', price: '4,99 €', image: plusPackImage },
+  { name: 'Pro Pack', coins: '5.000', price: '9,99 €', image: proPackImage }
+];
 
 const syncCoinsFromStorage = () => {
   const raw = JSON.parse(localStorage.getItem('user') || '{}');
@@ -268,19 +280,36 @@ const loadChests = async () => {
 };
 
 const closeChestOpening = () => {
-  if (!openedReward.value && openingChestId.value) return;
+  if (chestRevealStarted.value && !openedReward.value && openingChestId.value) return;
   chestOpening.value = null;
   openedReward.value = null;
+  chestRevealStarted.value = false;
+  openingChestId.value = null;
 };
 
-const openChest = async (chest: Chest) => {
+const getOpenChestImage = (chest: Chest | null) => {
+  const name = String(chest?.name ?? '').toLowerCase();
+  const imageUrl = String(chest?.imageUrl ?? '').toLowerCase();
+  const search = `${name} ${imageUrl}`;
+  if (search.includes('premium') || search.includes('prestige')) return prestigeChestOpenImage;
+  if (search.includes('gold')) return goldChestOpenImage;
+  return starterChestOpenImage;
+};
+
+const openChest = (chest: Chest) => {
   pendingPurchase.value = null;
-  openingChestId.value = chest.id;
   chestOpening.value = chest;
   openedReward.value = null;
+  chestRevealStarted.value = false;
+};
+
+const revealChest = async () => {
+  if (!chestOpening.value || chestRevealStarted.value) return;
+  openingChestId.value = chestOpening.value.id;
+  chestRevealStarted.value = true;
 
   try {
-    const response = await itemService.openChest(chest.id);
+    const response = await itemService.openChest(chestOpening.value.id);
     openedReward.value = response.data?.item ?? response.data?.Item ?? null;
     const remainingCoins = response.data?.remainingCoins ?? response.data?.RemainingCoins;
     if (remainingCoins !== undefined) currentCoins.value = Number(remainingCoins);
@@ -289,6 +318,7 @@ const openChest = async (chest: Chest) => {
     await loadShopItems();
   } catch (openError: any) {
     chestOpening.value = null;
+    chestRevealStarted.value = false;
     popupType.value = 'error';
     popupMessage.value = openError.response?.data?.message || openError.response?.data || text('Chest konnte nicht geöffnet werden', 'Chest could not be opened');
   } finally {
@@ -476,6 +506,31 @@ onUnmounted(() => {
           </div>
         </section>
 
+        <section class="section-card">
+          <div class="section-heading">
+            <div class="title-with-icon">
+              <h2>{{ text('Coin Pakete', 'Coin packs') }}</h2>
+            </div>
+            <p>{{ text('Echtgeld-Käufe werden bald aktiviert.', 'Real-money purchases will be activated soon.') }}</p>
+          </div>
+
+          <div class="coin-pack-grid">
+            <article v-for="pack in coinPacks" :key="pack.name" class="coin-pack-card">
+              <div class="coin-pack-image-shell">
+                <img :src="pack.image" :alt="pack.name" class="coin-pack-image" />
+              </div>
+              <div class="coin-pack-copy">
+                <h3>{{ pack.name }}</h3>
+                <strong>
+                  <img :src="coinIcon" alt="" />
+                  {{ pack.coins }}
+                </strong>
+              </div>
+              <button class="coin-pack-buy" type="button" aria-disabled="true">{{ pack.price }}</button>
+            </article>
+          </div>
+        </section>
+
         <section class="section-card earn-card">
           <div class="earn-copy">
             <div class="earn-title">
@@ -535,22 +590,39 @@ onUnmounted(() => {
 
       <Transition name="chest-open">
         <div v-if="chestOpening" class="chest-open-overlay" @click.self="closeChestOpening">
-          <div class="chest-open-stage" :class="{ revealed: openedReward }">
+          <div class="chest-open-stage" :class="{ revealed: chestRevealStarted }">
             <button v-if="openedReward" class="chest-open-close" type="button" @click="closeChestOpening">&times;</button>
-            <img v-if="!openedReward" :src="chestOpening.imageUrl" alt="" class="opening-chest-image" />
-            <div v-if="!openedReward" class="opening-text">{{ text('Öffnet...', 'Opening...') }}</div>
-            <div v-else class="reward-card">
-              <div class="reward-burst"></div>
-              <div class="reward-image">
-                <img
-                  v-if="resolveMediaUrl(openedReward.imageUrl ?? openedReward.ImageUrl ?? '')"
-                  :src="resolveMediaUrl(openedReward.imageUrl ?? openedReward.ImageUrl ?? '')"
-                  alt=""
-                />
-                <span v-else>✨</span>
+
+            <button
+              v-if="!chestRevealStarted"
+              class="opening-chest-button"
+              type="button"
+              @click="revealChest"
+            >
+              <img :src="chestOpening.imageUrl" alt="" class="opening-chest-image" />
+              <span class="opening-text">{{ text('Klicke zum Öffnen', 'Click to open') }}</span>
+            </button>
+
+            <div v-else class="opened-chest-scene">
+              <div class="opened-chest-reveal" :class="{ 'has-reward': openedReward }">
+                <img :src="getOpenChestImage(chestOpening)" alt="" class="opened-chest-image" />
+                <div v-if="openedReward" class="reward-card reward-from-chest">
+                  <div class="reward-burst"></div>
+                  <div class="reward-image">
+                    <img
+                      v-if="resolveMediaUrl(openedReward.imageUrl ?? openedReward.ImageUrl ?? '')"
+                      :src="resolveMediaUrl(openedReward.imageUrl ?? openedReward.ImageUrl ?? '')"
+                      alt=""
+                    />
+                    <span v-else>✨</span>
+                  </div>
+                </div>
               </div>
-              <h3>{{ translate(openedReward.name ?? openedReward.Name) }}</h3>
-              <p :class="`reward-rarity-${rewardRarity}`">{{ rarityLabel(rewardRarity) }}</p>
+              <div v-if="!openedReward" class="opening-text opening-text-loading">{{ text('Öffnet...', 'Opening...') }}</div>
+              <div v-else class="reward-meta-below">
+                <h3>{{ translate(openedReward.name ?? openedReward.Name) }}</h3>
+                <p :class="`reward-rarity-${rewardRarity}`">{{ rarityLabel(rewardRarity) }}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -684,9 +756,98 @@ onUnmounted(() => {
 }
 
 .chest-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 360px));
-  justify-content: center;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 18px;
+}
+
+.coin-pack-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+
+.coin-pack-card {
+  position: relative;
+  min-height: 252px;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(16px, 2vw, 22px);
+  padding-bottom: 64px;
+  overflow: hidden;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(236, 72, 153, 0.16), transparent 36%),
+    rgba(8, 10, 31, 0.78);
+  border: 1px solid rgba(236, 72, 153, 0.2);
+  box-shadow: 0 20px 38px rgba(2, 6, 23, 0.22);
+}
+
+.coin-pack-image-shell {
+  min-height: 116px;
+  display: grid;
+  place-items: center;
+}
+
+.coin-pack-image {
+  width: min(148px, 70%);
+  height: 116px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.42));
+}
+
+.coin-pack-copy {
+  margin-top: auto;
+  display: grid;
+  gap: 8px;
+}
+
+.coin-pack-copy h3 {
+  margin: 0;
+  color: white;
+  font-size: clamp(1.12rem, 1.8vw, 1.45rem);
+  line-height: 1.05;
+  font-weight: 900;
+}
+
+.coin-pack-copy strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #facc15;
+  font-size: clamp(1.15rem, 2vw, 1.5rem);
+  line-height: 1;
+  font-weight: 900;
+}
+
+.coin-pack-copy img {
+  width: 23px;
+  height: 23px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.coin-pack-buy {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  min-width: 96px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border-radius: 8px;
+  color: white;
+  background:
+    linear-gradient(135deg, rgba(34, 197, 94, 0.24), rgba(20, 83, 45, 0.86)),
+    rgba(6, 78, 59, 0.7);
+  border: 1px solid rgba(74, 222, 128, 0.42);
+  box-shadow: 0 14px 28px rgba(21, 128, 61, 0.16), inset 0 0 20px rgba(34, 197, 94, 0.08);
+  font-weight: 900;
+  line-height: 1;
+  cursor: default;
 }
 
 .confirm-overlay {
@@ -815,8 +976,8 @@ onUnmounted(() => {
 
 .chest-open-stage {
   position: relative;
-  width: min(520px, 92vw);
-  min-height: min(520px, 78vh);
+  width: min(620px, 92vw);
+  min-height: min(620px, 82vh);
   display: grid;
   place-items: center;
   background: transparent;
@@ -842,9 +1003,20 @@ onUnmounted(() => {
   opacity: 1;
 }
 
+.opening-chest-button {
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
 .opening-chest-image {
-  width: clamp(210px, 28vw, 340px);
-  height: clamp(210px, 28vw, 340px);
+  width: clamp(240px, 32vw, 410px);
+  height: clamp(240px, 32vw, 410px);
   object-fit: contain;
   image-rendering: pixelated;
   filter: drop-shadow(0 28px 42px rgba(0, 0, 0, 0.54));
@@ -852,21 +1024,81 @@ onUnmounted(() => {
 }
 
 .opening-text {
-  position: absolute;
-  bottom: 44px;
   color: rgba(255, 255, 255, 0.72);
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  animation: openHintPulse 1.1s ease-in-out infinite alternate;
+}
+
+.opened-chest-scene {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+}
+
+.opened-chest-reveal {
+  position: relative;
+  width: min(520px, 86vw);
+  min-height: clamp(260px, 34vw, 430px);
+  display: grid;
+  place-items: center;
+}
+
+.opened-chest-reveal.has-reward {
+  height: min(500px, 62vh);
+  min-height: 390px;
+  align-items: end;
+}
+
+.opened-chest-image {
+  width: clamp(260px, 34vw, 440px);
+  height: clamp(210px, 28vw, 350px);
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 28px 42px rgba(0, 0, 0, 0.54));
+  animation: rewardReveal 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.opened-chest-reveal.has-reward .opened-chest-image {
+  width: clamp(250px, 27vw, 360px);
+  height: clamp(190px, 21vw, 270px);
+  filter: brightness(0.58) saturate(0.85) drop-shadow(0 28px 42px rgba(0, 0, 0, 0.6));
+}
+
+.opening-text-loading {
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .reward-card {
   position: relative;
   display: grid;
   justify-items: center;
-  gap: 12px;
+  gap: 10px;
   text-align: center;
   animation: rewardReveal 0.62s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.reward-from-chest {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(340px, 78vw);
+  animation: rewardFromChest 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.reward-from-chest .reward-image {
+  width: clamp(150px, 15vw, 210px);
+  height: clamp(150px, 15vw, 210px);
+}
+
+.reward-meta-below {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+  animation: rewardReveal 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .reward-burst {
@@ -884,8 +1116,8 @@ onUnmounted(() => {
 .reward-image {
   position: relative;
   z-index: 1;
-  width: clamp(170px, 22vw, 250px);
-  height: clamp(170px, 22vw, 250px);
+  width: clamp(140px, 18vw, 210px);
+  height: clamp(140px, 18vw, 210px);
   display: grid;
   place-items: center;
 }
@@ -909,13 +1141,23 @@ onUnmounted(() => {
   z-index: 1;
   margin: 0;
   color: white;
-  font-size: clamp(2.6rem, 7vw, 5rem);
+  font-size: clamp(1.8rem, 3.2vw, 2.8rem);
   font-weight: 900;
   line-height: 0.95;
   text-shadow: 0 18px 34px rgba(0, 0, 0, 0.4);
 }
 
-.reward-card p {
+.reward-meta-below h3 {
+  margin: 0;
+  color: white;
+  font-size: clamp(2rem, 3.8vw, 3.4rem);
+  font-weight: 900;
+  line-height: 0.95;
+  text-shadow: 0 18px 34px rgba(0, 0, 0, 0.4);
+}
+
+.reward-card p,
+.reward-meta-below p {
   position: relative;
   z-index: 1;
   margin: 0;
@@ -966,6 +1208,17 @@ onUnmounted(() => {
   }
 }
 
+@keyframes openHintPulse {
+  from {
+    opacity: 0.48;
+    filter: brightness(0.82);
+  }
+  to {
+    opacity: 1;
+    filter: brightness(1.18);
+  }
+}
+
 @keyframes rewardReveal {
   from {
     opacity: 0;
@@ -975,6 +1228,24 @@ onUnmounted(() => {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes rewardFromChest {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 120px) scale(0.58);
+    filter: blur(8px);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -14px) scale(1.06);
+    filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
     filter: blur(0);
   }
 }
@@ -1084,6 +1355,11 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
   }
 
+  .chest-grid,
+  .coin-pack-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .section-heading-spread {
     align-items: flex-start;
   }
@@ -1098,6 +1374,64 @@ onUnmounted(() => {
 
   .earn-stats {
     grid-template-columns: 1fr;
+  }
+
+  .chest-grid,
+  .coin-pack-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .section-card {
+    padding: 16px;
+  }
+
+  .coin-pack-card {
+    min-height: 198px;
+    padding: 10px;
+    padding-bottom: 52px;
+    border-radius: 18px;
+  }
+
+  .coin-pack-image-shell {
+    min-height: 76px;
+  }
+
+  .coin-pack-image {
+    width: min(92px, 88%);
+    height: 74px;
+  }
+
+  .coin-pack-copy {
+    gap: 6px;
+  }
+
+  .coin-pack-copy h3 {
+    font-size: 0.82rem;
+    line-height: 1.08;
+    text-align: center;
+  }
+
+  .coin-pack-copy strong {
+    justify-content: center;
+    gap: 5px;
+    font-size: 1rem;
+  }
+
+  .coin-pack-copy img {
+    width: 18px;
+    height: 18px;
+  }
+
+  .coin-pack-buy {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    min-width: 0;
+    min-height: 36px;
+    padding: 0 8px;
+    border-radius: 8px;
+    font-size: 0.9rem;
   }
 }
 

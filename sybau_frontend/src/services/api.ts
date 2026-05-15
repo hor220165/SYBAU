@@ -113,6 +113,8 @@ export const userService = {
         API.get('/users/boosts'),
     getStreaks: () =>
         API.get('/users/profile/streaks'),
+    getActivityYears: () =>
+        API.get('/users/profile/activity-years'),
     getWeeklyActivity: (from: string, to: string) =>
         API.get(`/users/profile/weekly-activity?from=${from}&to=${to}`),
     getRecentActivities: (limit = 10) =>

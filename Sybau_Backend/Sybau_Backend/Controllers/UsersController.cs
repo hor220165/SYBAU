@@ -392,6 +392,20 @@ namespace Sybau_Backend.Controllers
             return Ok(activities);
         }
 
+        // GET /users/profile/activity-years
+        [Authorize]
+        [HttpGet("profile/activity-years")]
+        public async Task<IActionResult> GetActivityYears()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            var userId = int.Parse(userIdClaim);
+            var years = await _userService.GetActivityYearsAsync(userId);
+
+            return Ok(years);
+        }
+
         // GET /users/profile/recent-activities?limit=10
         [Authorize]
         [HttpGet("profile/recent-activities")]

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import coinIcon from '@/assets/SYBAU_Coin.png';
-import xpIcon from '@/assets/XP_Pixel.png';
 import type { ShopDisplayItem } from '@/models/ShopDisplayItem';
 import { useLanguage } from '@/composables/useLanguage';
 
@@ -58,11 +57,9 @@ const rarityLabel = computed(() =>
 
     <div v-if="item.xpBoostPercentage > 0 || item.coinBoostPercentage > 0" class="boost-row">
       <span v-if="item.xpBoostPercentage > 0" class="boost-pill xp">
-        <img :src="xpIcon" alt="" />
         +{{ item.xpBoostPercentage }}% XP
       </span>
       <span v-if="item.coinBoostPercentage > 0" class="boost-pill coin">
-        <img :src="coinIcon" alt="" />
         +{{ item.coinBoostPercentage }}% Coins
       </span>
     </div>
@@ -264,13 +261,6 @@ const rarityLabel = computed(() =>
   font-weight: 900;
 }
 
-.boost-pill img {
-  width: 19px;
-  height: 19px;
-  object-fit: contain;
-  image-rendering: pixelated;
-}
-
 .boost-pill.xp {
   background: rgba(37, 99, 235, 0.18);
   border: 1px solid rgba(59, 130, 246, 0.38);
@@ -307,7 +297,7 @@ const rarityLabel = computed(() =>
   justify-content: center;
   gap: 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 12px clamp(14px, 1.4vw, 20px);
   min-width: clamp(92px, 7.5vw, 124px);
   width: max-content;
@@ -398,6 +388,20 @@ const rarityLabel = computed(() =>
 @media (max-width: 680px) {
   .rarity-label {
     display: none;
+  }
+
+  .boost-row {
+    gap: 8px;
+    margin-top: 22px;
+    padding-bottom: 20px;
+  }
+
+  .boost-pill {
+    min-height: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0.86rem;
   }
 
   .feature-price-row {

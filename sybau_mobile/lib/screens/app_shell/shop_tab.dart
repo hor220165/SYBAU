@@ -23,13 +23,36 @@ class _ShopTabState extends State<ShopTab> {
   int _currentCoins = 0;
   Map<String, dynamic>? _pendingPurchase;
   bool _buying = false;
+  Map<String, dynamic>? _openingChestPreview;
   Map<String, dynamic>? _openedReward;
   bool _openingChest = false;
   int? _openingChestId;
+  bool _chestRevealStarted = false;
+  bool _openHintPulseBright = true;
   DateTime? _dailyShopExpiresAtUtc;
   Duration _dailyShopServerOffset = Duration.zero;
   Timer? _dailyShopTimer;
   String _dailyCountdown = '00:00:00';
+  final List<Map<String, String>> _coinPacks = const [
+    {
+      'name': 'Starter Pack',
+      'coins': '750',
+      'price': '1,99 €',
+      'image': 'assets/Starter_Pack.png',
+    },
+    {
+      'name': 'Plus Pack',
+      'coins': '2.250',
+      'price': '4,99 €',
+      'image': 'assets/Plus_Pack.png',
+    },
+    {
+      'name': 'Pro Pack',
+      'coins': '5.000',
+      'price': '9,99 €',
+      'image': 'assets/Pro_Pack.png',
+    },
+  ];
 
   @override
   void initState() {
@@ -163,14 +186,16 @@ class _ShopTabState extends State<ShopTab> {
     final id = _toInt(purchase['id']);
 
     if (isChest) {
-      // Dismiss the confirm dialog immediately so it doesn't overlap with the reward overlay
       setState(() {
         _pendingPurchase = null;
         _buying = false;
+        _openingChestPreview = Map<String, dynamic>.from(purchase);
+        _openingChest = false;
+        _openingChestId = null;
+        _openedReward = null;
+        _chestRevealStarted = false;
+        _openHintPulseBright = true;
       });
-      await _openChest(id);
-      await widget.onRefreshHeader();
-      // _load() is deferred to _closeChestReward so the shop stays stable while the reward is visible
       return;
     }
 
@@ -202,10 +227,12 @@ class _ShopTabState extends State<ShopTab> {
   // ---------- Chest flow ----------
 
   Future<void> _openChest(int chestId) async {
+    if (_openingChest || _chestRevealStarted) return;
     setState(() {
       _openingChest = true;
       _openingChestId = chestId;
       _openedReward = null;
+      _chestRevealStarted = true;
     });
     try {
       final result = await ApiService.openChest(chestId);
@@ -237,6 +264,8 @@ class _ShopTabState extends State<ShopTab> {
       setState(() {
         _openingChest = false;
         _openingChestId = null;
+        _openingChestPreview = null;
+        _chestRevealStarted = false;
       });
       widget.showSnack(errorMsg);
     }
@@ -246,6 +275,9 @@ class _ShopTabState extends State<ShopTab> {
     setState(() {
       _openedReward = null;
       _openingChestId = null;
+      _openingChestPreview = null;
+      _openingChest = false;
+      _chestRevealStarted = false;
     });
     unawaited(_load());
   }
@@ -440,173 +472,181 @@ class _ShopTabState extends State<ShopTab> {
 
   // ---------- Chest card ----------
 
-  Widget _buildChestCard(Map<String, dynamic> chest) {
+  Widget _buildChestCard(Map<String, dynamic> chest, {bool compact = false}) {
     final price = _toInt(chest['price']);
     final canAfford = _currentCoins >= price;
     final isOpening = _openingChestId == _toInt(chest['id']);
     final imageUrl = _string(chest['imageUrl']);
+    final imageSize = compact ? 80.0 : 112.0;
+    final imageHeight = compact ? 88.0 : 112.0;
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF080A1F).withOpacity(0.96),
-            Color(0xFF15051A).withOpacity(0.9),
+    return SizedBox(
+      height: compact ? 198 : 222,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF080A1F).withOpacity(0.96),
+              Color(0xFF15051A).withOpacity(0.9),
+            ],
+          ),
+          border: Border.all(color: Color(0xFFEC4899).withOpacity(0.26)),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0xFFEC4899).withOpacity(0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 12),
+            ),
           ],
         ),
-        border: Border.all(color: Color(0xFFEC4899).withOpacity(0.26)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFFEC4899).withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  height: 104,
-                  child: Center(
-                    child: imageUrl.isNotEmpty
-                        ? Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 2,
-                            ),
-                            child: _buildShopImageFromUrl(
-                              imageUrl,
-                              width: 104,
-                              height: 104,
-                              fallback: () => const Text(
-                                '📦',
-                                style: TextStyle(fontSize: 42),
+        child: Stack(
+          children: [
+            Padding(
+              padding: EdgeInsets.all(compact ? 8 : 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    height: imageHeight,
+                    child: Center(
+                      child: imageUrl.isNotEmpty
+                          ? Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: compact ? 0 : 4,
+                                vertical: 2,
                               ),
-                            ),
-                          )
-                        : const Text('📦', style: TextStyle(fontSize: 42)),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _td(_string(chest['name'])),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14.5,
-                    height: 1.05,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  height: 38,
-                  child: ElevatedButton(
-                    onPressed: canAfford && !isOpening
-                        ? () => _requestPurchase(chest, isChest: true)
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      disabledBackgroundColor: Colors.white.withOpacity(0.06),
-                      shadowColor: Colors.transparent,
-                      padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+                              child: _buildShopImageFromUrl(
+                                imageUrl,
+                                width: imageSize,
+                                height: imageSize,
+                                fallback: () => const Text(
+                                  '📦',
+                                  style: TextStyle(fontSize: 42),
+                                ),
+                              ),
+                            )
+                          : const Text('📦', style: TextStyle(fontSize: 42)),
                     ),
-                    child: Ink(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        gradient: canAfford
-                            ? const LinearGradient(
-                                colors: [Color(0xFF22C55E), Color(0xFF14532D)],
-                              )
-                            : null,
-                        color: canAfford
-                            ? null
-                            : Colors.white.withOpacity(0.06),
-                        border: Border.all(
-                          color: canAfford
-                              ? Color(0xFF4ADE80).withOpacity(0.42)
-                              : Color(0xFF94A3B8).withOpacity(0.18),
+                  ),
+                  const SizedBox(height: 7),
+                  Text(
+                    _td(_string(chest['name'])),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: compact ? 12.5 : 14.5,
+                      height: 1.05,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    width: double.infinity,
+                    height: compact ? 36 : 38,
+                    child: ElevatedButton(
+                      onPressed: canAfford && !isOpening
+                          ? () => _requestPurchase(chest, isChest: true)
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        disabledBackgroundColor: Colors.white.withOpacity(0.06),
+                        shadowColor: Colors.transparent,
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(9),
                         ),
                       ),
-                      child: Center(
-                        child: isOpening
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Image.asset(
-                                    'assets/SYBAU_Coin.png',
-                                    width: 16,
-                                    height: 16,
-                                    fit: BoxFit.contain,
-                                    filterQuality: FilterQuality.none,
-                                    isAntiAlias: false,
+                      child: Ink(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(9),
+                          gradient: canAfford
+                              ? const LinearGradient(
+                                  colors: [
+                                    Color(0xFF22C55E),
+                                    Color(0xFF14532D),
+                                  ],
+                                )
+                              : null,
+                          color: canAfford
+                              ? null
+                              : Colors.white.withOpacity(0.06),
+                          border: Border.all(
+                            color: canAfford
+                                ? Color(0xFF4ADE80).withOpacity(0.42)
+                                : Color(0xFF94A3B8).withOpacity(0.18),
+                          ),
+                        ),
+                        child: Center(
+                          child: isOpening
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
                                   ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    _formatCompactNumber(price),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 12,
+                                )
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Image.asset(
+                                      'assets/SYBAU_Coin.png',
+                                      width: 16,
+                                      height: 16,
+                                      fit: BoxFit.contain,
+                                      filterQuality: FilterQuality.none,
+                                      isAntiAlias: false,
                                     ),
-                                  ),
-                                ],
-                              ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      _formatCompactNumber(price),
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: compact ? 16 : 18,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Positioned(
-            top: 10,
-            right: 10,
-            child: InkWell(
-              onTap: () => _showChestRatesDialog(chest),
-              borderRadius: BorderRadius.circular(999),
-              child: Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFF0F172A).withOpacity(0.86),
-                  border: Border.all(
-                    color: Color(0xFFF9A8D4).withOpacity(0.34),
+            Positioned(
+              top: compact ? 4 : 8,
+              right: compact ? 4 : 8,
+              child: InkWell(
+                onTap: () => _showChestRatesDialog(chest),
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  width: compact ? 22 : 26,
+                  height: compact ? 22 : 26,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFF0F172A).withOpacity(0.86),
+                    border: Border.all(
+                      color: Color(0xFFF9A8D4).withOpacity(0.34),
+                    ),
                   ),
-                ),
-                child: Icon(
-                  Icons.info_outline,
-                  color: Color(0xFFF9A8D4),
-                  size: 14,
+                  child: Icon(
+                    Icons.info_outline,
+                    color: Color(0xFFF9A8D4),
+                    size: compact ? 13 : 14,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -688,6 +728,257 @@ class _ShopTabState extends State<ShopTab> {
   }
 
   // ---------- Shop item card ----------
+
+  Widget _buildCompactShopItemCard(Map<String, dynamic> item) {
+    final rarity = _string(item['rarity']);
+    final accent = _rarityAccent(rarity);
+    final price = _toInt(item['price']);
+    final owned = _toInt(item['ownedQuantity']);
+    final canBuy = _currentCoins >= price;
+    final imageUrl = _string(item['imageUrl']);
+    final category = _string(item['category']);
+    final icon = _rarityIcon(rarity, category: category);
+    final xpBoost = _toInt(item['xpBoostPercentage']);
+    final coinBoost = _toInt(item['coinBoostPercentage']);
+    final boostValues = <Widget>[
+      if (xpBoost > 0)
+        _buildBoostValue(
+          label: '+$xpBoost% XP',
+          textColor: const Color(0xFF60A5FA),
+        ),
+      if (coinBoost > 0)
+        _buildBoostValue(
+          label: '+$coinBoost% Coins',
+          textColor: const Color(0xFFFACC15),
+        ),
+    ];
+
+    return SizedBox(
+      height: 266,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(8, 15, 8, 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF080A1F).withOpacity(0.96),
+              Color(0xFF15051A).withOpacity(0.9),
+            ],
+          ),
+          border: Border.all(color: accent.withOpacity(0.26)),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withOpacity(0.08),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  height: 90,
+                  child: Center(
+                    child: SizedBox(
+                      width: 104,
+                      height: 90,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.center,
+                        children: [
+                          imageUrl.isNotEmpty
+                              ? _buildShopImageFromUrl(
+                                  imageUrl,
+                                  width: 94,
+                                  height: 94,
+                                  fallback: () => Text(
+                                    icon,
+                                    style: const TextStyle(fontSize: 42),
+                                  ),
+                                )
+                              : Text(
+                                  icon,
+                                  style: const TextStyle(fontSize: 42),
+                                ),
+                          if (owned > 0)
+                            Positioned(
+                              top: 0,
+                              right: 2,
+                              child: _buildQuantityBadge('x$owned'),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                SizedBox(
+                  height: 34,
+                  child: Center(
+                    child: Text(
+                      _td(_string(item['name'])),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13.5,
+                        height: 1.05,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _rarityLabel(rarity).toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 9.5,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                SizedBox(
+                  height: 38,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        for (var index = 0; index < boostValues.length; index++)
+                          Padding(
+                            padding: EdgeInsets.only(top: index == 0 ? 0 : 3),
+                            child: Center(child: boostValues[index]),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 2,
+              child: SizedBox(
+                width: double.infinity,
+                height: 36,
+                child: ElevatedButton(
+                  onPressed: canBuy ? () => _requestPurchase(item) : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    disabledBackgroundColor: Colors.white.withOpacity(0.06),
+                    shadowColor: Colors.transparent,
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                  ),
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(9),
+                      gradient: canBuy
+                          ? const LinearGradient(
+                              colors: [Color(0xFF22C55E), Color(0xFF14532D)],
+                            )
+                          : null,
+                      color: canBuy ? null : Colors.white.withOpacity(0.06),
+                      border: Border.all(
+                        color: canBuy
+                            ? Color(0xFF4ADE80).withOpacity(0.42)
+                            : Color(0xFF94A3B8).withOpacity(0.18),
+                      ),
+                    ),
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset(
+                            'assets/SYBAU_Coin.png',
+                            width: 16,
+                            height: 16,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.none,
+                            isAntiAlias: false,
+                          ),
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: Text(
+                              _formatCompactNumber(price),
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: canBuy ? Colors.white : Colors.white54,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuantityBadge(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: const Color(0xFF2A1230).withOpacity(0.92),
+        border: Border.all(color: const Color(0xFFF9A8D4).withOpacity(0.38)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFEC4899).withOpacity(0.28),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        style: const TextStyle(
+          color: Color(0xFFF9A8D4),
+          fontWeight: FontWeight.w900,
+          fontSize: 10.5,
+          height: 1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBoostValue({required String label, required Color textColor}) {
+    return Text(
+      label,
+      textAlign: TextAlign.center,
+      maxLines: 1,
+      softWrap: false,
+      overflow: TextOverflow.clip,
+      style: TextStyle(
+        color: textColor,
+        fontWeight: FontWeight.w900,
+        fontSize: 10.5,
+        height: 1,
+      ),
+    );
+  }
 
   Widget _buildShopItemCard(Map<String, dynamic> item) {
     final rarity = _string(item['rarity']);
@@ -958,6 +1249,114 @@ class _ShopTabState extends State<ShopTab> {
     );
   }
 
+  Widget _buildCoinPackCard(Map<String, String> pack) {
+    return SizedBox(
+      height: 220,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(8, 9, 8, 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF080A1F).withOpacity(0.96),
+              Color(0xFF18071D).withOpacity(0.9),
+            ],
+          ),
+          border: Border.all(color: Color(0xFFEC4899).withOpacity(0.24)),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0xFFEC4899).withOpacity(0.08),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: 76,
+              child: Image.asset(
+                pack['image']!,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.none,
+                isAntiAlias: false,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              pack['name']!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                height: 1.05,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 7),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/SYBAU_Coin.png',
+                    width: 17,
+                    height: 17,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.none,
+                    isAntiAlias: false,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    pack['coins']!,
+                    style: const TextStyle(
+                      color: Color(0xFFFACC15),
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            SizedBox(
+              height: 36,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(9),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF22C55E), Color(0xFF14532D)],
+                  ),
+                  border: Border.all(
+                    color: Color(0xFF4ADE80).withOpacity(0.42),
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    pack['price']!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ---------- Buy / Open confirm dialog ----------
 
   Widget _buildConfirmDialog() {
@@ -965,7 +1364,6 @@ class _ShopTabState extends State<ShopTab> {
     final isChest = _pendingPurchase!['isChest'] == true;
     final name = _td(_string(_pendingPurchase!['name']));
     final price = _toInt(_pendingPurchase!['price']);
-    final imageUrl = _string(_pendingPurchase!['imageUrl']);
     final canAfford = _currentCoins >= price;
 
     return Container(
@@ -1151,23 +1549,46 @@ class _ShopTabState extends State<ShopTab> {
     );
   }
 
+  String _openChestAssetForName(String name, String imageUrl) {
+    final search = '$name $imageUrl'.toLowerCase();
+    if (search.contains('premium') || search.contains('prestige')) {
+      return 'assets/Prestige_Chest_open.png';
+    }
+    if (search.contains('gold')) return 'assets/Gold_Chest_open.png';
+    return 'assets/Starter_Chest_open.png';
+  }
+
   // ---------- Chest reward overlay ----------
 
   Widget _buildChestRewardOverlay() {
-    if (_openedReward == null) return const SizedBox.shrink();
-    final reward = _openedReward!;
-    final rewardItem = _map(reward['item'] ?? reward['Item'] ?? reward);
-    final rewardName = _td(
-      _string(rewardItem['name'] ?? rewardItem['Name'] ?? reward['name']),
-    );
-    final rewardImageUrl = _string(
-      rewardItem['imageUrl'] ?? rewardItem['ImageUrl'] ?? reward['imageUrl'],
-    );
-    final rarity = _shopRarity(rewardItem);
+    final chest = _openingChestPreview;
+    if (chest == null) return const SizedBox.shrink();
+
+    final chestId = _toInt(chest['id']);
+    final chestName = _td(_string(chest['name'], fallback: 'Chest'));
+    final closedImageUrl = _string(chest['imageUrl']);
+    final openedChestAsset = _openChestAssetForName(chestName, closedImageUrl);
+    final reward = _openedReward;
+    final rewardItem = reward == null
+        ? <String, dynamic>{}
+        : _map(reward['item'] ?? reward['Item'] ?? reward);
+    final rewardName = reward == null
+        ? ''
+        : _td(
+            _string(rewardItem['name'] ?? rewardItem['Name'] ?? reward['name']),
+          );
+    final rewardImageUrl = reward == null
+        ? ''
+        : _string(
+            rewardItem['imageUrl'] ??
+                rewardItem['ImageUrl'] ??
+                reward['imageUrl'],
+          );
+    final rarity = reward == null ? 'common' : _shopRarity(rewardItem);
     final accent = _rarityAccent(rarity);
 
     return AnimatedOpacity(
-      opacity: _openedReward == null ? 0 : 1,
+      opacity: 1,
       duration: const Duration(milliseconds: 220),
       child: Container(
         color: Colors.black.withOpacity(0.88),
@@ -1176,116 +1597,257 @@ class _ShopTabState extends State<ShopTab> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 340),
+                constraints: const BoxConstraints(maxWidth: 360),
                 child: TweenAnimationBuilder<double>(
                   tween: Tween<double>(begin: 0, end: 1),
                   duration: const Duration(milliseconds: 420),
                   curve: Curves.easeOutCubic,
                   builder: (_, value, __) {
-                    final imageScale = 0.82 + (value * 0.18);
+                    final imageScale = 0.86 + (value * 0.14);
                     final imageOffset = 28 * (1 - value);
                     return Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          _lt(de: 'Du hast erhalten:', en: 'You received:'),
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Transform.translate(
-                          offset: Offset(0, imageOffset),
-                          child: Opacity(
-                            opacity: value.clamp(0, 1),
-                            child: Transform.scale(
-                              scale: imageScale,
-                              child: rewardImageUrl.isNotEmpty
-                                  ? _buildShopImageFromUrl(
-                                      rewardImageUrl,
-                                      width: 118,
-                                      height: 118,
-                                      fallback: () => Text(
-                                        _rarityIcon(rarity),
-                                        style: const TextStyle(fontSize: 72),
+                        if (!_chestRevealStarted) ...[
+                          GestureDetector(
+                            onTap: () => _openChest(chestId),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Transform.translate(
+                                  offset: Offset(0, imageOffset),
+                                  child: Transform.scale(
+                                    scale: imageScale,
+                                    child: _buildShopImageFromUrl(
+                                      closedImageUrl,
+                                      width: 238,
+                                      height: 238,
+                                      fallback: () => const Text(
+                                        '📦',
+                                        style: TextStyle(fontSize: 92),
                                       ),
-                                    )
-                                  : Text(
-                                      _rarityIcon(rarity),
-                                      style: const TextStyle(fontSize: 72),
                                     ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Opacity(
-                          opacity: (value - 0.18).clamp(0, 1),
-                          child: Column(
-                            children: [
-                              Text(
-                                rewardName,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _rarityLabel(rarity).toUpperCase(),
-                                style: TextStyle(
-                                  color: accent,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.6,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _closeChestReward,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            child: Ink(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFFEC4899),
-                                    Color(0xFFF43F5E),
-                                  ],
-                                ),
-                              ),
-                              child: SizedBox(
-                                height: 50,
-                                child: Center(
+                                const SizedBox(height: 22),
+                                TweenAnimationBuilder<double>(
+                                  tween: Tween<double>(
+                                    begin: _openHintPulseBright ? 0.5 : 1,
+                                    end: _openHintPulseBright ? 1 : 0.5,
+                                  ),
+                                  duration: const Duration(milliseconds: 900),
+                                  curve: Curves.easeInOut,
+                                  onEnd: () {
+                                    if (mounted &&
+                                        _openingChestPreview != null &&
+                                        !_chestRevealStarted) {
+                                      setState(
+                                        () => _openHintPulseBright =
+                                            !_openHintPulseBright,
+                                      );
+                                    }
+                                  },
+                                  builder: (_, opacity, child) =>
+                                      Opacity(opacity: opacity, child: child),
                                   child: Text(
-                                    _lt(de: 'Weiter', en: 'Continue'),
+                                    _lt(
+                                      de: 'Klicke zum Öffnen',
+                                      en: 'Click to open',
+                                    ),
+                                    textAlign: TextAlign.center,
                                     style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 16,
+                                      color: Colors.white70,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1.1,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ] else ...[
+                          if (_openingChest && reward == null) ...[
+                            Transform.translate(
+                              offset: Offset(0, imageOffset * 0.5),
+                              child: Transform.scale(
+                                scale: imageScale,
+                                child: Image.asset(
+                                  openedChestAsset,
+                                  width: 270,
+                                  height: 210,
+                                  fit: BoxFit.contain,
+                                  filterQuality: FilterQuality.none,
+                                  isAntiAlias: false,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFFF9A8D4),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _lt(de: 'Öffnet...', en: 'Opening...'),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                          if (reward != null) ...[
+                            SizedBox(
+                              height: 282,
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                alignment: Alignment.center,
+                                children: [
+                                  Positioned(
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    child: ColorFiltered(
+                                      colorFilter: ColorFilter.mode(
+                                        Colors.black.withOpacity(0.32),
+                                        BlendMode.srcATop,
+                                      ),
+                                      child: Image.asset(
+                                        openedChestAsset,
+                                        width: 284,
+                                        height: 190,
+                                        fit: BoxFit.contain,
+                                        filterQuality: FilterQuality.none,
+                                        isAntiAlias: false,
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    left: 0,
+                                    right: 0,
+                                    top: -18,
+                                    child: TweenAnimationBuilder<double>(
+                                      key: ValueKey(
+                                        '$chestId-$rewardName-$rewardImageUrl',
+                                      ),
+                                      tween: Tween<double>(begin: 0, end: 1),
+                                      duration: const Duration(
+                                        milliseconds: 620,
+                                      ),
+                                      curve: Curves.easeOutBack,
+                                      builder: (_, revealValue, child) {
+                                        final progress = revealValue.clamp(
+                                          0.0,
+                                          1.0,
+                                        );
+                                        return Opacity(
+                                          opacity: progress,
+                                          child: Transform.translate(
+                                            offset: Offset(
+                                              0,
+                                              72 * (1 - progress),
+                                            ),
+                                            child: Transform.scale(
+                                              scale: 0.74 + (progress * 0.26),
+                                              child: child,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: Center(
+                                        child: rewardImageUrl.isNotEmpty
+                                            ? _buildShopImageFromUrl(
+                                                rewardImageUrl,
+                                                width: 154,
+                                                height: 154,
+                                                fallback: () => Text(
+                                                  _rarityIcon(rarity),
+                                                  style: const TextStyle(
+                                                    fontSize: 86,
+                                                  ),
+                                                ),
+                                              )
+                                            : Text(
+                                                _rarityIcon(rarity),
+                                                style: const TextStyle(
+                                                  fontSize: 86,
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              rewardName,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 30,
+                                fontWeight: FontWeight.w800,
+                                height: 1,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _rarityLabel(rarity).toUpperCase(),
+                              style: TextStyle(
+                                color: accent,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.6,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: _closeChestReward,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  padding: EdgeInsets.zero,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                child: Ink(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(14),
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFFEC4899),
+                                        Color(0xFFF43F5E),
+                                      ],
+                                    ),
+                                  ),
+                                  child: SizedBox(
+                                    height: 50,
+                                    child: Center(
+                                      child: Text(
+                                        _lt(de: 'Weiter', en: 'Continue'),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 16,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ),
+                          ],
+                        ],
                       ],
                     );
                   },
@@ -1384,11 +1946,27 @@ class _ShopTabState extends State<ShopTab> {
                     ],
                   ),
                 ),
-                ..._displayItems.map(
-                  (item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _buildShopItemCard(item),
-                  ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    const spacing = 10.0;
+                    final columns = constraints.maxWidth >= 330 ? 3 : 2;
+                    final cardWidth =
+                        (constraints.maxWidth - spacing * (columns - 1)) /
+                        columns;
+                    return Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: spacing,
+                      runSpacing: spacing,
+                      children: _displayItems
+                          .map(
+                            (item) => SizedBox(
+                              width: cardWidth,
+                              child: _buildCompactShopItemCard(item),
+                            ),
+                          )
+                          .toList(growable: false),
+                    );
+                  },
                 ),
                 const SizedBox(height: 18),
               ],
@@ -1424,7 +2002,10 @@ class _ShopTabState extends State<ShopTab> {
                 LayoutBuilder(
                   builder: (context, constraints) {
                     const spacing = 10.0;
-                    final cardWidth = (constraints.maxWidth - spacing) / 2;
+                    final columns = constraints.maxWidth >= 330 ? 3 : 2;
+                    final cardWidth =
+                        (constraints.maxWidth - spacing * (columns - 1)) /
+                        columns;
                     return Wrap(
                       alignment: WrapAlignment.center,
                       spacing: spacing,
@@ -1433,7 +2014,7 @@ class _ShopTabState extends State<ShopTab> {
                           .map(
                             (c) => SizedBox(
                               width: cardWidth,
-                              child: _buildChestCard(c),
+                              child: _buildChestCard(c, compact: columns == 3),
                             ),
                           )
                           .toList(growable: false),
@@ -1442,6 +2023,55 @@ class _ShopTabState extends State<ShopTab> {
                 ),
                 const SizedBox(height: 18),
               ],
+
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(2),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFEC4899), Color(0xFFF43F5E)],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _lt(de: 'Coin Pakete', en: 'Coin packs'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  const spacing = 8.0;
+                  final cardWidth = (constraints.maxWidth - spacing * 2) / 3;
+                  return Row(
+                    children: [
+                      for (
+                        var index = 0;
+                        index < _coinPacks.length;
+                        index++
+                      ) ...[
+                        if (index > 0) const SizedBox(width: spacing),
+                        SizedBox(
+                          width: cardWidth,
+                          child: _buildCoinPackCard(_coinPacks[index]),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 18),
 
               if (_displayChests.isEmpty && _displayItems.isEmpty)
                 Padding(
@@ -1597,7 +2227,7 @@ class _ShopTabState extends State<ShopTab> {
 
         // Overlays
         if (_pendingPurchase != null) _buildConfirmDialog(),
-        if (_openedReward != null) _buildChestRewardOverlay(),
+        if (_openingChestPreview != null) _buildChestRewardOverlay(),
       ],
     );
   }

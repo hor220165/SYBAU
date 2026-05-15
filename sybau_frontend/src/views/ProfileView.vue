@@ -116,28 +116,79 @@
           <div class="section-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='4' rx='2' ry='2'/><line x1='16' x2='16' y1='2' y2='6'/><line x1='8' x2='8' y1='2' y2='6'/><line x1='3' x2='21' y1='10' y2='10'/></svg>`"></div>
           <h2>{{ settingsCopy.weeklyActivity }}</h2>
         </div>
-        <div class="week-label">{{ weekLabel }}</div>
+        <div class="activity-controls" :class="`mode-${activityMode}`">
+          <div class="activity-mode-toggle" role="group" aria-label="Aktivitaetstyp">
+            <button
+              type="button"
+              :class="{ active: activityMode === 'workouts' }"
+              @click="activityMode = 'workouts'"
+            >
+              Workouts
+            </button>
+            <button
+              type="button"
+              :class="{ active: activityMode === 'steps' }"
+              @click="activityMode = 'steps'"
+            >
+              Schritte
+            </button>
+          </div>
+          <select v-model.number="selectedActivityYear" class="activity-year-select" @change="loadWeeklyActivity">
+            <option v-for="year in activityYears" :key="year" :value="year">{{ year }}</option>
+          </select>
+        </div>
       </div>
 
-      <div class="activity-calendar">
-        <button class="week-nav prev" @click="previousWeek">&#8592;</button>
-        <div class="days-grid">
-          <div
-            v-for="day in currentWeekDays"
-            :key="day.date"
-            class="day-card"
-            :class="{ active: day.workoutDone, today: day.isToday }"
+      <div class="activity-heatmap" :class="`mode-${activityMode}`">
+        <div class="heatmap-months">
+          <span class="heatmap-weekday-spacer"></span>
+          <span
+            v-for="week in activityHeatmapWeeks"
+            :key="`month-${week.start}`"
+            class="heatmap-month"
           >
-            <span class="day-name">{{ day.name }}</span>
-            <span class="day-date">{{ day.dateDisplay }}</span>
-            <div class="day-indicator">
-              <span v-if="day.workoutDone" class="star-icon"><img src="../assets/Star_Pixel.png" alt=""></span>
-              <span v-else class="empty-icon">&#8211;</span>
+            {{ week.monthLabel }}
+          </span>
+        </div>
+        <div class="heatmap-body">
+          <div class="heatmap-weekdays">
+            <span></span>
+            <span>Mo</span>
+            <span></span>
+            <span>Mi</span>
+            <span></span>
+            <span>Fr</span>
+            <span></span>
+          </div>
+          <div class="heatmap-grid">
+            <div
+              v-for="week in activityHeatmapWeeks"
+              :key="week.start"
+              class="heatmap-week"
+            >
+              <span
+                v-for="day in week.days"
+                :key="day.date"
+                class="heatmap-cell"
+                :class="[`heatmap-level-${day.level}`, { today: day.isToday, future: day.isFuture }]"
+                :title="day.title"
+              ></span>
             </div>
-            <span class="day-duration">{{ day.duration }}</span>
           </div>
         </div>
-        <button class="week-nav next" @click="nextWeek" :disabled="isCurrentWeek">&#8594;</button>
+        <div class="heatmap-footer">
+          <span>{{ activityTotalLabel }}</span>
+          <div class="heatmap-legend">
+            <span>Weniger</span>
+            <span
+              v-for="level in heatmapLegendLevels"
+              :key="level"
+              class="heatmap-cell"
+              :class="`heatmap-level-${level}`"
+            ></span>
+            <span>Mehr</span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -586,31 +637,66 @@ const nextAchievements = () => {
     currentAchievementIndex.value += visibleCount.value;
 };
 
-// Weekly Activity
-const currentWeekOffset = ref(0);
-const activityDates = ref<Map<string, number>>(new Map());
+// Activity heatmap
+type ActivityMode = 'workouts' | 'steps';
+const activityMode = ref<ActivityMode>('workouts');
+const activityDates = ref<Map<string, { reps: number; steps: number }>>(new Map());
+const selectedActivityYear = ref(new Date().getFullYear());
+const activityYears = ref<number[]>([selectedActivityYear.value]);
+const heatmapLegendLevels = [0, 1, 2, 3, 4];
+const monthFormatter = new Intl.DateTimeFormat('de-DE', { month: 'short' });
 
-function getMonday(offset: number): Date {
-  const today = new Date();
-  const currentDay = today.getDay();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - currentDay + (currentDay === 0 ? -6 : 1) + (offset * 7));
-  return monday;
+function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function mondayOf(date: Date): Date {
+  const normalized = startOfDay(date);
+  const weekday = normalized.getDay() === 0 ? 7 : normalized.getDay();
+  normalized.setDate(normalized.getDate() - weekday + 1);
+  return normalized;
 }
 
 function toDateString(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function getHeatmapRange() {
+  const today = startOfDay(new Date());
+  const selectedYear = selectedActivityYear.value;
+  const start = mondayOf(new Date(selectedYear, 0, 1));
+  const end = selectedYear === today.getFullYear()
+    ? today
+    : new Date(selectedYear, 11, 31);
+  return { start, end, today };
+}
+
+function normalizeActivityDate(value: unknown): string {
+  const [date = ''] = String(value ?? '').split('T');
+  return date;
+}
+
 async function loadWeeklyActivity() {
-  const monday = getMonday(currentWeekOffset.value);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
+  const { start, end } = getHeatmapRange();
   try {
-    const res = await userService.getWeeklyActivity(toDateString(monday), toDateString(sunday));
-    const map = new Map<string, number>();
-    (res.data as Array<{ date: string; reps: number }> || []).forEach(item => {
-      map.set(item.date, item.reps);
+    const res = await userService.getWeeklyActivity(toDateString(start), toDateString(end));
+    const map = new Map<string, { reps: number; steps: number }>();
+    (res.data as Array<Record<string, unknown>> || []).forEach(item => {
+      const date = normalizeActivityDate(item.date ?? item.Date ?? item.day);
+      const reps = Number(item.reps ?? item.Reps ?? item.count ?? item.totalReps ?? 0);
+      const steps = Number(item.steps ?? item.Steps ?? 0);
+      if (date) {
+        map.set(date, {
+          reps: Number.isFinite(reps) ? reps : 0,
+          steps: Number.isFinite(steps) ? steps : 0
+        });
+      }
     });
     activityDates.value = map;
   } catch {
@@ -618,33 +704,92 @@ async function loadWeeklyActivity() {
   }
 }
 
-const getWeekDays = (offset: number) => {
-  const today = new Date();
-  const monday = getMonday(offset);
-  const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-  const weekDays = [];
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(monday);
-    date.setDate(monday.getDate() + i);
-    const isToday = date.toDateString() === today.toDateString();
-    const dateDisplay = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-    const reps = activityDates.value.get(toDateString(date)) ?? 0;
-    const workoutDone = reps > 0;
-    const duration = workoutDone ? `${reps} Einheiten` : '–';
-    weekDays.push({ name: days[i], date: date.toISOString(), dateDisplay, workoutDone, duration, isToday });
+async function loadActivityYears() {
+  const currentYear = new Date().getFullYear();
+  try {
+    const res = await userService.getActivityYears();
+    const years = (res.data as unknown[])
+      .map(year => Number(year))
+      .filter(year => Number.isInteger(year) && year > 2000)
+      .sort((a, b) => b - a);
+    activityYears.value = years.length ? years : [currentYear];
+  } catch {
+    activityYears.value = [currentYear];
   }
-  return weekDays;
-};
 
-const currentWeekDays = computed(() => getWeekDays(currentWeekOffset.value));
-const isCurrentWeek = computed(() => currentWeekOffset.value === 0);
-const previousWeek = () => { currentWeekOffset.value--; loadWeeklyActivity(); };
-const nextWeek = () => { if (!isCurrentWeek.value) { currentWeekOffset.value++; loadWeeklyActivity(); } };
+  if (!activityYears.value.includes(selectedActivityYear.value)) {
+    selectedActivityYear.value = activityYears.value[0] ?? currentYear;
+  }
+}
 
-const weekLabel = computed(() => {
-  const days = currentWeekDays.value || [];
-  return `${days[0]?.dateDisplay} – ${days[6]?.dateDisplay}`;
+function activityValue(entry: { reps: number; steps: number }): number {
+  return activityMode.value === 'steps' ? entry.steps : entry.reps;
+}
+
+function activityLevel(value: number): number {
+  if (value <= 0) return 0;
+  if (activityMode.value === 'steps') {
+    if (value < 2500) return 1;
+    if (value < 6000) return 2;
+    if (value < 10000) return 3;
+    return 4;
+  }
+  if (value < 30) return 1;
+  if (value < 60) return 2;
+  if (value < 100) return 3;
+  return 4;
+}
+
+const activityHeatmapWeeks = computed(() => {
+  const { start, end, today } = getHeatmapRange();
+  const todayKey = toDateString(today);
+  const weeks = [];
+
+  for (let cursor = new Date(start); cursor <= end; cursor = addDays(cursor, 7)) {
+    const days = [];
+    let monthLabel = '';
+
+    for (let index = 0; index < 7; index++) {
+      const date = addDays(cursor, index);
+      if (date > end) continue;
+      const key = toDateString(date);
+      const entry = activityDates.value.get(key) ?? { reps: 0, steps: 0 };
+      const value = activityValue(entry);
+      const isFuture = date > today;
+
+      if (!monthLabel && (date.getDate() === 1 || toDateString(cursor) === toDateString(start))) {
+        monthLabel = monthFormatter.format(date);
+      }
+
+      days.push({
+        date: key,
+        value,
+        level: isFuture ? 0 : activityLevel(value),
+        isToday: key === todayKey,
+        isFuture,
+        title: isFuture ? key : `${key}: ${value} ${activityMode.value === 'steps' ? 'Schritte' : 'Reps'}`,
+      });
+    }
+
+    weeks.push({
+      start: toDateString(cursor),
+      monthLabel,
+      days,
+    });
+  }
+
+  return weeks;
 });
+
+const activityTotal = computed(() =>
+  [...activityDates.value.values()].reduce((sum, entry) => sum + Math.max(0, activityValue(entry)), 0)
+);
+
+const activityTotalLabel = computed(() =>
+  activityMode.value === 'steps'
+    ? `${activityTotal.value.toLocaleString('de-DE')} Schritte in ${selectedActivityYear.value}`
+    : `${activityTotal.value.toLocaleString('de-DE')} Reps in ${selectedActivityYear.value}`
+);
 
 const recentActivities = ref<Array<{ id: number; icon: string; title: string; time: string; xp: number; type: 'workout' | 'quest' | 'achievement' | 'level' }>>([]);
 
@@ -712,6 +857,7 @@ onMounted(async () => {
       currentStreak.value = statsRes.data.currentStreak ?? 0;
     } catch { /* Achievements/Stats nicht verfügbar */ }
 
+    await loadActivityYears();
     await loadWeeklyActivity();
     await loadRecentActivities();
   } catch (err) {
@@ -939,12 +1085,6 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
-.week-label {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
-  font-weight: 500;
-}
-
 /* ── Achievements Carousel ── */
 .achievements-carousel {
   display: flex;
@@ -1013,115 +1153,162 @@ onMounted(async () => {
   border-radius: 4px;
 }
 
-/* ── Weekly Calendar ── */
-.activity-calendar {
-  display: flex;
-  align-items: stretch;
-  gap: 12px;
-}
-
-.week-nav {
-  width: 44px;
-  min-height: 80px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(30, 41, 59, 0.6);
-  color: white;
-  font-size: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-  flex-shrink: 0;
+/* ── Activity Heatmap ── */
+.activity-controls {
   display: flex;
   align-items: center;
-  justify-content: center;
-}
-
-.week-nav:hover:not(:disabled) {
-  background: rgba(59, 130, 246, 0.3);
-  border-color: rgba(59, 130, 246, 0.5);
-  transform: scale(1.05);
-}
-
-.week-nav:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.days-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
   gap: 10px;
-  flex: 1;
-  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
-.day-card {
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
-  padding: 14px 8px;
+.activity-mode-toggle {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.activity-mode-toggle button {
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.64);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.activity-mode-toggle button.active {
+  color: #fff;
+  background: rgba(236, 72, 153, 0.28);
+  box-shadow: 0 0 18px rgba(236, 72, 153, 0.2);
+}
+
+.activity-controls.mode-steps .activity-mode-toggle button.active {
+  background: rgba(251, 146, 60, 0.28);
+  box-shadow: 0 0 18px rgba(251, 146, 60, 0.18);
+}
+
+.activity-year-select {
+  min-height: auto;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  padding: 0 4px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  outline: none;
+}
+
+.activity-heatmap {
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(236, 72, 153, 0.16);
+  background: rgba(2, 6, 23, 0.38);
+  padding: 18px;
+}
+
+.heatmap-months,
+.heatmap-body {
+  width: max-content;
+  min-width: 100%;
+}
+
+.heatmap-months {
   display: flex;
-  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.heatmap-weekday-spacer {
+  width: 32px;
+  flex: 0 0 32px;
+}
+
+.heatmap-month {
+  width: 14px;
+  min-height: 16px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.heatmap-body {
+  display: flex;
+  gap: 8px;
+}
+
+.heatmap-weekdays {
+  display: grid;
+  grid-template-rows: repeat(7, 14px);
+  gap: 4px;
+  width: 32px;
+  flex: 0 0 32px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 14px;
+}
+
+.heatmap-grid {
+  display: flex;
+  gap: 4px;
+}
+
+.heatmap-week {
+  display: grid;
+  grid-template-rows: repeat(7, 14px);
+  gap: 4px;
+}
+
+.heatmap-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.heatmap-level-1 { background: rgba(157, 23, 77, 0.5); border-color: rgba(236, 72, 153, 0.16); }
+.heatmap-level-2 { background: rgba(219, 39, 119, 0.7); border-color: rgba(244, 114, 182, 0.22); }
+.heatmap-level-3 { background: rgba(236, 72, 153, 0.94); border-color: rgba(244, 114, 182, 0.32); }
+.heatmap-level-4 { background: #ff4fb3; border-color: rgba(251, 207, 232, 0.55); box-shadow: 0 0 10px rgba(236, 72, 153, 0.32); }
+
+.mode-steps .heatmap-level-1 { background: rgba(154, 52, 18, 0.54); border-color: rgba(251, 146, 60, 0.18); }
+.mode-steps .heatmap-level-2 { background: rgba(234, 88, 12, 0.72); border-color: rgba(251, 146, 60, 0.24); }
+.mode-steps .heatmap-level-3 { background: rgba(249, 115, 22, 0.9); border-color: rgba(253, 186, 116, 0.32); }
+.mode-steps .heatmap-level-4 { background: #fb923c; border-color: rgba(254, 215, 170, 0.55); box-shadow: 0 0 10px rgba(249, 115, 22, 0.3); }
+
+.heatmap-cell.today {
+  outline: 2px solid rgba(255, 255, 255, 0.72);
+  outline-offset: 1px;
+}
+
+.heatmap-cell.future {
+  opacity: 0.38;
+}
+
+.heatmap-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.heatmap-legend {
+  display: flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-  min-width: 0;
-}
-
-.day-card.active {
-  background: rgba(34, 197, 94, 0.2);
-  border-color: rgba(34, 197, 94, 0.4);
-}
-
-.day-card.today {
-  border: 2px solid rgba(236, 72, 153, 0.6);
-  box-shadow: 0 0 20px rgba(236, 72, 153, 0.3);
-}
-
-.day-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.day-date {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.day-indicator {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.star-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.star-icon img {
-  width: 36px;
-  height: 36px;
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.5));
-}
-
-.empty-icon {
-  color: rgba(255, 255, 255, 0.2);
-  font-size: 24px;
-}
-
-.day-duration {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
 }
 
 /* ── Activities ── */
@@ -1498,15 +1685,9 @@ onMounted(async () => {
     grid-template-rows: repeat(2, auto);
   }
 
-  .days-grid { gap: 8px; }
-
-  .day-card { padding: 12px 6px; }
-
-  .day-name { font-size: 11px; }
-  .day-date { font-size: 9px; }
-  .day-duration { font-size: 9px; }
-
-  .star-icon img { width: 30px; height: 30px; }
+  .activity-heatmap {
+    overflow-x: auto;
+  }
 }
 
 /* Tablet small (768px) */
@@ -1542,56 +1723,25 @@ onMounted(async () => {
 
   .section-header h2 { font-size: 20px; }
 
+  .activity-controls {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
   .achievements-grid {
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(2, auto);
     gap: 12px;
   }
 
-  /* Calendar: horizontal scroll on mobile */
-  .activity-calendar {
+  .activity-heatmap {
+    padding: 14px;
+  }
+
+  .heatmap-footer {
+    align-items: flex-start;
     flex-direction: column;
-    gap: 12px;
-  }
-
-  .week-nav-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .week-nav {
-    width: 40px;
-    height: 40px;
-    min-height: unset;
-  }
-
-  .days-grid {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(44px, 1fr));
-    gap: 6px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
-
-  .day-card {
-    padding: 10px 4px;
-    border-radius: 10px;
-    min-width: 44px;
-  }
-
-  .day-name { font-size: 10px; }
-  .day-date { font-size: 9px; display: none; }
-  .day-duration { font-size: 9px; display: none; }
-
-  .day-indicator { width: 28px; height: 28px; }
-  .star-icon img { width: 26px; height: 26px; }
-  .empty-icon { font-size: 18px; }
-
-  /* Borrow the nav buttons on either side in a row */
-  .activity-calendar {
-    flex-direction: row;
-    align-items: center;
+    gap: 10px;
   }
 
   .settings-sidebar { max-width: 100%; }
@@ -1628,6 +1778,14 @@ onMounted(async () => {
   .section-header { margin-bottom: 16px; }
   .section-header h2 { font-size: 17px; }
 
+  .activity-mode-toggle {
+    width: 100%;
+  }
+
+  .activity-mode-toggle button {
+    flex: 1;
+  }
+
   .achievement-count { font-size: 12px; padding: 6px 10px; }
 
   .achievements-grid {
@@ -1659,27 +1817,18 @@ onMounted(async () => {
     font-size: 16px;
   }
 
-  .days-grid {
-    grid-template-columns: repeat(7, minmax(38px, 1fr));
-    gap: 4px;
+  .heatmap-cell {
+    width: 12px;
+    height: 12px;
   }
 
-  .day-card {
-    padding: 8px 2px;
-    gap: 4px;
-    border-radius: 8px;
-    min-width: 38px;
+  .heatmap-week {
+    grid-template-rows: repeat(7, 12px);
   }
 
-  .day-name { font-size: 9px; }
-
-  .day-indicator { width: 24px; height: 24px; }
-  .star-icon img { width: 22px; height: 22px; }
-
-  .week-nav {
-    width: 34px;
-    height: 34px;
-    font-size: 16px;
+  .heatmap-weekdays {
+    grid-template-rows: repeat(7, 12px);
+    line-height: 12px;
   }
 
   .settings-header { padding: 20px; }

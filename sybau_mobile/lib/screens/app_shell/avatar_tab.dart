@@ -144,6 +144,52 @@ class _AvatarTabState extends State<AvatarTab> {
     }
   }
 
+  String _rarityLabel(String rarity) {
+    if (rarity == 'mythic') return 'Mythisch';
+    return _td(rarity);
+  }
+
+  Widget _inventoryQuantityBadge(int quantity) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: const Color(0xFF2A1230).withOpacity(0.94),
+        border: Border.all(color: const Color(0xFFF9A8D4).withOpacity(0.38)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFEC4899).withOpacity(0.24),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+      child: Text(
+        'x$quantity',
+        maxLines: 1,
+        style: const TextStyle(
+          color: Color(0xFFF9A8D4),
+          fontWeight: FontWeight.w900,
+          fontSize: 10.5,
+          height: 1,
+        ),
+      ),
+    );
+  }
+
+  Widget _inventoryBoostText({required String label, required Color color}) {
+    return Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: color,
+        fontSize: 13,
+        height: 1.08,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+  }
+
   Future<void> _requestSellBooster(Booster booster) async {
     setState(() {
       _pendingSellBooster = booster;
@@ -182,11 +228,6 @@ class _AvatarTabState extends State<AvatarTab> {
         ),
       );
     }
-  }
-
-  int _equippedCount(int? boosterId) {
-    if (boosterId == null) return 0;
-    return _slots.where((Booster? b) => b?.id == boosterId).length;
   }
 
   int _availableQuantityForSlot(int slotIndex, Booster booster) {
@@ -368,6 +409,8 @@ class _AvatarTabState extends State<AvatarTab> {
                       }
 
                       final booster = _inventory[index - 1];
+                      final rarity = _rarityOf(booster);
+                      final accent = _boosterAccent(booster);
                       final available = _availableQuantityForSlot(
                         slotIndex,
                         booster,
@@ -386,45 +429,64 @@ class _AvatarTabState extends State<AvatarTab> {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: available > 0 || isCurrent
-                                ? Color(0xFFA855F7).withOpacity(0.12)
+                                ? accent.withOpacity(0.12)
                                 : Colors.white.withOpacity(0.03),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: available > 0 || isCurrent
-                                  ? Color(0xFFA855F7).withOpacity(0.3)
+                                  ? accent.withOpacity(0.3)
                                   : Colors.white.withOpacity(0.06),
                             ),
                           ),
                           child: Row(
                             children: [
-                              Container(
-                                width: 42,
-                                height: 42,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: Colors.white.withOpacity(0.05),
-                                ),
-                                child: booster.imageUrl.isNotEmpty
-                                    ? ClipRRect(
-                                        borderRadius: BorderRadius.circular(10),
-                                        child: _buildMediaImageFromUrl(
-                                          booster.imageUrl,
-                                          width: 30,
-                                          height: 30,
-                                          fit: BoxFit.contain,
-                                          fallback: () => Text(
-                                            _boosterIcon(booster),
-                                            style: const TextStyle(
-                                              fontSize: 20,
-                                            ),
-                                          ),
-                                        ),
-                                      )
-                                    : Text(
-                                        _boosterIcon(booster),
-                                        style: const TextStyle(fontSize: 20),
+                              SizedBox(
+                                width: 50,
+                                height: 50,
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Container(
+                                      width: 44,
+                                      height: 44,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        color: accent.withOpacity(0.12),
                                       ),
+                                      child: booster.imageUrl.isNotEmpty
+                                          ? ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              child: _buildMediaImageFromUrl(
+                                                booster.imageUrl,
+                                                width: 34,
+                                                height: 34,
+                                                fit: BoxFit.contain,
+                                                fallback: () => Text(
+                                                  _boosterIcon(booster),
+                                                  style: const TextStyle(
+                                                    fontSize: 20,
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                          : Text(
+                                              _boosterIcon(booster),
+                                              style: const TextStyle(
+                                                fontSize: 20,
+                                              ),
+                                            ),
+                                    ),
+                                    Positioned(
+                                      top: -4,
+                                      right: 0,
+                                      child: _inventoryQuantityBadge(
+                                        booster.quantity,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -442,12 +504,27 @@ class _AvatarTabState extends State<AvatarTab> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      'XP +${booster.xpBoostPercentage}% • Coins +${booster.coinBoostPercentage}%',
+                                      _rarityLabel(rarity).toUpperCase(),
                                       style: TextStyle(
-                                        color: Colors.white.withOpacity(0.62),
-                                        fontSize: 12,
+                                        color: accent,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 1.2,
                                       ),
                                     ),
+                                    const SizedBox(height: 5),
+                                    if (booster.xpBoostPercentage > 0)
+                                      _inventoryBoostText(
+                                        label:
+                                            'XP +${booster.xpBoostPercentage}%',
+                                        color: const Color(0xFF60A5FA),
+                                      ),
+                                    if (booster.coinBoostPercentage > 0)
+                                      _inventoryBoostText(
+                                        label:
+                                            'Coins +${booster.coinBoostPercentage}%',
+                                        color: const Color(0xFFFACC15),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -482,17 +559,6 @@ class _AvatarTabState extends State<AvatarTab> {
     setState(() {
       _slots[slotIndex] = selected.clear ? null : selected.booster;
       _selectingSlotFor = null;
-    });
-    await _persistSlots(previous);
-  }
-
-  Future<void> _unequipBoosterById(int? boosterId) async {
-    if (boosterId == null) return;
-    final previous = List<Booster?>.from(_slots);
-    final index = _slots.indexWhere((Booster? b) => b?.id == boosterId);
-    if (index < 0) return;
-    setState(() {
-      _slots[index] = null;
     });
     await _persistSlots(previous);
   }
@@ -962,132 +1028,197 @@ class _AvatarTabState extends State<AvatarTab> {
                       : _inventory
                             .map((booster) {
                               final accent = _boosterAccent(booster);
-                              final isEquipped = _equippedCount(booster.id) > 0;
+                              final rarity = _rarityOf(booster);
 
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 10),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(14),
-                                  color: Colors.white.withOpacity(0.04),
-                                  border: Border.all(
-                                    color: accent.withOpacity(0.14),
+                              return SizedBox(
+                                height: 118,
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        accent.withOpacity(0.08),
+                                        Colors.white.withOpacity(0.035),
+                                      ],
+                                    ),
+                                    border: Border.all(
+                                      color: accent.withOpacity(0.22),
+                                    ),
                                   ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 48,
-                                      height: 48,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(12),
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            accent.withOpacity(0.16),
-                                            accent.withOpacity(0.05),
+                                  child: Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 64,
+                                        height: 64,
+                                        child: Stack(
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            Container(
+                                              width: 58,
+                                              height: 58,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(14),
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                  colors: [
+                                                    accent.withOpacity(0.2),
+                                                    accent.withOpacity(0.06),
+                                                  ],
+                                                ),
+                                                border: Border.all(
+                                                  color: Colors.white
+                                                      .withOpacity(0.06),
+                                                ),
+                                              ),
+                                              child: Center(
+                                                child:
+                                                    booster.imageUrl.isNotEmpty
+                                                    ? ClipRRect(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              12,
+                                                            ),
+                                                        child: _buildMediaImageFromUrl(
+                                                          booster.imageUrl,
+                                                          width: 44,
+                                                          height: 44,
+                                                          fit: BoxFit.contain,
+                                                          fallback: () => Text(
+                                                            _boosterIcon(
+                                                              booster,
+                                                            ),
+                                                            style:
+                                                                const TextStyle(
+                                                                  fontSize: 21,
+                                                                ),
+                                                          ),
+                                                        ),
+                                                      )
+                                                    : Text(
+                                                        _boosterIcon(booster),
+                                                        style: const TextStyle(
+                                                          fontSize: 21,
+                                                        ),
+                                                      ),
+                                              ),
+                                            ),
+                                            Positioned(
+                                              top: -4,
+                                              right: 0,
+                                              child: _inventoryQuantityBadge(
+                                                booster.quantity,
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),
-                                      child: Center(
-                                        child: booster.imageUrl.isNotEmpty
-                                            ? ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                                child: _buildMediaImageFromUrl(
-                                                  booster.imageUrl,
-                                                  width: 34,
-                                                  height: 34,
-                                                  fit: BoxFit.contain,
-                                                  fallback: () => Text(
-                                                    _boosterIcon(booster),
-                                                    style: const TextStyle(
-                                                      fontSize: 18,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              _td(booster.name),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 18,
+                                                height: 1.05,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              _rarityLabel(
+                                                rarity,
+                                              ).toUpperCase(),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color: accent,
+                                                fontSize: 10,
+                                                height: 1,
+                                                letterSpacing: 1.35,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            SizedBox(
+                                              height: 32,
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  if (booster
+                                                          .xpBoostPercentage >
+                                                      0)
+                                                    _inventoryBoostText(
+                                                      label:
+                                                          'XP +${booster.xpBoostPercentage}%',
+                                                      color: const Color(
+                                                        0xFF60A5FA,
+                                                      ),
                                                     ),
-                                                  ),
-                                                ),
-                                              )
-                                            : Text(
-                                                _boosterIcon(booster),
-                                                style: const TextStyle(
-                                                  fontSize: 18,
-                                                ),
+                                                  if (booster
+                                                          .coinBoostPercentage >
+                                                      0)
+                                                    _inventoryBoostText(
+                                                      label:
+                                                          'Coins +${booster.coinBoostPercentage}%',
+                                                      color: const Color(
+                                                        0xFFFACC15,
+                                                      ),
+                                                    ),
+                                                ],
                                               ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            _td(booster.name),
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w700,
                                             ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            'XP +${booster.xpBoostPercentage}% • Coins +${booster.coinBoostPercentage}% • x${booster.quantity}',
-                                            style: TextStyle(
-                                              color: Colors.white.withOpacity(
-                                                0.6,
-                                              ),
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    if (isEquipped)
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          right: 8,
-                                        ),
-                                        child: TextButton(
-                                          onPressed: () =>
-                                              _unequipBoosterById(booster.id),
-                                          child: Text(
-                                            _lt(de: 'Ablegen', en: 'Unequip'),
-                                            style: const TextStyle(
-                                              color: Color(0xFFFCA5A5),
-                                            ),
-                                          ),
+                                          ],
                                         ),
                                       ),
-                                    InkWell(
-                                      onTap: () => _requestSellBooster(booster),
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 8,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
+                                      const SizedBox(width: 8),
+                                      InkWell(
+                                        onTap: () =>
+                                            _requestSellBooster(booster),
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 8,
                                           ),
-                                          color: Color(
-                                            0xFFF43F5E,
-                                          ).withOpacity(0.12),
-                                          border: Border.all(
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
                                             color: Color(
                                               0xFFF43F5E,
-                                            ).withOpacity(0.22),
+                                            ).withOpacity(0.12),
+                                            border: Border.all(
+                                              color: Color(
+                                                0xFFF43F5E,
+                                              ).withOpacity(0.22),
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.sell_rounded,
+                                            color: Color(0xFFF43F5E),
+                                            size: 18,
                                           ),
                                         ),
-                                        child: const Icon(
-                                          Icons.sell_rounded,
-                                          color: Color(0xFFF43F5E),
-                                          size: 18,
-                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               );
                             })
@@ -1101,8 +1232,6 @@ class _AvatarTabState extends State<AvatarTab> {
       ],
     );
   }
-
-  // ---------- Sell confirm dialog ----------
 
   Widget _buildSellConfirmDialog() {
     if (_pendingSellBooster == null) return const SizedBox.shrink();

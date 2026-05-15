@@ -236,7 +236,7 @@ public class UserService
 
     public async Task<List<WeeklyActivityDto>> GetWeeklyActivityAsync(int userId, DateOnly from, DateOnly to)
     {
-        return await _context.UserExerciseLogs
+        var workoutDays = await _context.UserExerciseLogs
             .Where(l => l.UserId == userId && l.Date >= from && l.Date <= to)
             .GroupBy(l => l.Date)
             .Select(g => new WeeklyActivityDto
@@ -245,6 +245,68 @@ public class UserService
                 Reps = g.Sum(l => l.Reps)
             })
             .ToListAsync();
+
+        var stepsByDate = await _context.ActivityLogs
+            .Where(l => l.UserId == userId && l.Type == ActivityType.Steps && l.Date >= from && l.Date <= to)
+            .GroupBy(l => l.Date)
+            .Select(g => new
+            {
+                Date = g.Key.ToString("yyyy-MM-dd"),
+                Steps = (int)g.Sum(l => l.Value)
+            })
+            .ToListAsync();
+
+        var byDate = workoutDays.ToDictionary(day => day.Date);
+        foreach (var stepsDay in stepsByDate)
+        {
+            if (byDate.TryGetValue(stepsDay.Date, out var day))
+            {
+                day.Steps = stepsDay.Steps;
+                continue;
+            }
+
+            byDate[stepsDay.Date] = new WeeklyActivityDto
+            {
+                Date = stepsDay.Date,
+                Steps = stepsDay.Steps
+            };
+        }
+
+        return byDate.Values.OrderBy(day => day.Date).ToList();
+    }
+
+    public async Task<List<int>> GetActivityYearsAsync(int userId)
+    {
+        var userCreatedAt = await _context.Users
+            .Where(u => u.Id == userId)
+            .Select(u => u.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        var exerciseDates = await _context.UserExerciseLogs
+            .Where(l => l.UserId == userId)
+            .Select(l => l.Date)
+            .ToListAsync();
+
+        var activityDates = await _context.ActivityLogs
+            .Where(l => l.UserId == userId)
+            .Select(l => l.Date)
+            .ToListAsync();
+
+        var activityYears = exerciseDates
+            .Concat(activityDates)
+            .Select(date => date.Year)
+            .ToList();
+
+        var currentYear = DateTime.UtcNow.Year;
+        var startYear = userCreatedAt == default ? currentYear : userCreatedAt.Year;
+        if (activityYears.Count > 0)
+        {
+            startYear = Math.Min(startYear, activityYears.Min());
+        }
+
+        return Enumerable.Range(startYear, currentYear - startYear + 1)
+            .OrderByDescending(year => year)
+            .ToList();
     }
 
     public async Task<List<RecentActivityDto>> GetRecentActivitiesAsync(int userId, int limit = 10)

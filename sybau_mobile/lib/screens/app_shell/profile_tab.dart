@@ -29,11 +29,13 @@ class _ProfileTabState extends State<ProfileTab> {
   Map<String, dynamic> _profileStats = <String, dynamic>{};
   List<dynamic> _recentActivities = <dynamic>[];
   List<dynamic> _weeklyActivity = <dynamic>[];
+  List<int> _activityYears = <int>[DateTime.now().year];
+  int _selectedActivityYear = DateTime.now().year;
+  String _activityMode = 'workouts';
   String? _profileImageUrl;
   Uint8List? _pickedProfileImageBytes;
   int _profileImageVersion = 0;
   int _currentAchievementIndex = 0;
-  int _currentWeekOffset = 0;
   bool _notificationsEnabled = false;
   bool _healthSyncEnabled = false;
   bool _settingsBusy = false;
@@ -63,13 +65,21 @@ class _ProfileTabState extends State<ProfileTab> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final week = _weekBounds(_currentWeekOffset);
+      final activityYears = await _loadActivityYearsSafe();
+      var selectedYear = _selectedActivityYear;
+      if (!activityYears.contains(selectedYear)) {
+        selectedYear = activityYears.first;
+      }
+      final activityRange = _activityHeatmapBounds(selectedYear);
       final results = await Future.wait<dynamic>([
         ApiService.getProfile(),
         ApiService.getAchievements(),
         ApiService.getProfileStats(),
         ApiService.getRecentActivities(limit: 10),
-        ApiService.getWeeklyActivity(from: week.$1, to: week.$2),
+        ApiService.getWeeklyActivity(
+          from: activityRange.$1,
+          to: activityRange.$2,
+        ),
         NotificationService.isEnabled(),
         NotificationService.reminderTime(),
         HealthSyncService.isEnabled(),
@@ -80,7 +90,12 @@ class _ProfileTabState extends State<ProfileTab> {
       final stats = results[2] as Map<String, dynamic>;
       final recent = results[3] as List<dynamic>;
       final weeklyRaw = (results[4] as List<dynamic>?) ?? <dynamic>[];
-      final weekDays = _normalizeWeeklyActivity(weeklyRaw, week.$1);
+      _selectedActivityYear = selectedYear;
+      final activityDays = _normalizeActivityHeatmap(
+        weeklyRaw,
+        activityRange.$1,
+        activityRange.$2,
+      );
       final profileImageUrl = _string(
         profile['profileImageUrl'],
         fallback: _string(profile['ProfileImageUrl']),
@@ -97,7 +112,9 @@ class _ProfileTabState extends State<ProfileTab> {
         _achievements = achievements;
         _profileStats = stats;
         _recentActivities = recent;
-        _weeklyActivity = weekDays;
+        _weeklyActivity = activityDays;
+        _activityYears = activityYears;
+        _selectedActivityYear = selectedYear;
         _profileImageUrl = profileImageUrl;
         _pickedProfileImageBytes = null;
         _currentAchievementIndex = 0;
@@ -499,14 +516,140 @@ class _ProfileTabState extends State<ProfileTab> {
     }
   }
 
-  ({DateTime $1, DateTime $2}) _weekBounds(int offset) {
-    final today = DateTime.now();
-    final normalizedToday = DateTime(today.year, today.month, today.day);
-    final monday = normalizedToday
-        .subtract(Duration(days: normalizedToday.weekday - 1))
-        .add(Duration(days: offset * 7));
-    final sunday = monday.add(const Duration(days: 6));
-    return ($1: monday, $2: sunday);
+  Future<List<int>> _loadActivityYearsSafe() async {
+    final currentYear = DateTime.now().year;
+    try {
+      final rawYears = await ApiService.getActivityYears();
+      final years =
+          rawYears
+              .map((dynamic value) => _toInt(value))
+              .where((year) => year > 2000)
+              .toSet()
+              .toList()
+            ..sort((a, b) => b.compareTo(a));
+      return years.isEmpty ? <int>[currentYear] : years;
+    } catch (_) {
+      return <int>[currentYear];
+    }
+  }
+
+  ({DateTime $1, DateTime $2}) _activityHeatmapBounds(int year) {
+    final now = DateTime.now();
+    final firstDay = DateTime(year, 1, 1);
+    final lastDay = year == now.year
+        ? DateTime(now.year, now.month, now.day)
+        : DateTime(year, 12, 31);
+    final start = firstDay.subtract(Duration(days: firstDay.weekday - 1));
+    final end = lastDay;
+    return ($1: start, $2: end);
+  }
+
+  DateTime _selectedActivityToday() {
+    final now = DateTime.now();
+    if (_selectedActivityYear == now.year) {
+      return DateTime(now.year, now.month, now.day);
+    }
+    return DateTime(_selectedActivityYear, 12, 31);
+  }
+
+  Future<void> _loadActivityForYear(int year) async {
+    final bounds = _activityHeatmapBounds(year);
+    try {
+      final weeklyRaw = await ApiService.getWeeklyActivity(
+        from: bounds.$1,
+        to: bounds.$2,
+      );
+      if (!mounted) return;
+      setState(() {
+        _selectedActivityYear = year;
+        _weeklyActivity = _normalizeActivityHeatmap(
+          weeklyRaw,
+          bounds.$1,
+          bounds.$2,
+        );
+      });
+    } catch (_) {
+      if (!mounted) return;
+      widget.showSnack('Aktivität konnte nicht geladen werden.');
+    }
+  }
+
+  Future<void> _openActivityYearPicker() async {
+    var draftYear = _selectedActivityYear;
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (context) {
+        return Container(
+          height: 290,
+          decoration: const BoxDecoration(
+            color: Color(0xFF080B14),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          ),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 52,
+                child: Row(
+                  children: [
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text(
+                        'Abbrechen',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ),
+                    const Spacer(),
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        unawaited(_loadActivityForYear(draftYear));
+                      },
+                      child: const Text(
+                        'Fertig',
+                        style: TextStyle(
+                          color: Color(0xFFFF4FB3),
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: CupertinoPicker(
+                  scrollController: FixedExtentScrollController(
+                    initialItem: math.max(
+                      0,
+                      _activityYears.indexOf(_selectedActivityYear),
+                    ),
+                  ),
+                  itemExtent: 44,
+                  onSelectedItemChanged: (index) {
+                    draftYear = _activityYears[index];
+                  },
+                  children: _activityYears
+                      .map(
+                        (year) => Center(
+                          child: Text(
+                            '$year',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   String _dateKey(DateTime date) {
@@ -516,11 +659,13 @@ class _ProfileTabState extends State<ProfileTab> {
     return '$y-$m-$d';
   }
 
-  List<Map<String, dynamic>> _normalizeWeeklyActivity(
+  List<Map<String, dynamic>> _normalizeActivityHeatmap(
     List<dynamic> raw,
-    DateTime monday,
+    DateTime start,
+    DateTime end,
   ) {
     final repsByDate = <String, int>{};
+    final stepsByDate = <String, int>{};
     for (final item in raw) {
       final map = _map(item);
       final rawDate = _string(
@@ -538,33 +683,163 @@ class _ProfileTabState extends State<ProfileTab> {
           fallback: _toInt(map['count'], fallback: _toInt(map['totalReps'])),
         ),
       );
+      final steps = _toInt(map['steps'], fallback: _toInt(map['Steps']));
       repsByDate[dateKey] = reps;
+      stepsByDate[dateKey] = steps;
     }
 
     const weekdayNames = <String>['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-    final today = DateTime.now();
+    final today = _selectedActivityToday();
     final todayKey = _dateKey(today);
-    return List<Map<String, dynamic>>.generate(7, (int index) {
-      final day = monday.add(Duration(days: index));
+    final dayCount = end.difference(start).inDays + 1;
+    return List<Map<String, dynamic>>.generate(dayCount, (int index) {
+      final day = start.add(Duration(days: index));
       final key = _dateKey(day);
       final reps = repsByDate[key] ?? 0;
+      final steps = stepsByDate[key] ?? 0;
       return <String, dynamic>{
-        'name': weekdayNames[index],
+        'name': weekdayNames[(day.weekday - 1).clamp(0, 6).toInt()],
         'date': key,
+        'day': day.day,
+        'month': day.month,
         'dateDisplay':
             '${day.day.toString().padLeft(2, '0')}.${day.month.toString().padLeft(2, '0')}',
         'reps': reps,
+        'steps': steps,
         'workoutDone': reps > 0,
         'isToday': key == todayKey,
+        'isFuture': day.isAfter(DateTime(today.year, today.month, today.day)),
       };
     });
   }
 
-  String get _weekLabel {
-    if (_weeklyActivity.isEmpty) return '';
-    final first = _map(_weeklyActivity.first);
-    final last = _map(_weeklyActivity.last);
-    return '${_string(first['dateDisplay'])} - ${_string(last['dateDisplay'])}';
+  List<List<Map<String, dynamic>>> get _activityHeatmapWeeks {
+    final weeks = <List<Map<String, dynamic>>>[];
+    for (var index = 0; index < _weeklyActivity.length; index += 7) {
+      weeks.add(
+        _weeklyActivity
+            .skip(index)
+            .take(7)
+            .map((dynamic item) => _map(item))
+            .toList(growable: false),
+      );
+    }
+    return weeks;
+  }
+
+  bool get _isStepsActivityMode => _activityMode == 'steps';
+
+  int _activityValue(Map<String, dynamic> day) {
+    return _isStepsActivityMode ? _toInt(day['steps']) : _toInt(day['reps']);
+  }
+
+  int _activityLevel(int value) {
+    if (value <= 0) return 0;
+    if (_isStepsActivityMode) {
+      if (value < 2500) return 1;
+      if (value < 6000) return 2;
+      if (value < 10000) return 3;
+      return 4;
+    }
+    if (value < 30) return 1;
+    if (value < 60) return 2;
+    if (value < 100) return 3;
+    return 4;
+  }
+
+  Color _activityColor(int value, {bool isFuture = false}) {
+    if (isFuture) return Colors.white.withValues(alpha: 0.04);
+    final colors = _isStepsActivityMode
+        ? const <int, Color>{
+            1: Color(0xFF9A3412),
+            2: Color(0xFFEA580C),
+            3: Color(0xFFF97316),
+            4: Color(0xFFFB923C),
+          }
+        : const <int, Color>{
+            1: Color(0xFF9D174D),
+            2: Color(0xFFDB2777),
+            3: Color(0xFFEC4899),
+            4: Color(0xFFFF4FB3),
+          };
+    switch (_activityLevel(value)) {
+      case 1:
+        return colors[1]!.withValues(alpha: 0.56);
+      case 2:
+        return colors[2]!.withValues(alpha: 0.72);
+      case 3:
+        return colors[3]!.withValues(alpha: 0.88);
+      case 4:
+        return colors[4]!;
+      default:
+        return Colors.white.withValues(alpha: 0.06);
+    }
+  }
+
+  Color _activityBorderColor(int value, {bool isToday = false}) {
+    if (isToday) return Colors.white.withValues(alpha: 0.78);
+    if (value > 0) {
+      return (_isStepsActivityMode
+              ? const Color(0xFFFB923C)
+              : const Color(0xFFF472B6))
+          .withValues(alpha: 0.22);
+    }
+    return Colors.white.withValues(alpha: 0.05);
+  }
+
+  int get _activityTotal {
+    var total = 0;
+    for (final item in _weeklyActivity) {
+      total += _activityValue(_map(item));
+    }
+    return total;
+  }
+
+  String get _activityTotalLabel {
+    final value = _formatCompactNumber(_activityTotal);
+    return _isStepsActivityMode
+        ? '$value Schritte in $_selectedActivityYear'
+        : '$value Reps in $_selectedActivityYear';
+  }
+
+  int _activityLegendValue(int level) {
+    if (level <= 0) return 0;
+    if (_isStepsActivityMode) {
+      return <int>[0, 1200, 4200, 8000, 12000][level];
+    }
+    return <int>[0, 10, 40, 75, 100][level];
+  }
+
+  String _activityMonthLabel(List<Map<String, dynamic>> week) {
+    final firstActivityDate = _weeklyActivity.isEmpty
+        ? ''
+        : _string(_map(_weeklyActivity.first)['date']);
+    const months = <String>[
+      'Jan',
+      'Feb',
+      'Mär',
+      'Apr',
+      'Mai',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Dez',
+    ];
+    for (final day in week) {
+      final dayOfMonth = _toInt(day['day']);
+      final month = _toInt(day['month']);
+      final date = _string(day['date']);
+      final isFirstVisibleWeek = date.isNotEmpty && date == firstActivityDate;
+      if ((isFirstVisibleWeek || dayOfMonth == 1) &&
+          month >= 1 &&
+          month <= 12) {
+        return months[month - 1];
+      }
+    }
+    return '';
   }
 
   List<dynamic> get _visibleAchievements {
@@ -575,31 +850,6 @@ class _ProfileTabState extends State<ProfileTab> {
     );
     final end = math.min(start + _achievementPageSize, _achievements.length);
     return _achievements.sublist(start, end);
-  }
-
-  Future<void> _changeWeek(int delta) async {
-    if (delta > 0 && _currentWeekOffset == 0) return;
-    final nextOffset = _currentWeekOffset + delta;
-    final bounds = _weekBounds(nextOffset);
-    setState(() {
-      _currentWeekOffset = nextOffset;
-    });
-    try {
-      final weeklyRaw = await ApiService.getWeeklyActivity(
-        from: bounds.$1,
-        to: bounds.$2,
-      );
-      if (!mounted) return;
-      setState(() {
-        _weeklyActivity = _normalizeWeeklyActivity(
-          (weeklyRaw as List<dynamic>?) ?? <dynamic>[],
-          bounds.$1,
-        );
-      });
-    } catch (_) {
-      if (!mounted) return;
-      widget.showSnack('Wöchentliche Aktivität konnte nicht geladen werden.');
-    }
   }
 
   Future<void> _pickProfileImage() async {
@@ -1515,6 +1765,251 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
+  Widget _buildActivityHeatmap() {
+    final weeks = _activityHeatmapWeeks;
+    if (weeks.isEmpty) {
+      return Text(
+        'Noch keine Aktivität vorhanden.',
+        style: TextStyle(color: Colors.white.withValues(alpha: 0.68)),
+      );
+    }
+
+    const cellSize = 24.0;
+    const cellGap = 7.0;
+    const weekdayWidth = 28.0;
+    final weekHeight = cellSize * 7 + cellGap * 6;
+    const weekdayLabels = <String>['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    final accent = _isStepsActivityMode
+        ? const Color(0xFFFB923C)
+        : const Color(0xFFFF4FB3);
+
+    Widget buildCell(Map<String, dynamic> day) {
+      final value = _activityValue(day);
+      final isToday = day['isToday'] == true;
+      final isFuture = day['isFuture'] == true;
+      return Container(
+        width: cellSize,
+        height: cellSize,
+        margin: const EdgeInsets.only(bottom: cellGap),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(7),
+          color: _activityColor(value, isFuture: isFuture),
+          border: Border.all(
+            color: _activityBorderColor(value, isToday: isToday),
+            width: isToday ? 1.6 : 1,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CupertinoSlidingSegmentedControl<String>(
+          groupValue: _activityMode,
+          backgroundColor: Colors.white.withValues(alpha: 0.06),
+          thumbColor: accent.withValues(alpha: 0.32),
+          padding: const EdgeInsets.all(4),
+          children: const {
+            'workouts': Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Text(
+                'Workouts',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+            'steps': Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Text(
+                'Schritte',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          },
+          onValueChanged: (value) {
+            if (value == null) return;
+            setState(() => _activityMode = value);
+          },
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                _activityTotalLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.68),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _openActivityYearPicker,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$_selectedActivityYear',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    if (_activityYears.length > 1) ...[
+                      const SizedBox(width: 6),
+                      Icon(
+                        CupertinoIcons.chevron_down,
+                        color: Colors.white.withValues(alpha: 0.72),
+                        size: 14,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Column(
+              children: [
+                const SizedBox(height: 21),
+                SizedBox(
+                  width: weekdayWidth,
+                  height: weekHeight,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: weekdayLabels
+                        .map(
+                          (label) => SizedBox(
+                            height: cellSize,
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                label,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.62),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(growable: false),
+                  ),
+                ),
+              ],
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: weeks
+                          .map((week) {
+                            return Container(
+                              width: cellSize,
+                              margin: const EdgeInsets.only(right: cellGap),
+                              child: Text(
+                                _activityMonthLabel(week),
+                                overflow: TextOverflow.visible,
+                                softWrap: false,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.66),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            );
+                          })
+                          .toList(growable: false),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: weeks
+                          .map((week) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: cellGap),
+                              child: Column(
+                                children: week
+                                    .map((day) => buildCell(day))
+                                    .toList(growable: false),
+                              ),
+                            );
+                          })
+                          .toList(growable: false),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'Weniger',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.56),
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 6),
+            for (var level = 0; level <= 4; level++)
+              Container(
+                width: 14,
+                height: 14,
+                margin: const EdgeInsets.only(right: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: _activityColor(_activityLegendValue(level)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
+                ),
+              ),
+            const SizedBox(width: 2),
+            Text(
+              'Mehr',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.56),
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
@@ -1742,145 +2237,9 @@ class _ProfileTabState extends State<ProfileTab> {
 
           const SizedBox(height: 10),
 
-          // Weekly activity (simple horizontal week view)
           _SectionCard(
             title: 'Wöchentliche Aktivität',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      _weekLabel,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.68),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () => _changeWeek(-1),
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 18,
-                      ),
-                      color: Colors.white70,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    IconButton(
-                      onPressed: _currentWeekOffset == 0
-                          ? null
-                          : () => _changeWeek(1),
-                      icon: const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 18,
-                      ),
-                      color: Colors.white70,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    const spacing = 8.0;
-                    final cardWidth =
-                        (constraints.maxWidth - spacing * 2).clamp(
-                          0.0,
-                          9999.0,
-                        ) /
-                        3;
-
-                    return SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: _weeklyActivity
-                            .asMap()
-                            .entries
-                            .map((entry) {
-                              final isLast =
-                                  entry.key == _weeklyActivity.length - 1;
-                              final day = _map(entry.value);
-                              final reps = _toInt(day['reps']);
-                              final done = day['workoutDone'] == true;
-                              final isToday = day['isToday'] == true;
-                              return Container(
-                                width: cardWidth,
-                                margin: EdgeInsets.only(
-                                  right: isLast ? 0 : spacing,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: done
-                                      ? Color(0xFF14532D)
-                                      : Colors.white.withOpacity(0.04),
-                                  border: Border.all(
-                                    color: isToday
-                                        ? Color(0xFFFBBF24)
-                                        : done
-                                        ? Color(0xFF22C55E).withOpacity(0.6)
-                                        : Colors.white.withOpacity(0.08),
-                                  ),
-                                ),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      _string(day['name']),
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.84),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      _string(day['dateDisplay']),
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.62),
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    done
-                                        ? Image.asset(
-                                            'assets/Star_Pixel.png',
-                                            width: 20,
-                                            height: 20,
-                                            fit: BoxFit.contain,
-                                          )
-                                        : const Icon(
-                                            Icons.remove,
-                                            color: Colors.white24,
-                                          ),
-                                    const SizedBox(height: 8),
-                                    FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        done ? '$reps Einheiten' : '-',
-                                        maxLines: 1,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            })
-                            .toList(growable: false),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
+            child: _buildActivityHeatmap(),
           ),
 
           const SizedBox(height: 10),

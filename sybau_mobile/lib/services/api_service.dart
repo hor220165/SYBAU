@@ -709,6 +709,10 @@ class ApiService {
     );
   }
 
+  static Future<List<dynamic>> getActivityYears() async {
+    return _authedGetList('/users/profile/activity-years');
+  }
+
   static Future<List<dynamic>> getLeaderboard() async {
     return _authedGetList('/users/leaderboard');
   }
