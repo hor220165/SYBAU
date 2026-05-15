@@ -78,6 +78,8 @@ class HealthSyncService {
   static Future<HealthSyncResult> syncToday({
     bool requestPermissions = true,
   }) async {
+    await _health.configure();
+
     if (requestPermissions) {
       final authorized = await requestAuthorization();
       if (!authorized) {
@@ -131,25 +133,37 @@ class HealthSyncService {
     );
     var xpEarned = 0;
     var coinsEarned = 0;
+    var syncedSteps = 0;
+    var syncedKilometers = 0.0;
+    var syncedCalories = 0.0;
 
-    if (stepsDelta > 0) {
-      final reward = await ApiService.logQuestActivity(
+    if (totalSteps > 0) {
+      final reward = await ApiService.syncQuestActivityTotal(
         type: 'Steps',
-        value: stepsDelta.toDouble(),
+        value: totalSteps.toDouble(),
+        date: dateKey,
       );
       xpEarned += _toInt(reward['xpEarned']);
       coinsEarned += _toInt(reward['coinsEarned']);
+      syncedSteps = _toInt(reward['syncedValue']);
     }
-    if (kilometersDelta > 0.01) {
-      final reward = await ApiService.logQuestActivity(
+    if (totalKilometers > 0.01) {
+      final reward = await ApiService.syncQuestActivityTotal(
         type: 'Kilometers',
-        value: kilometersDelta,
+        value: totalKilometers,
+        date: dateKey,
       );
       xpEarned += _toInt(reward['xpEarned']);
       coinsEarned += _toInt(reward['coinsEarned']);
+      syncedKilometers = _toDouble(reward['syncedValue']);
     }
-    if (caloriesDelta >= 1) {
-      await ApiService.logQuestActivity(type: 'Calories', value: caloriesDelta);
+    if (totalCalories >= 1) {
+      final reward = await ApiService.syncQuestActivityTotal(
+        type: 'Calories',
+        value: totalCalories,
+        date: dateKey,
+      );
+      syncedCalories = _toDouble(reward['syncedValue']);
     }
 
     await prefs.setString(_lastDateKey, dateKey);
@@ -161,9 +175,11 @@ class HealthSyncService {
       steps: totalSteps,
       kilometers: totalKilometers,
       calories: totalCalories,
-      syncedSteps: stepsDelta,
-      syncedKilometers: kilometersDelta,
-      syncedCalories: caloriesDelta,
+      syncedSteps: syncedSteps > 0 ? syncedSteps : stepsDelta,
+      syncedKilometers: syncedKilometers > 0
+          ? syncedKilometers
+          : kilometersDelta,
+      syncedCalories: syncedCalories > 0 ? syncedCalories : caloriesDelta,
       xpEarned: xpEarned,
       coinsEarned: coinsEarned,
     );
@@ -171,7 +187,7 @@ class HealthSyncService {
 
   static Future<HealthSyncResult?> syncIfEnabled() async {
     if (!await isEnabled()) return null;
-    return syncToday();
+    return syncToday(requestPermissions: false);
   }
 
   static double _sum(List<HealthDataPoint> points, HealthDataType type) {
@@ -198,5 +214,13 @@ class HealthSyncService {
     if (value is num) return value.toInt();
     if (value is String) return int.tryParse(value) ?? 0;
     return 0;
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value.replaceAll(',', '.')) ?? 0.0;
+    }
+    return 0.0;
   }
 }

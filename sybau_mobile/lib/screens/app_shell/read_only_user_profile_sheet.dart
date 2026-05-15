@@ -15,6 +15,8 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
   bool _loading = true;
   bool _failed = false;
   int _currentAchievementIndex = 0;
+  String _activityMode = 'workouts';
+  final ScrollController _activityHeatmapScrollController = ScrollController();
 
   @override
   void initState() {
@@ -39,6 +41,7 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
         _loading = false;
         _currentAchievementIndex = 0;
       });
+      _queueActivityScrollToCurrent();
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -46,6 +49,12 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
         _failed = true;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _activityHeatmapScrollController.dispose();
+    super.dispose();
   }
 
   int _resolveUserId(Map<String, dynamic> profile) {
@@ -121,14 +130,39 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
     return '$y-$m-$d';
   }
 
-  List<Map<String, dynamic>> _normalizedWeeklyActivity(List<dynamic> raw) {
-    final today = DateTime.now();
-    final normalizedToday = DateTime(today.year, today.month, today.day);
-    final monday = normalizedToday.subtract(
-      Duration(days: normalizedToday.weekday - 1),
-    );
-    final repsByDate = <String, int>{};
+  bool get _isStepsActivityMode => _activityMode == 'steps';
 
+  int get _selectedActivityYear {
+    final rawYears =
+        (_profile['activityYears'] as List<dynamic>?) ??
+        (_profile['ActivityYears'] as List<dynamic>?) ??
+        <dynamic>[];
+    final years =
+        rawYears
+            .map((dynamic value) => _toInt(value))
+            .where((year) => year > 2000)
+            .toList()
+          ..sort((a, b) => b.compareTo(a));
+    return years.isEmpty ? DateTime.now().year : years.first;
+  }
+
+  ({DateTime $1, DateTime $2}) _activityHeatmapBounds(int year) {
+    final now = DateTime.now();
+    final firstDay = DateTime(year, 1, 1);
+    final lastDay = year == now.year
+        ? DateTime(now.year, now.month, now.day)
+        : DateTime(year, 12, 31);
+    final start = firstDay.subtract(Duration(days: firstDay.weekday - 1));
+    return ($1: start, $2: lastDay);
+  }
+
+  List<Map<String, dynamic>> _normalizeActivityHeatmap(
+    List<dynamic> raw,
+    DateTime start,
+    DateTime end,
+  ) {
+    final repsByDate = <String, int>{};
+    final stepsByDate = <String, int>{};
     for (final item in raw) {
       final map = _map(item);
       final rawDate = _string(map['date'], fallback: _string(map['Date']));
@@ -137,30 +171,298 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
           ? rawDate.split('T').first
           : rawDate;
       repsByDate[dateKey] = _toInt(map['reps'], fallback: _toInt(map['Reps']));
+      stepsByDate[dateKey] = _toInt(
+        map['steps'],
+        fallback: _toInt(map['Steps']),
+      );
     }
 
-    const weekdayNames = <String>['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-    final todayKey = _dateKey(today);
-    return List<Map<String, dynamic>>.generate(7, (int index) {
-      final day = monday.add(Duration(days: index));
+    final today = DateTime.now();
+    final todayKey = _dateKey(DateTime(today.year, today.month, today.day));
+    final dayCount = end.difference(start).inDays + 1;
+    return List<Map<String, dynamic>>.generate(dayCount, (index) {
+      final day = start.add(Duration(days: index));
       final key = _dateKey(day);
-      final reps = repsByDate[key] ?? 0;
       return <String, dynamic>{
-        'name': weekdayNames[index],
-        'dateDisplay':
-            '${day.day.toString().padLeft(2, '0')}.${day.month.toString().padLeft(2, '0')}',
-        'reps': reps,
-        'workoutDone': reps > 0,
+        'date': key,
+        'day': day.day,
+        'month': day.month,
+        'reps': repsByDate[key] ?? 0,
+        'steps': stepsByDate[key] ?? 0,
         'isToday': key == todayKey,
       };
     });
   }
 
-  String _weekLabel(List<Map<String, dynamic>> weeklyActivity) {
-    if (weeklyActivity.isEmpty) return '';
-    final first = weeklyActivity.first;
-    final last = weeklyActivity.last;
-    return '${_string(first['dateDisplay'])} - ${_string(last['dateDisplay'])}';
+  List<List<Map<String, dynamic>>> _activityHeatmapWeeks(
+    List<Map<String, dynamic>> days,
+  ) {
+    final weeks = <List<Map<String, dynamic>>>[];
+    for (var index = 0; index < days.length; index += 7) {
+      weeks.add(days.skip(index).take(7).toList(growable: false));
+    }
+    return weeks;
+  }
+
+  int _activityValue(Map<String, dynamic> day) =>
+      _isStepsActivityMode ? _toInt(day['steps']) : _toInt(day['reps']);
+
+  int _activityLevel(int value) {
+    if (value <= 0) return 0;
+    if (_isStepsActivityMode) {
+      if (value < 2500) return 1;
+      if (value < 6000) return 2;
+      if (value < 10000) return 3;
+      return 4;
+    }
+    if (value < 30) return 1;
+    if (value < 60) return 2;
+    if (value < 100) return 3;
+    return 4;
+  }
+
+  Color _activityColor(int value) {
+    final colors = _isStepsActivityMode
+        ? const <int, Color>{
+            1: Color(0xFF9A3412),
+            2: Color(0xFFEA580C),
+            3: Color(0xFFF97316),
+            4: Color(0xFFFB923C),
+          }
+        : const <int, Color>{
+            1: Color(0xFF9D174D),
+            2: Color(0xFFDB2777),
+            3: Color(0xFFEC4899),
+            4: Color(0xFFFF4FB3),
+          };
+    switch (_activityLevel(value)) {
+      case 1:
+        return colors[1]!.withOpacity(0.56);
+      case 2:
+        return colors[2]!.withOpacity(0.72);
+      case 3:
+        return colors[3]!.withOpacity(0.88);
+      case 4:
+        return colors[4]!;
+      default:
+        return Colors.white.withOpacity(0.06);
+    }
+  }
+
+  String _activityMonthLabel(List<Map<String, dynamic>> week) {
+    const months = <String>[
+      'Jan',
+      'Feb',
+      'Mär',
+      'Apr',
+      'Mai',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Dez',
+    ];
+    for (final day in week) {
+      final dayOfMonth = _toInt(day['day']);
+      final month = _toInt(day['month']);
+      if (dayOfMonth == 1 && month >= 1 && month <= 12) {
+        return months[month - 1];
+      }
+    }
+    return '';
+  }
+
+  int _activityTotal(List<Map<String, dynamic>> days) =>
+      days.fold<int>(0, (sum, day) => sum + _activityValue(day));
+
+  void _queueActivityScrollToCurrent() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_activityHeatmapScrollController.hasClients) return;
+      final maxOffset =
+          _activityHeatmapScrollController.position.maxScrollExtent;
+      if (maxOffset <= 0) return;
+      _activityHeatmapScrollController.jumpTo(maxOffset);
+    });
+  }
+
+  Widget _buildActivityHeatmap(List<dynamic> rawActivity) {
+    final year = _selectedActivityYear;
+    final bounds = _activityHeatmapBounds(year);
+    final days = _normalizeActivityHeatmap(rawActivity, bounds.$1, bounds.$2);
+    final weeks = _activityHeatmapWeeks(days);
+    final accent = _isStepsActivityMode
+        ? const Color(0xFFFB923C)
+        : const Color(0xFFFF4FB3);
+    const cellSize = 14.0;
+    const cellGap = 5.0;
+    const weekdayWidth = 26.0;
+    final weekHeight = cellSize * 7 + cellGap * 6;
+    const weekdayLabels = <String>['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+    Widget buildCell(Map<String, dynamic> day) {
+      final value = _activityValue(day);
+      final isToday = day['isToday'] == true;
+      return Container(
+        width: cellSize,
+        height: cellSize,
+        margin: const EdgeInsets.only(bottom: cellGap),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(4),
+          color: _activityColor(value),
+          border: Border.all(
+            color: isToday
+                ? Colors.white.withOpacity(0.76)
+                : Colors.white.withOpacity(0.06),
+            width: isToday ? 1.5 : 1,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                _isStepsActivityMode
+                    ? '${_formatCompactNumber(_activityTotal(days))} Schritte in $year'
+                    : '${_formatCompactNumber(_activityTotal(days))} Reps in $year',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.68),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            CupertinoSlidingSegmentedControl<String>(
+              groupValue: _activityMode,
+              backgroundColor: Colors.white.withOpacity(0.06),
+              thumbColor: accent.withOpacity(0.32),
+              padding: const EdgeInsets.all(3),
+              children: const {
+                'workouts': Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Text(
+                    'Workouts',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                'steps': Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Text(
+                    'Schritte',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              },
+              onValueChanged: (value) {
+                if (value == null) return;
+                setState(() => _activityMode = value);
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Column(
+              children: [
+                const SizedBox(height: 19),
+                SizedBox(
+                  width: weekdayWidth,
+                  height: weekHeight,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: weekdayLabels
+                        .map(
+                          (label) => SizedBox(
+                            height: cellSize,
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                label,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.62),
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(growable: false),
+                  ),
+                ),
+              ],
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _activityHeatmapScrollController,
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: weeks
+                          .map(
+                            (week) => Container(
+                              width: cellSize,
+                              margin: const EdgeInsets.only(right: cellGap),
+                              child: Text(
+                                _activityMonthLabel(week),
+                                overflow: TextOverflow.visible,
+                                softWrap: false,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.66),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: weeks
+                          .map(
+                            (week) => Padding(
+                              padding: const EdgeInsets.only(right: cellGap),
+                              child: Column(
+                                children: week
+                                    .map((day) => buildCell(day))
+                                    .toList(growable: false),
+                              ),
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   @override
@@ -179,9 +481,10 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
       achievementStart,
       math.min(achievementStart + _achievementPageSize, achievements.length),
     );
-    final weeklyActivity = _normalizedWeeklyActivity(
-      (_profile['weeklyActivity'] as List<dynamic>?) ?? <dynamic>[],
-    );
+    final activityRaw =
+        (_profile['weeklyActivity'] as List<dynamic>?) ??
+        (_profile['WeeklyActivity'] as List<dynamic>?) ??
+        <dynamic>[];
     final recentActivities =
         (_profile['recentActivities'] as List<dynamic>?) ?? <dynamic>[];
     final bodyStage = _normalizeBodyStage(
@@ -445,102 +748,7 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
                   const SizedBox(height: 10),
                   _SectionCard(
                     title: 'Wöchentliche Aktivität',
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _weekLabel(weeklyActivity),
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.68),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: weeklyActivity
-                                .map((day) {
-                                  final reps = _toInt(day['reps']);
-                                  final done = day['workoutDone'] == true;
-                                  final isToday = day['isToday'] == true;
-                                  return Container(
-                                    width: 104,
-                                    margin: const EdgeInsets.only(right: 8),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      color: done
-                                          ? Color(0xFF14532D)
-                                          : Colors.white.withOpacity(0.04),
-                                      border: Border.all(
-                                        color: isToday
-                                            ? Color(0xFFFBBF24)
-                                            : done
-                                            ? Color(0xFF22C55E).withOpacity(0.6)
-                                            : Colors.white.withOpacity(0.08),
-                                      ),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Text(
-                                          _string(day['name']),
-                                          style: TextStyle(
-                                            color: Colors.white.withOpacity(
-                                              0.84,
-                                            ),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          _string(day['dateDisplay']),
-                                          style: TextStyle(
-                                            color: Colors.white.withOpacity(
-                                              0.62,
-                                            ),
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        done
-                                            ? Image.asset(
-                                                'assets/Star_Pixel.png',
-                                                width: 20,
-                                                height: 20,
-                                                fit: BoxFit.contain,
-                                              )
-                                            : const Icon(
-                                                Icons.remove,
-                                                color: Colors.white24,
-                                              ),
-                                        const SizedBox(height: 8),
-                                        FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            done ? '$reps Einheiten' : '-',
-                                            maxLines: 1,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                })
-                                .toList(growable: false),
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: _buildActivityHeatmap(activityRaw),
                   ),
                   const SizedBox(height: 10),
                   _SectionCard(

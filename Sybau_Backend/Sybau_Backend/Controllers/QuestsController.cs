@@ -109,6 +109,62 @@ public class QuestsController : ControllerBase
     }
 
     /// <summary>
+    /// Tages-Gesamtwert idempotent synchronisieren. Der Server schreibt nur die fehlende Differenz.
+    /// </summary>
+    [HttpPost("activity/daily-total")]
+    public async Task<IActionResult> SyncDailyActivityTotal([FromBody] SyncDailyActivityTotalRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        if (request.Value < 0)
+            return BadRequest(new { message = "Wert darf nicht negativ sein." });
+
+        if (!Enum.TryParse<ActivityType>(request.Type, true, out var activityType))
+            return BadRequest(new { message = "Ungültiger Aktivitätstyp. Erlaubt: Steps, Kilometers, Calories" });
+
+        var activityDate = request.Date ?? DateOnly.FromDateTime(DateTime.UtcNow);
+        var existingValue = await _context.ActivityLogs
+            .Where(a => a.UserId == userId.Value && a.Type == activityType && a.Date == activityDate)
+            .SumAsync(a => (double?)a.Value) ?? 0;
+        var missingValue = request.Value - existingValue;
+
+        if (missingValue <= 0.0001)
+        {
+            return Ok(new
+            {
+                message = "Aktivität ist bereits aktuell.",
+                xpEarned = 0,
+                coinsEarned = 0,
+                rewardedQuests = Array.Empty<object>(),
+                syncedValue = 0,
+                totalValue = existingValue
+            });
+        }
+
+        var log = new ActivityLog(userId.Value, activityType, missingValue)
+        {
+            Date = activityDate
+        };
+        _context.ActivityLogs.Add(log);
+        await _context.SaveChangesAsync();
+
+        await _questService.UpdateQuestProgressAsync(userId.Value);
+        var (xpEarned, coinsEarned, rewardedQuests) =
+            await _questService.ClaimCompletedActivityRewardsAsync(userId.Value, activityType);
+
+        return Ok(new
+        {
+            message = "Aktivität synchronisiert.",
+            xpEarned,
+            coinsEarned,
+            rewardedQuests,
+            syncedValue = missingValue,
+            totalValue = request.Value
+        });
+    }
+
+    /// <summary>
     /// Heutige Activity-Zusammenfassung abrufen.
     /// </summary>
     [HttpGet("activity/today")]
@@ -140,4 +196,9 @@ public class LogActivityRequest
 {
     public string Type { get; set; } = "";
     public double Value { get; set; }
+}
+
+public class SyncDailyActivityTotalRequest : LogActivityRequest
+{
+    public DateOnly? Date { get; set; }
 }

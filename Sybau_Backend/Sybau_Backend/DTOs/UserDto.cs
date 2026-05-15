@@ -22,5 +22,6 @@ public class PublicUserProfileDto
     public ProfileStatsDto Stats { get; set; } = new();
     public List<AchievementDto> Achievements { get; set; } = new();
     public List<WeeklyActivityDto> WeeklyActivity { get; set; } = new();
+    public List<int> ActivityYears { get; set; } = new();
     public List<RecentActivityDto> RecentActivities { get; set; } = new();
 }

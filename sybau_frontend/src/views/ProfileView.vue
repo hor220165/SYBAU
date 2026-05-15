@@ -139,7 +139,11 @@
         </div>
       </div>
 
-      <div class="activity-heatmap" :class="`mode-${activityMode}`">
+      <div
+        class="activity-heatmap"
+        :class="`mode-${activityMode}`"
+        :style="{ '--heatmap-week-count': activityHeatmapWeeks.length }"
+      >
         <div class="heatmap-months">
           <span class="heatmap-weekday-spacer"></span>
           <span
@@ -674,7 +678,8 @@ function getHeatmapRange() {
   const end = selectedYear === today.getFullYear()
     ? today
     : new Date(selectedYear, 11, 31);
-  return { start, end, today };
+  const visualEnd = addDays(mondayOf(new Date(selectedYear, 11, 31)), 6);
+  return { start, end, visualEnd, today };
 }
 
 function normalizeActivityDate(value: unknown): string {
@@ -741,17 +746,16 @@ function activityLevel(value: number): number {
 }
 
 const activityHeatmapWeeks = computed(() => {
-  const { start, end, today } = getHeatmapRange();
+  const { start, visualEnd, today } = getHeatmapRange();
   const todayKey = toDateString(today);
   const weeks = [];
 
-  for (let cursor = new Date(start); cursor <= end; cursor = addDays(cursor, 7)) {
+  for (let cursor = new Date(start); cursor <= visualEnd; cursor = addDays(cursor, 7)) {
     const days = [];
     let monthLabel = '';
 
     for (let index = 0; index < 7; index++) {
       const date = addDays(cursor, index);
-      if (date > end) continue;
       const key = toDateString(date);
       const entry = activityDates.value.get(key) ?? { reps: 0, steps: 0 };
       const value = activityValue(entry);
@@ -767,7 +771,7 @@ const activityHeatmapWeeks = computed(() => {
         level: isFuture ? 0 : activityLevel(value),
         isToday: key === todayKey,
         isFuture,
-        title: isFuture ? key : `${key}: ${value} ${activityMode.value === 'steps' ? 'Schritte' : 'Reps'}`,
+        title: isFuture ? '' : `${key}: ${value} ${activityMode.value === 'steps' ? 'Schritte' : 'Reps'}`,
       });
     }
 
@@ -1165,13 +1169,13 @@ onMounted(async () => {
 .activity-mode-toggle {
   display: inline-flex;
   padding: 4px;
-  border-radius: 999px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.06);
 }
 
 .activity-mode-toggle button {
   border: 0;
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 7px 12px;
   background: transparent;
   color: rgba(255, 255, 255, 0.64);
@@ -1205,7 +1209,10 @@ onMounted(async () => {
 }
 
 .activity-heatmap {
-  overflow: hidden;
+  --heatmap-week-count: 53;
+  --heatmap-cell-size: clamp(8px, calc((100vw - 220px) / var(--heatmap-week-count)), 26px);
+  overflow-x: auto;
+  overflow-y: hidden;
   border-radius: 18px;
   border: 1px solid rgba(236, 72, 153, 0.16);
   background: rgba(2, 6, 23, 0.38);
@@ -1230,7 +1237,7 @@ onMounted(async () => {
 }
 
 .heatmap-month {
-  width: 14px;
+  width: var(--heatmap-cell-size);
   min-height: 16px;
   color: rgba(255, 255, 255, 0.72);
   font-size: 12px;
@@ -1245,14 +1252,14 @@ onMounted(async () => {
 
 .heatmap-weekdays {
   display: grid;
-  grid-template-rows: repeat(7, 14px);
+  grid-template-rows: repeat(7, var(--heatmap-cell-size));
   gap: 4px;
   width: 32px;
   flex: 0 0 32px;
   color: rgba(255, 255, 255, 0.68);
   font-size: 11px;
   font-weight: 700;
-  line-height: 14px;
+  line-height: var(--heatmap-cell-size);
 }
 
 .heatmap-grid {
@@ -1262,13 +1269,13 @@ onMounted(async () => {
 
 .heatmap-week {
   display: grid;
-  grid-template-rows: repeat(7, 14px);
+  grid-template-rows: repeat(7, var(--heatmap-cell-size));
   gap: 4px;
 }
 
 .heatmap-cell {
-  width: 14px;
-  height: 14px;
+  width: var(--heatmap-cell-size);
+  height: var(--heatmap-cell-size);
   border-radius: 3px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   background: rgba(255, 255, 255, 0.06);

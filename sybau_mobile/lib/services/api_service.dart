@@ -864,6 +864,18 @@ class ApiService {
     return _authedPostJson('/quests/activity', {'type': type, 'value': value});
   }
 
+  static Future<Map<String, dynamic>> syncQuestActivityTotal({
+    required String type,
+    required double value,
+    required String date,
+  }) async {
+    return _authedPostJson('/quests/activity/daily-total', {
+      'type': type,
+      'value': value,
+      'date': date,
+    });
+  }
+
   static Future<Map<String, dynamic>> getTodayActivity() async {
     return _authedGetJson('/quests/activity/today');
   }

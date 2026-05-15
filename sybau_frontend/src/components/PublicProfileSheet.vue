@@ -3,7 +3,6 @@ import { computed, ref, watch } from 'vue';
 import { ChevronLeft, ChevronRight, Dumbbell, Flame, Timer, Trophy, X } from 'lucide-vue-next';
 import { resolveMediaUrl, userService } from '@/services/api';
 import noProfilePicture from '@/assets/Nopfp.png';
-import starPixel from '@/assets/Star_Pixel.png';
 
 const props = defineProps<{
   userId: number | null;
@@ -18,6 +17,7 @@ const loading = ref(false);
 const failed = ref(false);
 const profile = ref<any>(null);
 const achievementPage = ref(0);
+const activityMode = ref<'workouts' | 'steps'>('workouts');
 
 const profileImageUrl = computed(() => resolveMediaUrl(profile.value?.profileImageUrl ?? profile.value?.ProfileImageUrl ?? ''));
 const avatar = computed(() => profile.value?.avatar ?? profile.value?.Avatar ?? {});
@@ -25,6 +25,14 @@ const stats = computed(() => profile.value?.stats ?? profile.value?.Stats ?? {})
 const achievements = computed<any[]>(() => profile.value?.achievements ?? profile.value?.Achievements ?? []);
 const rawWeeklyActivity = computed<any[]>(() => profile.value?.weeklyActivity ?? profile.value?.WeeklyActivity ?? []);
 const recentActivities = computed<any[]>(() => profile.value?.recentActivities ?? profile.value?.RecentActivities ?? []);
+const activityYears = computed<number[]>(() => {
+  const raw = profile.value?.activityYears ?? profile.value?.ActivityYears ?? [new Date().getFullYear()];
+  return (Array.isArray(raw) ? raw : [raw])
+    .map((year) => Number(year))
+    .filter((year) => Number.isInteger(year) && year > 2000)
+    .sort((a, b) => b - a);
+});
+const selectedActivityYear = computed(() => activityYears.value[0] ?? new Date().getFullYear());
 
 const unlockedAchievements = computed(() => achievements.value.filter((item) => item.unlocked ?? item.Unlocked).length);
 const maxAchievementPage = computed(() => Math.max(0, Math.ceil(achievements.value.length / 4) - 1));
@@ -69,44 +77,89 @@ const formatTime = (raw: string) => {
 const dateKey = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-const weeklyActivity = computed(() => {
-  const today = new Date();
-  const normalizedToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const monday = new Date(normalizedToday);
-  monday.setDate(normalizedToday.getDate() - normalizedToday.getDay() + (normalizedToday.getDay() === 0 ? -6 : 1));
-  const repsByDate = new Map<string, number>();
+const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+const addDays = (date: Date, days: number) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+};
+const mondayOf = (date: Date) => {
+  const normalized = startOfDay(date);
+  const weekday = normalized.getDay() === 0 ? 7 : normalized.getDay();
+  normalized.setDate(normalized.getDate() - weekday + 1);
+  return normalized;
+};
+const monthFormatter = new Intl.DateTimeFormat('de-DE', { month: 'short' });
+
+const activityValue = (entry: { reps: number; steps: number }) =>
+  activityMode.value === 'steps' ? entry.steps : entry.reps;
+
+const activityLevel = (value: number) => {
+  if (value <= 0) return 0;
+  if (activityMode.value === 'steps') {
+    if (value < 2500) return 1;
+    if (value < 6000) return 2;
+    if (value < 10000) return 3;
+    return 4;
+  }
+  if (value < 30) return 1;
+  if (value < 60) return 2;
+  if (value < 100) return 3;
+  return 4;
+};
+
+const activityHeatmapWeeks = computed(() => {
+  const year = selectedActivityYear.value;
+  const today = startOfDay(new Date());
+  const start = mondayOf(new Date(year, 0, 1));
+  const visualEnd = addDays(mondayOf(new Date(year, 11, 31)), 6);
+  const todayKey = dateKey(today);
+  const activityByDate = new Map<string, { reps: number; steps: number }>();
 
   rawWeeklyActivity.value.forEach((item) => {
     const rawDate = String(item.date ?? item.Date ?? '');
     if (!rawDate) return;
     const normalizedDate = rawDate.includes('T') ? (rawDate.split('T')[0] ?? rawDate) : rawDate;
-    repsByDate.set(normalizedDate, Number(item.reps ?? item.Reps ?? 0));
+    activityByDate.set(normalizedDate, {
+      reps: Number(item.reps ?? item.Reps ?? 0),
+      steps: Number(item.steps ?? item.Steps ?? 0),
+    });
   });
 
-  const names = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-  const todayKey = dateKey(normalizedToday);
-  return Array.from({ length: 7 }, (_, index) => {
-    const day = new Date(monday);
-    day.setDate(monday.getDate() + index);
-    const key = dateKey(day);
-    const reps = repsByDate.get(key) ?? 0;
-    return {
-      key,
-      name: names[index] ?? '',
-      dateDisplay: `${String(day.getDate()).padStart(2, '0')}.${String(day.getMonth() + 1).padStart(2, '0')}`,
-      reps,
-      workoutDone: reps > 0,
-      isToday: key === todayKey,
-    };
-  });
+  const weeks = [];
+  for (let cursor = new Date(start); cursor <= visualEnd; cursor = addDays(cursor, 7)) {
+    const days = [];
+    let monthLabel = '';
+    for (let index = 0; index < 7; index++) {
+      const day = addDays(cursor, index);
+      const key = dateKey(day);
+      const entry = activityByDate.get(key) ?? { reps: 0, steps: 0 };
+      const value = activityValue(entry);
+      const isFuture = day > today;
+      if (!monthLabel && (day.getDate() === 1 || dateKey(cursor) === dateKey(start))) {
+        monthLabel = monthFormatter.format(day);
+      }
+      days.push({
+        key,
+        level: isFuture ? 0 : activityLevel(value),
+        isToday: key === todayKey,
+        isFuture,
+        title: isFuture ? '' : `${key}: ${value} ${activityMode.value === 'steps' ? 'Schritte' : 'Reps'}`,
+      });
+    }
+    weeks.push({ start: dateKey(cursor), monthLabel, days });
+  }
+  return weeks;
 });
 
-const weekLabel = computed(() => {
-  if (!weeklyActivity.value.length) return '';
-  const first = weeklyActivity.value[0];
-  const last = weeklyActivity.value[weeklyActivity.value.length - 1];
-  return `${first?.dateDisplay ?? ''} - ${last?.dateDisplay ?? ''}`;
-});
+const activityTotal = computed(() =>
+  rawWeeklyActivity.value.reduce((sum, item) => sum + (activityMode.value === 'steps'
+    ? (Number(item.steps ?? item.Steps ?? 0) || 0)
+    : (Number(item.reps ?? item.Reps ?? 0) || 0)), 0)
+);
+const activityTotalLabel = computed(() => activityMode.value === 'steps'
+  ? `${formatCompact(activityTotal.value)} Schritte in ${selectedActivityYear.value}`
+  : `${formatCompact(activityTotal.value)} Reps in ${selectedActivityYear.value}`);
 
 const statCards = computed(() => [
   { label: 'Workouts gesamt', value: String(stats.value.totalWorkouts ?? stats.value.TotalWorkouts ?? 0), icon: Dumbbell, color: '#a855f7' },
@@ -201,21 +254,47 @@ watch(
             </section>
 
             <section class="sheet-card">
-              <h3>Wöchentliche Aktivität</h3>
-              <p class="muted">{{ weekLabel }}</p>
-              <div class="week-row">
-                <article
-                  v-for="day in weeklyActivity"
-                  :key="day.key"
-                  class="day-card"
-                  :class="{ today: day.isToday, done: day.workoutDone }"
-                >
-                  <strong>{{ day.name }}</strong>
-                  <span>{{ day.dateDisplay }}</span>
-                  <img v-if="day.workoutDone" :src="starPixel" alt="" />
-                  <em v-else>-</em>
-                  <small>{{ day.reps ? `${day.reps} Einheiten` : '-' }}</small>
-                </article>
+              <div class="card-title-row">
+                <div>
+                  <h3>Wöchentliche Aktivität</h3>
+                  <p class="muted">{{ activityTotalLabel }}</p>
+                </div>
+                <div class="activity-mode-toggle" :class="`mode-${activityMode}`">
+                  <button type="button" :class="{ active: activityMode === 'workouts' }" @click="activityMode = 'workouts'">Workouts</button>
+                  <button type="button" :class="{ active: activityMode === 'steps' }" @click="activityMode = 'steps'">Schritte</button>
+                </div>
+              </div>
+              <div
+                class="profile-heatmap"
+                :class="`mode-${activityMode}`"
+                :style="{ '--heatmap-week-count': activityHeatmapWeeks.length }"
+              >
+                <div class="heatmap-months">
+                  <span class="heatmap-weekday-spacer"></span>
+                  <span v-for="week in activityHeatmapWeeks" :key="`month-${week.start}`" class="heatmap-month">{{ week.monthLabel }}</span>
+                </div>
+                <div class="heatmap-body">
+                  <div class="heatmap-weekdays">
+                    <span></span>
+                    <span>Mo</span>
+                    <span></span>
+                    <span>Mi</span>
+                    <span></span>
+                    <span>Fr</span>
+                    <span></span>
+                  </div>
+                  <div class="heatmap-grid">
+                    <div v-for="week in activityHeatmapWeeks" :key="week.start" class="heatmap-week">
+                      <span
+                        v-for="day in week.days"
+                        :key="day.key"
+                        class="heatmap-cell"
+                        :class="[`heatmap-level-${day.level}`, { today: day.isToday, future: day.isFuture }]"
+                        :title="day.title"
+                      ></span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -432,43 +511,123 @@ watch(
   border-color: rgba(251, 191, 36, 0.38);
 }
 
-.week-row {
+.activity-mode-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  padding: 4px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.activity-mode-toggle button {
+  border: 0;
+  border-radius: 12px;
+  padding: 7px 12px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.64);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.activity-mode-toggle button.active {
+  color: white;
+  background: rgba(236, 72, 153, 0.28);
+  box-shadow: 0 0 18px rgba(236, 72, 153, 0.2);
+}
+
+.activity-mode-toggle.mode-steps button.active {
+  background: rgba(251, 146, 60, 0.28);
+  box-shadow: 0 0 18px rgba(251, 146, 60, 0.18);
+}
+
+.profile-heatmap {
+  --heatmap-week-count: 53;
+  --heatmap-cell-size: clamp(7px, calc((100vw - 260px) / var(--heatmap-week-count)), 16px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-top: 4px;
+}
+
+.heatmap-months,
+.heatmap-body {
+  width: max-content;
+  min-width: 100%;
+}
+
+.heatmap-months {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.heatmap-weekday-spacer,
+.heatmap-weekdays {
+  width: 32px;
+  flex: 0 0 32px;
+}
+
+.heatmap-month {
+  width: var(--heatmap-cell-size);
+  min-height: 14px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.heatmap-body {
   display: flex;
   gap: 8px;
-  overflow-x: auto;
 }
 
-.day-card {
-  width: 104px;
-  flex: 0 0 104px;
-  padding: 12px 8px;
-  border-radius: 14px;
-  text-align: center;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+.heatmap-weekdays {
+  display: grid;
+  grid-template-rows: repeat(7, var(--heatmap-cell-size));
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: var(--heatmap-cell-size);
 }
 
-.day-card.today {
-  border-color: #fbbf24;
+.heatmap-grid {
+  display: flex;
+  gap: 4px;
 }
 
-.day-card.done {
-  background: rgba(20, 83, 45, 0.42);
+.heatmap-week {
+  display: grid;
+  grid-template-rows: repeat(7, var(--heatmap-cell-size));
+  gap: 4px;
 }
 
-.day-card span,
-.day-card small,
-.day-card em {
-  display: block;
-  margin-top: 6px;
-  color: rgba(255, 255, 255, 0.62);
-  font-style: normal;
+.heatmap-cell {
+  width: var(--heatmap-cell-size);
+  height: var(--heatmap-cell-size);
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.day-card img {
-  width: 22px;
-  height: 22px;
-  margin-top: 10px;
+.heatmap-level-1 { background: rgba(157, 23, 77, 0.5); border-color: rgba(236, 72, 153, 0.16); }
+.heatmap-level-2 { background: rgba(219, 39, 119, 0.7); border-color: rgba(244, 114, 182, 0.22); }
+.heatmap-level-3 { background: rgba(236, 72, 153, 0.94); border-color: rgba(244, 114, 182, 0.32); }
+.heatmap-level-4 { background: #ff4fb3; border-color: rgba(251, 207, 232, 0.55); box-shadow: 0 0 10px rgba(236, 72, 153, 0.32); }
+
+.mode-steps .heatmap-level-1 { background: rgba(154, 52, 18, 0.54); border-color: rgba(251, 146, 60, 0.18); }
+.mode-steps .heatmap-level-2 { background: rgba(234, 88, 12, 0.72); border-color: rgba(251, 146, 60, 0.24); }
+.mode-steps .heatmap-level-3 { background: rgba(249, 115, 22, 0.9); border-color: rgba(253, 186, 116, 0.32); }
+.mode-steps .heatmap-level-4 { background: #fb923c; border-color: rgba(254, 215, 170, 0.55); box-shadow: 0 0 10px rgba(249, 115, 22, 0.3); }
+
+.heatmap-cell.today {
+  outline: 2px solid rgba(255, 255, 255, 0.72);
+  outline-offset: 1px;
+}
+
+.heatmap-cell.future {
+  opacity: 0.22;
 }
 
 .recent-list {

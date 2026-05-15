@@ -23,6 +23,7 @@ class _ProfileTabState extends State<ProfileTab> {
   final TextEditingController _oldPasswordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _serverUrlController = TextEditingController();
+  final ScrollController _activityHeatmapScrollController = ScrollController();
 
   Map<String, dynamic> _profile = <String, dynamic>{};
   List<dynamic> _achievements = <dynamic>[];
@@ -59,12 +60,23 @@ class _ProfileTabState extends State<ProfileTab> {
     _oldPasswordController.dispose();
     _newPasswordController.dispose();
     _serverUrlController.dispose();
+    _activityHeatmapScrollController.dispose();
     super.dispose();
   }
 
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
+      try {
+        final healthResult = await HealthSyncService.syncIfEnabled();
+        if (healthResult?.hasNewData == true ||
+            healthResult?.hasRewards == true) {
+          unawaited(widget.onRefreshHeader());
+        }
+      } catch (_) {
+        // Das Profil soll auch ohne Health-Zugriff sofort nutzbar bleiben.
+      }
+
       final activityYears = await _loadActivityYearsSafe();
       var selectedYear = _selectedActivityYear;
       if (!activityYears.contains(selectedYear)) {
@@ -124,6 +136,7 @@ class _ProfileTabState extends State<ProfileTab> {
         _usernameChangedAt = usernameChangedAt;
         _loading = false;
       });
+      _queueActivityScrollToCurrent();
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
@@ -568,87 +581,54 @@ class _ProfileTabState extends State<ProfileTab> {
           bounds.$2,
         );
       });
+      _queueActivityScrollToCurrent();
     } catch (_) {
       if (!mounted) return;
       widget.showSnack('Aktivität konnte nicht geladen werden.');
     }
   }
 
+  void _queueActivityScrollToCurrent() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_activityHeatmapScrollController.hasClients) return;
+      final maxOffset =
+          _activityHeatmapScrollController.position.maxScrollExtent;
+      if (maxOffset <= 0) return;
+      _activityHeatmapScrollController.jumpTo(maxOffset);
+    });
+  }
+
   Future<void> _openActivityYearPicker() async {
-    var draftYear = _selectedActivityYear;
     await showCupertinoModalPopup<void>(
       context: context,
-      builder: (context) {
-        return Container(
-          height: 290,
-          decoration: const BoxDecoration(
-            color: Color(0xFF080B14),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-          ),
-          child: Column(
-            children: [
-              SizedBox(
-                height: 52,
-                child: Row(
-                  children: [
-                    CupertinoButton(
-                      padding: const EdgeInsets.symmetric(horizontal: 18),
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text(
-                        'Abbrechen',
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                    ),
-                    const Spacer(),
-                    CupertinoButton(
-                      padding: const EdgeInsets.symmetric(horizontal: 18),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        unawaited(_loadActivityForYear(draftYear));
-                      },
-                      child: const Text(
-                        'Fertig',
-                        style: TextStyle(
-                          color: Color(0xFFFF4FB3),
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: CupertinoPicker(
-                  scrollController: FixedExtentScrollController(
-                    initialItem: math.max(
-                      0,
-                      _activityYears.indexOf(_selectedActivityYear),
-                    ),
+      builder: (context) => CupertinoActionSheet(
+        title: const Text('Jahr auswählen'),
+        actions: _activityYears
+            .map(
+              (year) => CupertinoActionSheetAction(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  if (year != _selectedActivityYear) {
+                    unawaited(_loadActivityForYear(year));
+                  }
+                },
+                child: Text(
+                  '$year',
+                  style: TextStyle(
+                    color: year == _selectedActivityYear
+                        ? const Color(0xFFFF4FB3)
+                        : CupertinoColors.label.resolveFrom(context),
+                    fontWeight: FontWeight.w800,
                   ),
-                  itemExtent: 44,
-                  onSelectedItemChanged: (index) {
-                    draftYear = _activityYears[index];
-                  },
-                  children: _activityYears
-                      .map(
-                        (year) => Center(
-                          child: Text(
-                            '$year',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(growable: false),
                 ),
               ),
-            ],
-          ),
-        );
-      },
+            )
+            .toList(growable: false),
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Abbrechen'),
+        ),
+      ),
     );
   }
 
@@ -1922,6 +1902,7 @@ class _ProfileTabState extends State<ProfileTab> {
             ),
             Expanded(
               child: SingleChildScrollView(
+                controller: _activityHeatmapScrollController,
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
                 child: Column(

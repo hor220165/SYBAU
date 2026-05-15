@@ -101,12 +101,13 @@ namespace Sybau_Backend.Controllers
             };
 
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
-            var monday = today.AddDays(-(int)today.DayOfWeek + (today.DayOfWeek == DayOfWeek.Sunday ? -6 : 1));
-            var sunday = monday.AddDays(6);
+            var yearStart = new DateOnly(today.Year, 1, 1);
+            var activityStart = yearStart.AddDays(-(int)yearStart.DayOfWeek + (yearStart.DayOfWeek == DayOfWeek.Sunday ? -6 : 1));
 
             ProfileStatsDto stats;
             List<AchievementDto> achievements;
             List<WeeklyActivityDto> weeklyActivity;
+            List<int> activityYears;
             List<RecentActivityDto> recentActivities;
 
             try
@@ -129,11 +130,20 @@ namespace Sybau_Backend.Controllers
 
             try
             {
-                weeklyActivity = await _userService.GetWeeklyActivityAsync(id, monday, sunday);
+                weeklyActivity = await _userService.GetWeeklyActivityAsync(id, activityStart, today);
             }
             catch
             {
                 weeklyActivity = new List<WeeklyActivityDto>();
+            }
+
+            try
+            {
+                activityYears = await _userService.GetActivityYearsAsync(id);
+            }
+            catch
+            {
+                activityYears = new List<int> { today.Year };
             }
 
             try
@@ -155,6 +165,7 @@ namespace Sybau_Backend.Controllers
                 Stats = stats,
                 Achievements = achievements,
                 WeeklyActivity = weeklyActivity,
+                ActivityYears = activityYears,
                 RecentActivities = recentActivities
             });
         }
