@@ -568,6 +568,7 @@ const achievementIcons: Record<string, string> = {
   'bionic': `<path d='M18 3a3 3 0 0 1 0 6h-6a3 3 0 0 1 0-6h6z'/><path d='M6 21a3 3 0 0 1 0-6h6a3 3 0 0 1 0 6H6z'/><path d='M15 12a3 3 0 1 1 0-6 3 3 0 0 1 0 6z'/><path d='M9 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'/>`,
   'elite-athlete': `<circle cx='12' cy='8' r='7'/><polyline points='8.21 13.89 7 23 12 20 17 23 15.79 13.88'/>`
 };
+const defaultAchievementIcon = `<path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/>`;
 
 const achievements = ref<Array<{ id: number; icon: string; title: string; description: string; unlocked: boolean }>>([]);
 
@@ -701,7 +702,7 @@ onMounted(async () => {
       ]);
       achievements.value = (achievementsRes.data as Achievement[]).map(a => ({
         id: a.id,
-        icon: achievementIcons[a.key] || '',
+        icon: achievementIcons[a.key] || defaultAchievementIcon,
         title: a.title,
         description: a.description,
         unlocked: a.unlocked
