@@ -14,7 +14,8 @@ class AvatarTab extends StatefulWidget {
   State<AvatarTab> createState() => _AvatarTabState();
 }
 
-class _AvatarTabState extends State<AvatarTab> {
+class _AvatarTabState extends State<AvatarTab>
+    with SingleTickerProviderStateMixin {
   bool _loading = true;
   Map<String, dynamic> _profile = <String, dynamic>{};
   List<Booster> _inventory = <Booster>[];
@@ -23,11 +24,22 @@ class _AvatarTabState extends State<AvatarTab> {
   Booster? _selectingSlotFor;
   Booster? _pendingSellBooster;
   bool _sellingItem = false;
+  late final AnimationController _legendaryShineController;
 
   @override
   void initState() {
     super.initState();
+    _legendaryShineController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
     unawaited(_load());
+  }
+
+  @override
+  void dispose() {
+    _legendaryShineController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -141,6 +153,36 @@ class _AvatarTabState extends State<AvatarTab> {
         return Color(0xFF60A5FA);
       default:
         return Color(0xFF94A3B8);
+    }
+  }
+
+  double _inventoryTintOpacity(String rarity) {
+    switch (rarity) {
+      case 'mythic':
+        return 0.18;
+      case 'legendary':
+        return 0.17;
+      case 'epic':
+        return 0.16;
+      case 'rare':
+        return 0.15;
+      default:
+        return 0.12;
+    }
+  }
+
+  double _inventoryBorderOpacity(String rarity) {
+    switch (rarity) {
+      case 'mythic':
+        return 0.44;
+      case 'legendary':
+        return 0.48;
+      case 'epic':
+        return 0.38;
+      case 'rare':
+        return 0.36;
+      default:
+        return 0.26;
     }
   }
 
@@ -352,7 +394,8 @@ class _AvatarTabState extends State<AvatarTab> {
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: _inventory.length + 1,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       if (index == 0) {
                         final canClear = current != null;
@@ -416,9 +459,10 @@ class _AvatarTabState extends State<AvatarTab> {
                         booster,
                       );
                       final isCurrent = current?.id == booster.id;
+                      final isSelectable = available > 0 || isCurrent;
 
                       return InkWell(
-                        onTap: available > 0 || isCurrent
+                        onTap: isSelectable
                             ? () => Navigator.pop(
                                 modalContext,
                                 _BoosterSelection.booster(booster),
@@ -428,13 +472,17 @@ class _AvatarTabState extends State<AvatarTab> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: available > 0 || isCurrent
-                                ? accent.withOpacity(0.12)
+                            color: isSelectable
+                                ? accent.withOpacity(
+                                    _inventoryTintOpacity(rarity),
+                                  )
                                 : Colors.white.withOpacity(0.03),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: available > 0 || isCurrent
-                                  ? accent.withOpacity(0.3)
+                              color: isSelectable
+                                  ? accent.withOpacity(
+                                      _inventoryBorderOpacity(rarity),
+                                    )
                                   : Colors.white.withOpacity(0.06),
                             ),
                           ),
@@ -452,7 +500,9 @@ class _AvatarTabState extends State<AvatarTab> {
                                       alignment: Alignment.center,
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(12),
-                                        color: accent.withOpacity(0.12),
+                                        color: accent.withOpacity(
+                                          _inventoryTintOpacity(rarity) + 0.04,
+                                        ),
                                       ),
                                       child: booster.imageUrl.isNotEmpty
                                           ? ClipRRect(
@@ -1032,64 +1082,117 @@ class _AvatarTabState extends State<AvatarTab> {
 
                               return SizedBox(
                                 height: 118,
-                                child: Container(
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        accent.withOpacity(0.08),
-                                        Colors.white.withOpacity(0.035),
-                                      ],
-                                    ),
-                                    border: Border.all(
-                                      color: accent.withOpacity(0.22),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      SizedBox(
-                                        width: 64,
-                                        height: 64,
-                                        child: Stack(
-                                          clipBehavior: Clip.none,
-                                          children: [
-                                            Container(
-                                              width: 58,
-                                              height: 58,
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    BorderRadius.circular(14),
-                                                gradient: LinearGradient(
-                                                  begin: Alignment.topLeft,
-                                                  end: Alignment.bottomRight,
-                                                  colors: [
-                                                    accent.withOpacity(0.2),
-                                                    accent.withOpacity(0.06),
-                                                  ],
-                                                ),
-                                                border: Border.all(
-                                                  color: Colors.white
-                                                      .withOpacity(0.06),
-                                                ),
-                                              ),
-                                              child: Center(
-                                                child:
-                                                    booster.imageUrl.isNotEmpty
-                                                    ? ClipRRect(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              12,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: _LegendaryInventoryFrame(
+                                    enabled: rarity == 'legendary',
+                                    progress: _legendaryShineController,
+                                    borderRadius: 16,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(16),
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            accent.withOpacity(
+                                              _inventoryTintOpacity(rarity),
+                                            ),
+                                            accent.withOpacity(
+                                              _inventoryTintOpacity(rarity) *
+                                                  0.36,
+                                            ),
+                                            Colors.white.withOpacity(0.045),
+                                          ],
+                                        ),
+                                        border: Border.all(
+                                          color: accent.withOpacity(
+                                            _inventoryBorderOpacity(rarity),
+                                          ),
+                                          width: rarity == 'legendary'
+                                              ? 1.25
+                                              : 1,
+                                        ),
+                                        boxShadow: [
+                                          if (rarity != 'common')
+                                            BoxShadow(
+                                              color: accent.withOpacity(0.1),
+                                              blurRadius: 18,
+                                              offset: const Offset(0, 8),
+                                            ),
+                                          if (rarity == 'legendary')
+                                            BoxShadow(
+                                              color: const Color(
+                                                0xFFFDE68A,
+                                              ).withOpacity(0.12),
+                                              blurRadius: 24,
+                                            ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          SizedBox(
+                                            width: 64,
+                                            height: 64,
+                                            child: Stack(
+                                              clipBehavior: Clip.none,
+                                              children: [
+                                                Container(
+                                                  width: 58,
+                                                  height: 58,
+                                                  decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          14,
+                                                        ),
+                                                    gradient: LinearGradient(
+                                                      begin: Alignment.topLeft,
+                                                      end:
+                                                          Alignment.bottomRight,
+                                                      colors: [
+                                                        accent.withOpacity(
+                                                          0.25,
+                                                        ),
+                                                        accent.withOpacity(
+                                                          0.09,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    border: Border.all(
+                                                      color: Colors.white
+                                                          .withOpacity(0.08),
+                                                    ),
+                                                  ),
+                                                  child: Center(
+                                                    child:
+                                                        booster
+                                                            .imageUrl
+                                                            .isNotEmpty
+                                                        ? ClipRRect(
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  12,
+                                                                ),
+                                                            child: _buildMediaImageFromUrl(
+                                                              booster.imageUrl,
+                                                              width: 44,
+                                                              height: 44,
+                                                              fit: BoxFit
+                                                                  .contain,
+                                                              fallback: () => Text(
+                                                                _boosterIcon(
+                                                                  booster,
+                                                                ),
+                                                                style:
+                                                                    const TextStyle(
+                                                                      fontSize:
+                                                                          21,
+                                                                    ),
+                                                              ),
                                                             ),
-                                                        child: _buildMediaImageFromUrl(
-                                                          booster.imageUrl,
-                                                          width: 44,
-                                                          height: 44,
-                                                          fit: BoxFit.contain,
-                                                          fallback: () => Text(
+                                                          )
+                                                        : Text(
                                                             _boosterIcon(
                                                               booster,
                                                             ),
@@ -1098,126 +1201,127 @@ class _AvatarTabState extends State<AvatarTab> {
                                                                   fontSize: 21,
                                                                 ),
                                                           ),
-                                                        ),
-                                                      )
-                                                    : Text(
-                                                        _boosterIcon(booster),
-                                                        style: const TextStyle(
-                                                          fontSize: 21,
-                                                        ),
+                                                  ),
+                                                ),
+                                                Positioned(
+                                                  top: -4,
+                                                  right: 0,
+                                                  child:
+                                                      _inventoryQuantityBadge(
+                                                        booster.quantity,
                                                       ),
-                                              ),
+                                                ),
+                                              ],
                                             ),
-                                            Positioned(
-                                              top: -4,
-                                              right: 0,
-                                              child: _inventoryQuantityBadge(
-                                                booster.quantity,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              _td(booster.name),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w900,
-                                                fontSize: 18,
-                                                height: 1.05,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              _rarityLabel(
-                                                rarity,
-                                              ).toUpperCase(),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                color: accent,
-                                                fontSize: 10,
-                                                height: 1,
-                                                letterSpacing: 1.35,
-                                                fontWeight: FontWeight.w900,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            SizedBox(
-                                              height: 32,
-                                              child: Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  if (booster
-                                                          .xpBoostPercentage >
-                                                      0)
-                                                    _inventoryBoostText(
-                                                      label:
-                                                          'XP +${booster.xpBoostPercentage}%',
-                                                      color: const Color(
-                                                        0xFF60A5FA,
-                                                      ),
-                                                    ),
-                                                  if (booster
-                                                          .coinBoostPercentage >
-                                                      0)
-                                                    _inventoryBoostText(
-                                                      label:
-                                                          'Coins +${booster.coinBoostPercentage}%',
-                                                      color: const Color(
-                                                        0xFFFACC15,
-                                                      ),
-                                                    ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      InkWell(
-                                        onTap: () =>
-                                            _requestSellBooster(booster),
-                                        borderRadius: BorderRadius.circular(10),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 8,
                                           ),
-                                          decoration: BoxDecoration(
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  _td(booster.name),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w900,
+                                                    fontSize: 18,
+                                                    height: 1.05,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  _rarityLabel(
+                                                    rarity,
+                                                  ).toUpperCase(),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    color: accent,
+                                                    fontSize: 10,
+                                                    height: 1,
+                                                    letterSpacing: 1.35,
+                                                    fontWeight: FontWeight.w900,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                SizedBox(
+                                                  height: 32,
+                                                  child: Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      if (booster
+                                                              .xpBoostPercentage >
+                                                          0)
+                                                        _inventoryBoostText(
+                                                          label:
+                                                              'XP +${booster.xpBoostPercentage}%',
+                                                          color: const Color(
+                                                            0xFF60A5FA,
+                                                          ),
+                                                        ),
+                                                      if (booster
+                                                              .coinBoostPercentage >
+                                                          0)
+                                                        _inventoryBoostText(
+                                                          label:
+                                                              'Coins +${booster.coinBoostPercentage}%',
+                                                          color: const Color(
+                                                            0xFFFACC15,
+                                                          ),
+                                                        ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          InkWell(
+                                            onTap: () =>
+                                                _requestSellBooster(booster),
                                             borderRadius: BorderRadius.circular(
                                               10,
                                             ),
-                                            color: Color(
-                                              0xFFF43F5E,
-                                            ).withOpacity(0.12),
-                                            border: Border.all(
-                                              color: Color(
-                                                0xFFF43F5E,
-                                              ).withOpacity(0.22),
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 8,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                                color: Color(
+                                                  0xFFF43F5E,
+                                                ).withOpacity(0.12),
+                                                border: Border.all(
+                                                  color: Color(
+                                                    0xFFF43F5E,
+                                                  ).withOpacity(0.22),
+                                                ),
+                                              ),
+                                              child: const Icon(
+                                                Icons.sell_rounded,
+                                                color: Color(0xFFF43F5E),
+                                                size: 18,
+                                              ),
                                             ),
                                           ),
-                                          child: const Icon(
-                                            Icons.sell_rounded,
-                                            color: Color(0xFFF43F5E),
-                                            size: 18,
-                                          ),
-                                        ),
+                                        ],
                                       ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                               );
@@ -1442,5 +1546,91 @@ class _AvatarTabState extends State<AvatarTab> {
         ),
       ),
     );
+  }
+}
+
+class _LegendaryInventoryFrame extends StatelessWidget {
+  const _LegendaryInventoryFrame({
+    required this.enabled,
+    required this.progress,
+    required this.borderRadius,
+    required this.child,
+  });
+
+  final bool enabled;
+  final Animation<double> progress;
+  final double borderRadius;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) return child;
+
+    return AnimatedBuilder(
+      animation: progress,
+      builder: (context, _) {
+        return Stack(
+          children: [
+            child,
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _LegendaryBorderShinePainter(
+                    progress: progress.value,
+                    borderRadius: borderRadius,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _LegendaryBorderShinePainter extends CustomPainter {
+  const _LegendaryBorderShinePainter({
+    required this.progress,
+    required this.borderRadius,
+  });
+
+  final double progress;
+  final double borderRadius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
+
+    final rrect = RRect.fromRectAndRadius(
+      (Offset.zero & size).deflate(1.5),
+      Radius.circular(borderRadius),
+    );
+    final path = Path()..addRRect(rrect);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.15
+      ..strokeCap = StrokeCap.round
+      ..color = Colors.white.withOpacity(0.58)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.45);
+
+    for (final metric in path.computeMetrics()) {
+      final segmentLength = metric.length * 0.18;
+      final start = (progress * metric.length * 1.15) % metric.length;
+      final end = start + segmentLength;
+
+      if (end <= metric.length) {
+        canvas.drawPath(metric.extractPath(start, end), paint);
+      } else {
+        canvas.drawPath(metric.extractPath(start, metric.length), paint);
+        canvas.drawPath(metric.extractPath(0, end - metric.length), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _LegendaryBorderShinePainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.borderRadius != borderRadius;
   }
 }

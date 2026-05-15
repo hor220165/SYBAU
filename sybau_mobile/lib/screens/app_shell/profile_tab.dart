@@ -601,32 +601,111 @@ class _ProfileTabState extends State<ProfileTab> {
   Future<void> _openActivityYearPicker() async {
     await showCupertinoModalPopup<void>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: const Text('Jahr auswählen'),
-        actions: _activityYears
-            .map(
-              (year) => CupertinoActionSheetAction(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  if (year != _selectedActivityYear) {
-                    unawaited(_loadActivityForYear(year));
-                  }
-                },
-                child: Text(
-                  '$year',
-                  style: TextStyle(
-                    color: year == _selectedActivityYear
-                        ? const Color(0xFFFF4FB3)
-                        : CupertinoColors.label.resolveFrom(context),
-                    fontWeight: FontWeight.w800,
+      barrierColor: Colors.black.withOpacity(0.34),
+      builder: (context) => SafeArea(
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    color: const Color(0xCC10131F),
+                    border: Border.all(color: Colors.white.withOpacity(0.16)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.28),
+                        blurRadius: 28,
+                        offset: const Offset(0, 16),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            'Jahr auswählen',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.68),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        for (final year in _activityYears)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: CupertinoButton(
+                              minimumSize: const Size(0, 48),
+                              padding: EdgeInsets.zero,
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                if (year != _selectedActivityYear) {
+                                  unawaited(_loadActivityForYear(year));
+                                }
+                              },
+                              child: Container(
+                                width: double.infinity,
+                                height: 48,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  color: year == _selectedActivityYear
+                                      ? const Color(
+                                          0xFFFF4FB3,
+                                        ).withOpacity(0.22)
+                                      : Colors.white.withOpacity(0.07),
+                                  border: Border.all(
+                                    color: year == _selectedActivityYear
+                                        ? const Color(
+                                            0xFFFF4FB3,
+                                          ).withOpacity(0.42)
+                                        : Colors.white.withOpacity(0.08),
+                                  ),
+                                ),
+                                child: Text(
+                                  '$year',
+                                  style: TextStyle(
+                                    color: year == _selectedActivityYear
+                                        ? const Color(0xFFFFB3DD)
+                                        : Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: CupertinoButton(
+                            minimumSize: const Size(0, 44),
+                            padding: EdgeInsets.zero,
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text(
+                              'Abbrechen',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.72),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            )
-            .toList(growable: false),
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Abbrechen'),
+            ),
+          ),
         ),
       ),
     );

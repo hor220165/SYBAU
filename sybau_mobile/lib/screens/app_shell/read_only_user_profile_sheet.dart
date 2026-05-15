@@ -324,142 +324,148 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                _isStepsActivityMode
-                    ? '${_formatCompactNumber(_activityTotal(days))} Schritte in $year'
-                    : '${_formatCompactNumber(_activityTotal(days))} Reps in $year',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.68),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+        Text(
+          _isStepsActivityMode
+              ? '${_formatCompactNumber(_activityTotal(days))} Schritte in $year'
+              : '${_formatCompactNumber(_activityTotal(days))} Reps in $year',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.68),
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: CupertinoSlidingSegmentedControl<String>(
+            groupValue: _activityMode,
+            backgroundColor: Colors.white.withOpacity(0.06),
+            thumbColor: accent.withOpacity(0.32),
+            padding: const EdgeInsets.all(3),
+            children: const {
+              'workouts': Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Text(
+                  'Workouts',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
-            ),
-            CupertinoSlidingSegmentedControl<String>(
-              groupValue: _activityMode,
-              backgroundColor: Colors.white.withOpacity(0.06),
-              thumbColor: accent.withOpacity(0.32),
-              padding: const EdgeInsets.all(3),
-              children: const {
-                'workouts': Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: Text(
-                    'Workouts',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
+              'steps': Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Text(
+                  'Schritte',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                'steps': Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: Text(
-                    'Schritte',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              },
-              onValueChanged: (value) {
-                if (value == null) return;
-                setState(() => _activityMode = value);
-              },
-            ),
-          ],
+              ),
+            },
+            onValueChanged: (value) {
+              if (value == null) return;
+              setState(() => _activityMode = value);
+            },
+          ),
         ),
         const SizedBox(height: 12),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Column(
-              children: [
-                const SizedBox(height: 19),
-                SizedBox(
-                  width: weekdayWidth,
-                  height: weekHeight,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: weekdayLabels
-                        .map(
-                          (label) => SizedBox(
-                            height: cellSize,
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                label,
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.62),
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
+        Padding(
+          padding: const EdgeInsets.only(right: 2),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                children: [
+                  const SizedBox(height: 19),
+                  SizedBox(
+                    width: weekdayWidth,
+                    height: weekHeight,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: weekdayLabels
+                          .map(
+                            (label) => SizedBox(
+                              height: cellSize,
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  label,
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.62),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        )
-                        .toList(growable: false),
+                          )
+                          .toList(growable: false),
+                    ),
+                  ),
+                ],
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _activityHeatmapScrollController,
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: weeks
+                              .map(
+                                (week) => Container(
+                                  width: cellSize,
+                                  margin: const EdgeInsets.only(right: cellGap),
+                                  child: Text(
+                                    _activityMonthLabel(week),
+                                    overflow: TextOverflow.visible,
+                                    softWrap: false,
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.66),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(growable: false),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: weeks
+                              .map(
+                                (week) => Padding(
+                                  padding: const EdgeInsets.only(
+                                    right: cellGap,
+                                  ),
+                                  child: Column(
+                                    children: week
+                                        .map((day) => buildCell(day))
+                                        .toList(growable: false),
+                                  ),
+                                ),
+                              )
+                              .toList(growable: false),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: _activityHeatmapScrollController,
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: weeks
-                          .map(
-                            (week) => Container(
-                              width: cellSize,
-                              margin: const EdgeInsets.only(right: cellGap),
-                              child: Text(
-                                _activityMonthLabel(week),
-                                overflow: TextOverflow.visible,
-                                softWrap: false,
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.66),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                          )
-                          .toList(growable: false),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: weeks
-                          .map(
-                            (week) => Padding(
-                              padding: const EdgeInsets.only(right: cellGap),
-                              child: Column(
-                                children: week
-                                    .map((day) => buildCell(day))
-                                    .toList(growable: false),
-                              ),
-                            ),
-                          )
-                          .toList(growable: false),
-                    ),
-                  ],
-                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
