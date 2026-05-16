@@ -145,9 +145,9 @@ const copy = {
 };
 
 const stats = [
-  { value: 100, suffix: '+', label: 'Max Level' },
-  { value: 100, suffix: '+', label: 'Achievements' },
-  { value: 5000, suffix: '+', label: 'Aktive Nutzer' },
+  { value: 50, suffix: '+', label: 'Max Level' },
+  { value: 50, suffix: '+', label: 'Achievements' },
+  { value: 1000, suffix: '+', label: 'Aktive Nutzer' },
   { value: 50, suffix: '+', label: 'Workouts' },
 ];
 
@@ -666,17 +666,6 @@ onUnmounted(() => {
   animation: phaseRise 0.7s ease both;
   animation-delay: var(--phase-delay);
   transition: transform 0.24s ease;
-}
-
-.phase-item::after {
-  content: '';
-  position: absolute;
-  bottom: 70px;
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 0 18px rgba(236, 72, 153, 0.26);
 }
 
 .phase-item:hover {
