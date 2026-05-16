@@ -756,7 +756,7 @@ class _ShopTabState extends State<ShopTab> {
     return SizedBox(
       height: 274,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 18, 8, 14),
+        padding: const EdgeInsets.fromLTRB(8, 18, 8, 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           gradient: LinearGradient(
@@ -777,6 +777,7 @@ class _ShopTabState extends State<ShopTab> {
           ],
         ),
         child: Stack(
+          clipBehavior: Clip.none,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -805,12 +806,6 @@ class _ShopTabState extends State<ShopTab> {
                                   icon,
                                   style: const TextStyle(fontSize: 42),
                                 ),
-                          if (owned > 0)
-                            Positioned(
-                              top: -7,
-                              right: -7,
-                              child: _buildQuantityBadge('x$owned'),
-                            ),
                         ],
                       ),
                     ),
@@ -931,6 +926,12 @@ class _ShopTabState extends State<ShopTab> {
                 ),
               ),
             ),
+            if (owned > 0)
+              Positioned(
+                top: -14,
+                right: -12,
+                child: _buildQuantityBadge('x$owned'),
+              ),
           ],
         ),
       ),
