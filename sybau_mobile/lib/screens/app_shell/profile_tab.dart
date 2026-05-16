@@ -24,6 +24,8 @@ class _ProfileTabState extends State<ProfileTab> {
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _serverUrlController = TextEditingController();
   final ScrollController _activityHeatmapScrollController = ScrollController();
+  OverlayEntry? _activityTooltipOverlay;
+  Timer? _activityTooltipTimer;
 
   Map<String, dynamic> _profile = <String, dynamic>{};
   List<dynamic> _achievements = <dynamic>[];
@@ -33,6 +35,7 @@ class _ProfileTabState extends State<ProfileTab> {
   List<int> _activityYears = <int>[DateTime.now().year];
   int _selectedActivityYear = DateTime.now().year;
   String _activityMode = 'workouts';
+  String? _activeActivityTooltipDate;
   String? _profileImageUrl;
   Uint8List? _pickedProfileImageBytes;
   int _profileImageVersion = 0;
@@ -52,11 +55,13 @@ class _ProfileTabState extends State<ProfileTab> {
   @override
   void initState() {
     super.initState();
+    _activityHeatmapScrollController.addListener(_hideActivityTooltip);
     unawaited(_load());
   }
 
   @override
   void dispose() {
+    _hideActivityTooltip(updateState: false);
     _usernameController.dispose();
     _oldPasswordController.dispose();
     _newPasswordController.dispose();
@@ -573,8 +578,10 @@ class _ProfileTabState extends State<ProfileTab> {
         to: bounds.$2,
       );
       if (!mounted) return;
+      _hideActivityTooltip(updateState: false);
       setState(() {
         _selectedActivityYear = year;
+        _activeActivityTooltipDate = null;
         _weeklyActivity = _normalizeActivityHeatmap(
           weeklyRaw,
           bounds.$1,
@@ -599,6 +606,7 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Future<void> _openActivityYearPicker() async {
+    _hideActivityTooltip();
     await showCupertinoModalPopup<void>(
       context: context,
       builder: (context) {
@@ -627,6 +635,168 @@ class _ProfileTabState extends State<ProfileTab> {
     final m = date.month.toString().padLeft(2, '0');
     final d = date.day.toString().padLeft(2, '0');
     return '$y-$m-$d';
+  }
+
+  String _formatActivityNumber(int value) {
+    final raw = value.abs().toString();
+    final buffer = StringBuffer();
+    for (var index = 0; index < raw.length; index += 1) {
+      final remaining = raw.length - index;
+      buffer.write(raw[index]);
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write('.');
+      }
+    }
+    return value < 0 ? '-$buffer' : buffer.toString();
+  }
+
+  String _activityDateLabel(Map<String, dynamic> day) {
+    final raw = _string(day['date']);
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return raw;
+    const months = <String>[
+      'Jan.',
+      'Feb.',
+      'März',
+      'Apr.',
+      'Mai',
+      'Juni',
+      'Juli',
+      'Aug.',
+      'Sept.',
+      'Okt.',
+      'Nov.',
+      'Dez.',
+    ];
+    final month = months[(parsed.month - 1).clamp(0, 11).toInt()];
+    return '${parsed.day.toString().padLeft(2, '0')}. $month ${parsed.year}';
+  }
+
+  String _activityTooltipValueLabel(Map<String, dynamic> day) {
+    final unit = _isStepsActivityMode ? 'Schritte' : 'Reps';
+    return '${_formatActivityNumber(_activityValue(day))} $unit';
+  }
+
+  void _hideActivityTooltip({bool updateState = true}) {
+    _activityTooltipTimer?.cancel();
+    _activityTooltipTimer = null;
+    _activityTooltipOverlay?.remove();
+    _activityTooltipOverlay = null;
+    if (_activeActivityTooltipDate == null) return;
+    if (updateState && mounted) {
+      setState(() => _activeActivityTooltipDate = null);
+    } else {
+      _activeActivityTooltipDate = null;
+    }
+  }
+
+  void _showActivityTooltip(
+    BuildContext cellContext,
+    Map<String, dynamic> day,
+  ) {
+    final dateKey = _string(day['date']);
+    if (dateKey.isEmpty || day['isFuture'] == true) return;
+
+    final overlay = Overlay.maybeOf(context);
+    final cellBox = cellContext.findRenderObject() as RenderBox?;
+    if (overlay == null || cellBox == null || !cellBox.hasSize) return;
+
+    final media = MediaQuery.of(context);
+    final cellTopLeft = cellBox.localToGlobal(Offset.zero);
+    final cellSize = cellBox.size;
+    const tooltipWidth = 126.0;
+    const tooltipHeight = 43.0;
+    const edgePadding = 12.0;
+    final centerX = cellTopLeft.dx + cellSize.width / 2;
+    final left = math.max(
+      edgePadding,
+      math.min(
+        media.size.width - tooltipWidth - edgePadding,
+        centerX - tooltipWidth / 2,
+      ),
+    );
+    final top = cellTopLeft.dy > media.padding.top + tooltipHeight + 8
+        ? cellTopLeft.dy - tooltipHeight - 8
+        : cellTopLeft.dy + cellSize.height + 8;
+    final accent = _isStepsActivityMode
+        ? const Color(0xFFFB923C)
+        : const Color(0xFFFF4FB3);
+
+    _hideActivityTooltip(updateState: false);
+    setState(() => _activeActivityTooltipDate = dateKey);
+
+    _activityTooltipOverlay = OverlayEntry(
+      builder: (_) {
+        return Positioned(
+          left: left,
+          top: top,
+          width: tooltipWidth,
+          child: IgnorePointer(
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F172A).withValues(alpha: 0.96),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.12),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.38),
+                      blurRadius: 22,
+                      offset: const Offset(0, 12),
+                    ),
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.14),
+                      blurRadius: 16,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _activityDateLabel(day),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.58),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _activityTooltipValueLabel(day),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        height: 1.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    overlay.insert(_activityTooltipOverlay!);
+    _activityTooltipTimer = Timer(
+      const Duration(seconds: 4),
+      _hideActivityTooltip,
+    );
   }
 
   List<Map<String, dynamic>> _normalizeActivityHeatmap(
@@ -1786,17 +1956,53 @@ class _ProfileTabState extends State<ProfileTab> {
       final value = _activityValue(day);
       final isToday = day['isToday'] == true;
       final isFuture = day['isFuture'] == true;
-      return Container(
-        width: cellSize,
-        height: cellSize,
-        margin: const EdgeInsets.only(bottom: cellGap),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(3),
-          color: _activityColor(value, isFuture: isFuture),
-          border: Border.all(
-            color: _activityBorderColor(value, isToday: isToday),
-            width: isToday ? 1.6 : 1,
-          ),
+      final dateKey = _string(day['date']);
+      final isActive =
+          dateKey.isNotEmpty && dateKey == _activeActivityTooltipDate;
+
+      return Padding(
+        padding: const EdgeInsets.only(bottom: cellGap),
+        child: Builder(
+          builder: (cellContext) {
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: isFuture
+                  ? null
+                  : () => _showActivityTooltip(cellContext, day),
+              child: Semantics(
+                button: !isFuture,
+                label:
+                    '${_activityDateLabel(day)}: ${_activityTooltipValueLabel(day)}',
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 140),
+                  width: cellSize,
+                  height: cellSize,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    color: _activityColor(value, isFuture: isFuture),
+                    border: Border.all(
+                      color: isActive
+                          ? Colors.white.withValues(alpha: 0.42)
+                          : _activityBorderColor(value, isToday: isToday),
+                      width: isActive
+                          ? 1.8
+                          : isToday
+                          ? 1.6
+                          : 1,
+                    ),
+                    boxShadow: isActive
+                        ? [
+                            BoxShadow(
+                              color: accent.withValues(alpha: 0.26),
+                              blurRadius: 11,
+                            ),
+                          ]
+                        : null,
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       );
     }
@@ -1837,7 +2043,11 @@ class _ProfileTabState extends State<ProfileTab> {
             },
             onValueChanged: (value) {
               if (value == null) return;
-              setState(() => _activityMode = value);
+              _hideActivityTooltip(updateState: false);
+              setState(() {
+                _activityMode = value;
+                _activeActivityTooltipDate = null;
+              });
             },
           ),
         ),
