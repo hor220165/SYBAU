@@ -2270,6 +2270,12 @@ class _ProfileTabState extends State<ProfileTab> {
                 final act = _recentActivities[index];
                 final a = _map(act);
                 final isLast = index == _recentActivities.length - 1;
+                final title = _string(a['title'] ?? a['Title'], fallback: '');
+                final timeText = _string(a['time'], fallback: '').isNotEmpty
+                    ? _string(a['time'])
+                    : _formatActivityTimestamp(
+                        _string(a['timestamp'] ?? a['Timestamp']),
+                      );
                 return Container(
                   padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
                   margin: EdgeInsets.only(bottom: isLast ? 0 : 10),
@@ -2306,20 +2312,24 @@ class _ProfileTabState extends State<ProfileTab> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              a['title'] ?? '',
+                              title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 13,
-                                height: 1.18,
+                                fontSize: 12.2,
+                                height: 1.16,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              a['time'] ?? '',
+                              timeText,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.6),
-                                fontSize: 11,
+                                fontSize: 10.5,
                               ),
                             ),
                           ],
@@ -2327,17 +2337,24 @@ class _ProfileTabState extends State<ProfileTab> {
                       ),
                       const SizedBox(width: 10),
                       SizedBox(
-                        width: 66,
+                        width: 78,
                         height: 36,
-                        child: Center(
-                          child: Text(
-                            '${_formatCompactNumber(_toInt(a['xp']))} XP',
-                            textAlign: TextAlign.right,
-                            style: const TextStyle(
-                              color: Color(0xFF60A5FA),
-                              fontSize: 12.5,
-                              height: 1,
-                              fontWeight: FontWeight.w800,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              '${_formatCompactNumber(_toInt(a['xp'] ?? a['Xp']))} XP',
+                              maxLines: 1,
+                              softWrap: false,
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(
+                                color: Color(0xFF60A5FA),
+                                fontSize: 12.5,
+                                height: 1,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
                         ),

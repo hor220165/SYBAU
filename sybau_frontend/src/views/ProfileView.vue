@@ -144,6 +144,7 @@
         class="activity-heatmap"
         :class="`mode-${activityMode}`"
         :style="{ '--heatmap-week-count': activityHeatmapWeeks.length }"
+        @scroll="hideActivityTooltip"
       >
         <div class="heatmap-months">
           <span class="heatmap-weekday-spacer"></span>
@@ -171,13 +172,20 @@
               :key="week.start"
               class="heatmap-week"
             >
-              <span
+              <button
                 v-for="day in week.days"
                 :key="day.date"
+                type="button"
                 class="heatmap-cell"
-                :class="[`heatmap-level-${day.level}`, { today: day.isToday, future: day.isFuture }]"
-                :title="day.title"
-              ></span>
+                :class="[`heatmap-level-${day.level}`, { today: day.isToday, future: day.isFuture, active: isActiveActivityDay(day) }]"
+                :aria-label="day.ariaLabel"
+                :disabled="day.isFuture"
+                @pointerenter="showActivityTooltip(day, $event)"
+                @pointerleave="hideActivityTooltipFromPointer"
+                @focus="showActivityTooltip(day, $event)"
+                @blur="hideActivityTooltip"
+                @click.stop="showActivityTooltipOnTap(day, $event)"
+              ></button>
             </div>
           </div>
         </div>
@@ -218,6 +226,24 @@
       <p v-else class="empty-activity-text">{{ settingsCopy.noRecentActivities }}</p>
     </section>
   </main>
+
+  <Teleport to="body">
+    <Transition name="heatmap-tooltip">
+      <div
+        v-if="activeActivityTooltip"
+        class="activity-tooltip"
+        :class="`mode-${activeActivityTooltip.mode}`"
+        :data-placement="activeActivityTooltip.placement"
+        :style="{ left: `${activeActivityTooltip.x}px`, top: `${activeActivityTooltip.y}px` }"
+        :aria-label="`${activeActivityTooltip.dateLabel}: ${activeActivityTooltip.valueLabel}`"
+        role="tooltip"
+      >
+        <span class="activity-tooltip-date">{{ activeActivityTooltip.dateLabel }}</span>
+        {{ ' ' }}
+        <strong class="activity-tooltip-value">{{ activeActivityTooltip.valueLabel }}</strong>
+      </div>
+    </Transition>
+  </Teleport>
 
   <Teleport to="body">
     <Transition name="settings">
@@ -609,9 +635,18 @@ function handleLogout() {
 
 // Responsive visible count
 const windowWidth = ref(window.innerWidth);
-const onResize = () => { windowWidth.value = window.innerWidth; };
-onMounted(() => window.addEventListener('resize', onResize));
-onUnmounted(() => window.removeEventListener('resize', onResize));
+const onResize = () => {
+  windowWidth.value = window.innerWidth;
+  hideActivityTooltip();
+};
+onMounted(() => {
+  window.addEventListener('resize', onResize);
+  window.addEventListener('scroll', hideActivityTooltip, { passive: true });
+});
+onUnmounted(() => {
+  window.removeEventListener('resize', onResize);
+  window.removeEventListener('scroll', hideActivityTooltip);
+});
 
 const visibleCount = computed(() => {
   if (windowWidth.value < 480) return 4;
@@ -661,13 +696,40 @@ const nextAchievements = () => {
 
 // Activity heatmap
 type ActivityMode = 'workouts' | 'steps';
+type ActivityHeatmapDay = {
+  date: string;
+  value: number;
+  level: number;
+  isToday: boolean;
+  isFuture: boolean;
+  dateLabel: string;
+  valueLabel: string;
+  ariaLabel: string;
+};
+type ActivityTooltipPlacement = 'top' | 'bottom';
+type ActivityTooltip = {
+  date: string;
+  dateLabel: string;
+  valueLabel: string;
+  x: number;
+  y: number;
+  placement: ActivityTooltipPlacement;
+  mode: ActivityMode;
+};
+
 const activityMode = ref<ActivityMode>('workouts');
 const activityDates = ref<Map<string, { reps: number; steps: number }>>(new Map());
 const selectedActivityYear = ref(new Date().getFullYear());
 const activityYears = ref<number[]>([selectedActivityYear.value]);
 const activityHeatmapRef = ref<HTMLElement | null>(null);
+const activeActivityTooltip = ref<ActivityTooltip | null>(null);
 const heatmapLegendLevels = [0, 1, 2, 3, 4];
 const monthFormatter = new Intl.DateTimeFormat('de-DE', { month: 'short' });
+const activityDateFormatter = new Intl.DateTimeFormat('de-DE', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric'
+});
 
 function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -688,6 +750,10 @@ function mondayOf(date: Date): Date {
 
 function toDateString(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function formatActivityDateLabel(dateKey: string): string {
+  return activityDateFormatter.format(new Date(`${dateKey}T00:00:00`));
 }
 
 function getHeatmapRange() {
@@ -752,6 +818,10 @@ function activityValue(entry: { reps: number; steps: number }): number {
   return activityMode.value === 'steps' ? entry.steps : entry.reps;
 }
 
+function activityUnitLabel(): string {
+  return activityMode.value === 'steps' ? 'Schritte' : 'Reps';
+}
+
 function activityLevel(value: number): number {
   if (value <= 0) return 0;
   if (activityMode.value === 'steps') {
@@ -766,13 +836,14 @@ function activityLevel(value: number): number {
   return 4;
 }
 
-const activityHeatmapWeeks = computed(() => {
+const activityHeatmapWeeks = computed<Array<{ start: string; monthLabel: string; days: ActivityHeatmapDay[] }>>(() => {
   const { start, visualEnd, today } = getHeatmapRange();
   const todayKey = toDateString(today);
   const weeks = [];
+  const unitLabel = activityUnitLabel();
 
   for (let cursor = new Date(start); cursor <= visualEnd; cursor = addDays(cursor, 7)) {
-    const days = [];
+    const days: ActivityHeatmapDay[] = [];
     let monthLabel = '';
 
     for (let index = 0; index < 7; index++) {
@@ -781,6 +852,8 @@ const activityHeatmapWeeks = computed(() => {
       const entry = activityDates.value.get(key) ?? { reps: 0, steps: 0 };
       const value = activityValue(entry);
       const isFuture = date > today;
+      const dateLabel = formatActivityDateLabel(key);
+      const valueLabel = `${value.toLocaleString('de-DE')} ${unitLabel}`;
 
       if (!monthLabel && (date.getDate() === 1 || toDateString(cursor) === toDateString(start))) {
         monthLabel = monthFormatter.format(date);
@@ -792,7 +865,9 @@ const activityHeatmapWeeks = computed(() => {
         level: isFuture ? 0 : activityLevel(value),
         isToday: key === todayKey,
         isFuture,
-        title: isFuture ? '' : `${key}: ${value} ${activityMode.value === 'steps' ? 'Schritte' : 'Reps'}`,
+        dateLabel,
+        valueLabel,
+        ariaLabel: isFuture ? `${dateLabel}: noch keine Daten` : `${dateLabel}: ${valueLabel}`,
       });
     }
 
@@ -806,7 +881,62 @@ const activityHeatmapWeeks = computed(() => {
   return weeks;
 });
 
+function isActiveActivityDay(day: ActivityHeatmapDay): boolean {
+  return activeActivityTooltip.value?.date === day.date
+    && activeActivityTooltip.value.mode === activityMode.value;
+}
+
+function placeActivityTooltip(day: ActivityHeatmapDay, target: HTMLElement) {
+  const rect = target.getBoundingClientRect();
+  const edgePadding = Math.max(12, Math.min(72, window.innerWidth / 2 - 8));
+  const x = Math.min(
+    window.innerWidth - edgePadding,
+    Math.max(edgePadding, rect.left + rect.width / 2)
+  );
+  const placement: ActivityTooltipPlacement = rect.top < 72 ? 'bottom' : 'top';
+
+  activeActivityTooltip.value = {
+    date: day.date,
+    dateLabel: day.dateLabel,
+    valueLabel: day.valueLabel,
+    x,
+    y: placement === 'top' ? rect.top - 8 : rect.bottom + 8,
+    placement,
+    mode: activityMode.value
+  };
+}
+
+function showActivityTooltip(day: ActivityHeatmapDay, event: Event) {
+  if (day.isFuture) {
+    hideActivityTooltip();
+    return;
+  }
+
+  if (typeof PointerEvent !== 'undefined' && event instanceof PointerEvent && event.pointerType === 'touch') {
+    return;
+  }
+
+  const target = event.currentTarget as HTMLElement | null;
+  if (target) placeActivityTooltip(day, target);
+}
+
+function showActivityTooltipOnTap(day: ActivityHeatmapDay, event: Event) {
+  if (day.isFuture) return;
+  const target = event.currentTarget as HTMLElement | null;
+  if (target) placeActivityTooltip(day, target);
+}
+
+function hideActivityTooltipFromPointer(event: PointerEvent) {
+  if (event.pointerType === 'touch') return;
+  hideActivityTooltip();
+}
+
+function hideActivityTooltip() {
+  activeActivityTooltip.value = null;
+}
+
 watch([activityHeatmapWeeks, activityMode, selectedActivityYear], async () => {
+  hideActivityTooltip();
   await nextTick();
   if (windowWidth.value > 768) return;
   const el = activityHeatmapRef.value;
@@ -1303,11 +1433,43 @@ onMounted(async () => {
 }
 
 .heatmap-cell {
+  appearance: none;
+  display: block;
+  box-sizing: border-box;
   width: var(--heatmap-cell-size);
   height: var(--heatmap-cell-size);
+  padding: 0;
   border-radius: 2px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
+}
+
+.heatmap-grid .heatmap-cell {
+  cursor: pointer;
+  transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
+}
+
+.heatmap-grid .heatmap-cell:not(.future):hover,
+.heatmap-grid .heatmap-cell.active {
+  border-color: rgba(255, 255, 255, 0.36);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 12px rgba(236, 72, 153, 0.24);
+  transform: translateY(-1px);
+}
+
+.mode-steps .heatmap-grid .heatmap-cell:not(.future):hover,
+.mode-steps .heatmap-grid .heatmap-cell.active {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 12px rgba(249, 115, 22, 0.22);
+}
+
+.heatmap-grid .heatmap-cell:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.72);
+  outline-offset: 2px;
+}
+
+.heatmap-grid .heatmap-cell:disabled {
+  cursor: default;
 }
 
 .heatmap-level-1 { background: rgba(157, 23, 77, 0.5); border-color: rgba(236, 72, 153, 0.16); }
@@ -1345,6 +1507,61 @@ onMounted(async () => {
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+}
+
+.activity-tooltip {
+  position: fixed;
+  z-index: 12000;
+  min-width: 92px;
+  max-width: 150px;
+  padding: 7px 9px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.94);
+  color: #fff;
+  text-align: left;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  box-shadow: 0 14px 30px rgba(2, 6, 23, 0.42), 0 0 0 1px rgba(236, 72, 153, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.activity-tooltip[data-placement='bottom'] {
+  transform: translate(-50%, 0);
+}
+
+.activity-tooltip.mode-steps {
+  box-shadow: 0 14px 30px rgba(2, 6, 23, 0.42), 0 0 0 1px rgba(249, 115, 22, 0.12);
+}
+
+.activity-tooltip-date {
+  display: block;
+  margin-bottom: 2px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.activity-tooltip-value {
+  display: block;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.heatmap-tooltip-enter-active,
+.heatmap-tooltip-leave-active {
+  transition: opacity 0.12s ease;
+}
+
+.heatmap-tooltip-enter-from,
+.heatmap-tooltip-leave-to {
+  opacity: 0;
 }
 
 /* ── Activities ── */
@@ -1939,6 +2156,12 @@ onMounted(async () => {
     padding: 12px;
     --heatmap-cell-size: 14px;
     border-radius: 16px;
+  }
+
+  .activity-tooltip {
+    min-width: 84px;
+    padding: 6px 8px;
+    border-radius: 9px;
   }
 
   .heatmap-weekday-spacer,

@@ -223,10 +223,9 @@ watch(
               </div>
             </header>
 
-            <section v-if="isPrivate" class="sheet-card private-profile-card">
-              <h3>Privates Profil</h3>
-              <p>Dieses Profil ist privat.</p>
-            </section>
+            <div v-if="isPrivate" class="private-profile-message">
+              Dieses Profil ist privat.
+            </div>
 
             <template v-else>
             <section class="sheet-card">
@@ -434,10 +433,15 @@ watch(
   font-size: 1.25rem;
 }
 
-.private-profile-card p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.68);
-  font-weight: 700;
+.private-profile-message {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  padding: 40px 16px 56px;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 1.18rem;
+  font-weight: 800;
+  text-align: center;
 }
 
 .card-title-row {
@@ -666,9 +670,9 @@ watch(
 
 .recent-list article {
   display: grid;
-  grid-template-columns: 30px 1fr auto;
+  grid-template-columns: 28px minmax(0, 1fr) max-content;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 12px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -677,17 +681,37 @@ watch(
   border-bottom: 0;
 }
 
+.recent-list article > div {
+  min-width: 0;
+}
+
+.recent-list strong {
+  display: block;
+  color: #fff;
+  font-size: 0.82rem;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.recent-list span {
+  overflow: hidden;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .recent-list b {
   flex: 0 0 auto;
   color: #60a5fa;
-  font-size: 0.88rem;
+  font-size: 0.8rem;
   line-height: 1;
   text-align: right;
+  white-space: nowrap;
 }
 
 .recent-xp-icon {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
   image-rendering: pixelated;
 }

@@ -610,17 +610,21 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
                     ),
                   )
                 else if (_isPrivateProfile) ...[
-                  _SectionCard(
-                    title: _lt(de: 'Privates Profil', en: 'Private profile'),
-                    child: Text(
-                      _lt(
-                        de: 'Dieses Profil ist privat.',
-                        en: 'This profile is private.',
-                      ),
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.72),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 92),
+                    child: Center(
+                      child: Text(
+                        _lt(
+                          de: 'Dieses Profil ist privat.',
+                          en: 'This profile is private.',
+                        ),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.74),
+                          fontSize: 18,
+                          height: 1.15,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                   ),
@@ -807,6 +811,9 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
                               final activity = _map(item);
                               final isLast =
                                   index == recentActivities.length - 1;
+                              final title = _string(
+                                activity['title'] ?? activity['Title'],
+                              );
                               return Container(
                                 padding: EdgeInsets.only(
                                   bottom: isLast ? 0 : 10,
@@ -848,24 +855,31 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            _string(activity['title']),
+                                            title,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
                                             style: const TextStyle(
                                               color: Colors.white,
-                                              fontSize: 13,
-                                              height: 1.18,
+                                              fontSize: 12.2,
+                                              height: 1.16,
                                               fontWeight: FontWeight.w800,
                                             ),
                                           ),
                                           const SizedBox(height: 3),
                                           Text(
                                             _formatActivityTimestamp(
-                                              _string(activity['timestamp']),
+                                              _string(
+                                                activity['timestamp'] ??
+                                                    activity['Timestamp'],
+                                              ),
                                             ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                               color: Colors.white.withOpacity(
                                                 0.56,
                                               ),
-                                              fontSize: 11,
+                                              fontSize: 10.5,
                                             ),
                                           ),
                                         ],
@@ -873,17 +887,24 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
                                     ),
                                     const SizedBox(width: 10),
                                     SizedBox(
-                                      width: 66,
+                                      width: 78,
                                       height: 36,
-                                      child: Center(
-                                        child: Text(
-                                          '${_formatCompactNumber(_toInt(activity['xp']))} XP',
-                                          textAlign: TextAlign.right,
-                                          style: const TextStyle(
-                                            color: Color(0xFF60A5FA),
-                                            fontSize: 12.5,
-                                            height: 1,
-                                            fontWeight: FontWeight.w800,
+                                      child: Align(
+                                        alignment: Alignment.centerRight,
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          alignment: Alignment.centerRight,
+                                          child: Text(
+                                            '${_formatCompactNumber(_toInt(activity['xp'] ?? activity['Xp']))} XP',
+                                            maxLines: 1,
+                                            softWrap: false,
+                                            textAlign: TextAlign.right,
+                                            style: const TextStyle(
+                                              color: Color(0xFF60A5FA),
+                                              fontSize: 12.5,
+                                              height: 1,
+                                              fontWeight: FontWeight.w800,
+                                            ),
                                           ),
                                         ),
                                       ),

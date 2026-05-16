@@ -928,7 +928,7 @@ class _ShopTabState extends State<ShopTab> {
             ),
             if (owned > 0)
               Positioned(
-                top: -14,
+                top: -26,
                 right: -12,
                 child: _buildQuantityBadge('x$owned'),
               ),
@@ -1615,18 +1615,35 @@ class _ShopTabState extends State<ShopTab> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Transform.translate(
-                                  offset: Offset(0, imageOffset),
-                                  child: Transform.scale(
-                                    scale: imageScale,
-                                    child: _buildShopImageFromUrl(
-                                      closedImageUrl,
-                                      width: 238,
-                                      height: 238,
-                                      fallback: () => const Text(
-                                        '📦',
-                                        style: TextStyle(fontSize: 92),
+                                TweenAnimationBuilder<double>(
+                                  tween: Tween<double>(
+                                    begin: _openHintPulseBright ? 0 : 1,
+                                    end: _openHintPulseBright ? 1 : 0,
+                                  ),
+                                  duration: const Duration(milliseconds: 900),
+                                  curve: Curves.easeInOut,
+                                  builder: (_, pulse, child) {
+                                    final idleLift =
+                                        -5 * math.sin(pulse * math.pi);
+                                    final idleTilt = (pulse - 0.5) * 0.025;
+                                    return Transform.translate(
+                                      offset: Offset(0, imageOffset + idleLift),
+                                      child: Transform.rotate(
+                                        angle: idleTilt,
+                                        child: Transform.scale(
+                                          scale: imageScale,
+                                          child: child,
+                                        ),
                                       ),
+                                    );
+                                  },
+                                  child: _buildShopImageFromUrl(
+                                    closedImageUrl,
+                                    width: 238,
+                                    height: 238,
+                                    fallback: () => const Text(
+                                      '📦',
+                                      style: TextStyle(fontSize: 92),
                                     ),
                                   ),
                                 ),
