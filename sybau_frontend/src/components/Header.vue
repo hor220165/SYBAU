@@ -6,7 +6,7 @@ import { useCoins } from '@/composables/useCoins';
 import { useNotifications } from '@/composables/useNotifications';
 import NotificationBell from '@/components/NotificationBell.vue';
 
-const { logout } = useNavigation();
+const { logout, navigateTo } = useNavigation();
 const { user, refreshProfile } = useAuth();
 const { formatCoins } = useCoins();
 const { connect } = useNotifications();
@@ -90,7 +90,9 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   <!-- Header -->
   <header class="header">
     <div class="logo-section">
-      <img src="../assets/Sybau_logo_short.png" alt="Sybau_Logo" class="logo-img" />
+      <button class="logo-button" type="button" @click="navigateTo('/home')" aria-label="Zur Landingpage">
+        <img src="../assets/Sybau_logo_short.png" alt="Sybau_Logo" class="logo-img" />
+      </button>
     </div>
 
     <!-- Stats header -->
@@ -171,6 +173,15 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 .logo-section {
   display: flex;
   align-items: center;
+}
+
+.logo-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
 .logo-img {

@@ -8,7 +8,7 @@
 
         <nav class="nav-buttons" aria-label="Landing Navigation">
           <button class="nav-btn" type="button" @click="navigateTo('/auth')">{{ copy.login }}</button>
-          <button class="webplayer-btn" type="button" @click="navigateTo('/auth')">{{ copy.webplayer }}</button>
+          <button class="webplayer-btn" type="button" @click="openWebplayer">{{ copy.webplayer }}</button>
         </nav>
       </div>
     </header>
@@ -23,7 +23,7 @@
             {{ copy.heroSubtitle }}
           </p>
           <div class="hero-actions fade-in delay-2">
-            <button class="primary-btn" type="button" @click="navigateTo('/auth')">{{ copy.primaryAction }}</button>
+            <button class="primary-btn" type="button" @click="openWebplayer">{{ copy.primaryAction }}</button>
           </div>
         </div>
       </section>
@@ -225,6 +225,10 @@ const navigateTo = (path: string) => {
   router.push(path);
 };
 
+const openWebplayer = () => {
+  router.push(localStorage.getItem('token') ? '/dashboard' : '/auth');
+};
+
 const animateCounter = (index: number, target: number, duration = 1600) => {
   const increment = target / (duration / 16);
   let current = 0;
@@ -303,9 +307,9 @@ onUnmounted(() => {
   top: 0;
   z-index: 50;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(5, 8, 18, 0.46);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .header-inner {
@@ -739,14 +743,14 @@ onUnmounted(() => {
 }
 
 .tech-section {
-  padding: 70px 0 64px;
+  padding: 38px 0 36px;
   overflow: hidden;
   text-align: center;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .tech-title {
-  margin-bottom: 28px;
+  margin-bottom: 16px;
   color: rgba(226, 232, 240, 0.56);
   font-size: 0.88rem;
   font-weight: 700;
@@ -760,30 +764,9 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-.marquee::before,
-.marquee::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  z-index: 2;
-  width: 110px;
-  pointer-events: none;
-}
-
-.marquee::before {
-  left: 0;
-  background: linear-gradient(90deg, #050714, transparent);
-}
-
-.marquee::after {
-  right: 0;
-  background: linear-gradient(270deg, #050714, transparent);
-}
-
 .marquee-content {
   display: inline-flex;
-  gap: 72px;
+  gap: 34px;
   animation: scroll 42s linear infinite;
   will-change: transform;
 }
@@ -791,12 +774,12 @@ onUnmounted(() => {
 .logo-set {
   display: flex;
   align-items: center;
-  gap: 50px;
+  gap: 32px;
 }
 
 .tech-logo {
-  width: 76px;
-  height: 76px;
+  width: 66px;
+  height: 66px;
   object-fit: contain;
   opacity: 0.8;
   transition: opacity 0.18s ease, transform 0.18s ease;
@@ -1001,12 +984,12 @@ onUnmounted(() => {
   }
 
   .tech-logo {
-    width: 58px;
-    height: 58px;
+    width: 52px;
+    height: 52px;
   }
 
   .logo-set {
-    gap: 34px;
+    gap: 24px;
   }
 }
 

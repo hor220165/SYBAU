@@ -27,17 +27,25 @@
 import { onMounted, ref } from 'vue';
 import { ShieldCheck } from 'lucide-vue-next';
 
-const storageKey = 'sybau_cookie_consent_v1';
+const storageKey = 'sybau_cookie_consent_v2';
 const visible = ref(false);
 
 type ConsentChoice = 'accepted' | 'declined';
 
 onMounted(() => {
-  visible.value = localStorage.getItem(storageKey) == null;
+  try {
+    visible.value = localStorage.getItem(storageKey) == null;
+  } catch {
+    visible.value = true;
+  }
 });
 
 function saveConsent(choice: ConsentChoice) {
-  localStorage.setItem(storageKey, choice);
+  try {
+    localStorage.setItem(storageKey, choice);
+  } catch {
+    /* Consent UI can still be dismissed if storage is unavailable. */
+  }
   visible.value = false;
 }
 </script>
@@ -47,7 +55,7 @@ function saveConsent(choice: ConsentChoice) {
   position: fixed;
   left: 50%;
   bottom: 18px;
-  z-index: 1000;
+  z-index: 13000;
   display: flex;
   width: min(720px, calc(100vw - 28px));
   transform: translateX(-50%);

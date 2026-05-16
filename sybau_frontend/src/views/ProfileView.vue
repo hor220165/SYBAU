@@ -279,7 +279,6 @@
                 <label class="settings-toggle-row">
                   <span>
                     <strong>{{ settingsCopy.privateProfile }}</strong>
-                    <small>{{ settingsCopy.privateProfileHint }}</small>
                   </span>
                   <input v-model="editingProfilePrivate" type="checkbox" />
                   <i aria-hidden="true"></i>
@@ -317,7 +316,6 @@
                   </span>
                   <span class="settings-nav-copy">
                     <strong>{{ settingsCopy.changePassword }}</strong>
-                    <span>{{ settingsCopy.passwordHint }}</span>
                   </span>
                   <ChevronRight :size="18" />
                 </button>
@@ -330,7 +328,6 @@
                     <div class="account-action-icon logout-icon">↪</div>
                     <div class="account-action-copy">
                       <strong>{{ settingsCopy.logout }}</strong>
-                      <span>{{ settingsCopy.logoutHint }}</span>
                     </div>
                   </button>
 
@@ -338,7 +335,6 @@
                     <div class="account-action-icon delete-icon">×</div>
                     <div class="account-action-copy">
                       <strong>{{ settingsCopy.deleteAccount }}</strong>
-                      <span>{{ settingsCopy.deleteHint }}</span>
                     </div>
                   </button>
                 </div>
@@ -347,7 +343,6 @@
 
             <template v-else>
               <section class="settings-section password-panel">
-                <p class="settings-subtitle">{{ settingsCopy.passwordSubtitle }}</p>
                 <div class="field">
                   <label>{{ settingsCopy.oldPassword }}</label>
                   <input type="password" v-model="oldPassword" />
@@ -418,7 +413,6 @@ const settingsCopy = computed(() => ({
     username: 'Benutzername',
     email: 'E-Mail',
     privateProfile: 'Privates Profil',
-    privateProfileHint: 'Andere sehen nur Name und Profilbild.',
     save: 'Speichern',
     progress: 'Fortschritt',
     completedChallenges: 'Absolvierte Challenges',
@@ -426,13 +420,9 @@ const settingsCopy = computed(() => ({
     security: 'Sicherheit',
     changePassword: 'Passwort ändern',
     passwordTitle: 'Passwort ändern',
-    passwordHint: 'Öffnet eine eigene sichere Ansicht.',
     account: 'Account',
     logout: 'Abmelden',
-    logoutHint: 'Du wirst in diesem Browser ausgeloggt.',
     deleteAccount: 'Account löschen',
-    deleteHint: 'Diese Aktion kann nicht rückgängig gemacht werden.',
-    passwordSubtitle: 'Gib dein aktuelles Passwort ein und setze danach ein neues.',
     oldPassword: 'Altes Passwort',
     newPassword: 'Neues Passwort',
     savePassword: 'Passwort speichern',
@@ -1596,7 +1586,7 @@ onMounted(async () => {
 
 .settings-sidebar {
   width: 100%;
-  max-width: 500px;
+  max-width: 460px;
   background: linear-gradient(180deg, #05070d 0%, #080b14 54%, #03050a 100%);
   box-shadow: -10px 0 46px rgba(0, 0, 0, 0.72);
   display: flex;
@@ -1606,7 +1596,7 @@ onMounted(async () => {
 }
 
 .settings-header {
-  padding: 28px 28px 18px;
+  padding: 24px 24px 14px;
   background: transparent;
   display: flex;
   justify-content: space-between;
@@ -1622,8 +1612,8 @@ onMounted(async () => {
 }
 
 .settings-header h2 {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 800;
   color: white;
   margin: 0;
 }
@@ -1669,26 +1659,26 @@ onMounted(async () => {
 .settings-content {
   flex: 1;
   overflow-y: auto;
-  padding: 0 28px 28px;
+  padding: 0 20px 24px;
   background: transparent;
 }
 
 .settings-section {
-  margin-bottom: 16px;
-  padding: 18px;
-  background: rgba(5, 10, 23, 0.86);
+  margin-bottom: 12px;
+  padding: 14px;
+  background: rgba(5, 9, 20, 0.92);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.065);
-  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
 }
 
 .settings-section:last-child { margin-bottom: 0; }
 
 .settings-section h3 {
-  font-size: 17px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
   color: white;
-  margin: 0 0 14px 0;
+  margin: 0 0 12px 0;
 }
 
 .settings-section h3::before {
@@ -1699,15 +1689,15 @@ onMounted(async () => {
 
 .field label {
   display: block;
-  font-size: 13px;
+  font-size: 12px;
   color: rgba(255, 255, 255, 0.74);
-  margin-bottom: 8px;
+  margin-bottom: 7px;
   font-weight: 600;
 }
 
 .field input {
   width: 100%;
-  padding: 14px 16px;
+  padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.09);
   background: rgba(0, 0, 0, 0.24);
@@ -1735,8 +1725,8 @@ onMounted(async () => {
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 14px;
-  margin: 2px 0 14px;
-  padding: 14px 16px;
+  margin: 2px 0 12px;
+  padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.035);
@@ -1745,19 +1735,12 @@ onMounted(async () => {
 
 .settings-toggle-row span {
   display: grid;
-  gap: 4px;
 }
 
 .settings-toggle-row strong {
   color: white;
   font-size: 14px;
   font-weight: 800;
-}
-
-.settings-toggle-row small {
-  color: rgba(255, 255, 255, 0.58);
-  font-size: 12px;
-  line-height: 1.35;
 }
 
 .settings-toggle-row input {
@@ -1798,13 +1781,13 @@ onMounted(async () => {
   background: white;
 }
 
-.progress-stats { display: flex; flex-direction: column; gap: 12px; }
+.progress-stats { display: flex; flex-direction: column; gap: 8px; }
 
 .stat-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
+  padding: 12px 14px;
   background: rgba(255, 255, 255, 0.035);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1816,20 +1799,13 @@ onMounted(async () => {
   border-color: rgba(255, 255, 255, 0.14);
 }
 
-.settings-subtitle {
-  margin: 0 0 16px;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 14px;
-  line-height: 1.45;
-}
-
 .settings-nav-row {
   width: 100%;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 14px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.035);
@@ -1857,7 +1833,6 @@ onMounted(async () => {
 .settings-nav-copy {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   min-width: 0;
 }
 
@@ -1865,13 +1840,8 @@ onMounted(async () => {
   font-size: 15px;
 }
 
-.settings-nav-copy span {
-  color: rgba(255, 255, 255, 0.58);
-  font-size: 12px;
-}
-
 .password-panel {
-  min-height: 280px;
+  min-height: 220px;
 }
 
 .stat-label { color: rgba(255, 255, 255, 0.7); font-size: 14px; font-weight: 500; }
@@ -1884,7 +1854,7 @@ onMounted(async () => {
 
 .btn-primary {
   width: 100%;
-  padding: 14px 24px;
+  padding: 13px 22px;
   border-radius: 12px;
   border: none;
   font-weight: 600;
@@ -1910,7 +1880,7 @@ onMounted(async () => {
 .account-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .account-action-btn {
@@ -1918,7 +1888,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.035);
@@ -1961,16 +1931,10 @@ onMounted(async () => {
 .account-action-copy {
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
 .account-action-copy strong {
   font-size: 15px;
-}
-
-.account-action-copy span {
-  color: rgba(255, 255, 255, 0.58);
-  font-size: 12px;
 }
 
 /* ── Transitions ── */
