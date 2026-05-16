@@ -14,6 +14,115 @@ class ProfileTab extends StatefulWidget {
   State<ProfileTab> createState() => _ProfileTabState();
 }
 
+class _ActivityYearGlassMenu extends StatelessWidget {
+  const _ActivityYearGlassMenu({
+    required this.years,
+    required this.selectedYear,
+    required this.onSelected,
+  });
+
+  final List<int> years;
+  final int selectedYear;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            color: const Color(0xE61A1A1D),
+            border: Border.all(color: Colors.white.withOpacity(0.18)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.36),
+                blurRadius: 40,
+                offset: const Offset(0, 18),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        CupertinoIcons.calendar,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 14),
+                      Text(
+                        'Jahr',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.92),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Divider(height: 1, color: Colors.white.withOpacity(0.14)),
+                  const SizedBox(height: 8),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 236),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (final year in years)
+                            CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(0, 48),
+                              onPressed: () => onSelected(year),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    year == selectedYear
+                                        ? CupertinoIcons.check_mark
+                                        : CupertinoIcons.circle,
+                                    color: year == selectedYear
+                                        ? const Color(0xFFFF4FB3)
+                                        : Colors.white.withOpacity(0.56),
+                                    size: 22,
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Text(
+                                    '$year',
+                                    style: TextStyle(
+                                      color: year == selectedYear
+                                          ? const Color(0xFFFFB3DD)
+                                          : Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ProfileTabState extends State<ProfileTab> {
   static const Duration _usernameChangeCooldown = Duration(days: 14);
 
@@ -33,6 +142,7 @@ class _ProfileTabState extends State<ProfileTab> {
   List<int> _activityYears = <int>[DateTime.now().year];
   int _selectedActivityYear = DateTime.now().year;
   String _activityMode = 'workouts';
+  Offset? _activityYearTapPosition;
   String? _profileImageUrl;
   Uint8List? _pickedProfileImageBytes;
   int _profileImageVersion = 0;
@@ -599,115 +709,62 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Future<void> _openActivityYearPicker() async {
-    await showCupertinoModalPopup<void>(
+    final screenSize = MediaQuery.sizeOf(context);
+    final tapPosition =
+        _activityYearTapPosition ?? Offset(screenSize.width - 96, 220);
+    const menuWidth = 248.0;
+    final menuHeight = 74.0 + math.min(_activityYears.length, 4) * 56.0 + 16.0;
+    final left = (tapPosition.dx - menuWidth + 26).clamp(
+      12.0,
+      screenSize.width - menuWidth - 12.0,
+    );
+    final top = (tapPosition.dy + 10).clamp(
+      64.0,
+      screenSize.height - menuHeight - 18.0,
+    );
+
+    await showGeneralDialog<void>(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.34),
-      builder: (context) => SafeArea(
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    color: const Color(0xCC10131F),
-                    border: Border.all(color: Colors.white.withOpacity(0.16)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.28),
-                        blurRadius: 28,
-                        offset: const Offset(0, 16),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Text(
-                            'Jahr auswählen',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.68),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        for (final year in _activityYears)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: CupertinoButton(
-                              minimumSize: const Size(0, 48),
-                              padding: EdgeInsets.zero,
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                                if (year != _selectedActivityYear) {
-                                  unawaited(_loadActivityForYear(year));
-                                }
-                              },
-                              child: Container(
-                                width: double.infinity,
-                                height: 48,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  color: year == _selectedActivityYear
-                                      ? const Color(
-                                          0xFFFF4FB3,
-                                        ).withOpacity(0.22)
-                                      : Colors.white.withOpacity(0.07),
-                                  border: Border.all(
-                                    color: year == _selectedActivityYear
-                                        ? const Color(
-                                            0xFFFF4FB3,
-                                          ).withOpacity(0.42)
-                                        : Colors.white.withOpacity(0.08),
-                                  ),
-                                ),
-                                child: Text(
-                                  '$year',
-                                  style: TextStyle(
-                                    color: year == _selectedActivityYear
-                                        ? const Color(0xFFFFB3DD)
-                                        : Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: CupertinoButton(
-                            minimumSize: const Size(0, 44),
-                            padding: EdgeInsets.zero,
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: Text(
-                              'Abbrechen',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.72),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+      barrierColor: Colors.black.withOpacity(0.28),
+      barrierDismissible: true,
+      barrierLabel: 'Jahr schließen',
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+        return Stack(
+          children: [
+            Positioned(
+              left: left,
+              top: top,
+              width: menuWidth,
+              child: SafeArea(
+                child: FadeTransition(
+                  opacity: curved,
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.96, end: 1).animate(curved),
+                    alignment: Alignment.topRight,
+                    child: _ActivityYearGlassMenu(
+                      years: _activityYears,
+                      selectedYear: _selectedActivityYear,
+                      onSelected: (year) {
+                        Navigator.of(context).pop();
+                        if (year != _selectedActivityYear) {
+                          unawaited(_loadActivityForYear(year));
+                        }
+                      },
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ),
-      ),
+          ],
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) =>
+          child,
     );
   }
 
@@ -1792,31 +1849,44 @@ class _ProfileTabState extends State<ProfileTab> {
     required Widget icon,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      constraints: const BoxConstraints(minHeight: 72),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: Colors.white.withOpacity(0.04),
         border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           icon,
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.66),
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              fontSize: 16,
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.66),
+                    fontSize: 11.5,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1833,9 +1903,9 @@ class _ProfileTabState extends State<ProfileTab> {
       );
     }
 
-    const cellSize = 24.0;
-    const cellGap = 7.0;
-    const weekdayWidth = 28.0;
+    const cellSize = 17.0;
+    const cellGap = 5.0;
+    const weekdayWidth = 26.0;
     final weekHeight = cellSize * 7 + cellGap * 6;
     const weekdayLabels = <String>['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
     final accent = _isStepsActivityMode
@@ -1864,39 +1934,42 @@ class _ProfileTabState extends State<ProfileTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CupertinoSlidingSegmentedControl<String>(
-          groupValue: _activityMode,
-          backgroundColor: Colors.white.withValues(alpha: 0.06),
-          thumbColor: accent.withValues(alpha: 0.32),
-          padding: const EdgeInsets.all(4),
-          children: const {
-            'workouts': Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Text(
-                'Workouts',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 13,
+        SizedBox(
+          width: double.infinity,
+          child: CupertinoSlidingSegmentedControl<String>(
+            groupValue: _activityMode,
+            backgroundColor: Colors.white.withValues(alpha: 0.06),
+            thumbColor: accent.withValues(alpha: 0.32),
+            padding: const EdgeInsets.all(4),
+            children: const {
+              'workouts': Padding(
+                padding: EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                child: Text(
+                  'Workouts',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
                 ),
               ),
-            ),
-            'steps': Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Text(
-                'Schritte',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 13,
+              'steps': Padding(
+                padding: EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                child: Text(
+                  'Schritte',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
                 ),
               ),
-            ),
-          },
-          onValueChanged: (value) {
-            if (value == null) return;
-            setState(() => _activityMode = value);
-          },
+            },
+            onValueChanged: (value) {
+              if (value == null) return;
+              setState(() => _activityMode = value);
+            },
+          ),
         ),
         const SizedBox(height: 12),
         Row(
@@ -1916,6 +1989,9 @@ class _ProfileTabState extends State<ProfileTab> {
             const SizedBox(width: 12),
             GestureDetector(
               behavior: HitTestBehavior.opaque,
+              onTapDown: (details) {
+                _activityYearTapPosition = details.globalPosition;
+              },
               onTap: _openActivityYearPicker,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -1944,90 +2020,105 @@ class _ProfileTabState extends State<ProfileTab> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Column(
-              children: [
-                const SizedBox(height: 21),
-                SizedBox(
-                  width: weekdayWidth,
-                  height: weekHeight,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: weekdayLabels
-                        .map(
-                          (label) => SizedBox(
-                            height: cellSize,
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                label,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.62),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.black.withValues(alpha: 0.1),
+            border: Border.all(color: accent.withValues(alpha: 0.18)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                children: [
+                  const SizedBox(height: 19),
+                  SizedBox(
+                    width: weekdayWidth,
+                    height: weekHeight,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: weekdayLabels
+                          .map(
+                            (label) => SizedBox(
+                              height: cellSize,
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  label,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.62),
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        )
-                        .toList(growable: false),
+                          )
+                          .toList(growable: false),
+                    ),
+                  ),
+                ],
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _activityHeatmapScrollController,
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: weeks
+                              .map((week) {
+                                return Container(
+                                  width: cellSize,
+                                  margin: const EdgeInsets.only(right: cellGap),
+                                  child: Text(
+                                    _activityMonthLabel(week),
+                                    overflow: TextOverflow.visible,
+                                    softWrap: false,
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.66,
+                                      ),
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                );
+                              })
+                              .toList(growable: false),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: weeks
+                              .map((week) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(
+                                    right: cellGap,
+                                  ),
+                                  child: Column(
+                                    children: week
+                                        .map((day) => buildCell(day))
+                                        .toList(growable: false),
+                                  ),
+                                );
+                              })
+                              .toList(growable: false),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: _activityHeatmapScrollController,
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: weeks
-                          .map((week) {
-                            return Container(
-                              width: cellSize,
-                              margin: const EdgeInsets.only(right: cellGap),
-                              child: Text(
-                                _activityMonthLabel(week),
-                                overflow: TextOverflow.visible,
-                                softWrap: false,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.66),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            );
-                          })
-                          .toList(growable: false),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: weeks
-                          .map((week) {
-                            return Padding(
-                              padding: const EdgeInsets.only(right: cellGap),
-                              child: Column(
-                                children: week
-                                    .map((day) => buildCell(day))
-                                    .toList(growable: false),
-                              ),
-                            );
-                          })
-                          .toList(growable: false),
-                    ),
-                  ],
-                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 14),
         Row(
@@ -2262,8 +2353,8 @@ class _ProfileTabState extends State<ProfileTab> {
                     const spacing = 8.0;
                     const columns = 2;
                     final cardHeight = constraints.maxWidth < 380
-                        ? 158.0
-                        : 148.0;
+                        ? 124.0
+                        : 116.0;
                     final itemCount = _visibleAchievements.length;
                     final itemWidth = itemCount == 0
                         ? constraints.maxWidth

@@ -140,6 +140,7 @@
       </div>
 
       <div
+        ref="activityHeatmapRef"
         class="activity-heatmap"
         :class="`mode-${activityMode}`"
         :style="{ '--heatmap-week-count': activityHeatmapWeeks.length }"
@@ -343,7 +344,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import Header from '@/components/Header.vue';
 import Navbar from '@/components/Navbar.vue';
@@ -596,7 +597,7 @@ onMounted(() => window.addEventListener('resize', onResize));
 onUnmounted(() => window.removeEventListener('resize', onResize));
 
 const visibleCount = computed(() => {
-  if (windowWidth.value < 480) return 2;
+  if (windowWidth.value < 480) return 4;
   if (windowWidth.value < 768) return 4;
   if (windowWidth.value < 1024) return 4;
   return 8;
@@ -647,6 +648,7 @@ const activityMode = ref<ActivityMode>('workouts');
 const activityDates = ref<Map<string, { reps: number; steps: number }>>(new Map());
 const selectedActivityYear = ref(new Date().getFullYear());
 const activityYears = ref<number[]>([selectedActivityYear.value]);
+const activityHeatmapRef = ref<HTMLElement | null>(null);
 const heatmapLegendLevels = [0, 1, 2, 3, 4];
 const monthFormatter = new Intl.DateTimeFormat('de-DE', { month: 'short' });
 
@@ -678,7 +680,9 @@ function getHeatmapRange() {
   const end = selectedYear === today.getFullYear()
     ? today
     : new Date(selectedYear, 11, 31);
-  const visualEnd = addDays(mondayOf(new Date(selectedYear, 11, 31)), 6);
+  const visualEnd = windowWidth.value <= 768
+    ? end
+    : addDays(mondayOf(new Date(selectedYear, 11, 31)), 6);
   return { start, end, visualEnd, today };
 }
 
@@ -784,6 +788,14 @@ const activityHeatmapWeeks = computed(() => {
 
   return weeks;
 });
+
+watch([activityHeatmapWeeks, activityMode, selectedActivityYear], async () => {
+  await nextTick();
+  if (windowWidth.value > 768) return;
+  const el = activityHeatmapRef.value;
+  if (!el) return;
+  el.scrollLeft = el.scrollWidth;
+}, { flush: 'post' });
 
 const activityTotal = computed(() =>
   [...activityDates.value.values()].reduce((sum, entry) => sum + Math.max(0, activityValue(entry)), 0)
@@ -1733,6 +1745,7 @@ onMounted(async () => {
   .activity-controls {
     justify-content: flex-start;
     width: 100%;
+    align-items: stretch;
   }
 
   .achievements-grid {
@@ -1743,6 +1756,7 @@ onMounted(async () => {
 
   .activity-heatmap {
     padding: 14px;
+    --heatmap-cell-size: 16px;
   }
 
   .heatmap-footer {
@@ -1787,10 +1801,17 @@ onMounted(async () => {
 
   .activity-mode-toggle {
     width: 100%;
+    border-radius: 14px;
   }
 
   .activity-mode-toggle button {
     flex: 1;
+    border-radius: 10px;
+  }
+
+  .activity-year-select {
+    width: max-content;
+    padding: 4px 2px;
   }
 
   .achievement-count { font-size: 12px; padding: 6px 10px; }
@@ -1824,18 +1845,31 @@ onMounted(async () => {
     font-size: 16px;
   }
 
-  .heatmap-cell {
-    width: 12px;
-    height: 12px;
+  .activity-heatmap {
+    padding: 12px;
+    --heatmap-cell-size: 14px;
+    border-radius: 16px;
   }
 
-  .heatmap-week {
-    grid-template-rows: repeat(7, 12px);
+  .heatmap-weekday-spacer,
+  .heatmap-weekdays {
+    width: 28px;
+    flex-basis: 28px;
+  }
+
+  .heatmap-cell {
+    width: var(--heatmap-cell-size);
+    height: var(--heatmap-cell-size);
+  }
+
+  .heatmap-week,
+  .heatmap-weekdays {
+    grid-template-rows: repeat(7, var(--heatmap-cell-size));
   }
 
   .heatmap-weekdays {
-    grid-template-rows: repeat(7, 12px);
-    line-height: 12px;
+    line-height: var(--heatmap-cell-size);
+    font-size: 10px;
   }
 
   .settings-header { padding: 20px; }

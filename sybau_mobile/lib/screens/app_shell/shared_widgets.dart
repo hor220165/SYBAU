@@ -110,9 +110,9 @@ class _AchievementCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final unlocked = achievement['unlocked'] == true;
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         color: unlocked
             ? Color(0xFFFBBF24).withOpacity(0.14)
             : Colors.white.withOpacity(0.03),
@@ -136,7 +136,8 @@ class _AchievementCard extends StatelessWidget {
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w800,
-                    fontSize: 13,
+                    fontSize: 12.5,
+                    height: 1.1,
                   ),
                 ),
               ),
@@ -152,12 +153,12 @@ class _AchievementCard extends StatelessWidget {
           Expanded(
             child: Text(
               _string(achievement['description']),
-              maxLines: 4,
+              maxLines: 3,
               overflow: TextOverflow.fade,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.72),
-                height: 1.28,
-                fontSize: 12,
+                height: 1.2,
+                fontSize: 11,
               ),
             ),
           ),
@@ -286,8 +287,8 @@ class _ReadOnlyStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 78),
-      padding: const EdgeInsets.all(12),
+      constraints: const BoxConstraints(minHeight: 68),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: Colors.white.withOpacity(0.04),
@@ -295,8 +296,8 @@ class _ReadOnlyStatCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(width: 10),
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 9),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -308,18 +309,18 @@ class _ReadOnlyStatCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.66),
-                    fontSize: 12,
+                    fontSize: 11.5,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 15.5,
                   ),
                 ),
               ],

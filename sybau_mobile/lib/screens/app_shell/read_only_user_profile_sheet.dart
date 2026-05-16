@@ -324,21 +324,8 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          _isStepsActivityMode
-              ? '${_formatCompactNumber(_activityTotal(days))} Schritte in $year'
-              : '${_formatCompactNumber(_activityTotal(days))} Reps in $year',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.68),
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Align(
-          alignment: Alignment.centerLeft,
+        SizedBox(
+          width: double.infinity,
           child: CupertinoSlidingSegmentedControl<String>(
             groupValue: _activityMode,
             backgroundColor: Colors.white.withOpacity(0.06),
@@ -346,7 +333,7 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
             padding: const EdgeInsets.all(3),
             children: const {
               'workouts': Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 child: Text(
                   'Workouts',
                   style: TextStyle(
@@ -357,7 +344,7 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
                 ),
               ),
               'steps': Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 child: Text(
                   'Schritte',
                   style: TextStyle(
@@ -374,9 +361,27 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
             },
           ),
         ),
+        const SizedBox(height: 10),
+        Text(
+          _isStepsActivityMode
+              ? '${_formatCompactNumber(_activityTotal(days))} Schritte in $year'
+              : '${_formatCompactNumber(_activityTotal(days))} Reps in $year',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.68),
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.only(right: 2),
+        Container(
+          padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.black.withOpacity(0.1),
+            border: Border.all(color: accent.withOpacity(0.18)),
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -417,7 +422,7 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
                   child: Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.only(right: 6),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -726,8 +731,8 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
 
                             const spacing = 8.0;
                             final cardHeight = constraints.maxWidth < 380
-                                ? 158.0
-                                : 148.0;
+                                ? 124.0
+                                : 116.0;
                             final itemWidth =
                                 (constraints.maxWidth - spacing) / 2;
 

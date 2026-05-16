@@ -172,7 +172,7 @@ builder.Services.AddCors(options =>
                 }
 
                 return uri.Scheme == Uri.UriSchemeHttps
-                    && uri.Host.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase)
+                    && uri.Host.EndsWith(".netlify.app", StringComparison.OrdinalIgnoreCase)
                     && uri.Host.Contains("sybau", StringComparison.OrdinalIgnoreCase);
             }
 

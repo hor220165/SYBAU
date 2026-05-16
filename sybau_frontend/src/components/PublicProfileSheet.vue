@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { ChevronLeft, ChevronRight, Dumbbell, Flame, Timer, Trophy, X } from 'lucide-vue-next';
 import { resolveMediaUrl, userService } from '@/services/api';
 import noProfilePicture from '@/assets/Nopfp.png';
@@ -18,6 +18,13 @@ const failed = ref(false);
 const profile = ref<any>(null);
 const achievementPage = ref(0);
 const activityMode = ref<'workouts' | 'steps'>('workouts');
+const windowWidth = ref(window.innerWidth);
+const onResize = () => {
+  windowWidth.value = window.innerWidth;
+};
+
+onMounted(() => window.addEventListener('resize', onResize));
+onUnmounted(() => window.removeEventListener('resize', onResize));
 
 const profileImageUrl = computed(() => resolveMediaUrl(profile.value?.profileImageUrl ?? profile.value?.ProfileImageUrl ?? ''));
 const avatar = computed(() => profile.value?.avatar ?? profile.value?.Avatar ?? {});
@@ -112,7 +119,10 @@ const activityHeatmapWeeks = computed(() => {
   const year = selectedActivityYear.value;
   const today = startOfDay(new Date());
   const start = mondayOf(new Date(year, 0, 1));
-  const visualEnd = addDays(mondayOf(new Date(year, 11, 31)), 6);
+  const lastDay = year === today.getFullYear() ? today : new Date(year, 11, 31);
+  const visualEnd = windowWidth.value <= 768
+    ? lastDay
+    : addDays(mondayOf(new Date(year, 11, 31)), 6);
   const todayKey = dateKey(today);
   const activityByDate = new Map<string, { reps: number; steps: number }>();
 
@@ -547,7 +557,10 @@ watch(
   --heatmap-cell-size: clamp(7px, calc((100vw - 260px) / var(--heatmap-week-count)), 16px);
   overflow-x: auto;
   overflow-y: hidden;
-  padding-top: 4px;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(236, 72, 153, 0.16);
+  background: rgba(2, 6, 23, 0.28);
 }
 
 .heatmap-months,
@@ -676,7 +689,43 @@ watch(
 @media (max-width: 640px) {
   .stats-grid,
   .achievements-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .stat-card,
+  .achievement-card {
+    min-height: 76px;
+    padding: 10px;
+  }
+
+  .stat-card {
+    gap: 9px;
+  }
+
+  .stat-card strong {
+    font-size: 1rem;
+  }
+
+  .achievement-card span {
+    font-size: 0.78rem;
+    line-height: 1.25;
+  }
+
+  .profile-heatmap {
+    --heatmap-cell-size: 14px;
+    padding: 12px;
+  }
+
+  .heatmap-weekday-spacer,
+  .heatmap-weekdays {
+    width: 28px;
+    flex-basis: 28px;
+  }
+
+  .heatmap-weekdays {
+    font-size: 10px;
+    line-height: var(--heatmap-cell-size);
   }
 
   .profile-image {
