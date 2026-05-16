@@ -725,10 +725,16 @@ class ApiService {
     await _authedPut('/users/boosts/slots', {'slots': slots});
   }
 
-  static Future<Map<String, dynamic>> updateProfile({String? userName}) async {
+  static Future<Map<String, dynamic>> updateProfile({
+    String? userName,
+    bool? isProfilePrivate,
+  }) async {
     final payload = <String, dynamic>{};
     if (userName != null) {
       payload['username'] = userName;
+    }
+    if (isProfilePrivate != null) {
+      payload['isProfilePrivate'] = isProfilePrivate;
     }
 
     await _authedPut('/users/profile', payload);

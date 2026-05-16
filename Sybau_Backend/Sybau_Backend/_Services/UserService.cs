@@ -416,6 +416,8 @@ public class UserService
             dbUser.Email = dto.Email;
         if (dto.Coins.HasValue)
             dbUser.Coins = dto.Coins.Value;
+        if (dto.IsProfilePrivate.HasValue)
+            dbUser.IsProfilePrivate = dto.IsProfilePrivate.Value;
 
         // Avatar-Level updaten
         if (dto.Avatar?.Level.HasValue == true)

@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { ChevronLeft, ChevronRight, Dumbbell, Flame, Timer, Trophy, X } from 'lucide-vue-next';
 import { resolveMediaUrl, userService } from '@/services/api';
 import noProfilePicture from '@/assets/Nopfp.png';
+import xpIcon from '@/assets/XP_Pixel.png';
 
 const props = defineProps<{
   userId: number | null;
@@ -27,6 +28,7 @@ onMounted(() => window.addEventListener('resize', onResize));
 onUnmounted(() => window.removeEventListener('resize', onResize));
 
 const profileImageUrl = computed(() => resolveMediaUrl(profile.value?.profileImageUrl ?? profile.value?.ProfileImageUrl ?? ''));
+const isPrivate = computed(() => Boolean(profile.value?.isPrivate ?? profile.value?.IsPrivate ?? profile.value?.isProfilePrivate ?? profile.value?.IsProfilePrivate));
 const avatar = computed(() => profile.value?.avatar ?? profile.value?.Avatar ?? {});
 const stats = computed(() => profile.value?.stats ?? profile.value?.Stats ?? {});
 const achievements = computed<any[]>(() => profile.value?.achievements ?? profile.value?.Achievements ?? []);
@@ -216,11 +218,17 @@ watch(
               <img :src="profileImageUrl || noProfilePicture" alt="" class="profile-image" />
               <div class="profile-copy">
                 <h2>{{ profile.userName ?? profile.UserName }}</h2>
-                <p>Level {{ level }} • {{ formatCompact(totalXp) }} XP</p>
-                <span v-if="bodyStage" class="body-pill">{{ bodyStage }}</span>
+                <p v-if="!isPrivate">Level {{ level }} • {{ formatCompact(totalXp) }} XP</p>
+                <span v-if="!isPrivate && bodyStage" class="body-pill">{{ bodyStage }}</span>
               </div>
             </header>
 
+            <section v-if="isPrivate" class="sheet-card private-profile-card">
+              <h3>Privates Profil</h3>
+              <p>Dieses Profil ist privat.</p>
+            </section>
+
+            <template v-else>
             <section class="sheet-card">
               <h3>Statistiken</h3>
               <div class="stats-grid">
@@ -312,6 +320,7 @@ watch(
               <h3>Letzte Aktivitäten</h3>
               <div v-if="recentActivities.length" class="recent-list">
                 <article v-for="activity in recentActivities" :key="activity.id ?? activity.Id">
+                  <img :src="xpIcon" alt="" class="recent-xp-icon" />
                   <div>
                     <strong>{{ activity.title ?? activity.Title }}</strong>
                     <span>{{ formatTime(activity.timestamp ?? activity.Timestamp) }}</span>
@@ -321,6 +330,7 @@ watch(
               </div>
               <p v-else class="muted">Noch keine letzten Aktivitäten vorhanden.</p>
             </section>
+            </template>
           </template>
         </section>
       </div>
@@ -422,6 +432,12 @@ watch(
 .sheet-card h3 {
   margin: 0 0 12px;
   font-size: 1.25rem;
+}
+
+.private-profile-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-weight: 700;
 }
 
 .card-title-row {
@@ -619,7 +635,7 @@ watch(
 .heatmap-cell {
   width: var(--heatmap-cell-size);
   height: var(--heatmap-cell-size);
-  border-radius: 3px;
+  border-radius: 2px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   background: rgba(255, 255, 255, 0.06);
 }
@@ -645,19 +661,35 @@ watch(
 
 .recent-list {
   display: grid;
-  gap: 12px;
+  gap: 0;
 }
 
 .recent-list article {
-  display: flex;
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.recent-list article:last-child {
+  border-bottom: 0;
 }
 
 .recent-list b {
   flex: 0 0 auto;
-  color: #fde047;
+  color: #60a5fa;
+  font-size: 0.88rem;
+  line-height: 1;
+  text-align: right;
+}
+
+.recent-xp-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .sheet-state {

@@ -25,6 +25,7 @@ export function normalizeUser(data: any) {
         coins: data.coins ?? data.Coins ?? 0,
         totalXp: data.totalXp ?? data.TotalXp ?? 0,
         isAdmin: data.isAdmin ?? data.IsAdmin ?? false,
+        isProfilePrivate: data.isProfilePrivate ?? data.IsProfilePrivate ?? false,
         avatar: {
             id: avatar.id ?? avatar.Id,
             bodyStage: avatar.bodyStage ?? avatar.BodyStage,
@@ -89,7 +90,7 @@ export const userService = {
     getPublicProfile: (id: number) =>
         API.get(`/users/${id}/profile`),
     getLeaderboard: () => API.get('/users/leaderboard'),
-    updateProfile: (data: { UserName?: string}) =>
+    updateProfile: (data: { UserName?: string; IsProfilePrivate?: boolean }) =>
         API.put('/users/profile', data),
     uploadProfileImage: (file: File) => {
         const formData = new FormData();

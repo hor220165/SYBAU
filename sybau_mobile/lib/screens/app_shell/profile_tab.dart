@@ -14,115 +14,6 @@ class ProfileTab extends StatefulWidget {
   State<ProfileTab> createState() => _ProfileTabState();
 }
 
-class _ActivityYearGlassMenu extends StatelessWidget {
-  const _ActivityYearGlassMenu({
-    required this.years,
-    required this.selectedYear,
-    required this.onSelected,
-  });
-
-  final List<int> years;
-  final int selectedYear;
-  final ValueChanged<int> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            color: const Color(0xE61A1A1D),
-            border: Border.all(color: Colors.white.withOpacity(0.18)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.36),
-                blurRadius: 40,
-                offset: const Offset(0, 18),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        CupertinoIcons.calendar,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 14),
-                      Text(
-                        'Jahr',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.92),
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Divider(height: 1, color: Colors.white.withOpacity(0.14)),
-                  const SizedBox(height: 8),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 236),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (final year in years)
-                            CupertinoButton(
-                              padding: EdgeInsets.zero,
-                              minimumSize: const Size(0, 48),
-                              onPressed: () => onSelected(year),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    year == selectedYear
-                                        ? CupertinoIcons.check_mark
-                                        : CupertinoIcons.circle,
-                                    color: year == selectedYear
-                                        ? const Color(0xFFFF4FB3)
-                                        : Colors.white.withOpacity(0.56),
-                                    size: 22,
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Text(
-                                    '$year',
-                                    style: TextStyle(
-                                      color: year == selectedYear
-                                          ? const Color(0xFFFFB3DD)
-                                          : Colors.white,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _ProfileTabState extends State<ProfileTab> {
   static const Duration _usernameChangeCooldown = Duration(days: 14);
 
@@ -142,13 +33,13 @@ class _ProfileTabState extends State<ProfileTab> {
   List<int> _activityYears = <int>[DateTime.now().year];
   int _selectedActivityYear = DateTime.now().year;
   String _activityMode = 'workouts';
-  Offset? _activityYearTapPosition;
   String? _profileImageUrl;
   Uint8List? _pickedProfileImageBytes;
   int _profileImageVersion = 0;
   int _currentAchievementIndex = 0;
   bool _notificationsEnabled = false;
   bool _healthSyncEnabled = false;
+  bool _profilePrivate = false;
   bool _settingsBusy = false;
   NotificationReminderTime _notificationReminderTime =
       const NotificationReminderTime(hour: 20, minute: 0);
@@ -240,6 +131,10 @@ class _ProfileTabState extends State<ProfileTab> {
         _profileImageUrl = profileImageUrl;
         _pickedProfileImageBytes = null;
         _currentAchievementIndex = 0;
+        _profilePrivate = _toBool(
+          profile['isProfilePrivate'],
+          fallback: _toBool(profile['IsProfilePrivate']),
+        );
         _notificationsEnabled = results[5] as bool;
         _notificationReminderTime = results[6] as NotificationReminderTime;
         _healthSyncEnabled = results[7] as bool;
@@ -328,36 +223,27 @@ class _ProfileTabState extends State<ProfileTab> {
 
     final picked = await showCupertinoModalPopup<DateTime>(
       context: context,
-      builder: (pickerContext) => Container(
-        height: 300,
-        decoration: const BoxDecoration(
-          color: Color(0xFF0F172A),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-        ),
+      builder: (pickerContext) => CupertinoPopupSurface(
         child: SafeArea(
           top: false,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 10, 6),
-                child: Row(
-                  children: [
-                    const Spacer(),
-                    CupertinoButton(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Text(_tr(de: 'Fertig', en: 'Done')),
-                      onPressed: () =>
-                          Navigator.of(pickerContext).pop(selected),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: CupertinoTheme(
-                  data: const CupertinoThemeData(
-                    brightness: Brightness.dark,
-                    primaryColor: Color(0xFFEC4899),
+          child: SizedBox(
+            height: 300,
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 52,
+                  child: Row(
+                    children: [
+                      const Spacer(),
+                      CupertinoButton(
+                        child: Text(_tr(de: 'Fertig', en: 'Done')),
+                        onPressed: () =>
+                            Navigator.of(pickerContext).pop(selected),
+                      ),
+                    ],
                   ),
+                ),
+                Expanded(
                   child: CupertinoDatePicker(
                     mode: CupertinoDatePickerMode.time,
                     use24hFormat: true,
@@ -365,8 +251,8 @@ class _ProfileTabState extends State<ProfileTab> {
                     onDateTimeChanged: (value) => selected = value,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -500,8 +386,12 @@ class _ProfileTabState extends State<ProfileTab> {
     }
 
     try {
-      await ApiService.updateProfile(userName: userName);
+      await ApiService.updateProfile(
+        userName: userName,
+        isProfilePrivate: _profilePrivate,
+      );
       _profile['userName'] = userName;
+      _profile['isProfilePrivate'] = _profilePrivate;
       if (usernameChanged) {
         final now = DateTime.now();
         await _storeUsernameChangedAt(now);
@@ -709,62 +599,26 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Future<void> _openActivityYearPicker() async {
-    final screenSize = MediaQuery.sizeOf(context);
-    final tapPosition =
-        _activityYearTapPosition ?? Offset(screenSize.width - 96, 220);
-    const menuWidth = 248.0;
-    final menuHeight = 74.0 + math.min(_activityYears.length, 4) * 56.0 + 16.0;
-    final left = (tapPosition.dx - menuWidth + 26).clamp(
-      12.0,
-      screenSize.width - menuWidth - 12.0,
-    );
-    final top = (tapPosition.dy + 10).clamp(
-      64.0,
-      screenSize.height - menuHeight - 18.0,
-    );
-
-    await showGeneralDialog<void>(
+    await showCupertinoModalPopup<void>(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.28),
-      barrierDismissible: true,
-      barrierLabel: 'Jahr schließen',
-      transitionDuration: const Duration(milliseconds: 180),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        final curved = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-        );
-        return Stack(
-          children: [
-            Positioned(
-              left: left,
-              top: top,
-              width: menuWidth,
-              child: SafeArea(
-                child: FadeTransition(
-                  opacity: curved,
-                  child: ScaleTransition(
-                    scale: Tween<double>(begin: 0.96, end: 1).animate(curved),
-                    alignment: Alignment.topRight,
-                    child: _ActivityYearGlassMenu(
-                      years: _activityYears,
-                      selectedYear: _selectedActivityYear,
-                      onSelected: (year) {
-                        Navigator.of(context).pop();
-                        if (year != _selectedActivityYear) {
-                          unawaited(_loadActivityForYear(year));
-                        }
-                      },
-                    ),
-                  ),
-                ),
+      builder: (context) {
+        return CupertinoActionSheet(
+          title: const Text('Jahr'),
+          actions: [
+            for (final year in _activityYears)
+              CupertinoActionSheetAction(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  if (year != _selectedActivityYear) {
+                    unawaited(_loadActivityForYear(year));
+                  }
+                },
+                isDefaultAction: year == _selectedActivityYear,
+                child: Text('$year'),
               ),
-            ),
           ],
         );
       },
-      transitionBuilder: (context, animation, secondaryAnimation, child) =>
-          child,
     );
   }
 
@@ -1288,6 +1142,22 @@ class _ProfileTabState extends State<ProfileTab> {
                     style: const TextStyle(color: Colors.white38),
                     decoration: _disabledSettingsInputDecoration(
                       _tr(de: 'E-Mail', en: 'Email'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildSettingsTile(
+                    icon: Icons.lock_outline_rounded,
+                    iconColor: const Color(0xFFFDA4AF),
+                    title: _tr(de: 'Privates Profil', en: 'Private profile'),
+                    subtitle: _tr(
+                      de: 'Andere sehen nur Name und Profilbild.',
+                      en: 'Others only see name and profile picture.',
+                    ),
+                    trailing: Switch.adaptive(
+                      value: _profilePrivate,
+                      activeThumbColor: const Color(0xFFEC4899),
+                      onChanged: (value) =>
+                          modalSetState(() => _profilePrivate = value),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -1921,7 +1791,7 @@ class _ProfileTabState extends State<ProfileTab> {
         height: cellSize,
         margin: const EdgeInsets.only(bottom: cellGap),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(7),
+          borderRadius: BorderRadius.circular(3),
           color: _activityColor(value, isFuture: isFuture),
           border: Border.all(
             color: _activityBorderColor(value, isToday: isToday),
@@ -1989,9 +1859,6 @@ class _ProfileTabState extends State<ProfileTab> {
             const SizedBox(width: 12),
             GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTapDown: (details) {
-                _activityYearTapPosition = details.globalPosition;
-              },
               onTap: _openActivityYearPicker,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -2399,64 +2266,86 @@ class _ProfileTabState extends State<ProfileTab> {
           _SectionCard(
             title: 'Letzte Aktivitäten',
             child: Column(
-              children: _recentActivities
-                  .map((act) {
-                    final a = _map(act);
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              color: Colors.white.withOpacity(0.04),
-                            ),
-                            child: Center(child: Text(a['icon'] ?? '⚡')),
+              children: List.generate(_recentActivities.length, (index) {
+                final act = _recentActivities[index];
+                final a = _map(act);
+                final isLast = index == _recentActivities.length - 1;
+                return Container(
+                  padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
+                  margin: EdgeInsets.only(bottom: isLast ? 0 : 10),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: isLast
+                            ? Colors.transparent
+                            : Colors.white.withValues(alpha: 0.08),
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: Center(
+                          child: Image.asset(
+                            'assets/XP_Pixel.png',
+                            width: 24,
+                            height: 24,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.none,
+                            isAntiAlias: false,
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  a['title'] ?? '',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  a['time'] ?? '',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.6),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          SizedBox(
-                            height: 44,
-                            child: Center(
-                              child: Text(
-                                '${_formatCompactNumber(_toInt(a['xp']))} XP',
-                                style: const TextStyle(
-                                  color: Color(0xFFFDE047),
-                                  fontWeight: FontWeight.w800,
-                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              a['title'] ?? '',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                height: 1.18,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 3),
+                            Text(
+                              a['time'] ?? '',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.6),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    );
-                  })
-                  .toList(growable: false),
+                      const SizedBox(width: 10),
+                      SizedBox(
+                        width: 66,
+                        height: 36,
+                        child: Center(
+                          child: Text(
+                            '${_formatCompactNumber(_toInt(a['xp']))} XP',
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(
+                              color: Color(0xFF60A5FA),
+                              fontSize: 12.5,
+                              height: 1,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }, growable: false),
             ),
           ),
         ],

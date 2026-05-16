@@ -1,8 +1,6 @@
 <template>
   <div class="activity-item">
-    <div class="activity-icon" :class="`icon-${type}`">
-      <div v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>${icon}</svg>`"></div>
-    </div>
+    <img class="activity-xp-icon" :src="xpIcon" alt="" />
     <div class="activity-info">
       <h4 class="activity-title">{{ title }}</h4>
       <span class="activity-time">{{ time }}</span>
@@ -12,6 +10,8 @@
 </template>
 
 <script setup lang="ts">
+import xpIcon from '@/assets/XP_Pixel.png';
+
 defineProps<{
   icon: string;
   title: string;
@@ -26,39 +26,20 @@ defineProps<{
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 0 10px;
+  padding: 12px 0;
   background: transparent;
   border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0;
 }
 
-.activity-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+.activity-xp-icon {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  image-rendering: pixelated;
   display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #fda4af;
-}
-
-.icon-workout {
-  color: #fda4af;
-}
-
-.icon-quest {
-  color: #fda4af;
-}
-
-.icon-achievement {
-  color: #fda4af;
-}
-
-.icon-level {
-  color: #fda4af;
 }
 
 .activity-info {
@@ -69,8 +50,9 @@ defineProps<{
 }
 
 .activity-title {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: 800;
   color: white;
   margin: 0;
 }
@@ -85,9 +67,12 @@ defineProps<{
   background: transparent;
   border: 0;
   border-radius: 0;
-  font-size: 15px;
+  min-width: 72px;
+  text-align: right;
+  font-size: 13.5px;
+  line-height: 1;
   font-weight: 800;
-  color: #fde047;
+  color: #60a5fa;
   flex-shrink: 0;
 }
 </style>

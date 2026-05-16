@@ -250,7 +250,15 @@
                   <label>{{ settingsCopy.email }}</label>
                   <input :value="user?.email ?? user?.Email ?? ''" readonly />
                 </div>
-                <button class="btn-primary" @click="saveProfile" :disabled="savingProfile || usernameUnchanged">{{ settingsCopy.save }}</button>
+                <label class="settings-toggle-row">
+                  <span>
+                    <strong>{{ settingsCopy.privateProfile }}</strong>
+                    <small>{{ settingsCopy.privateProfileHint }}</small>
+                  </span>
+                  <input v-model="editingProfilePrivate" type="checkbox" />
+                  <i aria-hidden="true"></i>
+                </label>
+                <button class="btn-primary" @click="saveProfile" :disabled="savingProfile || profileUnchanged">{{ settingsCopy.save }}</button>
               </section>
 
               <section class="settings-section">
@@ -372,6 +380,7 @@ const profileStats = ref<ProfileStats>({ totalWorkouts: 0, trainingHours: 0, cal
 const showSettings = ref(false);
 const settingsView = ref<'main' | 'password'>('main');
 const editingUsername = ref('');
+const editingProfilePrivate = ref(false);
 const savingProfile = ref(false);
 
 const settingsCopy = computed(() => ({
@@ -382,6 +391,8 @@ const settingsCopy = computed(() => ({
     profile: 'Profil',
     username: 'Benutzername',
     email: 'E-Mail',
+    privateProfile: 'Privates Profil',
+    privateProfileHint: 'Andere sehen nur Name und Profilbild.',
     save: 'Speichern',
     progress: 'Fortschritt',
     completedChallenges: 'Absolvierte Challenges',
@@ -428,9 +439,11 @@ const settingsCopy = computed(() => ({
 }));
 
 const currentUsername = computed(() => user.value?.userName ?? user.value?.UserName ?? user.value?.username ?? '');
+const currentProfilePrivate = computed(() => Boolean(user.value?.isProfilePrivate ?? user.value?.IsProfilePrivate ?? false));
 
 function openSettings() {
   editingUsername.value = currentUsername.value;
+  editingProfilePrivate.value = currentProfilePrivate.value;
   settingsView.value = 'main';
   showSettings.value = true;
 }
@@ -447,8 +460,9 @@ const popupType = ref<'success' | 'error'>('success');
 const profileImageInput = ref<HTMLInputElement | null>(null);
 const showImageActions = ref(false);
 
-const usernameUnchanged = computed(() => {
-  return editingUsername.value.trim() === currentUsername.value;
+const profileUnchanged = computed(() => {
+  return editingUsername.value.trim() === currentUsername.value
+    && editingProfilePrivate.value === currentProfilePrivate.value;
 });
 
 const currentEmail = computed(() => user.value?.email ?? user.value?.Email ?? settingsCopy.value.noEmail);
@@ -457,7 +471,10 @@ const profileImageUrl = computed(() => resolveMediaUrl(user.value?.profileImageU
 async function saveProfile() {
   savingProfile.value = true;
   try {
-    await userService.updateProfile({ UserName: editingUsername.value });
+    await userService.updateProfile({
+      UserName: editingUsername.value,
+      IsProfilePrivate: editingProfilePrivate.value,
+    });
     await refreshProfile();
     popupType.value = 'success';
     popupMessage.value = settingsCopy.value.profileSaved;
@@ -1288,7 +1305,7 @@ onMounted(async () => {
 .heatmap-cell {
   width: var(--heatmap-cell-size);
   height: var(--heatmap-cell-size);
-  border-radius: 3px;
+  border-radius: 2px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   background: rgba(255, 255, 255, 0.06);
 }
@@ -1334,7 +1351,11 @@ onMounted(async () => {
 .activities-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
+}
+
+.activities-list :deep(.activity-item:last-child) {
+  border-bottom: 0;
 }
 
 .empty-activity-text {
@@ -1489,6 +1510,75 @@ onMounted(async () => {
   opacity: 0.6;
   cursor: not-allowed;
   background: rgba(0, 0, 0, 0.3);
+}
+
+.settings-toggle-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 14px;
+  margin: 2px 0 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+  cursor: pointer;
+}
+
+.settings-toggle-row span {
+  display: grid;
+  gap: 4px;
+}
+
+.settings-toggle-row strong {
+  color: white;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.settings-toggle-row small {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.settings-toggle-row input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.settings-toggle-row i {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.settings-toggle-row i::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.settings-toggle-row input:checked + i {
+  background: rgba(236, 72, 153, 0.42);
+  border-color: rgba(236, 72, 153, 0.48);
+}
+
+.settings-toggle-row input:checked + i::after {
+  transform: translateX(20px);
+  background: white;
 }
 
 .progress-stats { display: flex; flex-direction: column; gap: 12px; }

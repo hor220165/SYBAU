@@ -1081,7 +1081,7 @@ onUnmounted(() => {
 
 .reward-from-chest {
   position: absolute;
-  top: 0;
+  top: clamp(-8px, -1.5vw, 0px);
   left: 50%;
   transform: translateX(-50%);
   width: min(340px, 78vw);
@@ -1089,8 +1089,8 @@ onUnmounted(() => {
 }
 
 .reward-from-chest .reward-image {
-  width: clamp(150px, 15vw, 210px);
-  height: clamp(150px, 15vw, 210px);
+  width: clamp(132px, 13vw, 178px);
+  height: clamp(132px, 13vw, 178px);
 }
 
 .reward-meta-below {
@@ -1123,8 +1123,10 @@ onUnmounted(() => {
 }
 
 .reward-image img {
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   image-rendering: pixelated;
   filter: drop-shadow(0 24px 34px rgba(0, 0, 0, 0.55));

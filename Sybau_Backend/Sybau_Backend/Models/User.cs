@@ -34,6 +34,7 @@ public class User: BaseEntity<int>
     public string? LastName { get; set; }
     [EmailAddress] public string Email { get; set; }
     public bool IsAdmin { get; set; }
+    public bool IsProfilePrivate { get; set; } = false;
     public string? ProfileImageUrl { get; set; }
     public Avatar Avatar { get; set; }
     

@@ -112,6 +112,17 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
     ),
   );
 
+  bool get _isPrivateProfile => _toBool(
+    _profile['isPrivate'],
+    fallback: _toBool(
+      _profile['IsPrivate'],
+      fallback: _toBool(
+        _profile['isProfilePrivate'],
+        fallback: _toBool(_profile['IsProfilePrivate']),
+      ),
+    ),
+  );
+
   int get _totalXp => _toInt(
     _profile['totalXp'],
     fallback: _toInt(
@@ -309,7 +320,7 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
         height: cellSize,
         margin: const EdgeInsets.only(bottom: cellGap),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(3),
           color: _activityColor(value),
           border: Border.all(
             color: isToday
@@ -551,15 +562,17 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
                               fontWeight: FontWeight.w800,
                             ),
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Level $_level • ${_formatCompactNumber(_totalXp)} XP',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.66),
-                              fontWeight: FontWeight.w600,
+                          if (!_isPrivateProfile) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              'Level $_level • ${_formatCompactNumber(_totalXp)} XP',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.66),
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-                          if (bodyStage.isNotEmpty) ...[
+                          ],
+                          if (!_isPrivateProfile && bodyStage.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -596,7 +609,22 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
                       child: CircularProgressIndicator(),
                     ),
                   )
-                else ...[
+                else if (_isPrivateProfile) ...[
+                  _SectionCard(
+                    title: _lt(de: 'Privates Profil', en: 'Private profile'),
+                    child: Text(
+                      _lt(
+                        de: 'Dieses Profil ist privat.',
+                        en: 'This profile is private.',
+                      ),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.72),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ] else ...[
                   _SectionCard(
                     title: _lt(de: 'Statistiken', en: 'Statistics'),
                     child: LayoutBuilder(
@@ -772,78 +800,98 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
                             style: const TextStyle(color: Colors.white70),
                           )
                         : Column(
-                            children: recentActivities
-                                .map((dynamic item) {
-                                  final activity = _map(item);
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 42,
-                                          height: 42,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
+                            children: List.generate(recentActivities.length, (
+                              index,
+                            ) {
+                              final item = recentActivities[index];
+                              final activity = _map(item);
+                              final isLast =
+                                  index == recentActivities.length - 1;
+                              return Container(
+                                padding: EdgeInsets.only(
+                                  bottom: isLast ? 0 : 10,
+                                ),
+                                margin: EdgeInsets.only(
+                                  bottom: isLast ? 0 : 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: isLast
+                                          ? Colors.transparent
+                                          : Colors.white.withValues(
+                                              alpha: 0.08,
                                             ),
-                                            color: Colors.white.withOpacity(
-                                              0.05,
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 36,
+                                      height: 36,
+                                      child: Center(
+                                        child: Image.asset(
+                                          'assets/XP_Pixel.png',
+                                          width: 24,
+                                          height: 24,
+                                          fit: BoxFit.contain,
+                                          filterQuality: FilterQuality.none,
+                                          isAntiAlias: false,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 9),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _string(activity['title']),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 13,
+                                              height: 1.18,
+                                              fontWeight: FontWeight.w800,
                                             ),
-                                            border: Border.all(
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            _formatActivityTimestamp(
+                                              _string(activity['timestamp']),
+                                            ),
+                                            style: TextStyle(
                                               color: Colors.white.withOpacity(
-                                                0.08,
+                                                0.56,
                                               ),
+                                              fontSize: 11,
                                             ),
                                           ),
-                                          child: Icon(
-                                            _activityIcon(
-                                              _string(activity['type']),
-                                            ),
-                                            color: Color(0xFFFDA4AF),
-                                            size: 18,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                _string(activity['title']),
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 3),
-                                              Text(
-                                                _formatActivityTimestamp(
-                                                  _string(
-                                                    activity['timestamp'],
-                                                  ),
-                                                ),
-                                                style: TextStyle(
-                                                  color: Colors.white
-                                                      .withOpacity(0.56),
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Text(
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    SizedBox(
+                                      width: 66,
+                                      height: 36,
+                                      child: Center(
+                                        child: Text(
                                           '${_formatCompactNumber(_toInt(activity['xp']))} XP',
+                                          textAlign: TextAlign.right,
                                           style: const TextStyle(
-                                            color: Color(0xFFFDE047),
+                                            color: Color(0xFF60A5FA),
+                                            fontSize: 12.5,
+                                            height: 1,
                                             fontWeight: FontWeight.w800,
                                           ),
                                         ),
-                                      ],
+                                      ),
                                     ),
-                                  );
-                                })
-                                .toList(growable: false),
+                                  ],
+                                ),
+                              );
+                            }, growable: false),
                           ),
                   ),
                 ],

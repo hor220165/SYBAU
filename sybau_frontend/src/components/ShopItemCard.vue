@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import coinIcon from '@/assets/SYBAU_Coin.png';
-import xpIcon from '@/assets/XP_Pixel.png';
 import type { ShopDisplayItem } from '@/models/ShopDisplayItem';
 import { useLanguage } from '@/composables/useLanguage';
 
@@ -61,11 +60,9 @@ const rarityLabel = computed(() =>
 
       <div v-if="item.xpBoostPercentage > 0 || item.coinBoostPercentage > 0" class="boost-row">
         <span v-if="item.xpBoostPercentage > 0" class="boost-pill xp">
-          <img :src="xpIcon" alt="" />
           +{{ item.xpBoostPercentage }}% XP
         </span>
         <span v-if="item.coinBoostPercentage > 0" class="boost-pill coin">
-          <img :src="coinIcon" alt="" />
           +{{ item.coinBoostPercentage }}% Coins
         </span>
       </div>
@@ -174,6 +171,7 @@ const rarityLabel = computed(() =>
   align-items: start;
   gap: 20px;
   padding-right: 54px;
+  padding-top: 8px;
 }
 
 .item-icon-shell {
@@ -252,9 +250,8 @@ const rarityLabel = computed(() =>
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 34px;
-  padding-bottom: 28px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 24px;
+  padding-bottom: 12px;
 }
 
 .boost-pill {
@@ -266,13 +263,6 @@ const rarityLabel = computed(() =>
   border-radius: 11px;
   font-size: 0.94rem;
   font-weight: 900;
-}
-
-.boost-pill img {
-  width: 19px;
-  height: 19px;
-  object-fit: contain;
-  image-rendering: pixelated;
 }
 
 .boost-pill.xp {
@@ -289,12 +279,11 @@ const rarityLabel = computed(() =>
 
 .item-footer {
   margin-top: auto;
-  padding-top: 22px;
+  padding-top: 12px;
   display: flex;
   justify-content: flex-end;
   gap: 12px;
   align-items: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .coin-icon {
@@ -422,8 +411,8 @@ const rarityLabel = computed(() =>
 
 .owned-count {
   position: absolute;
-  right: 22px;
-  top: 22px;
+  right: 18px;
+  top: 18px;
   display: inline-flex;
   align-items: center;
   color: #f9a8d4;
@@ -432,6 +421,13 @@ const rarityLabel = computed(() =>
   letter-spacing: 0;
   z-index: 2;
   text-shadow: 0 0 14px rgba(236, 72, 153, 0.42);
+}
+
+@media (max-width: 560px) {
+  .owned-count {
+    right: 10px;
+    top: 10px;
+  }
 }
 
 </style>

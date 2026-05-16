@@ -864,6 +864,9 @@ namespace Sybau_Backend.Migrations
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsProfilePrivate")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastName")
                         .HasColumnType("TEXT");
 

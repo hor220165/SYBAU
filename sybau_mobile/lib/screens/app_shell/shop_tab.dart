@@ -754,9 +754,9 @@ class _ShopTabState extends State<ShopTab> {
     ];
 
     return SizedBox(
-      height: 266,
+      height: 274,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 15, 8, 14),
+        padding: const EdgeInsets.fromLTRB(8, 18, 8, 14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           gradient: LinearGradient(
@@ -782,11 +782,11 @@ class _ShopTabState extends State<ShopTab> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(
-                  height: 90,
+                  height: 96,
                   child: Center(
                     child: SizedBox(
-                      width: 104,
-                      height: 90,
+                      width: 110,
+                      height: 96,
                       child: Stack(
                         clipBehavior: Clip.none,
                         alignment: Alignment.center,
@@ -794,8 +794,8 @@ class _ShopTabState extends State<ShopTab> {
                           imageUrl.isNotEmpty
                               ? _buildShopImageFromUrl(
                                   imageUrl,
-                                  width: 94,
-                                  height: 94,
+                                  width: 92,
+                                  height: 92,
                                   fallback: () => Text(
                                     icon,
                                     style: const TextStyle(fontSize: 42),
@@ -807,8 +807,8 @@ class _ShopTabState extends State<ShopTab> {
                                 ),
                           if (owned > 0)
                             Positioned(
-                              top: 0,
-                              right: 2,
+                              top: -7,
+                              right: -7,
                               child: _buildQuantityBadge('x$owned'),
                             ),
                         ],
@@ -816,7 +816,7 @@ class _ShopTabState extends State<ShopTab> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 7),
                 SizedBox(
                   height: 34,
                   child: Center(
@@ -870,10 +870,10 @@ class _ShopTabState extends State<ShopTab> {
             Positioned(
               left: 0,
               right: 0,
-              bottom: 2,
+              bottom: 0,
               child: SizedBox(
                 width: double.infinity,
-                height: 36,
+                height: 38,
                 child: ElevatedButton(
                   onPressed: canBuy ? () => _requestPurchase(item) : null,
                   style: ElevatedButton.styleFrom(
@@ -1703,7 +1703,7 @@ class _ShopTabState extends State<ShopTab> {
                           ],
                           if (reward != null) ...[
                             SizedBox(
-                              height: 282,
+                              height: 292,
                               child: Stack(
                                 clipBehavior: Clip.none,
                                 alignment: Alignment.center,
@@ -1714,7 +1714,7 @@ class _ShopTabState extends State<ShopTab> {
                                     bottom: 0,
                                     child: ColorFiltered(
                                       colorFilter: ColorFilter.mode(
-                                        Colors.black.withOpacity(0.32),
+                                        Colors.black.withOpacity(0.42),
                                         BlendMode.srcATop,
                                       ),
                                       child: Image.asset(
@@ -1730,7 +1730,7 @@ class _ShopTabState extends State<ShopTab> {
                                   Positioned(
                                     left: 0,
                                     right: 0,
-                                    top: -18,
+                                    top: -54,
                                     child: TweenAnimationBuilder<double>(
                                       key: ValueKey(
                                         '$chestId-$rewardName-$rewardImageUrl',
@@ -1763,8 +1763,8 @@ class _ShopTabState extends State<ShopTab> {
                                         child: rewardImageUrl.isNotEmpty
                                             ? _buildShopImageFromUrl(
                                                 rewardImageUrl,
-                                                width: 154,
-                                                height: 154,
+                                                width: 160,
+                                                height: 160,
                                                 fallback: () => Text(
                                                   _rarityIcon(rarity),
                                                   style: const TextStyle(

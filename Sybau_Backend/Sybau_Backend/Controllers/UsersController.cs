@@ -76,6 +76,7 @@ namespace Sybau_Backend.Controllers
                 TotalXp = CalculateTotalXp(user.Avatar.Level, user.Avatar.Experience),
                 Avatar = avatarDto,
                 IsAdmin = user.IsAdmin,
+                IsProfilePrivate = user.IsProfilePrivate,
             });
         }
 
@@ -86,6 +87,17 @@ namespace Sybau_Backend.Controllers
         {
             var user = await _userService.GetUserById(id);
             if (user == null || user.IsAdmin) return NotFound();
+
+            if (user.IsProfilePrivate)
+            {
+                return Ok(new PublicUserProfileDto
+                {
+                    Id = user.Id,
+                    UserName = user.UserName,
+                    ProfileImageUrl = user.ProfileImageUrl,
+                    IsPrivate = true
+                });
+            }
 
             var avatarDto = new AvatarDto
             {
@@ -160,6 +172,7 @@ namespace Sybau_Backend.Controllers
                 Id = user.Id,
                 UserName = user.UserName,
                 ProfileImageUrl = user.ProfileImageUrl,
+                IsPrivate = false,
                 Avatar = avatarDto,
                 TotalXp = CalculateTotalXp(user.Avatar.Level, user.Avatar.Experience),
                 Stats = stats,
@@ -184,6 +197,8 @@ namespace Sybau_Backend.Controllers
 
             if (!string.IsNullOrEmpty(dto.Username))
                 user.UserName = dto.Username;
+            if (dto.IsProfilePrivate.HasValue)
+                user.IsProfilePrivate = dto.IsProfilePrivate.Value;
 
             await _userService.UpdateUserAsync(user);
 
@@ -452,6 +467,7 @@ namespace Sybau_Backend.Controllers
                 ProfileImageUrl = u.ProfileImageUrl,
                 Coins = u.Coins,
                 IsAdmin = u.IsAdmin,
+                IsProfilePrivate = u.IsProfilePrivate,
                 Avatar = new AvatarDto
                 {
                     Id = u.Avatar.Id,
@@ -498,7 +514,8 @@ namespace Sybau_Backend.Controllers
                 ProfileImageUrl = user.ProfileImageUrl,
                 Coins = user.Coins,
                 Avatar = avatarDto,
-                IsAdmin = user.IsAdmin
+                IsAdmin = user.IsAdmin,
+                IsProfilePrivate = user.IsProfilePrivate
             });
         }
         

@@ -1085,7 +1085,7 @@ class _AvatarTabState extends State<AvatarTab>
                                 child: Padding(
                                   padding: const EdgeInsets.only(bottom: 10),
                                   child: _LegendaryInventoryFrame(
-                                    enabled: rarity == 'legendary',
+                                    enabled: false,
                                     progress: _legendaryShineController,
                                     borderRadius: 16,
                                     child: Container(
@@ -1607,24 +1607,42 @@ class _LegendaryBorderShinePainter extends CustomPainter {
       Radius.circular(borderRadius),
     );
     final path = Path()..addRRect(rrect);
-    final paint = Paint()
+    final glowPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.15
+      ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round
-      ..color = Colors.white.withOpacity(0.58)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.45);
+      ..color = Colors.white.withValues(alpha: 0.28)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.2);
+    final linePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.25
+      ..strokeCap = StrokeCap.round
+      ..color = Colors.white.withValues(alpha: 0.92);
 
-    for (final metric in path.computeMetrics()) {
-      final segmentLength = metric.length * 0.18;
-      final start = (progress * metric.length * 1.15) % metric.length;
-      final end = start + segmentLength;
+    void drawSegment(ui.PathMetric metric, double start, double length) {
+      final normalizedStart = start % metric.length;
+      final end = normalizedStart + length;
 
       if (end <= metric.length) {
-        canvas.drawPath(metric.extractPath(start, end), paint);
-      } else {
-        canvas.drawPath(metric.extractPath(start, metric.length), paint);
-        canvas.drawPath(metric.extractPath(0, end - metric.length), paint);
+        final segment = metric.extractPath(normalizedStart, end);
+        canvas.drawPath(segment, glowPaint);
+        canvas.drawPath(segment, linePaint);
+        return;
       }
+
+      final first = metric.extractPath(normalizedStart, metric.length);
+      final second = metric.extractPath(0, end - metric.length);
+      canvas.drawPath(first, glowPaint);
+      canvas.drawPath(second, glowPaint);
+      canvas.drawPath(first, linePaint);
+      canvas.drawPath(second, linePaint);
+    }
+
+    for (final metric in path.computeMetrics()) {
+      final segmentLength = metric.length * 0.065;
+      final start = (progress * metric.length * 1.08) % metric.length;
+      drawSegment(metric, start, segmentLength);
+      drawSegment(metric, start + metric.length * 0.48, segmentLength);
     }
   }
 
