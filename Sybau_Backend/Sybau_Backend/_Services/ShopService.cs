@@ -19,15 +19,46 @@ public class ShopService
         _userService = userService;
     }
 
-    public async Task<IEnumerable<Item>> GetItemsAsync()
+    public async Task<IEnumerable<ItemDto>> GetItemsAsync()
     {
-        return await _context.Items.ToListAsync();
+        var items = await _context.Items
+            .AsNoTracking()
+            .ToListAsync();
+
+        return items.Select(ToItemDto);
     }
 
     public async Task<Item?> GetItemAsync(int id)
     {
         return await _context.Items
             .FirstOrDefaultAsync(i => i.Id == id);
+    }
+
+    public async Task<ItemDto?> GetItemDtoAsync(int id)
+    {
+        var item = await _context.Items
+            .AsNoTracking()
+            .FirstOrDefaultAsync(i => i.Id == id);
+
+        return item == null ? null : ToItemDto(item);
+    }
+
+    public async Task<string?> GetItemImageUrlAsync(int id)
+    {
+        return await _context.Items
+            .AsNoTracking()
+            .Where(i => i.Id == id)
+            .Select(i => i.ImageUrl)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<string?> GetChestImageUrlAsync(int id)
+    {
+        return await _context.Chests
+            .AsNoTracking()
+            .Where(c => c.Id == id)
+            .Select(c => c.ImageUrl)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<DailyShopDto> GetDailyShopAsync(DateTime? utcNow = null)
@@ -109,6 +140,7 @@ public class ShopService
     public async Task<IEnumerable<ChestDto>> GetChestsAsync()
     {
         var chests = await _context.Chests
+            .AsNoTracking()
             .Include(c => c.ChestItems)
             .ThenInclude(ci => ci.Item)
             .ToListAsync();
@@ -502,7 +534,7 @@ public class ShopService
             Id = chest.Id,
             Name = chest.Name,
             Price = chest.Price,
-            ImageUrl = chest.ImageUrl,
+            ImageUrl = ShopMediaUrl.ForChest(chest.Id, chest.ImageUrl) ?? string.Empty,
             CommonChance = chest.CommonChance,
             RareChance = chest.RareChance,
             EpicChance = chest.EpicChance,
@@ -527,7 +559,7 @@ public class ShopService
             Rarity = item.Rarity,
             Quantity = 0,
             MaxQuantity = item.MaxQuantity,
-            ImageUrl = item.ImageUrl
+            ImageUrl = ShopMediaUrl.ForItem(item.Id, item.ImageUrl)
         };
     }
 
@@ -545,7 +577,7 @@ public class ShopService
             Rarity = item.Rarity,
             Quantity = quantity,
             MaxQuantity = item.MaxQuantity,
-            ImageUrl = item.ImageUrl
+            ImageUrl = ShopMediaUrl.ForItem(item.Id, item.ImageUrl)
         };
     }
 }

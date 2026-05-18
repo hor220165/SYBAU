@@ -288,6 +288,9 @@ app.Use(async (context, next) =>
     });
 
     var path = context.Request.Path;
+    var isShopImageResponse =
+        path.StartsWithSegments("/shop") &&
+        path.Value?.EndsWith("/image", StringComparison.OrdinalIgnoreCase) == true;
     var isDynamicApiResponse =
         path.StartsWithSegments("/auth") ||
         path.StartsWithSegments("/users") ||
@@ -298,7 +301,7 @@ app.Use(async (context, next) =>
         path.StartsWithSegments("/shop") ||
         path.StartsWithSegments("/admin");
 
-    if (isDynamicApiResponse)
+    if (isDynamicApiResponse && !isShopImageResponse)
     {
         context.Response.OnStarting(() =>
         {

@@ -29,8 +29,15 @@ namespace Sybau_Backend.Controllers
         [HttpGet("items/{itemId}")]
         public async Task<IActionResult> GetItemById(int itemId)
         {
-            var item = await _shopService.GetItemAsync(itemId);
-            return Ok(item);
+            var item = await _shopService.GetItemDtoAsync(itemId);
+            return item == null ? NotFound() : Ok(item);
+        }
+
+        [HttpGet("items/{itemId}/image")]
+        public async Task<IActionResult> GetItemImage(int itemId)
+        {
+            var imageUrl = await _shopService.GetItemImageUrlAsync(itemId);
+            return ToImageResponse(imageUrl);
         }
 
         [HttpGet("daily")]
@@ -52,6 +59,13 @@ namespace Sybau_Backend.Controllers
         {
             var chest = await _shopService.GetChestAsync(chestId);
             return chest == null ? NotFound() : Ok(chest);
+        }
+
+        [HttpGet("chests/{chestId}/image")]
+        public async Task<IActionResult> GetChestImage(int chestId)
+        {
+            var imageUrl = await _shopService.GetChestImageUrlAsync(chestId);
+            return ToImageResponse(imageUrl);
         }
 
         [Authorize]
@@ -305,6 +319,54 @@ namespace Sybau_Backend.Controllers
             await using var memory = new MemoryStream();
             await image.CopyToAsync(memory);
             return $"data:{contentType};base64,{Convert.ToBase64String(memory.ToArray())}";
+        }
+
+        private IActionResult ToImageResponse(string? imageUrl)
+        {
+            if (string.IsNullOrWhiteSpace(imageUrl)) return NotFound();
+
+            Response.Headers.CacheControl = "public, max-age=2592000, immutable";
+            Response.Headers.Remove("Pragma");
+            Response.Headers.Remove("Expires");
+
+            if (!imageUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+            {
+                if (Uri.TryCreate(imageUrl, UriKind.Absolute, out var absoluteUri) &&
+                    (absoluteUri.Scheme == Uri.UriSchemeHttp || absoluteUri.Scheme == Uri.UriSchemeHttps))
+                {
+                    return Redirect(imageUrl);
+                }
+
+                var localPath = imageUrl.StartsWith("/", StringComparison.Ordinal)
+                    ? imageUrl
+                    : $"/{imageUrl}";
+                if (localPath.StartsWith("//", StringComparison.Ordinal) ||
+                    localPath.StartsWith("/\\", StringComparison.Ordinal))
+                {
+                    return BadRequest("Ungueltiger Bildpfad.");
+                }
+
+                return LocalRedirect(localPath);
+            }
+
+            const string dataPrefix = "data:";
+            const string base64Marker = ";base64,";
+            var markerIndex = imageUrl.IndexOf(base64Marker, StringComparison.OrdinalIgnoreCase);
+            if (markerIndex <= dataPrefix.Length) return BadRequest("Ungueltiges Bildformat.");
+
+            var contentType = imageUrl[dataPrefix.Length..markerIndex];
+            if (!contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                return BadRequest("Ungueltiger Bildtyp.");
+
+            var encodedData = imageUrl[(markerIndex + base64Marker.Length)..];
+            try
+            {
+                return File(Convert.FromBase64String(encodedData), contentType);
+            }
+            catch (FormatException)
+            {
+                return BadRequest("Ungueltige Bilddaten.");
+            }
         }
 
         private void DeleteLocalUpload(string? imageUrl)

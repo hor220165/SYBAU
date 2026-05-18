@@ -511,7 +511,7 @@ public class UserService
                 CoinBoostPercentage = g.First().Item.CoinBoostPercent,
                 Rarity = g.First().Item.Rarity,
                 Quantity = g.Sum(ui => ui.Quantity),
-                ImageUrl = g.First().Item.ImageUrl
+                ImageUrl = ShopMediaUrl.ForItem(g.First().Item.Id, g.First().Item.ImageUrl)
             })
             .ToList();
     }
