@@ -37,7 +37,7 @@ class ApiService {
   static const String _defaultPort = '5243';
   static const Duration _healthTimeout = Duration(milliseconds: 900);
   static const Duration _discoveryHealthTimeout = Duration(milliseconds: 250);
-  static const Duration _requestTimeout = Duration(seconds: 8);
+  static const Duration _requestTimeout = Duration(seconds: 30);
   static const List<String> _developmentHostnames = <String>[
     'Air-von-David.local',
     'Air-von-David.telekom.ip',
@@ -874,7 +874,11 @@ class ApiService {
     required String type,
     required double value,
   }) async {
-    return _authedPostJson('/quests/activity', {'type': type, 'value': value});
+    return _authedPostJson('/quests/activity', {
+      'type': type,
+      'value': value,
+      'date': _formatDate(DateTime.now()),
+    });
   }
 
   static Future<Map<String, dynamic>> syncQuestActivityTotal({

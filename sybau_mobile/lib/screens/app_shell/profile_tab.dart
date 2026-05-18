@@ -555,14 +555,16 @@ class _ProfileTabState extends State<ProfileTab> {
     final now = DateTime.now();
     final firstDay = DateTime(year, 1, 1);
     final today = DateTime(now.year, now.month, now.day);
-    final currentWeekEnd = today.add(Duration(days: 7 - today.weekday));
+    final currentWeekEnd = _weekEnd(today);
     final yearEnd = DateTime(year, 12, 31);
-    final lastDay = year == now.year && currentWeekEnd.isBefore(yearEnd)
-        ? currentWeekEnd
-        : yearEnd;
+    final lastDay = year == now.year ? currentWeekEnd : _weekEnd(yearEnd);
     final start = firstDay.subtract(Duration(days: firstDay.weekday - 1));
     final end = lastDay;
     return ($1: start, $2: end);
+  }
+
+  DateTime _weekEnd(DateTime date) {
+    return date.add(Duration(days: DateTime.daysPerWeek - date.weekday));
   }
 
   DateTime _selectedActivityToday() {
@@ -891,7 +893,7 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Color _activityColor(int value, {bool isFuture = false}) {
-    if (isFuture) return Colors.white.withValues(alpha: 0.04);
+    if (isFuture) return Colors.white.withValues(alpha: 0.08);
     final colors = _isStepsActivityMode
         ? const <int, Color>{
             1: Color(0xFF9A3412),
@@ -919,8 +921,7 @@ class _ProfileTabState extends State<ProfileTab> {
     }
   }
 
-  Color _activityBorderColor(int value, {bool isToday = false}) {
-    if (isToday) return Colors.white.withValues(alpha: 0.78);
+  Color _activityBorderColor(int value) {
     if (value > 0) {
       return (_isStepsActivityMode
               ? const Color(0xFFFB923C)
@@ -1957,7 +1958,6 @@ class _ProfileTabState extends State<ProfileTab> {
 
     Widget buildCell(Map<String, dynamic> day) {
       final value = _activityValue(day);
-      final isToday = day['isToday'] == true;
       final isFuture = day['isFuture'] == true;
       final dateKey = _string(day['date']);
       final isActive =
@@ -1986,12 +1986,8 @@ class _ProfileTabState extends State<ProfileTab> {
                     border: Border.all(
                       color: isActive
                           ? Colors.white.withValues(alpha: 0.42)
-                          : _activityBorderColor(value, isToday: isToday),
-                      width: isActive
-                          ? 1.8
-                          : isToday
-                          ? 1.6
-                          : 1,
+                          : _activityBorderColor(value),
+                      width: isActive ? 1.8 : 1,
                     ),
                     boxShadow: isActive
                         ? [

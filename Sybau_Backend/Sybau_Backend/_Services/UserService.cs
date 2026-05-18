@@ -192,7 +192,7 @@ public class UserService
         if (dates.Count == 0) return (0, 0);
 
         int longest = 1, current = 1, streak = 1;
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = AppClock.Today;
 
         for (int i = 1; i < dates.Count; i++)
         {

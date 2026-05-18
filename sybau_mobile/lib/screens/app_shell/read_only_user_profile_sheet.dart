@@ -161,13 +161,15 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
     final now = DateTime.now();
     final firstDay = DateTime(year, 1, 1);
     final today = DateTime(now.year, now.month, now.day);
-    final currentWeekEnd = today.add(Duration(days: 7 - today.weekday));
+    final currentWeekEnd = _weekEnd(today);
     final yearEnd = DateTime(year, 12, 31);
-    final lastDay = year == now.year && currentWeekEnd.isBefore(yearEnd)
-        ? currentWeekEnd
-        : yearEnd;
+    final lastDay = year == now.year ? currentWeekEnd : _weekEnd(yearEnd);
     final start = firstDay.subtract(Duration(days: firstDay.weekday - 1));
     return ($1: start, $2: lastDay);
+  }
+
+  DateTime _weekEnd(DateTime date) {
+    return date.add(Duration(days: DateTime.daysPerWeek - date.weekday));
   }
 
   List<Map<String, dynamic>> _normalizeActivityHeatmap(
@@ -317,7 +319,6 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
 
     Widget buildCell(Map<String, dynamic> day) {
       final value = _activityValue(day);
-      final isToday = day['isToday'] == true;
       return Container(
         width: cellSize,
         height: cellSize,
@@ -325,12 +326,7 @@ class _ReadOnlyUserProfileSheetState extends State<_ReadOnlyUserProfileSheet> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(3),
           color: _activityColor(value),
-          border: Border.all(
-            color: isToday
-                ? Colors.white.withOpacity(0.76)
-                : Colors.white.withOpacity(0.06),
-            width: isToday ? 1.5 : 1,
-          ),
+          border: Border.all(color: Colors.white.withOpacity(0.06), width: 1),
         ),
       );
     }
