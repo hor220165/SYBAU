@@ -73,7 +73,7 @@ public class WorkoutsController : ControllerBase
     }
 
     [HttpGet("exercises")]
-    public async Task<IActionResult> GetExercises([FromQuery] WorkoutCategory? category)
+    public async Task<IActionResult> GetExercises([FromQuery] WorkoutCategory? category, [FromQuery] DateOnly? date)
     {
         int? userId = null;
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -81,7 +81,7 @@ public class WorkoutsController : ControllerBase
         {
             userId = uid;
         }
-        var exercises = await _workoutService.GetExercisesAsync(category, userId);
+        var exercises = await _workoutService.GetExercisesAsync(category, userId, date);
         return Ok(exercises);
     }
 
@@ -95,7 +95,7 @@ public class WorkoutsController : ControllerBase
 
         try
         {
-            var result = await _workoutService.LogExerciseAsync(userId, dto.ExerciseId, dto.Reps, dto.ElapsedSeconds);
+            var result = await _workoutService.LogExerciseAsync(userId, dto.ExerciseId, dto.Reps, dto.ElapsedSeconds, dto.Date);
             if (result == null) return NotFound("Übung oder User nicht gefunden.");
             return Ok(result);
         }

@@ -702,8 +702,8 @@ class ApiService {
     required DateTime from,
     required DateTime to,
   }) async {
-    final fromStr = from.toIso8601String().split('T').first;
-    final toStr = to.toIso8601String().split('T').first;
+    final fromStr = _formatDate(from);
+    final toStr = _formatDate(to);
     return _authedGetList(
       '/users/profile/weekly-activity?from=$fromStr&to=$toStr',
     );
@@ -831,9 +831,12 @@ class ApiService {
   }
 
   static Future<List<dynamic>> getExercises({String? category}) async {
-    final path = category == null || category.isEmpty
-        ? '/workouts/exercises'
-        : '/workouts/exercises?category=$category';
+    final query = <String, String>{
+      if (category != null && category.isNotEmpty) 'category': category,
+      'date': _formatDate(DateTime.now()),
+    };
+    final uri = Uri(path: '/workouts/exercises', queryParameters: query);
+    final path = uri.toString();
     return _authedGetList(path);
   }
 
@@ -842,11 +845,15 @@ class ApiService {
     required int reps,
     int? elapsedSeconds,
   }) async {
-    return _authedPostJson('/workouts/exercises/log', {
+    final body = <String, dynamic>{
       'exerciseId': exerciseId,
       'reps': reps,
-      if (elapsedSeconds != null) 'elapsedSeconds': elapsedSeconds,
-    });
+      'date': _formatDate(DateTime.now()),
+    };
+    if (elapsedSeconds != null) {
+      body['elapsedSeconds'] = elapsedSeconds;
+    }
+    return _authedPostJson('/workouts/exercises/log', body);
   }
 
   static Future<Map<String, dynamic>> createWorkout(
@@ -984,5 +991,11 @@ class ApiService {
     return _authedPutJson('/friends/challenges/$id/progress', {
       'amount': amount,
     });
+  }
+
+  static String _formatDate(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
   }
 }

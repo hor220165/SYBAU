@@ -115,7 +115,7 @@ public class WorkoutService
         return true;
     }
 
-    public async Task<List<ExerciseDto>> GetExercisesAsync(WorkoutCategory? category, int? userId = null)
+    public async Task<List<ExerciseDto>> GetExercisesAsync(WorkoutCategory? category, int? userId = null, DateOnly? date = null)
     {
         var query = _context.Exercises.AsQueryable();
 
@@ -124,7 +124,7 @@ public class WorkoutService
             query = query.Where(e => e.Category == category.Value);
         }
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = date ?? DateOnly.FromDateTime(DateTime.UtcNow);
 
         var exercises = await query
             .OrderBy(e => e.Name)
@@ -348,7 +348,7 @@ public class WorkoutService
         return (xpBoost, coinBoost);
     }
 
-    public async Task<ExerciseDto?> LogExerciseAsync(int userId, int exerciseId, int reps, int? elapsedSeconds = null)
+    public async Task<ExerciseDto?> LogExerciseAsync(int userId, int exerciseId, int reps, int? elapsedSeconds = null, DateOnly? date = null)
     {
         if (reps < 1) throw new ArgumentOutOfRangeException(nameof(reps));
         // Time-based validation for Reps exercises (1 Rep ≈ 1s, 0.75s/rep puffer)
@@ -373,7 +373,7 @@ public class WorkoutService
         var exercise = await _context.Exercises.FindAsync(exerciseId);
         if (exercise == null) return null;
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = date ?? DateOnly.FromDateTime(DateTime.UtcNow);
         var todayTotal = await _context.UserExerciseLogs
             .Where(l => l.UserId == userId && l.ExerciseId == exerciseId && l.Date == today)
             .SumAsync(l => l.Reps);
@@ -381,7 +381,10 @@ public class WorkoutService
         if (todayTotal + reps > exercise.DailyLimit)
             throw new InvalidOperationException($"Tageslimit von {exercise.DailyLimit} überschritten. Bereits {todayTotal} gemacht.");
 
-        var log = new UserExerciseLog(user, exercise, reps, elapsedSeconds);
+        var log = new UserExerciseLog(user, exercise, reps, elapsedSeconds)
+        {
+            Date = today
+        };
         _context.UserExerciseLogs.Add(log);
         await _context.SaveChangesAsync();
 

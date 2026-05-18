@@ -554,9 +554,12 @@ class _ProfileTabState extends State<ProfileTab> {
   ({DateTime $1, DateTime $2}) _activityHeatmapBounds(int year) {
     final now = DateTime.now();
     final firstDay = DateTime(year, 1, 1);
-    final lastDay = year == now.year
-        ? DateTime(now.year, now.month, now.day)
-        : DateTime(year, 12, 31);
+    final today = DateTime(now.year, now.month, now.day);
+    final currentWeekEnd = today.add(Duration(days: 7 - today.weekday));
+    final yearEnd = DateTime(year, 12, 31);
+    final lastDay = year == now.year && currentWeekEnd.isBefore(yearEnd)
+        ? currentWeekEnd
+        : yearEnd;
     final start = firstDay.subtract(Duration(days: firstDay.weekday - 1));
     final end = lastDay;
     return ($1: start, $2: end);

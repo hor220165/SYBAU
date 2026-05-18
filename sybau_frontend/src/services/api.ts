@@ -133,7 +133,11 @@ export const itemService = {
 };
 
 export const workoutService = {
-    getExercises: (category?: string) => API.get('/workouts/exercises', { params: category ? { category } : {} }),
+    getExercises: (category?: string) => {
+        const today = new Date();
+        const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        return API.get('/workouts/exercises', { params: { ...(category ? { category } : {}), date } });
+    },
     getWorkouts: (category?: string) => API.get('/workouts', { params: category ? { category } : {} }),
     getWorkoutById: (id: number) => API.get(`/workouts/${id}`),
     createWorkout: (data: any) => API.post('/workouts', data),
@@ -143,7 +147,11 @@ export const workoutService = {
     updateExercise: (id: number, data: any) => API.put(`/workouts/exercises/${id}`, data),
     updateExerciseUnit: (id: number, unit: string) => API.put(`/workouts/exercises/${id}/unit`, { unit }),
     deleteExercise: (id: number) => API.delete(`/workouts/exercises/${id}`),
-    logExercise: (exerciseId: number, reps: number, elapsedSeconds?: number) => API.post('/workouts/exercises/log', { exerciseId, reps, ...(elapsedSeconds != null ? { elapsedSeconds } : {}) })
+    logExercise: (exerciseId: number, reps: number, elapsedSeconds?: number) => {
+        const today = new Date();
+        const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        return API.post('/workouts/exercises/log', { exerciseId, reps, date, ...(elapsedSeconds != null ? { elapsedSeconds } : {}) });
+    }
 };
 
 export const questService = {
