@@ -3,7 +3,7 @@ import { API_BASE_URL, resolveApiUrl } from '@/config';
 
 const API = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 30000,
+    timeout: 10000,
     headers: {
         'Content-Type': 'application/json'
     }
@@ -158,11 +158,7 @@ export const questService = {
     getMyQuests: () => API.get('/quests'),
     getStats: () => API.get('/quests/stats'),
     claimReward: (userQuestId: number) => API.post(`/quests/${userQuestId}/claim`),
-    logActivity: (type: 'Steps' | 'Kilometers', value: number) => {
-        const today = new Date();
-        const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        return API.post('/quests/activity', { type, value, date });
-    },
+    logActivity: (type: 'Steps' | 'Kilometers', value: number) => API.post('/quests/activity', { type, value }),
     getTodayActivity: () => API.get('/quests/activity/today')
 };
 

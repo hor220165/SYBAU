@@ -124,7 +124,7 @@ public class WorkoutService
             query = query.Where(e => e.Category == category.Value);
         }
 
-        var today = date ?? AppClock.Today;
+        var today = date ?? DateOnly.FromDateTime(DateTime.UtcNow);
 
         var exercises = await query
             .OrderBy(e => e.Name)
@@ -373,7 +373,7 @@ public class WorkoutService
         var exercise = await _context.Exercises.FindAsync(exerciseId);
         if (exercise == null) return null;
 
-        var today = date ?? AppClock.Today;
+        var today = date ?? DateOnly.FromDateTime(DateTime.UtcNow);
         var todayTotal = await _context.UserExerciseLogs
             .Where(l => l.UserId == userId && l.ExerciseId == exerciseId && l.Date == today)
             .SumAsync(l => l.Reps);

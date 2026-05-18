@@ -138,7 +138,7 @@ public class AchievementService
     /// </summary>
     public async Task<int> GetTodayXpAsync(int userId)
     {
-        var today = AppClock.Today;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var todayLogs = await _context.UserExerciseLogs
             .Where(l => l.UserId == userId && l.Date == today)
             .Select(l => new { l.Reps, l.Exercise.XpPerRep })
@@ -181,7 +181,7 @@ public class AchievementService
 
     private async Task<UserStats> GatherUserStatsAsync(int userId)
     {
-        var today = AppClock.Today;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var weekAgo = today.AddDays(-7);
 
         // Exercise Logs

@@ -80,10 +80,7 @@ public class QuestsController : ControllerBase
         if (!Enum.TryParse<ActivityType>(request.Type, true, out var activityType))
             return BadRequest(new { message = "Ungültiger Aktivitätstyp. Erlaubt: Steps, Kilometers, Calories" });
 
-        var log = new ActivityLog(userId.Value, activityType, request.Value)
-        {
-            Date = request.Date ?? AppClock.Today
-        };
+        var log = new ActivityLog(userId.Value, activityType, request.Value);
         _context.ActivityLogs.Add(log);
         await _context.SaveChangesAsync();
 
@@ -126,7 +123,7 @@ public class QuestsController : ControllerBase
         if (!Enum.TryParse<ActivityType>(request.Type, true, out var activityType))
             return BadRequest(new { message = "Ungültiger Aktivitätstyp. Erlaubt: Steps, Kilometers, Calories" });
 
-        var activityDate = request.Date ?? AppClock.Today;
+        var activityDate = request.Date ?? DateOnly.FromDateTime(DateTime.UtcNow);
         var existingValue = await _context.ActivityLogs
             .Where(a => a.UserId == userId.Value && a.Type == activityType && a.Date == activityDate)
             .SumAsync(a => (double?)a.Value) ?? 0;
@@ -176,7 +173,7 @@ public class QuestsController : ControllerBase
         var userId = GetUserId();
         if (userId == null) return Unauthorized();
 
-        var today = AppClock.Today;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var logs = await _context.ActivityLogs
             .Where(a => a.UserId == userId.Value && a.Date == today)
             .ToListAsync();
@@ -199,7 +196,9 @@ public class LogActivityRequest
 {
     public string Type { get; set; } = "";
     public double Value { get; set; }
-    public DateOnly? Date { get; set; }
 }
 
-public class SyncDailyActivityTotalRequest : LogActivityRequest;
+public class SyncDailyActivityTotalRequest : LogActivityRequest
+{
+    public DateOnly? Date { get; set; }
+}

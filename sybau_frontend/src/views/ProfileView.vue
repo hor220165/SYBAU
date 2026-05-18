@@ -738,13 +738,6 @@ function mondayOf(date: Date): Date {
   return normalized;
 }
 
-function sundayOf(date: Date): Date {
-  const normalized = startOfDay(date);
-  const weekday = normalized.getDay() === 0 ? 7 : normalized.getDay();
-  normalized.setDate(normalized.getDate() + 7 - weekday);
-  return normalized;
-}
-
 function toDateString(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
@@ -760,7 +753,9 @@ function getHeatmapRange() {
   const end = selectedYear === today.getFullYear()
     ? today
     : new Date(selectedYear, 11, 31);
-  const visualEnd = sundayOf(end);
+  const visualEnd = windowWidth.value <= 768
+    ? end
+    : addDays(mondayOf(new Date(selectedYear, 11, 31)), 6);
   return { start, end, visualEnd, today };
 }
 
@@ -1476,6 +1471,11 @@ onMounted(async () => {
 .mode-steps .heatmap-level-2 { background: rgba(234, 88, 12, 0.72); border-color: rgba(251, 146, 60, 0.24); }
 .mode-steps .heatmap-level-3 { background: rgba(249, 115, 22, 0.9); border-color: rgba(253, 186, 116, 0.32); }
 .mode-steps .heatmap-level-4 { background: #fb923c; border-color: rgba(254, 215, 170, 0.55); box-shadow: 0 0 10px rgba(249, 115, 22, 0.3); }
+
+.heatmap-cell.today {
+  outline: 2px solid rgba(255, 255, 255, 0.72);
+  outline-offset: 1px;
+}
 
 .heatmap-cell.future {
   opacity: 0.38;

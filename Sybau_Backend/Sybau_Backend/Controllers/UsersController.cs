@@ -112,7 +112,7 @@ namespace Sybau_Backend.Controllers
                 Boost4 = user.Avatar.Boost4
             };
 
-            var today = AppClock.Today;
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var yearStart = new DateOnly(today.Year, 1, 1);
             var activityStart = yearStart.AddDays(-(int)yearStart.DayOfWeek + (yearStart.DayOfWeek == DayOfWeek.Sunday ? -6 : 1));
 
