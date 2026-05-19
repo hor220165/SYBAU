@@ -275,8 +275,10 @@ public class ShopService
         return null; // null = Erfolg
     }
 
-    public async Task<(string? error, object? result)> SellItemAsync(int userId, int itemId)
+    public async Task<(string? error, object? result)> SellItemAsync(int userId, int itemId, int quantity = 1)
     {
+        if (quantity < 1) return ("Menge muss mindestens 1 sein.", null);
+
         var user = await _context.Users
             .Include(u => u.Avatar)
             .Include(u => u.UserItems)
@@ -288,34 +290,42 @@ public class ShopService
         var userItem = user.UserItems.FirstOrDefault(ui => ui.Item.Id == itemId);
         if (userItem == null || userItem.Quantity <= 0)
             return ("Du besitzt dieses Item nicht.", null);
+        if (quantity > userItem.Quantity)
+            return ($"Du besitzt nur {userItem.Quantity}x dieses Item.", null);
 
         var item = userItem.Item;
-        var sellPrice = Math.Max(1, (int)Math.Floor(item.Price * 0.5));
+        var sellPriceEach = Math.Max(1, (int)Math.Floor(item.Price * 0.5));
+        var totalSellPrice = sellPriceEach * quantity;
 
-        userItem.Quantity--;
-        user.Coins += sellPrice;
+        userItem.Quantity -= quantity;
+        user.Coins += totalSellPrice;
+        var remainingQuantity = Math.Max(0, userItem.Quantity);
 
         if (userItem.Quantity <= 0)
         {
             _context.UserItems.Remove(userItem);
         }
 
-        TrimEquippedBoostsAfterSale(user, item, Math.Max(0, userItem.Quantity));
-        _context.UserCoins.Add(new UserCoin(user, sellPrice, $"Sold item: {item.Name}"));
+        TrimEquippedBoostsAfterSale(user, item, remainingQuantity);
+        _context.UserCoins.Add(new UserCoin(user, totalSellPrice, $"Sold item x{quantity}: {item.Name}"));
 
         await _context.SaveChangesAsync();
 
         return (null, new
         {
             ItemId = item.Id,
-            Quantity = Math.Max(0, userItem.Quantity),
-            SellPrice = sellPrice,
+            Quantity = remainingQuantity,
+            QuantitySold = quantity,
+            SellPrice = totalSellPrice,
+            SellPriceEach = sellPriceEach,
             RemainingCoins = user.Coins
         });
     }
 
-    public async Task<(string? error, ChestOpenResultDto? result)> OpenChestAsync(int userId, int chestId)
+    public async Task<(string? error, ChestOpenResultDto? result)> OpenChestAsync(int userId, int chestId, int count = 1)
     {
+        if (count is not (1 or 3)) return ("Du kannst nur 1 oder 3 Chests gleichzeitig öffnen.", null);
+
         var user = await _context.Users
             .Include(u => u.UserItems)
             .ThenInclude(ui => ui.Item)
@@ -328,34 +338,47 @@ public class ShopService
             .FirstOrDefaultAsync(c => c.Id == chestId);
         if (chest == null) return ("Chest nicht gefunden", null);
         if (!chest.ChestItems.Any()) return ("Diese Chest hat keine Items", null);
-        if (user.Coins < chest.Price) return ("Nicht genug Coins", null);
+        var totalCost = chest.Price * count;
+        if (user.Coins < totalCost) return ("Nicht genug Coins", null);
 
-        var rolledRarity = RollRarity(chest);
         var availableItems = chest.ChestItems
             .Select(ci => ci.Item)
             .ToList();
 
-        var rarityItems = availableItems.Where(item => item.Rarity == rolledRarity).ToList();
-        var pool = rarityItems.Any() ? rarityItems : availableItems;
-        var wonItem = pool[Random.Shared.Next(pool.Count)];
+        var rewards = new List<ItemDto>(count);
+        var rolledRarities = new List<ItemRarity>(count);
 
-        user.Coins -= chest.Price;
-        var userItem = user.UserItems.FirstOrDefault(ui => ui.Item.Id == wonItem.Id);
-        AddItemToUser(user, wonItem, userItem);
-        _context.UserCoins.Add(new UserCoin(user, -chest.Price, $"Opened chest: {chest.Name}"));
+        user.Coins -= totalCost;
+        for (var i = 0; i < count; i++)
+        {
+            var rolledRarity = RollRarity(chest);
+            var wonItem = PickChestReward(availableItems, rolledRarity);
+            var userItem = user.UserItems.FirstOrDefault(ui => ui.Item.Id == wonItem.Id);
+            var updatedUserItem = AddItemToUser(user, wonItem, userItem);
+
+            rolledRarities.Add(rolledRarity);
+            rewards.Add(ToItemDto(wonItem, updatedUserItem.Quantity));
+        }
+
+        _context.UserCoins.Add(new UserCoin(user, -totalCost, $"Opened chest x{count}: {chest.Name}"));
 
         await _context.SaveChangesAsync();
+        var firstReward = rewards.First();
 
         return (null, new ChestOpenResultDto
         {
             Chest = ToChestDto(chest),
-            Item = ToItemDto(wonItem, user.UserItems.FirstOrDefault(ui => ui.Item.Id == wonItem.Id)?.Quantity ?? 1),
-            RolledRarity = wonItem.Rarity,
+            Item = firstReward,
+            Items = rewards,
+            RolledRarity = firstReward.Rarity,
+            RolledRarities = rolledRarities,
+            OpenCount = count,
+            TotalCost = totalCost,
             RemainingCoins = user.Coins
         });
     }
 
-    private void AddItemToUser(User user, Item item, UserItem? userItem)
+    private UserItem AddItemToUser(User user, Item item, UserItem? userItem)
     {
         if (userItem == null)
         {
@@ -366,6 +389,15 @@ public class ShopService
         {
             userItem.Quantity++;
         }
+
+        return userItem;
+    }
+
+    private static Item PickChestReward(IReadOnlyCollection<Item> availableItems, ItemRarity rolledRarity)
+    {
+        var rarityItems = availableItems.Where(item => item.Rarity == rolledRarity).ToList();
+        var pool = rarityItems.Any() ? rarityItems : availableItems.ToList();
+        return pool[Random.Shared.Next(pool.Count)];
     }
 
     private static void TrimEquippedBoostsAfterSale(User user, Item item, int remainingQuantity)

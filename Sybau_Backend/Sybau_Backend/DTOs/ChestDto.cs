@@ -34,6 +34,10 @@ public class ChestOpenResultDto
 {
     public ChestDto Chest { get; set; } = new();
     public ItemDto Item { get; set; } = new();
+    public List<ItemDto> Items { get; set; } = new();
     public ItemRarity RolledRarity { get; set; }
+    public List<ItemRarity> RolledRarities { get; set; } = new();
+    public int OpenCount { get; set; }
+    public int TotalCost { get; set; }
     public int RemainingCoins { get; set; }
 }

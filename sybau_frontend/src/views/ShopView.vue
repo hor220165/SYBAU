@@ -33,8 +33,11 @@ const buyingItemId = ref<number | null>(null);
 const openingChestId = ref<number | null>(null);
 const chestOpening = ref<Chest | null>(null);
 const openedReward = ref<any | null>(null);
+const openedRewards = ref<any[]>([]);
 const chestRevealStarted = ref(false);
 const pendingPurchase = ref<{ type: 'item'; item: ShopDisplayItem } | { type: 'chest'; chest: Chest } | null>(null);
+const pendingChestOpenCount = ref(1);
+const chestOpeningCount = ref(1);
 const dailyShopExpiresAtUtc = ref('');
 const dailyShopServerOffsetMs = ref(0);
 const dailyCountdownNowMs = ref(Date.now());
@@ -283,8 +286,10 @@ const closeChestOpening = () => {
   if (chestRevealStarted.value && !openedReward.value && openingChestId.value) return;
   chestOpening.value = null;
   openedReward.value = null;
+  openedRewards.value = [];
   chestRevealStarted.value = false;
   openingChestId.value = null;
+  chestOpeningCount.value = 1;
 };
 
 const getOpenChestImage = (chest: Chest | null) => {
@@ -296,10 +301,13 @@ const getOpenChestImage = (chest: Chest | null) => {
   return starterChestOpenImage;
 };
 
-const openChest = (chest: Chest) => {
+const openChest = (chest: Chest, count = 1) => {
   pendingPurchase.value = null;
+  pendingChestOpenCount.value = 1;
   chestOpening.value = chest;
+  chestOpeningCount.value = count;
   openedReward.value = null;
+  openedRewards.value = [];
   chestRevealStarted.value = false;
 };
 
@@ -309,8 +317,12 @@ const revealChest = async () => {
   chestRevealStarted.value = true;
 
   try {
-    const response = await itemService.openChest(chestOpening.value.id);
-    openedReward.value = response.data?.item ?? response.data?.Item ?? null;
+    const response = await itemService.openChest(chestOpening.value.id, chestOpeningCount.value);
+    const rewards = response.data?.items ?? response.data?.Items;
+    openedRewards.value = Array.isArray(rewards) && rewards.length
+      ? rewards
+      : [response.data?.item ?? response.data?.Item].filter(Boolean);
+    openedReward.value = openedRewards.value[0] ?? null;
     const remainingCoins = response.data?.remainingCoins ?? response.data?.RemainingCoins;
     if (remainingCoins !== undefined) currentCoins.value = Number(remainingCoins);
     await loadProfile();
@@ -329,6 +341,7 @@ const revealChest = async () => {
 const requestOpenChest = (chest: Chest) => {
   if (openingChestId.value !== null) return;
   pendingPurchase.value = { type: 'chest', chest };
+  pendingChestOpenCount.value = 1;
 };
 
 const buyItem = async (shopItem: ShopDisplayItem) => {
@@ -375,7 +388,7 @@ const confirmPurchase = () => {
   if (pendingPurchase.value.type === 'item') {
     buyItem(pendingPurchase.value.item);
   } else {
-    openChest(pendingPurchase.value.chest);
+    openChest(pendingPurchase.value.chest, pendingChestOpenCount.value);
   }
 };
 
@@ -390,8 +403,10 @@ const pendingPurchasePrice = computed(() => {
   if (!pendingPurchase.value) return 0;
   return pendingPurchase.value.type === 'item'
     ? pendingPurchase.value.item.price
-    : pendingPurchase.value.chest.price;
+    : pendingPurchase.value.chest.price * pendingChestOpenCount.value;
 });
+const canConfirmPurchase = computed(() => currentCoins.value >= pendingPurchasePrice.value);
+const chestOpenOptions = [1, 3];
 
 const rewardRarity = computed(() => {
   const raw = String(openedReward.value?.rarity ?? openedReward.value?.Rarity ?? 'common').toLowerCase();
@@ -400,6 +415,13 @@ const rewardRarity = computed(() => {
 });
 
 const rarityLabel = (rarity: string) => (rarity === 'mythic' ? 'Mythisch' : translate(rarity));
+const rewardName = (reward: any) => translate(reward?.name ?? reward?.Name ?? '');
+const rewardImageUrl = (reward: any) => resolveMediaUrl(reward?.imageUrl ?? reward?.ImageUrl ?? '');
+const rewardRarityOf = (reward: any) => {
+  const raw = String(reward?.rarity ?? reward?.Rarity ?? 'common').toLowerCase();
+  if (raw === 'rare' || raw === 'epic' || raw === 'legendary' || raw === 'mythic') return raw;
+  return 'common';
+};
 
 const loadOwnedItems = async () => {
   try {
@@ -573,6 +595,19 @@ onUnmounted(() => {
           <div class="confirm-dialog">
             <h3>{{ text('Bist du sicher?', 'Are you sure?') }}</h3>
             <p>{{ translate(pendingPurchaseName) }} {{ text('kaufen', 'buy') }}</p>
+            <div v-if="pendingPurchase.type === 'chest'" class="confirm-choice-row" role="group" :aria-label="text('Anzahl', 'Amount')">
+              <button
+                v-for="count in chestOpenOptions"
+                :key="`open-${count}`"
+                class="confirm-choice"
+                :class="{ active: pendingChestOpenCount === count }"
+                type="button"
+                :disabled="currentCoins < pendingPurchase.chest.price * count"
+                @click="pendingChestOpenCount = count"
+              >
+                {{ count }}x
+              </button>
+            </div>
             <div class="confirm-price">
               <span>{{ text('Kosten', 'Cost') }}</span>
               <strong>
@@ -582,7 +617,9 @@ onUnmounted(() => {
             </div>
             <div class="confirm-actions">
               <button class="confirm-cancel" type="button" @click="pendingPurchase = null">{{ text('Abbrechen', 'Cancel') }}</button>
-              <button class="confirm-buy" type="button" @click="confirmPurchase">{{ text('Kaufen', 'Buy') }}</button>
+              <button class="confirm-buy" type="button" :disabled="!canConfirmPurchase" @click="confirmPurchase">
+                {{ pendingPurchase.type === 'chest' ? text('Öffnen', 'Open') : text('Kaufen', 'Buy') }}
+              </button>
             </div>
           </div>
         </div>
@@ -604,24 +641,44 @@ onUnmounted(() => {
             </button>
 
             <div v-else class="opened-chest-scene">
-              <div class="opened-chest-reveal" :class="{ 'has-reward': openedReward }">
+              <div class="opened-chest-reveal" :class="{ 'has-reward': openedReward, 'has-multiple': openedRewards.length > 1 }">
                 <img :src="getOpenChestImage(chestOpening)" alt="" class="opened-chest-image" />
-                <div v-if="openedReward" class="reward-card reward-from-chest">
-                  <div class="reward-burst"></div>
-                  <div class="reward-image">
-                    <img
-                      v-if="resolveMediaUrl(openedReward.imageUrl ?? openedReward.ImageUrl ?? '')"
-                      :src="resolveMediaUrl(openedReward.imageUrl ?? openedReward.ImageUrl ?? '')"
-                      alt=""
-                    />
-                    <span v-else>✨</span>
+                <div v-if="openedReward" class="reward-stack" :class="{ multi: openedRewards.length > 1 }">
+                  <div
+                    v-for="(reward, index) in openedRewards"
+                    :key="`reward-${index}-${reward?.id ?? reward?.Id ?? index}`"
+                    class="reward-card reward-from-chest"
+                  >
+                    <div class="reward-burst"></div>
+                    <div class="reward-image">
+                      <img
+                        v-if="rewardImageUrl(reward)"
+                        :src="rewardImageUrl(reward)"
+                        alt=""
+                      />
+                      <span v-else>✨</span>
+                    </div>
                   </div>
                 </div>
               </div>
               <div v-if="!openedReward" class="opening-text opening-text-loading">{{ text('Öffnet...', 'Opening...') }}</div>
-              <div v-else class="reward-meta-below">
-                <h3>{{ translate(openedReward.name ?? openedReward.Name) }}</h3>
-                <p :class="`reward-rarity-${rewardRarity}`">{{ rarityLabel(rewardRarity) }}</p>
+              <div v-else class="reward-meta-below" :class="{ multi: openedRewards.length > 1 }">
+                <template v-if="openedRewards.length === 1">
+                  <h3>{{ rewardName(openedReward) }}</h3>
+                  <p :class="`reward-rarity-${rewardRarity}`">{{ rarityLabel(rewardRarity) }}</p>
+                </template>
+                <template v-else>
+                  <h3>{{ text('Drops erhalten', 'Drops received') }}</h3>
+                  <div class="reward-name-grid">
+                    <span
+                      v-for="(reward, index) in openedRewards"
+                      :key="`reward-name-${index}`"
+                      :class="`reward-rarity-${rewardRarityOf(reward)}`"
+                    >
+                      {{ rewardName(reward) }}
+                    </span>
+                  </div>
+                </template>
               </div>
             </div>
           </div>
@@ -883,6 +940,34 @@ onUnmounted(() => {
   font-weight: 800;
 }
 
+.confirm-choice-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.confirm-choice {
+  min-height: 38px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(30, 41, 59, 0.62);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.confirm-choice.active {
+  border-color: rgba(74, 222, 128, 0.56);
+  color: white;
+  background: rgba(34, 197, 94, 0.22);
+}
+
+.confirm-choice:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
 .confirm-price {
   display: flex;
   align-items: center;
@@ -939,6 +1024,11 @@ onUnmounted(() => {
   border: 1px solid rgba(74, 222, 128, 0.42);
   background: linear-gradient(135deg, rgba(34, 197, 94, 0.24), rgba(20, 83, 45, 0.86));
   color: white;
+}
+
+.confirm-buy:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .confirm-pop-enter-active,
@@ -1051,6 +1141,10 @@ onUnmounted(() => {
   align-items: end;
 }
 
+.opened-chest-reveal.has-multiple {
+  min-height: 430px;
+}
+
 .opened-chest-image {
   width: clamp(260px, 34vw, 440px);
   height: clamp(210px, 28vw, 350px);
@@ -1079,6 +1173,23 @@ onUnmounted(() => {
   animation: rewardReveal 0.62s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.reward-stack {
+  position: absolute;
+  top: clamp(-8px, -1.5vw, 0px);
+  left: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  transform: translateX(-50%);
+}
+
+.reward-stack.multi {
+  width: min(500px, 86vw);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  align-items: end;
+}
+
 .reward-from-chest {
   position: absolute;
   top: clamp(-8px, -1.5vw, 0px);
@@ -1088,9 +1199,22 @@ onUnmounted(() => {
   animation: rewardFromChest 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.reward-stack .reward-from-chest {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: auto;
+  transform: none;
+}
+
 .reward-from-chest .reward-image {
   width: clamp(132px, 13vw, 178px);
   height: clamp(132px, 13vw, 178px);
+}
+
+.reward-stack.multi .reward-image {
+  width: clamp(92px, 11vw, 138px);
+  height: clamp(92px, 11vw, 138px);
 }
 
 .reward-from-chest .reward-image img {
@@ -1105,6 +1229,31 @@ onUnmounted(() => {
   gap: 8px;
   text-align: center;
   animation: rewardReveal 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.reward-meta-below.multi {
+  width: min(520px, 88vw);
+}
+
+.reward-name-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.reward-name-grid span {
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: var(--reward-rarity-color, #cbd5e1);
+  background: rgba(15, 23, 42, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-weight: 900;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .reward-burst {

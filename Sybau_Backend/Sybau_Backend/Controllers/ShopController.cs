@@ -70,13 +70,13 @@ namespace Sybau_Backend.Controllers
 
         [Authorize]
         [HttpPost("chests/{chestId}/open")]
-        public async Task<IActionResult> OpenChest(int chestId)
+        public async Task<IActionResult> OpenChest(int chestId, [FromBody] OpenChestRequestDto? request)
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userIdClaim == null) return Unauthorized();
 
             var userId = int.Parse(userIdClaim);
-            var (error, result) = await _shopService.OpenChestAsync(userId, chestId);
+            var (error, result) = await _shopService.OpenChestAsync(userId, chestId, request?.Count ?? 1);
             if (error != null) return BadRequest(error);
             return Ok(result);
         }
@@ -256,13 +256,13 @@ namespace Sybau_Backend.Controllers
 
         [HttpPost("sell-item/{itemId}")]
         [Authorize]
-        public async Task<IActionResult> SellItem(int itemId)
+        public async Task<IActionResult> SellItem(int itemId, [FromBody] SellItemRequestDto? request)
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userIdClaim == null) return Unauthorized();
 
             var userId = int.Parse(userIdClaim);
-            var (error, result) = await _shopService.SellItemAsync(userId, itemId);
+            var (error, result) = await _shopService.SellItemAsync(userId, itemId, request?.Quantity ?? 1);
 
             if (error != null) return BadRequest(error);
             return Ok(result);

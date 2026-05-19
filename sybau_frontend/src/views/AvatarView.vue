@@ -207,6 +207,18 @@
         <div class="confirm-dialog">
           <h3>{{ text('Bist du sicher?', 'Are you sure?') }}</h3>
           <p>{{ translate(pendingSell.name) }} {{ text('verkaufen', 'sell') }}</p>
+          <div v-if="pendingSell.quantity > 1" class="confirm-choice-row" role="group" :aria-label="text('Menge', 'Quantity')">
+            <button
+              v-for="quantity in sellQuantityOptions"
+              :key="`sell-${quantity}`"
+              class="confirm-choice"
+              :class="{ active: pendingSellQuantity === quantity }"
+              type="button"
+              @click="pendingSellQuantity = quantity"
+            >
+              {{ quantity }}x
+            </button>
+          </div>
           <div class="confirm-price">
             <span>{{ text('Du bekommst', 'You get') }}</span>
             <strong>
@@ -285,6 +297,7 @@ const equipSlots = ref<EquipSlot[]>([
 const selectingSlotFor = ref<BoosterItem | null>(null);
 const inventory = ref<BoosterItem[]>([]);
 const pendingSell = ref<BoosterItem | null>(null);
+const pendingSellQuantity = ref(1);
 const sellingBoosterId = ref<number | null>(null);
 const popupMessage = ref('');
 const popupType = ref<'success' | 'error'>('success');
@@ -359,25 +372,35 @@ function remainingCount(booster: BoosterItem): number {
 }
 
 const sellPriceFor = (booster: BoosterItem) => Math.max(1, Math.floor(Number(booster.price ?? 0) * 0.5));
-const pendingSellPrice = computed(() => pendingSell.value ? sellPriceFor(pendingSell.value) : 0);
+const pendingSellPrice = computed(() => pendingSell.value ? sellPriceFor(pendingSell.value) * pendingSellQuantity.value : 0);
+const sellQuantityOptions = computed(() => {
+  const max = pendingSell.value?.quantity ?? 1;
+  const options = [1];
+  if (max >= 2) options.push(2);
+  if (max >= 3) options.push(max);
+  return [...new Set(options)].filter(quantity => quantity <= max);
+});
 
 const requestSellBooster = (booster: BoosterItem) => {
   pendingSell.value = booster;
+  pendingSellQuantity.value = 1;
 };
 
 const confirmSellBooster = async () => {
   if (!pendingSell.value) return;
   const booster = pendingSell.value;
+  const quantity = Math.min(Math.max(1, pendingSellQuantity.value), booster.quantity);
   sellingBoosterId.value = booster.id;
 
   try {
-    const response = await itemService.sellItem(booster.id);
-    const sellPrice = Number(response.data?.sellPrice ?? response.data?.SellPrice ?? sellPriceFor(booster));
+    const response = await itemService.sellItem(booster.id, quantity);
+    const sellPrice = Number(response.data?.sellPrice ?? response.data?.SellPrice ?? sellPriceFor(booster) * quantity);
     pendingSell.value = null;
+    pendingSellQuantity.value = 1;
     await loadProfile();
     await refreshProfile();
     popupType.value = 'success';
-    popupMessage.value = `${booster.name} verkauft. +${sellPrice} Coins`;
+    popupMessage.value = `${quantity}x ${booster.name} verkauft. +${sellPrice} Coins`;
   } catch (error: any) {
     console.error('Fehler beim Verkaufen des Boosters', error);
     popupType.value = 'error';
@@ -1333,6 +1356,29 @@ onMounted(() => loadProfile());
   margin: 8px 0 16px;
   color: rgba(255, 255, 255, 0.68);
   font-weight: 800;
+}
+
+.confirm-choice-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.confirm-choice {
+  min-height: 38px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(30, 41, 59, 0.62);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.confirm-choice.active {
+  border-color: rgba(248, 113, 113, 0.56);
+  color: white;
+  background: rgba(248, 113, 113, 0.22);
 }
 
 .confirm-price {

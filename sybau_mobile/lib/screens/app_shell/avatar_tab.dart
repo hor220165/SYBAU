@@ -23,6 +23,7 @@ class _AvatarTabState extends State<AvatarTab>
   final List<Booster?> _slots = <Booster?>[null, null, null, null];
   Booster? _selectingSlotFor;
   Booster? _pendingSellBooster;
+  int _pendingSellQuantity = 1;
   bool _sellingItem = false;
   late final AnimationController _legendaryShineController;
 
@@ -235,27 +236,30 @@ class _AvatarTabState extends State<AvatarTab>
   Future<void> _requestSellBooster(Booster booster) async {
     setState(() {
       _pendingSellBooster = booster;
+      _pendingSellQuantity = 1;
     });
   }
 
   Future<void> _confirmSellBooster() async {
     final booster = _pendingSellBooster;
     if (booster == null || _sellingItem) return;
+    final quantity = _pendingSellQuantity.clamp(1, booster.quantity).toInt();
     setState(() => _sellingItem = true);
     try {
-      final result = await ApiService.sellItem(booster.id!);
+      final result = await ApiService.sellItem(booster.id!, quantity: quantity);
       final sellPrice = _toInt(_map(result)['sellPrice']) > 0
           ? _toInt(_map(result)['sellPrice'])
-          : _sellPriceForBooster(booster);
+          : _sellPriceForBooster(booster) * quantity;
       if (!mounted) return;
       setState(() {
         _pendingSellBooster = null;
+        _pendingSellQuantity = 1;
         _sellingItem = false;
       });
       widget.showSnack(
         _lt(
-          de: '${_td(booster.name)} verkauft. +$sellPrice Coins',
-          en: '${_td(booster.name)} sold. +$sellPrice Coins',
+          de: '${quantity}x ${_td(booster.name)} verkauft. +$sellPrice Coins',
+          en: '${quantity}x ${_td(booster.name)} sold. +$sellPrice Coins',
         ),
       );
       await _load();
@@ -1340,11 +1344,20 @@ class _AvatarTabState extends State<AvatarTab>
   Widget _buildSellConfirmDialog() {
     if (_pendingSellBooster == null) return const SizedBox.shrink();
     final booster = _pendingSellBooster!;
-    final sellPrice = _sellPriceForBooster(booster);
+    final selectedQuantity = math.min(_pendingSellQuantity, booster.quantity);
+    final quantityOptions = <int>{
+      1,
+      if (booster.quantity >= 2) 2,
+      if (booster.quantity >= 3) booster.quantity,
+    }.toList();
+    final sellPrice = _sellPriceForBooster(booster) * selectedQuantity;
     return GestureDetector(
       onTap: _sellingItem
           ? null
-          : () => setState(() => _pendingSellBooster = null),
+          : () => setState(() {
+              _pendingSellBooster = null;
+              _pendingSellQuantity = 1;
+            }),
       child: Container(
         color: Colors.black54,
         child: Center(
@@ -1411,6 +1424,29 @@ class _AvatarTabState extends State<AvatarTab>
                   ),
                 ),
                 const SizedBox(height: 18),
+                if (booster.quantity > 1) ...[
+                  Row(
+                    children: [
+                      for (var i = 0; i < quantityOptions.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 8),
+                        Expanded(
+                          child: _quantityChoiceButton(
+                            label: '${quantityOptions[i]}x',
+                            active: selectedQuantity == quantityOptions[i],
+                            accent: Color(0xFFEF4444),
+                            onTap: _sellingItem
+                                ? null
+                                : () => setState(
+                                    () => _pendingSellQuantity =
+                                        quantityOptions[i],
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
@@ -1472,7 +1508,10 @@ class _AvatarTabState extends State<AvatarTab>
                       child: ElevatedButton(
                         onPressed: _sellingItem
                             ? null
-                            : () => setState(() => _pendingSellBooster = null),
+                            : () => setState(() {
+                                _pendingSellBooster = null;
+                                _pendingSellQuantity = 1;
+                              }),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Color(0xFF1E293B).withOpacity(0.76),
                           shape: RoundedRectangleBorder(
@@ -1542,6 +1581,40 @@ class _AvatarTabState extends State<AvatarTab>
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _quantityChoiceButton({
+    required String label,
+    required bool active,
+    required Color accent,
+    required VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        height: 38,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: active
+              ? accent.withOpacity(0.22)
+              : Color(0xFF1E293B).withOpacity(0.62),
+          border: Border.all(
+            color: active
+                ? accent.withOpacity(0.58)
+                : Colors.white.withOpacity(0.12),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: onTap == null ? Colors.white38 : Colors.white,
+            fontWeight: FontWeight.w900,
           ),
         ),
       ),
