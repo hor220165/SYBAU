@@ -48,22 +48,22 @@ namespace Sybau_Backend.Controllers
             if (userIdClaim == null) return Unauthorized();
 
             var userId = int.Parse(userIdClaim);
-            var user = await _userService.GetUserById(userId);
+            var user = await _userService.GetUserProfileSummaryAsync(userId);
 
             if (user == null) return NotFound();
 
             // Optional: Avatar, Boosts etc.
             var avatarDto = new AvatarDto
             {
-                Id = user.Avatar.Id,
-                Level = user.Avatar.Level,
-                Experience = user.Avatar.Experience,
-                BodyStage = _bodyStageService.GetBodyStage(user.Avatar.Level),
-                XpForNextLevel = _avatarService.XpForNextLevel(user.Avatar.Level),
-                Boost1 = user.Avatar.Boost1,
-                Boost2 = user.Avatar.Boost2,
-                Boost3 = user.Avatar.Boost3,
-                Boost4 = user.Avatar.Boost4
+                Id = user.AvatarId,
+                Level = user.AvatarLevel,
+                Experience = user.AvatarExperience,
+                BodyStage = _bodyStageService.GetBodyStage(user.AvatarLevel),
+                XpForNextLevel = _avatarService.XpForNextLevel(user.AvatarLevel),
+                Boost1 = user.Boost1,
+                Boost2 = user.Boost2,
+                Boost3 = user.Boost3,
+                Boost4 = user.Boost4
             };
 
             return Ok(new UserDto
@@ -71,9 +71,9 @@ namespace Sybau_Backend.Controllers
                 Id = user.Id,
                 UserName = user.UserName,
                 Email = user.Email,
-                ProfileImageUrl = user.ProfileImageUrl,
+                ProfileImageUrl = ProfileMediaUrl.ForUser(user.Id, user.HasProfileImage),
                 Coins = user.Coins,
-                TotalXp = CalculateTotalXp(user.Avatar.Level, user.Avatar.Experience),
+                TotalXp = CalculateTotalXp(user.AvatarLevel, user.AvatarExperience),
                 Avatar = avatarDto,
                 IsAdmin = user.IsAdmin,
                 IsProfilePrivate = user.IsProfilePrivate,
@@ -85,7 +85,7 @@ namespace Sybau_Backend.Controllers
         [HttpGet("{id:int}/profile")]
         public async Task<IActionResult> GetPublicProfile(int id)
         {
-            var user = await _userService.GetUserById(id);
+            var user = await _userService.GetUserProfileSummaryAsync(id);
             if (user == null || user.IsAdmin) return NotFound();
 
             if (user.IsProfilePrivate)
@@ -94,22 +94,22 @@ namespace Sybau_Backend.Controllers
                 {
                     Id = user.Id,
                     UserName = user.UserName,
-                    ProfileImageUrl = user.ProfileImageUrl,
+                    ProfileImageUrl = ProfileMediaUrl.ForUser(user.Id, user.HasProfileImage),
                     IsPrivate = true
                 });
             }
 
             var avatarDto = new AvatarDto
             {
-                Id = user.Avatar.Id,
-                Level = user.Avatar.Level,
-                Experience = user.Avatar.Experience,
-                BodyStage = _bodyStageService.GetBodyStage(user.Avatar.Level),
-                XpForNextLevel = _avatarService.XpForNextLevel(user.Avatar.Level),
-                Boost1 = user.Avatar.Boost1,
-                Boost2 = user.Avatar.Boost2,
-                Boost3 = user.Avatar.Boost3,
-                Boost4 = user.Avatar.Boost4
+                Id = user.AvatarId,
+                Level = user.AvatarLevel,
+                Experience = user.AvatarExperience,
+                BodyStage = _bodyStageService.GetBodyStage(user.AvatarLevel),
+                XpForNextLevel = _avatarService.XpForNextLevel(user.AvatarLevel),
+                Boost1 = user.Boost1,
+                Boost2 = user.Boost2,
+                Boost3 = user.Boost3,
+                Boost4 = user.Boost4
             };
 
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -171,10 +171,10 @@ namespace Sybau_Backend.Controllers
             {
                 Id = user.Id,
                 UserName = user.UserName,
-                ProfileImageUrl = user.ProfileImageUrl,
+                ProfileImageUrl = ProfileMediaUrl.ForUser(user.Id, user.HasProfileImage),
                 IsPrivate = false,
                 Avatar = avatarDto,
-                TotalXp = CalculateTotalXp(user.Avatar.Level, user.Avatar.Experience),
+                TotalXp = CalculateTotalXp(user.AvatarLevel, user.AvatarExperience),
                 Stats = stats,
                 Achievements = achievements,
                 WeeklyActivity = weeklyActivity,
@@ -275,7 +275,15 @@ namespace Sybau_Backend.Controllers
             var profileImageUrl = $"data:{contentType};base64,{Convert.ToBase64String(memory.ToArray())}";
             await _userService.SetProfileImageUrlAsync(user.Id, profileImageUrl);
 
-            return Ok(new { profileImageUrl });
+            return Ok(new { profileImageUrl = ProfileMediaUrl.ForUser(user.Id, true) });
+        }
+
+        // GET /users/{id}/profile/image
+        [HttpGet("{id:int}/profile/image")]
+        public async Task<IActionResult> GetProfileImage(int id)
+        {
+            var imageUrl = await _userService.GetProfileImageUrlAsync(id);
+            return ToProfileImageResponse(imageUrl);
         }
 
         private static string GetImageContentType(string? contentType, string extension)
@@ -317,6 +325,54 @@ namespace Sybau_Backend.Controllers
             if (System.IO.File.Exists(fullPath))
             {
                 System.IO.File.Delete(fullPath);
+            }
+        }
+
+        private IActionResult ToProfileImageResponse(string? imageUrl)
+        {
+            if (string.IsNullOrWhiteSpace(imageUrl)) return NotFound();
+
+            Response.Headers.CacheControl = "public, max-age=2592000, immutable";
+            Response.Headers.Remove("Pragma");
+            Response.Headers.Remove("Expires");
+
+            if (!imageUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+            {
+                if (Uri.TryCreate(imageUrl, UriKind.Absolute, out var absoluteUri) &&
+                    (absoluteUri.Scheme == Uri.UriSchemeHttp || absoluteUri.Scheme == Uri.UriSchemeHttps))
+                {
+                    return Redirect(imageUrl);
+                }
+
+                var localPath = imageUrl.StartsWith("/", StringComparison.Ordinal)
+                    ? imageUrl
+                    : $"/{imageUrl}";
+                if (localPath.StartsWith("//", StringComparison.Ordinal) ||
+                    localPath.StartsWith("/\\", StringComparison.Ordinal))
+                {
+                    return BadRequest("Ungueltiger Bildpfad.");
+                }
+
+                return LocalRedirect(localPath);
+            }
+
+            const string dataPrefix = "data:";
+            const string base64Marker = ";base64,";
+            var markerIndex = imageUrl.IndexOf(base64Marker, StringComparison.OrdinalIgnoreCase);
+            if (markerIndex <= dataPrefix.Length) return BadRequest("Ungueltiges Bildformat.");
+
+            var contentType = imageUrl[dataPrefix.Length..markerIndex];
+            if (!contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                return BadRequest("Ungueltiger Bildtyp.");
+
+            var encodedData = imageUrl[(markerIndex + base64Marker.Length)..];
+            try
+            {
+                return File(Convert.FromBase64String(encodedData), contentType);
+            }
+            catch (FormatException)
+            {
+                return BadRequest("Ungueltige Bilddaten.");
             }
         }
 
@@ -464,7 +520,7 @@ namespace Sybau_Backend.Controllers
                 Id = u.Id,
                 UserName = u.UserName,
                 Email = u.Email,
-                ProfileImageUrl = u.ProfileImageUrl,
+                ProfileImageUrl = ProfileMediaUrl.ForUser(u.Id, !string.IsNullOrWhiteSpace(u.ProfileImageUrl)),
                 Coins = u.Coins,
                 IsAdmin = u.IsAdmin,
                 IsProfilePrivate = u.IsProfilePrivate,
@@ -511,7 +567,7 @@ namespace Sybau_Backend.Controllers
                 Id = user.Id,
                 UserName = user.UserName,
                 Email = user.Email,
-                ProfileImageUrl = user.ProfileImageUrl,
+                ProfileImageUrl = ProfileMediaUrl.ForUser(user.Id, !string.IsNullOrWhiteSpace(user.ProfileImageUrl)),
                 Coins = user.Coins,
                 Avatar = avatarDto,
                 IsAdmin = user.IsAdmin,

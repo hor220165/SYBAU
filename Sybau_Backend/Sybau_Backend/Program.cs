@@ -15,7 +15,10 @@ var builder = WebApplication.CreateEmptyBuilder(
     new WebApplicationOptions
     {
         Args = args,
-        ContentRootPath = Directory.GetCurrentDirectory()
+        ContentRootPath = Directory.GetCurrentDirectory(),
+        EnvironmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+            ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+            ?? Environments.Production
     }
 );
 builder.WebHost.UseKestrel();

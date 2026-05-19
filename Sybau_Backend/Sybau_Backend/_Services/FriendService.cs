@@ -134,26 +134,33 @@ public class FriendService
     public async Task<IEnumerable<FriendshipDto>> GetFriendsAsync(int userId)
     {
         var friendships = await _context.Friendships
-            .Include(f => f.Requester).ThenInclude(u => u.Avatar)
-            .Include(f => f.Addressee).ThenInclude(u => u.Avatar)
+            .AsNoTracking()
             .Where(f => (f.RequesterId == userId || f.AddresseeId == userId)
                         && f.Status == FriendshipStatus.Accepted)
+            .Select(f => new
+            {
+                f.Id,
+                FriendId = f.RequesterId == userId ? f.AddresseeId : f.RequesterId,
+                FriendUserName = f.RequesterId == userId ? f.Addressee.UserName : f.Requester.UserName,
+                FriendHasProfileImage = f.RequesterId == userId
+                    ? f.Addressee.ProfileImageUrl != null && f.Addressee.ProfileImageUrl != string.Empty
+                    : f.Requester.ProfileImageUrl != null && f.Requester.ProfileImageUrl != string.Empty,
+                FriendLevel = f.RequesterId == userId ? f.Addressee.Avatar.Level : f.Requester.Avatar.Level,
+                FriendExperience = f.RequesterId == userId ? f.Addressee.Avatar.Experience : f.Requester.Avatar.Experience,
+                FriendsSince = f.AcceptedAt ?? f.CreatedAt
+            })
             .ToListAsync();
 
-        return friendships.Select(f =>
+        return friendships.Select(f => new FriendshipDto
         {
-            var friend = f.RequesterId == userId ? f.Addressee : f.Requester;
-            return new FriendshipDto
-            {
-                Id = f.Id,
-                FriendId = friend.Id,
-                FriendUserName = friend.UserName,
-                FriendProfileImageUrl = friend.ProfileImageUrl,
-                FriendLevel = friend.Avatar.Level,
-                FriendExperience = friend.Avatar.Experience,
-                FriendBodyStage = _bodyStageService.GetBodyStage(friend.Avatar.Level).ToString(),
-                FriendsSince = f.AcceptedAt ?? f.CreatedAt
-            };
+            Id = f.Id,
+            FriendId = f.FriendId,
+            FriendUserName = f.FriendUserName,
+            FriendProfileImageUrl = ProfileMediaUrl.ForUser(f.FriendId, f.FriendHasProfileImage),
+            FriendLevel = f.FriendLevel,
+            FriendExperience = f.FriendExperience,
+            FriendBodyStage = _bodyStageService.GetBodyStage(f.FriendLevel).ToString(),
+            FriendsSince = f.FriendsSince
         });
     }
 
@@ -161,17 +168,26 @@ public class FriendService
     public async Task<IEnumerable<FriendRequestDto>> GetPendingRequestsAsync(int userId)
     {
         var requests = await _context.Friendships
-            .Include(f => f.Requester).ThenInclude(u => u.Avatar)
+            .AsNoTracking()
             .Where(f => f.AddresseeId == userId && f.Status == FriendshipStatus.Pending)
+            .Select(f => new
+            {
+                f.Id,
+                FromUserId = f.Requester.Id,
+                FromUserName = f.Requester.UserName,
+                FromUserHasProfileImage = f.Requester.ProfileImageUrl != null && f.Requester.ProfileImageUrl != string.Empty,
+                FromUserLevel = f.Requester.Avatar.Level,
+                f.CreatedAt
+            })
             .ToListAsync();
 
         return requests.Select(f => new FriendRequestDto
         {
             Id = f.Id,
-            FromUserId = f.Requester.Id,
-            FromUserName = f.Requester.UserName,
-            FromUserProfileImageUrl = f.Requester.ProfileImageUrl,
-            FromUserLevel = f.Requester.Avatar.Level,
+            FromUserId = f.FromUserId,
+            FromUserName = f.FromUserName,
+            FromUserProfileImageUrl = ProfileMediaUrl.ForUser(f.FromUserId, f.FromUserHasProfileImage),
+            FromUserLevel = f.FromUserLevel,
             SentAt = f.CreatedAt
         });
     }
@@ -180,17 +196,26 @@ public class FriendService
     public async Task<IEnumerable<SentFriendRequestDto>> GetSentRequestsAsync(int userId)
     {
         var requests = await _context.Friendships
-            .Include(f => f.Addressee).ThenInclude(u => u.Avatar)
+            .AsNoTracking()
             .Where(f => f.RequesterId == userId && f.Status == FriendshipStatus.Pending)
+            .Select(f => new
+            {
+                f.Id,
+                ToUserId = f.Addressee.Id,
+                ToUserName = f.Addressee.UserName,
+                ToUserHasProfileImage = f.Addressee.ProfileImageUrl != null && f.Addressee.ProfileImageUrl != string.Empty,
+                ToUserLevel = f.Addressee.Avatar.Level,
+                f.CreatedAt
+            })
             .ToListAsync();
 
         return requests.Select(f => new SentFriendRequestDto
         {
             Id = f.Id,
-            ToUserId = f.Addressee.Id,
-            ToUserName = f.Addressee.UserName,
-            ToUserProfileImageUrl = f.Addressee.ProfileImageUrl,
-            ToUserLevel = f.Addressee.Avatar.Level,
+            ToUserId = f.ToUserId,
+            ToUserName = f.ToUserName,
+            ToUserProfileImageUrl = ProfileMediaUrl.ForUser(f.ToUserId, f.ToUserHasProfileImage),
+            ToUserLevel = f.ToUserLevel,
             SentAt = f.CreatedAt
         });
     }
@@ -209,9 +234,17 @@ public class FriendService
         friendIds.Add(userId);
 
         var users = await _context.Users
-            .Include(u => u.Avatar)
+            .AsNoTracking()
             .Where(u => friendIds.Contains(u.Id))
             .OrderByDescending(u => u.Avatar.Experience)
+            .Select(u => new
+            {
+                u.Id,
+                u.UserName,
+                HasProfileImage = u.ProfileImageUrl != null && u.ProfileImageUrl != string.Empty,
+                u.Avatar.Experience,
+                u.Avatar.Level
+            })
             .ToListAsync();
 
         return users.Select((u, index) => new LeaderBoardDto
@@ -219,9 +252,9 @@ public class FriendService
             Id = u.Id,
             Rank = index + 1,
             UserName = u.UserName,
-            ProfileImageUrl = u.ProfileImageUrl,
-            Experience = u.Avatar.Experience,
-            Level = u.Avatar.Level
+            ProfileImageUrl = ProfileMediaUrl.ForUser(u.Id, u.HasProfileImage),
+            Experience = u.Experience,
+            Level = u.Level
         });
     }
 

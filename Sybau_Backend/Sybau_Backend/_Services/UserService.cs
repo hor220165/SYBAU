@@ -20,6 +20,58 @@ public class UserService
         _avatarService = avatarService;
     }
 
+    public sealed class UserProfileSummary
+    {
+        public int Id { get; init; }
+        public string UserName { get; init; } = string.Empty;
+        public string Email { get; init; } = string.Empty;
+        public bool HasProfileImage { get; init; }
+        public int Coins { get; init; }
+        public bool IsAdmin { get; init; }
+        public bool IsProfilePrivate { get; init; }
+        public int AvatarId { get; init; }
+        public int AvatarLevel { get; init; }
+        public int AvatarExperience { get; init; }
+        public string? Boost1 { get; init; }
+        public string? Boost2 { get; init; }
+        public string? Boost3 { get; init; }
+        public string? Boost4 { get; init; }
+    }
+
+    public async Task<UserProfileSummary?> GetUserProfileSummaryAsync(int id)
+    {
+        return await _context.Users
+            .AsNoTracking()
+            .Where(u => u.Id == id)
+            .Select(u => new UserProfileSummary
+            {
+                Id = u.Id,
+                UserName = u.UserName,
+                Email = u.Email,
+                HasProfileImage = u.ProfileImageUrl != null && u.ProfileImageUrl != string.Empty,
+                Coins = u.Coins,
+                IsAdmin = u.IsAdmin,
+                IsProfilePrivate = u.IsProfilePrivate,
+                AvatarId = u.Avatar.Id,
+                AvatarLevel = u.Avatar.Level,
+                AvatarExperience = u.Avatar.Experience,
+                Boost1 = u.Avatar.Boost1,
+                Boost2 = u.Avatar.Boost2,
+                Boost3 = u.Avatar.Boost3,
+                Boost4 = u.Avatar.Boost4
+            })
+            .SingleOrDefaultAsync();
+    }
+
+    public async Task<string?> GetProfileImageUrlAsync(int userId)
+    {
+        return await _context.Users
+            .AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => u.ProfileImageUrl)
+            .SingleOrDefaultAsync();
+    }
+
     // Alle User der Datenbank ausgeben
     public async Task<IEnumerable<User>> GetUsersExcept(int id)
     {
@@ -33,28 +85,36 @@ public class UserService
     public async Task<IEnumerable<LeaderBoardDto>> GetLeaderboard()
     {
         var users = await _context.Users
-            .Include(u => u.Avatar)
+            .AsNoTracking()
             .Where(u => u.IsAdmin == false)
+            .Select(u => new
+            {
+                u.Id,
+                u.UserName,
+                HasProfileImage = u.ProfileImageUrl != null && u.ProfileImageUrl != string.Empty,
+                u.Avatar.Experience,
+                u.Avatar.Level
+            })
             .ToListAsync();
 
         var leaderboard = users
             .Select(u => new
             {
                 User = u,
-                TotalXp = CalculateTotalXp(u.Avatar.Level, u.Avatar.Experience)
+                TotalXp = CalculateTotalXp(u.Level, u.Experience)
             })
             .OrderByDescending(entry => entry.TotalXp)
-            .ThenByDescending(entry => entry.User.Avatar.Level)
+            .ThenByDescending(entry => entry.User.Level)
             .Take(10)
             .Select((u, index) => new LeaderBoardDto
             {
                 Id = u.User.Id,
                 Rank = index + 1,
                 UserName = u.User.UserName,
-                ProfileImageUrl = u.User.ProfileImageUrl,
-                Experience = u.User.Avatar.Experience,
+                ProfileImageUrl = ProfileMediaUrl.ForUser(u.User.Id, u.User.HasProfileImage),
+                Experience = u.User.Experience,
                 TotalXp = u.TotalXp,
-                Level = u.User.Avatar.Level
+                Level = u.User.Level
             })
             .ToList();
 
