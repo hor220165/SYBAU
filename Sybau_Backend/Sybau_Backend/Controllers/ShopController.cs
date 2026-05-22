@@ -70,13 +70,13 @@ namespace Sybau_Backend.Controllers
 
         [Authorize]
         [HttpPost("chests/{chestId}/open")]
-        public async Task<IActionResult> OpenChest(int chestId, [FromBody] OpenChestRequestDto? request)
+        public async Task<IActionResult> OpenChest(int chestId)
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userIdClaim == null) return Unauthorized();
 
             var userId = int.Parse(userIdClaim);
-            var (error, result) = await _shopService.OpenChestAsync(userId, chestId, request?.Count ?? 1);
+            var (error, result) = await _shopService.OpenChestAsync(userId, chestId);
             if (error != null) return BadRequest(error);
             return Ok(result);
         }

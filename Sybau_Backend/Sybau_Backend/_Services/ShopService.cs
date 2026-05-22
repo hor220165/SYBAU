@@ -10,8 +10,41 @@ public class ShopService
 {
     private const int DailyShopItemCount = 3;
     private const int DailyShopResetHourUtc = 0;
+    private const string DataImageLikePattern = "data:image/%";
     private readonly FitnessDbContext _context;
     private readonly UserService _userService;
+
+    private sealed class ItemSummary
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public ItemType Type { get; set; }
+        public int Price { get; set; }
+        public int XpBoostPercent { get; set; }
+        public int CoinBoostPercent { get; set; }
+        public ItemRarity Rarity { get; set; }
+        public int MaxQuantity { get; set; }
+        public bool HasImage { get; set; }
+        public bool IsDataImage { get; set; }
+        public string? ExternalImageUrl { get; set; }
+    }
+
+    private sealed class ChestSummary
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public int Price { get; set; }
+        public int CommonChance { get; set; }
+        public int RareChance { get; set; }
+        public int EpicChance { get; set; }
+        public int LegendaryChance { get; set; }
+        public int MythicChance { get; set; }
+        public bool HasImage { get; set; }
+        public bool IsDataImage { get; set; }
+        public string? ExternalImageUrl { get; set; }
+        public List<ItemSummary> Items { get; set; } = new();
+    }
 
     public ShopService(FitnessDbContext context,UserService userService)
     {
@@ -21,8 +54,8 @@ public class ShopService
 
     public async Task<IEnumerable<ItemDto>> GetItemsAsync()
     {
-        var items = await _context.Items
-            .AsNoTracking()
+        var items = await SelectItemSummaries(_context.Items.AsNoTracking())
+            .OrderBy(i => i.Id)
             .ToListAsync();
 
         return items.Select(ToItemDto);
@@ -36,8 +69,7 @@ public class ShopService
 
     public async Task<ItemDto?> GetItemDtoAsync(int id)
     {
-        var item = await _context.Items
-            .AsNoTracking()
+        var item = await SelectItemSummaries(_context.Items.AsNoTracking())
             .FirstOrDefaultAsync(i => i.Id == id);
 
         return item == null ? null : ToItemDto(item);
@@ -66,8 +98,7 @@ public class ShopService
         var now = DateTime.SpecifyKind(utcNow ?? DateTime.UtcNow, DateTimeKind.Utc);
         var resetAt = GetRotationStartUtc(now);
         var expiresAt = resetAt.AddDays(1);
-        var items = await _context.Items
-            .AsNoTracking()
+        var items = await SelectItemSummaries(_context.Items.AsNoTracking())
             .OrderBy(i => i.Id)
             .ToListAsync();
 
@@ -141,8 +172,41 @@ public class ShopService
     {
         var chests = await _context.Chests
             .AsNoTracking()
-            .Include(c => c.ChestItems)
-            .ThenInclude(ci => ci.Item)
+            .Select(chest => new ChestSummary
+            {
+                Id = chest.Id,
+                Name = chest.Name,
+                Price = chest.Price,
+                CommonChance = chest.CommonChance,
+                RareChance = chest.RareChance,
+                EpicChance = chest.EpicChance,
+                LegendaryChance = chest.LegendaryChance,
+                MythicChance = chest.MythicChance,
+                HasImage = chest.ImageUrl != null && chest.ImageUrl != string.Empty,
+                IsDataImage = chest.ImageUrl != null && EF.Functions.Like(chest.ImageUrl, DataImageLikePattern),
+                ExternalImageUrl = chest.ImageUrl != null && chest.ImageUrl != string.Empty && !EF.Functions.Like(chest.ImageUrl, DataImageLikePattern)
+                    ? chest.ImageUrl
+                    : null,
+                Items = chest.ChestItems
+                    .Select(chestItem => new ItemSummary
+                    {
+                        Id = chestItem.Item.Id,
+                        Name = chestItem.Item.Name,
+                        Description = chestItem.Item.Description,
+                        Type = chestItem.Item.Type,
+                        Price = chestItem.Item.Price,
+                        XpBoostPercent = chestItem.Item.XpBoostPercent,
+                        CoinBoostPercent = chestItem.Item.CoinBoostPercent,
+                        Rarity = chestItem.Item.Rarity,
+                        MaxQuantity = chestItem.Item.MaxQuantity,
+                        HasImage = chestItem.Item.ImageUrl != null && chestItem.Item.ImageUrl != string.Empty,
+                        IsDataImage = chestItem.Item.ImageUrl != null && EF.Functions.Like(chestItem.Item.ImageUrl, DataImageLikePattern),
+                        ExternalImageUrl = chestItem.Item.ImageUrl != null && chestItem.Item.ImageUrl != string.Empty && !EF.Functions.Like(chestItem.Item.ImageUrl, DataImageLikePattern)
+                            ? chestItem.Item.ImageUrl
+                            : null
+                    })
+                    .ToList()
+            })
             .ToListAsync();
 
         return chests.Select(ToChestDto);
@@ -151,8 +215,43 @@ public class ShopService
     public async Task<ChestDto?> GetChestAsync(int id)
     {
         var chest = await _context.Chests
-            .Include(c => c.ChestItems)
-            .ThenInclude(ci => ci.Item)
+            .AsNoTracking()
+            .Where(c => c.Id == id)
+            .Select(chest => new ChestSummary
+            {
+                Id = chest.Id,
+                Name = chest.Name,
+                Price = chest.Price,
+                CommonChance = chest.CommonChance,
+                RareChance = chest.RareChance,
+                EpicChance = chest.EpicChance,
+                LegendaryChance = chest.LegendaryChance,
+                MythicChance = chest.MythicChance,
+                HasImage = chest.ImageUrl != null && chest.ImageUrl != string.Empty,
+                IsDataImage = chest.ImageUrl != null && EF.Functions.Like(chest.ImageUrl, DataImageLikePattern),
+                ExternalImageUrl = chest.ImageUrl != null && chest.ImageUrl != string.Empty && !EF.Functions.Like(chest.ImageUrl, DataImageLikePattern)
+                    ? chest.ImageUrl
+                    : null,
+                Items = chest.ChestItems
+                    .Select(chestItem => new ItemSummary
+                    {
+                        Id = chestItem.Item.Id,
+                        Name = chestItem.Item.Name,
+                        Description = chestItem.Item.Description,
+                        Type = chestItem.Item.Type,
+                        Price = chestItem.Item.Price,
+                        XpBoostPercent = chestItem.Item.XpBoostPercent,
+                        CoinBoostPercent = chestItem.Item.CoinBoostPercent,
+                        Rarity = chestItem.Item.Rarity,
+                        MaxQuantity = chestItem.Item.MaxQuantity,
+                        HasImage = chestItem.Item.ImageUrl != null && chestItem.Item.ImageUrl != string.Empty,
+                        IsDataImage = chestItem.Item.ImageUrl != null && EF.Functions.Like(chestItem.Item.ImageUrl, DataImageLikePattern),
+                        ExternalImageUrl = chestItem.Item.ImageUrl != null && chestItem.Item.ImageUrl != string.Empty && !EF.Functions.Like(chestItem.Item.ImageUrl, DataImageLikePattern)
+                            ? chestItem.Item.ImageUrl
+                            : null
+                    })
+                    .ToList()
+            })
             .FirstOrDefaultAsync(c => c.Id == id);
 
         return chest == null ? null : ToChestDto(chest);
@@ -322,10 +421,8 @@ public class ShopService
         });
     }
 
-    public async Task<(string? error, ChestOpenResultDto? result)> OpenChestAsync(int userId, int chestId, int count = 1)
+    public async Task<(string? error, ChestOpenResultDto? result)> OpenChestAsync(int userId, int chestId)
     {
-        if (count is not (1 or 3)) return ("Du kannst nur 1 oder 3 Chests gleichzeitig öffnen.", null);
-
         var user = await _context.Users
             .Include(u => u.UserItems)
             .ThenInclude(ui => ui.Item)
@@ -338,42 +435,28 @@ public class ShopService
             .FirstOrDefaultAsync(c => c.Id == chestId);
         if (chest == null) return ("Chest nicht gefunden", null);
         if (!chest.ChestItems.Any()) return ("Diese Chest hat keine Items", null);
-        var totalCost = chest.Price * count;
-        if (user.Coins < totalCost) return ("Nicht genug Coins", null);
+        if (user.Coins < chest.Price) return ("Nicht genug Coins", null);
 
         var availableItems = chest.ChestItems
             .Select(ci => ci.Item)
             .ToList();
 
-        var rewards = new List<ItemDto>(count);
-        var rolledRarities = new List<ItemRarity>(count);
+        var rolledRarity = RollRarity(chest);
+        var wonItem = PickChestReward(availableItems, rolledRarity);
+        var userItem = user.UserItems.FirstOrDefault(ui => ui.Item.Id == wonItem.Id);
+        var updatedUserItem = AddItemToUser(user, wonItem, userItem);
 
-        user.Coins -= totalCost;
-        for (var i = 0; i < count; i++)
-        {
-            var rolledRarity = RollRarity(chest);
-            var wonItem = PickChestReward(availableItems, rolledRarity);
-            var userItem = user.UserItems.FirstOrDefault(ui => ui.Item.Id == wonItem.Id);
-            var updatedUserItem = AddItemToUser(user, wonItem, userItem);
-
-            rolledRarities.Add(rolledRarity);
-            rewards.Add(ToItemDto(wonItem, updatedUserItem.Quantity));
-        }
-
-        _context.UserCoins.Add(new UserCoin(user, -totalCost, $"Opened chest x{count}: {chest.Name}"));
+        user.Coins -= chest.Price;
+        _context.UserCoins.Add(new UserCoin(user, -chest.Price, $"Opened chest: {chest.Name}"));
 
         await _context.SaveChangesAsync();
-        var firstReward = rewards.First();
+        var reward = ToItemDto(wonItem, updatedUserItem.Quantity);
 
         return (null, new ChestOpenResultDto
         {
             Chest = ToChestDto(chest),
-            Item = firstReward,
-            Items = rewards,
-            RolledRarity = firstReward.Rarity,
-            RolledRarities = rolledRarities,
-            OpenCount = count,
-            TotalCost = totalCost,
+            Item = reward,
+            RolledRarity = rolledRarity,
             RemainingCoins = user.Coins
         });
     }
@@ -480,13 +563,46 @@ public class ShopService
         return utcNow >= todayReset ? todayReset : todayReset.AddDays(-1);
     }
 
-    private static IReadOnlyList<Item> PickDailyShopItems(IReadOnlyCollection<Item> items, DateTime rotationStartUtc)
+    private IQueryable<ItemSummary> SelectItemSummaries(IQueryable<Item> query)
+    {
+        return query.Select(item => new ItemSummary
+        {
+            Id = item.Id,
+            Name = item.Name,
+            Description = item.Description,
+            Type = item.Type,
+            Price = item.Price,
+            XpBoostPercent = item.XpBoostPercent,
+            CoinBoostPercent = item.CoinBoostPercent,
+            Rarity = item.Rarity,
+            MaxQuantity = item.MaxQuantity,
+            HasImage = item.ImageUrl != null && item.ImageUrl != string.Empty,
+            IsDataImage = item.ImageUrl != null && EF.Functions.Like(item.ImageUrl, DataImageLikePattern),
+            ExternalImageUrl = item.ImageUrl != null && item.ImageUrl != string.Empty && !EF.Functions.Like(item.ImageUrl, DataImageLikePattern)
+                ? item.ImageUrl
+                : null
+        });
+    }
+
+    private static string? ItemImageUrl(ItemSummary item)
+    {
+        if (!item.HasImage) return null;
+        return item.IsDataImage ? $"/shop/items/{item.Id}/image" : item.ExternalImageUrl;
+    }
+
+    private static string? ChestImageUrl(ChestSummary chest)
+    {
+        if (!chest.HasImage) return null;
+        return chest.IsDataImage ? $"/shop/chests/{chest.Id}/image" : chest.ExternalImageUrl;
+    }
+
+    private static IReadOnlyList<ItemSummary> PickDailyShopItems(IReadOnlyCollection<ItemSummary> items, DateTime rotationStartUtc)
     {
         var remaining = items
             .Where(item => item.Price > 0)
             .OrderBy(item => item.Id)
             .ToList();
-        var selected = new List<Item>(DailyShopItemCount);
+        var selected = new List<ItemSummary>(DailyShopItemCount);
         var random = new Random(BuildStableSeed(rotationStartUtc));
 
         while (selected.Count < DailyShopItemCount && remaining.Count > 0)
@@ -503,7 +619,7 @@ public class ShopService
         return selected;
     }
 
-    private static ItemRarity PickWeightedRarity(IReadOnlyCollection<Item> availableItems, Random random)
+    private static ItemRarity PickWeightedRarity(IReadOnlyCollection<ItemSummary> availableItems, Random random)
     {
         var weights = new[]
         {
@@ -544,7 +660,7 @@ public class ShopService
         }
     }
 
-    private static int DailyShopPrice(Item item)
+    private static int DailyShopPrice(ItemSummary item)
     {
         var multiplier = item.Rarity switch
         {
@@ -576,7 +692,24 @@ public class ShopService
         };
     }
 
-    private static DailyShopItemDto ToDailyShopItemDto(Item item)
+    private static ChestDto ToChestDto(ChestSummary chest)
+    {
+        return new ChestDto
+        {
+            Id = chest.Id,
+            Name = chest.Name,
+            Price = chest.Price,
+            ImageUrl = ChestImageUrl(chest) ?? string.Empty,
+            CommonChance = chest.CommonChance,
+            RareChance = chest.RareChance,
+            EpicChance = chest.EpicChance,
+            LegendaryChance = chest.LegendaryChance,
+            MythicChance = chest.MythicChance,
+            Items = chest.Items.Select(ToItemDto).ToList()
+        };
+    }
+
+    private static DailyShopItemDto ToDailyShopItemDto(ItemSummary item)
     {
         return new DailyShopItemDto
         {
@@ -591,7 +724,25 @@ public class ShopService
             Rarity = item.Rarity,
             Quantity = 0,
             MaxQuantity = item.MaxQuantity,
-            ImageUrl = ShopMediaUrl.ForItem(item.Id, item.ImageUrl)
+            ImageUrl = ItemImageUrl(item)
+        };
+    }
+
+    private static ItemDto ToItemDto(ItemSummary item, int quantity = 0)
+    {
+        return new ItemDto
+        {
+            Id = item.Id,
+            Name = item.Name,
+            Description = item.Description,
+            Type = item.Type,
+            Price = item.Price,
+            XpBoostPercentage = item.XpBoostPercent,
+            CoinBoostPercentage = item.CoinBoostPercent,
+            Rarity = item.Rarity,
+            Quantity = quantity,
+            MaxQuantity = item.MaxQuantity,
+            ImageUrl = ItemImageUrl(item)
         };
     }
 

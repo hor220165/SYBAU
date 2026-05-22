@@ -25,11 +25,8 @@ class _ShopTabState extends State<ShopTab> {
   bool _buying = false;
   Map<String, dynamic>? _openingChestPreview;
   Map<String, dynamic>? _openedReward;
-  List<Map<String, dynamic>> _openedRewards = <Map<String, dynamic>>[];
   bool _openingChest = false;
   int? _openingChestId;
-  int _pendingChestOpenCount = 1;
-  int _openingChestCount = 1;
   bool _chestRevealStarted = false;
   bool _openHintPulseBright = true;
   DateTime? _dailyShopExpiresAtUtc;
@@ -175,14 +172,12 @@ class _ShopTabState extends State<ShopTab> {
   void _requestPurchase(Map<String, dynamic> item, {bool isChest = false}) {
     setState(() {
       _pendingPurchase = {...item, 'isChest': isChest};
-      _pendingChestOpenCount = 1;
     });
   }
 
   void _cancelPurchase() {
     setState(() {
       _pendingPurchase = null;
-      _pendingChestOpenCount = 1;
     });
   }
 
@@ -191,19 +186,15 @@ class _ShopTabState extends State<ShopTab> {
     final purchase = _pendingPurchase!;
     final isChest = purchase['isChest'] == true;
     final id = _toInt(purchase['id']);
-    final chestOpenCount = _pendingChestOpenCount;
 
     if (isChest) {
       setState(() {
         _pendingPurchase = null;
-        _pendingChestOpenCount = 1;
         _buying = false;
         _openingChestPreview = Map<String, dynamic>.from(purchase);
         _openingChest = false;
         _openingChestId = null;
-        _openingChestCount = chestOpenCount;
         _openedReward = null;
-        _openedRewards = <Map<String, dynamic>>[];
         _chestRevealStarted = false;
         _openHintPulseBright = true;
       });
@@ -243,24 +234,14 @@ class _ShopTabState extends State<ShopTab> {
       _openingChest = true;
       _openingChestId = chestId;
       _openedReward = null;
-      _openedRewards = <Map<String, dynamic>>[];
       _chestRevealStarted = true;
     });
     try {
-      final result = await ApiService.openChest(
-        chestId,
-        count: _openingChestCount,
-      );
-      final rawRewards = result['items'] ?? result['Items'];
-      final rewards = rawRewards is List
-          ? rawRewards.map((dynamic item) => _map(item)).toList(growable: false)
-          : <Map<String, dynamic>>[
-              _map(result['item'] ?? result['Item'] ?? result),
-            ];
+      final result = await ApiService.openChest(chestId);
+      final reward = _map(result['item'] ?? result['Item'] ?? result);
       if (!mounted) return;
       setState(() {
-        _openedReward = _map(result);
-        _openedRewards = rewards;
+        _openedReward = reward;
         _openingChest = false;
       });
       await widget.onRefreshHeader();
@@ -286,9 +267,7 @@ class _ShopTabState extends State<ShopTab> {
       setState(() {
         _openingChest = false;
         _openingChestId = null;
-        _openingChestCount = 1;
         _openingChestPreview = null;
-        _openedRewards = <Map<String, dynamic>>[];
         _chestRevealStarted = false;
       });
       widget.showSnack(errorMsg);
@@ -298,11 +277,9 @@ class _ShopTabState extends State<ShopTab> {
   void _closeChestReward() {
     setState(() {
       _openedReward = null;
-      _openedRewards = <Map<String, dynamic>>[];
       _openingChestId = null;
       _openingChestPreview = null;
       _openingChest = false;
-      _openingChestCount = 1;
       _chestRevealStarted = false;
     });
     unawaited(_load());
@@ -1390,8 +1367,7 @@ class _ShopTabState extends State<ShopTab> {
     if (_pendingPurchase == null) return const SizedBox.shrink();
     final isChest = _pendingPurchase!['isChest'] == true;
     final name = _td(_string(_pendingPurchase!['name']));
-    final unitPrice = _toInt(_pendingPurchase!['price']);
-    final price = isChest ? unitPrice * _pendingChestOpenCount : unitPrice;
+    final price = _toInt(_pendingPurchase!['price']);
     final canAfford = _currentCoins >= price;
 
     return Container(
@@ -1437,26 +1413,6 @@ class _ShopTabState extends State<ShopTab> {
                 ),
               ),
               const SizedBox(height: 18),
-              if (isChest) ...[
-                Row(
-                  children: [
-                    for (final count in const [1, 3]) ...[
-                      if (count > 1) const SizedBox(width: 8),
-                      Expanded(
-                        child: _quantityChoiceButton(
-                          label: '${count}x',
-                          active: _pendingChestOpenCount == count,
-                          accent: Color(0xFF22C55E),
-                          enabled: _currentCoins >= unitPrice * count,
-                          onTap: () =>
-                              setState(() => _pendingChestOpenCount = count),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
               // Price row
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -1631,41 +1587,6 @@ class _ShopTabState extends State<ShopTab> {
     );
   }
 
-  Widget _quantityChoiceButton({
-    required String label,
-    required bool active,
-    required Color accent,
-    required bool enabled,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 140),
-        height: 38,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          color: active
-              ? accent.withOpacity(0.22)
-              : Color(0xFF1E293B).withOpacity(0.62),
-          border: Border.all(
-            color: active
-                ? accent.withOpacity(0.58)
-                : Colors.white.withOpacity(0.12),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: enabled ? Colors.white : Colors.white38,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ),
-    );
-  }
-
   // ---------- Chest reward overlay ----------
 
   Widget _buildChestRewardOverlay() {
@@ -1677,15 +1598,9 @@ class _ShopTabState extends State<ShopTab> {
     final closedImageUrl = _string(chest['imageUrl']);
     final openedChestAsset = _openChestAssetForName(chestName, closedImageUrl);
     final reward = _openedReward;
-    final rewards = _openedRewards;
-    final rewardItem = rewards.isNotEmpty
-        ? rewards.first
-        : reward == null
+    final rewardItem = reward == null
         ? <String, dynamic>{}
         : _map(reward['item'] ?? reward['Item'] ?? reward);
-    final rewardCards = rewards.isNotEmpty
-        ? rewards
-        : <Map<String, dynamic>>[rewardItem];
     final rewardName = reward == null
         ? ''
         : _td(
@@ -1890,22 +1805,11 @@ class _ShopTabState extends State<ShopTab> {
                                           ),
                                         );
                                       },
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          for (
-                                            var i = 0;
-                                            i < rewardCards.length;
-                                            i++
-                                          ) ...[
-                                            if (i > 0) const SizedBox(width: 8),
-                                            _buildRewardDropImage(
-                                              rewardCards[i],
-                                              compact: rewardCards.length > 1,
-                                            ),
-                                          ],
-                                        ],
+                                      child: Center(
+                                        child: _buildRewardDropImage(
+                                          rewardItem,
+                                          compact: false,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -1913,83 +1817,28 @@ class _ShopTabState extends State<ShopTab> {
                               ),
                             ),
                             const SizedBox(height: 14),
-                            if (rewardCards.length == 1) ...[
-                              Text(
-                                rewardName,
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1,
-                                ),
+                            Text(
+                              rewardName,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 30,
+                                fontWeight: FontWeight.w800,
+                                height: 1,
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _rarityLabel(rarity).toUpperCase(),
-                                style: TextStyle(
-                                  color: accent,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.6,
-                                ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _rarityLabel(rarity).toUpperCase(),
+                              style: TextStyle(
+                                color: accent,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.6,
                               ),
-                            ] else ...[
-                              Text(
-                                _lt(de: 'Drops erhalten', en: 'Drops received'),
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Wrap(
-                                alignment: WrapAlignment.center,
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  for (final item in rewardCards)
-                                    Container(
-                                      constraints: const BoxConstraints(
-                                        maxWidth: 104,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 7,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(10),
-                                        color: Color(
-                                          0xFF0F172A,
-                                        ).withOpacity(0.78),
-                                        border: Border.all(
-                                          color: Colors.white.withOpacity(0.08),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        _td(
-                                          _string(item['name'] ?? item['Name']),
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: _rarityAccent(
-                                            _shopRarity(item),
-                                          ),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ],
+                            ),
                             const SizedBox(height: 24),
                             SizedBox(
                               width: double.infinity,

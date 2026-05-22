@@ -1345,11 +1345,6 @@ class _AvatarTabState extends State<AvatarTab>
     if (_pendingSellBooster == null) return const SizedBox.shrink();
     final booster = _pendingSellBooster!;
     final selectedQuantity = math.min(_pendingSellQuantity, booster.quantity);
-    final quantityOptions = <int>{
-      1,
-      if (booster.quantity >= 2) 2,
-      if (booster.quantity >= 3) booster.quantity,
-    }.toList();
     final sellPrice = _sellPriceForBooster(booster) * selectedQuantity;
     return GestureDetector(
       onTap: _sellingItem
@@ -1425,25 +1420,44 @@ class _AvatarTabState extends State<AvatarTab>
                 ),
                 const SizedBox(height: 18),
                 if (booster.quantity > 1) ...[
-                  Row(
-                    children: [
-                      for (var i = 0; i < quantityOptions.length; i++) ...[
-                        if (i > 0) const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      color: Color(0xFF020617).withOpacity(0.42),
+                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    ),
+                    child: Row(
+                      children: [
+                        _sellStepperButton(
+                          icon: Icons.remove_rounded,
+                          enabled: !_sellingItem && selectedQuantity > 1,
+                          onTap: () => setState(
+                            () => _pendingSellQuantity = selectedQuantity - 1,
+                          ),
+                        ),
                         Expanded(
-                          child: _quantityChoiceButton(
-                            label: '${quantityOptions[i]}x',
-                            active: selectedQuantity == quantityOptions[i],
-                            accent: Color(0xFFEF4444),
-                            onTap: _sellingItem
-                                ? null
-                                : () => setState(
-                                    () => _pendingSellQuantity =
-                                        quantityOptions[i],
-                                  ),
+                          child: Text(
+                            '${selectedQuantity}x',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        _sellStepperButton(
+                          icon: Icons.add_rounded,
+                          enabled:
+                              !_sellingItem &&
+                              selectedQuantity < booster.quantity,
+                          onTap: () => setState(
+                            () => _pendingSellQuantity = selectedQuantity + 1,
                           ),
                         ),
                       ],
-                    ],
+                    ),
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -1587,35 +1601,33 @@ class _AvatarTabState extends State<AvatarTab>
     );
   }
 
-  Widget _quantityChoiceButton({
-    required String label,
-    required bool active,
-    required Color accent,
-    required VoidCallback? onTap,
+  Widget _sellStepperButton({
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
   }) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: enabled ? onTap : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 140),
+        width: 42,
         height: 38,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          color: active
-              ? accent.withOpacity(0.22)
+          color: enabled
+              ? Color(0xFFEF4444).withOpacity(0.18)
               : Color(0xFF1E293B).withOpacity(0.62),
           border: Border.all(
-            color: active
-                ? accent.withOpacity(0.58)
+            color: enabled
+                ? Color(0xFFEF4444).withOpacity(0.36)
                 : Colors.white.withOpacity(0.12),
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: onTap == null ? Colors.white38 : Colors.white,
-            fontWeight: FontWeight.w900,
-          ),
+        child: Icon(
+          icon,
+          color: enabled ? Colors.white : Colors.white38,
+          size: 20,
         ),
       ),
     );

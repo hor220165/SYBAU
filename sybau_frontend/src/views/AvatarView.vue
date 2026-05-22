@@ -207,16 +207,23 @@
         <div class="confirm-dialog">
           <h3>{{ text('Bist du sicher?', 'Are you sure?') }}</h3>
           <p>{{ translate(pendingSell.name) }} {{ text('verkaufen', 'sell') }}</p>
-          <div v-if="pendingSell.quantity > 1" class="confirm-choice-row" role="group" :aria-label="text('Menge', 'Quantity')">
+          <div v-if="pendingSell.quantity > 1" class="confirm-stepper" role="group" :aria-label="text('Menge', 'Quantity')">
             <button
-              v-for="quantity in sellQuantityOptions"
-              :key="`sell-${quantity}`"
-              class="confirm-choice"
-              :class="{ active: pendingSellQuantity === quantity }"
+              class="confirm-stepper-btn"
               type="button"
-              @click="pendingSellQuantity = quantity"
+              :disabled="pendingSellQuantity <= 1"
+              @click="adjustPendingSellQuantity(-1)"
             >
-              {{ quantity }}x
+              <Minus :size="16" />
+            </button>
+            <strong>{{ pendingSellQuantity }}x</strong>
+            <button
+              class="confirm-stepper-btn"
+              type="button"
+              :disabled="pendingSellQuantity >= pendingSell.quantity"
+              @click="adjustPendingSellQuantity(1)"
+            >
+              <Plus :size="16" />
             </button>
           </div>
           <div class="confirm-price">
@@ -252,7 +259,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { Zap, ShoppingBag, Shield } from 'lucide-vue-next';
+import { Zap, ShoppingBag, Shield, Minus, Plus } from 'lucide-vue-next';
 import Header from '@/components/Header.vue';
 import Navbar from '@/components/Navbar.vue';
 import SpriteAnimator from '@/components/spriteAnimator.vue';
@@ -373,13 +380,15 @@ function remainingCount(booster: BoosterItem): number {
 
 const sellPriceFor = (booster: BoosterItem) => Math.max(1, Math.floor(Number(booster.price ?? 0) * 0.5));
 const pendingSellPrice = computed(() => pendingSell.value ? sellPriceFor(pendingSell.value) * pendingSellQuantity.value : 0);
-const sellQuantityOptions = computed(() => {
-  const max = pendingSell.value?.quantity ?? 1;
-  const options = [1];
-  if (max >= 2) options.push(2);
-  if (max >= 3) options.push(max);
-  return [...new Set(options)].filter(quantity => quantity <= max);
-});
+const pendingSellMaxQuantity = computed(() => pendingSell.value?.quantity ?? 1);
+
+const adjustPendingSellQuantity = (change: number) => {
+  const nextQuantity = pendingSellQuantity.value + change;
+  pendingSellQuantity.value = Math.min(
+    pendingSellMaxQuantity.value,
+    Math.max(1, nextQuantity),
+  );
+};
 
 const requestSellBooster = (booster: BoosterItem) => {
   pendingSell.value = booster;
@@ -1358,27 +1367,42 @@ onMounted(() => loadProfile());
   font-weight: 800;
 }
 
-.confirm-choice-row {
+.confirm-stepper {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+  grid-template-columns: 42px 1fr 42px;
+  align-items: center;
   gap: 8px;
   margin-bottom: 12px;
+  padding: 6px;
+  border-radius: 14px;
+  background: rgba(2, 6, 23, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.confirm-choice {
-  min-height: 38px;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  color: rgba(255, 255, 255, 0.72);
-  background: rgba(30, 41, 59, 0.62);
+.confirm-stepper strong {
+  color: white;
+  text-align: center;
+  font-size: 1.06rem;
   font-weight: 900;
+}
+
+.confirm-stepper-btn {
+  width: 42px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid rgba(248, 113, 113, 0.36);
+  color: white;
+  background: rgba(248, 113, 113, 0.18);
   cursor: pointer;
 }
 
-.confirm-choice.active {
-  border-color: rgba(248, 113, 113, 0.56);
-  color: white;
-  background: rgba(248, 113, 113, 0.22);
+.confirm-stepper-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  background: rgba(30, 41, 59, 0.62);
+  border-color: rgba(148, 163, 184, 0.18);
 }
 
 .confirm-price {

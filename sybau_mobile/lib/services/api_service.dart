@@ -811,13 +811,8 @@ class ApiService {
     return _authedGetList('/shop/chests');
   }
 
-  static Future<Map<String, dynamic>> openChest(
-    int chestId, {
-    int count = 1,
-  }) async {
-    return _authedPostJson('/shop/chests/$chestId/open', <String, dynamic>{
-      'count': count,
-    });
+  static Future<Map<String, dynamic>> openChest(int chestId) async {
+    return _authedPostJson('/shop/chests/$chestId/open', <String, dynamic>{});
   }
 
   static Future<List<dynamic>> getUserItems() async {

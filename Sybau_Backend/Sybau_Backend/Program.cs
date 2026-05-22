@@ -294,6 +294,9 @@ app.Use(async (context, next) =>
     var isShopImageResponse =
         path.StartsWithSegments("/shop") &&
         path.Value?.EndsWith("/image", StringComparison.OrdinalIgnoreCase) == true;
+    var isProfileImageResponse =
+        path.StartsWithSegments("/users") &&
+        path.Value?.EndsWith("/profile/image", StringComparison.OrdinalIgnoreCase) == true;
     var isDynamicApiResponse =
         path.StartsWithSegments("/auth") ||
         path.StartsWithSegments("/users") ||
@@ -304,7 +307,7 @@ app.Use(async (context, next) =>
         path.StartsWithSegments("/shop") ||
         path.StartsWithSegments("/admin");
 
-    if (isDynamicApiResponse && !isShopImageResponse)
+    if (isDynamicApiResponse && !isShopImageResponse && !isProfileImageResponse)
     {
         context.Response.OnStarting(() =>
         {

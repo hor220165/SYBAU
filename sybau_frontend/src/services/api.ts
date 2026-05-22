@@ -129,7 +129,7 @@ export const itemService = {
     getUserItems: () => API.get('/users/items'),
     buyItem: (itemId: number) => API.post(`/shop/buy-item/${itemId}`),
     sellItem: (itemId: number, quantity = 1) => API.post(`/shop/sell-item/${itemId}`, { quantity }),
-    openChest: (chestId: number, count = 1) => API.post(`/shop/chests/${chestId}/open`, { count })
+    openChest: (chestId: number) => API.post(`/shop/chests/${chestId}/open`)
 };
 
 export const workoutService = {

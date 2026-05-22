@@ -9,6 +9,7 @@ namespace Sybau_Backend._Services;
 
 public class UserService
 {
+    private const string DataImageLikePattern = "data:image/%";
     private readonly FitnessDbContext _context;
     private readonly ChallengeService _challengeService;
     private readonly AvatarService _avatarService;
@@ -554,26 +555,50 @@ public class UserService
     public async Task<List<ItemDto>> GetUserBoostersAsync(int userId)
     {
         var userItems = await _context.UserItems
-            .Include(ui => ui.Item)
             .Where(ui => ui.User.Id == userId && ui.Item.Type == ItemType.Booster)
+            .Select(ui => new
+            {
+                ItemId = ui.Item.Id,
+                ui.Item.Name,
+                ui.Item.Description,
+                ui.Item.Type,
+                ui.Item.Price,
+                ui.Item.XpBoostPercent,
+                ui.Item.CoinBoostPercent,
+                ui.Item.Rarity,
+                ui.Item.MaxQuantity,
+                ui.Quantity,
+                HasImage = ui.Item.ImageUrl != null && ui.Item.ImageUrl != string.Empty,
+                IsDataImage = ui.Item.ImageUrl != null && EF.Functions.Like(ui.Item.ImageUrl, DataImageLikePattern),
+                ExternalImageUrl = ui.Item.ImageUrl != null && ui.Item.ImageUrl != string.Empty && !EF.Functions.Like(ui.Item.ImageUrl, DataImageLikePattern)
+                    ? ui.Item.ImageUrl
+                    : null
+            })
             .ToListAsync();
 
         return userItems
-            .GroupBy(ui => ui.Item.Id)
+            .GroupBy(ui => ui.ItemId)
             .Select(g => new ItemDto
             {
-                Id = g.First().Item.Id,
-                Name = g.First().Item.Name,
-                Description = g.First().Item.Description,
-                Type = g.First().Item.Type,
-                Price = g.First().Item.Price,
-                XpBoostPercentage = g.First().Item.XpBoostPercent,
-                CoinBoostPercentage = g.First().Item.CoinBoostPercent,
-                Rarity = g.First().Item.Rarity,
+                Id = g.First().ItemId,
+                Name = g.First().Name,
+                Description = g.First().Description,
+                Type = g.First().Type,
+                Price = g.First().Price,
+                XpBoostPercentage = g.First().XpBoostPercent,
+                CoinBoostPercentage = g.First().CoinBoostPercent,
+                Rarity = g.First().Rarity,
                 Quantity = g.Sum(ui => ui.Quantity),
-                ImageUrl = ShopMediaUrl.ForItem(g.First().Item.Id, g.First().Item.ImageUrl)
+                MaxQuantity = g.First().MaxQuantity,
+                ImageUrl = ItemImageUrl(g.First().ItemId, g.First().HasImage, g.First().IsDataImage, g.First().ExternalImageUrl)
             })
             .ToList();
+    }
+
+    private static string? ItemImageUrl(int itemId, bool hasImage, bool isDataImage, string? externalImageUrl)
+    {
+        if (!hasImage) return null;
+        return isDataImage ? $"/shop/items/{itemId}/image" : externalImageUrl;
     }
 
     // Booster in Slots equippen
