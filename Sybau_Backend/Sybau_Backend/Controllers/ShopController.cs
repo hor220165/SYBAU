@@ -155,7 +155,7 @@ namespace Sybau_Backend.Controllers
                 if (!string.IsNullOrWhiteSpace(imageUrl))
                 {
                     _imageCache.Remove(DataImageCache.ChestKey(chestId));
-                    _mediaStorage.DeletePublicUrl(previousImageUrl);
+                    await _mediaStorage.DeletePublicUrlAsync(previousImageUrl);
                 }
 
                 return Ok(chest);
@@ -177,7 +177,7 @@ namespace Sybau_Backend.Controllers
             if (!deleted) return NotFound();
 
             _imageCache.Remove(DataImageCache.ChestKey(chestId));
-            _mediaStorage.DeletePublicUrl(existing.ImageUrl);
+            await _mediaStorage.DeletePublicUrlAsync(existing.ImageUrl);
             return NoContent();
         }
 
@@ -234,7 +234,7 @@ namespace Sybau_Backend.Controllers
                 if (!string.IsNullOrWhiteSpace(imageUrl))
                 {
                     _imageCache.Remove(DataImageCache.ShopItemKey(itemId));
-                    _mediaStorage.DeletePublicUrl(previousImageUrl);
+                    await _mediaStorage.DeletePublicUrlAsync(previousImageUrl);
                 }
 
                 return Ok(item);
@@ -256,7 +256,7 @@ namespace Sybau_Backend.Controllers
             if (!deleted) return NotFound();
 
             _imageCache.Remove(DataImageCache.ShopItemKey(itemId));
-            _mediaStorage.DeletePublicUrl(existing.ImageUrl);
+            await _mediaStorage.DeletePublicUrlAsync(existing.ImageUrl);
             return NoContent();
         }
         

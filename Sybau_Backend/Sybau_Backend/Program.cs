@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using Sybau_Backend._Services;
@@ -87,7 +86,7 @@ builder.Services.AddMemoryCache(options =>
     options.SizeLimit = 128 * 1024 * 1024;
 });
 builder.Services.AddSingleton<DataImageCache>();
-builder.Services.AddSingleton<MediaStorageService>();
+builder.Services.AddHttpClient<MediaStorageService>();
 builder.Services.AddScoped<DataImageMigrationService>();
 builder.Services.AddSignalR();
 builder.Services.AddScoped<UserService>();
@@ -261,10 +260,12 @@ using (var scope = app.Services.CreateScope())
     app.Logger.LogInformation("Database provider: {ProviderName}", db.Database.ProviderName);
 
     var mediaStorage = scope.ServiceProvider.GetRequiredService<MediaStorageService>();
-    mediaStorage.EnsureDirectories();
-
-    var imageMigration = scope.ServiceProvider.GetRequiredService<DataImageMigrationService>();
-    await imageMigration.MigrateAsync();
+    await mediaStorage.EnsureReadyAsync();
+    if (mediaStorage.IsConfigured)
+    {
+        var imageMigration = scope.ServiceProvider.GetRequiredService<DataImageMigrationService>();
+        await imageMigration.MigrateAsync();
+    }
 }
 
 // Configure the HTTP request pipeline.
@@ -338,22 +339,10 @@ app.UseStaticFiles(new StaticFileOptions
     ContentTypeProvider = staticFileContentTypes,
     OnPrepareResponse = context =>
     {
-        if (context.Context.Request.Path.StartsWithSegments(MediaStorageService.UploadsRequestPath))
+        if (context.Context.Request.Path.StartsWithSegments("/uploads"))
         {
             context.Context.Response.Headers.CacheControl = "public, max-age=2592000, immutable";
         }
-    }
-});
-
-var uploadsStorage = app.Services.GetRequiredService<MediaStorageService>();
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(uploadsStorage.UploadsRoot),
-    RequestPath = MediaStorageService.UploadsRequestPath,
-    ContentTypeProvider = staticFileContentTypes,
-    OnPrepareResponse = context =>
-    {
-        context.Context.Response.Headers.CacheControl = "public, max-age=2592000, immutable";
     }
 });
 

@@ -273,7 +273,7 @@ namespace Sybau_Backend.Controllers
             var profileImageUrl = await _mediaStorage.SaveFormFileAsync(image, "profile-images", extension);
             await _userService.SetProfileImageUrlAsync(user.Id, profileImageUrl);
             _imageCache.Remove(DataImageCache.ProfileKey(user.Id));
-            _mediaStorage.DeletePublicUrl(previousImageUrl);
+            await _mediaStorage.DeletePublicUrlAsync(previousImageUrl);
 
             return Ok(new { profileImageUrl = ProfileMediaUrl.ForUser(user.Id, true) });
         }
@@ -350,7 +350,7 @@ namespace Sybau_Backend.Controllers
             var user = await _userService.GetUserById(userId);
             if (user == null) return NotFound();
 
-            _mediaStorage.DeletePublicUrl(user.ProfileImageUrl);
+            await _mediaStorage.DeletePublicUrlAsync(user.ProfileImageUrl);
 
             await _userService.SetProfileImageUrlAsync(user.Id, null);
             _imageCache.Remove(DataImageCache.ProfileKey(user.Id));
