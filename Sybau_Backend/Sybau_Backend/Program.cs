@@ -258,15 +258,29 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<FitnessDbContext>();
     db.Database.Migrate();
     app.Logger.LogInformation("Database provider: {ProviderName}", db.Database.ProviderName);
+}
 
-    var mediaStorage = scope.ServiceProvider.GetRequiredService<MediaStorageService>();
-    await mediaStorage.EnsureReadyAsync();
-    if (mediaStorage.IsConfigured)
+_ = Task.Run(async () =>
+{
+    try
     {
+        await Task.Delay(TimeSpan.FromSeconds(5));
+        using var scope = app.Services.CreateScope();
+        var mediaStorage = scope.ServiceProvider.GetRequiredService<MediaStorageService>();
+        await mediaStorage.EnsureReadyAsync();
+        if (!mediaStorage.IsConfigured)
+        {
+            return;
+        }
+
         var imageMigration = scope.ServiceProvider.GetRequiredService<DataImageMigrationService>();
         await imageMigration.MigrateAsync();
     }
-}
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Image migration to Supabase Storage failed. The app keeps running.");
+    }
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
