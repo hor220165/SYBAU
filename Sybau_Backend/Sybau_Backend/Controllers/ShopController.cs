@@ -11,12 +11,17 @@ namespace Sybau_Backend.Controllers
     public class ShopController : ControllerBase
     {
         private readonly ShopService _shopService;
-        private readonly IWebHostEnvironment _environment;
+        private readonly DataImageCache _imageCache;
+        private readonly MediaStorageService _mediaStorage;
 
-        public ShopController(ShopService shopService, IWebHostEnvironment environment)
+        public ShopController(
+            ShopService shopService,
+            DataImageCache imageCache,
+            MediaStorageService mediaStorage)
         {
             _shopService = shopService;
-            _environment = environment;
+            _imageCache = imageCache;
+            _mediaStorage = mediaStorage;
         }
 
         [HttpGet("items")]
@@ -36,8 +41,14 @@ namespace Sybau_Backend.Controllers
         [HttpGet("items/{itemId}/image")]
         public async Task<IActionResult> GetItemImage(int itemId)
         {
+            var cacheKey = DataImageCache.ShopItemKey(itemId);
+            if (_imageCache.TryGet(cacheKey, out var image))
+            {
+                return CachedImageResponse(image);
+            }
+
             var imageUrl = await _shopService.GetItemImageUrlAsync(itemId);
-            return ToImageResponse(imageUrl);
+            return ToImageResponse(imageUrl, cacheKey);
         }
 
         [HttpGet("daily")]
@@ -64,8 +75,14 @@ namespace Sybau_Backend.Controllers
         [HttpGet("chests/{chestId}/image")]
         public async Task<IActionResult> GetChestImage(int chestId)
         {
+            var cacheKey = DataImageCache.ChestKey(chestId);
+            if (_imageCache.TryGet(cacheKey, out var image))
+            {
+                return CachedImageResponse(image);
+            }
+
             var imageUrl = await _shopService.GetChestImageUrlAsync(chestId);
-            return ToImageResponse(imageUrl);
+            return ToImageResponse(imageUrl, cacheKey);
         }
 
         [Authorize]
@@ -92,7 +109,7 @@ namespace Sybau_Backend.Controllers
             try
             {
                 dto.ItemIds = ReadChestItemIds(dto);
-                var imageUrl = await SaveShopUploadAsync(image);
+                var imageUrl = await SaveShopUploadAsync(image, "chests");
                 var chest = await _shopService.AddChestAsync(dto, imageUrl);
                 return Ok(chest);
             }
@@ -129,7 +146,7 @@ namespace Sybau_Backend.Controllers
                 var image = ReadChestImage(dto);
                 if (image is { Length: > 0 })
                 {
-                    imageUrl = await SaveShopUploadAsync(image);
+                    imageUrl = await SaveShopUploadAsync(image, "chests");
                 }
 
                 var chest = await _shopService.UpdateChestAsync(chestId, dto, imageUrl);
@@ -137,7 +154,8 @@ namespace Sybau_Backend.Controllers
 
                 if (!string.IsNullOrWhiteSpace(imageUrl))
                 {
-                    DeleteLocalUpload(previousImageUrl);
+                    _imageCache.Remove(DataImageCache.ChestKey(chestId));
+                    _mediaStorage.DeletePublicUrl(previousImageUrl);
                 }
 
                 return Ok(chest);
@@ -158,7 +176,8 @@ namespace Sybau_Backend.Controllers
             var deleted = await _shopService.DeleteChestAsync(chestId);
             if (!deleted) return NotFound();
 
-            DeleteLocalUpload(existing.ImageUrl);
+            _imageCache.Remove(DataImageCache.ChestKey(chestId));
+            _mediaStorage.DeletePublicUrl(existing.ImageUrl);
             return NoContent();
         }
 
@@ -171,7 +190,7 @@ namespace Sybau_Backend.Controllers
 
             try
             {
-                var imageUrl = await SaveShopUploadAsync(dto.Image);
+                var imageUrl = await SaveShopUploadAsync(dto.Image, "shop-items");
                 var item = await _shopService.AddItemAsync(ToItemDto(dto, imageUrl));
                 return Ok(item);
             }
@@ -206,7 +225,7 @@ namespace Sybau_Backend.Controllers
                 string? imageUrl = null;
                 if (dto.Image is { Length: > 0 })
                 {
-                    imageUrl = await SaveShopUploadAsync(dto.Image);
+                    imageUrl = await SaveShopUploadAsync(dto.Image, "shop-items");
                 }
 
                 var item = await _shopService.UpdateItemAsync(itemId, ToItemDto(dto, imageUrl));
@@ -214,7 +233,8 @@ namespace Sybau_Backend.Controllers
 
                 if (!string.IsNullOrWhiteSpace(imageUrl))
                 {
-                    DeleteLocalUpload(previousImageUrl);
+                    _imageCache.Remove(DataImageCache.ShopItemKey(itemId));
+                    _mediaStorage.DeletePublicUrl(previousImageUrl);
                 }
 
                 return Ok(item);
@@ -235,7 +255,8 @@ namespace Sybau_Backend.Controllers
             var deleted = await _shopService.DeleteItemAsync(itemId);
             if (!deleted) return NotFound();
 
-            DeleteLocalUpload(existing.ImageUrl);
+            _imageCache.Remove(DataImageCache.ShopItemKey(itemId));
+            _mediaStorage.DeletePublicUrl(existing.ImageUrl);
             return NoContent();
         }
         
@@ -284,7 +305,7 @@ namespace Sybau_Backend.Controllers
             };
         }
 
-        private async Task<string> SaveShopUploadAsync(IFormFile image)
+        private async Task<string> SaveShopUploadAsync(IFormFile image, string category)
         {
             var extension = Path.GetExtension(image.FileName);
             var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -304,30 +325,14 @@ namespace Sybau_Backend.Controllers
             if (!hasImageContentType && !hasAllowedExtension)
                 throw new ArgumentException("Nur Bilddateien sind erlaubt.");
 
-            var contentType = (image.ContentType ?? string.Empty).ToLowerInvariant();
-            if (string.IsNullOrWhiteSpace(contentType) || !contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
-            {
-                contentType = extension.ToLowerInvariant() switch
-                {
-                    ".jpg" or ".jpeg" => "image/jpeg",
-                    ".webp" => "image/webp",
-                    ".gif" => "image/gif",
-                    _ => "image/png"
-                };
-            }
-
-            await using var memory = new MemoryStream();
-            await image.CopyToAsync(memory);
-            return $"data:{contentType};base64,{Convert.ToBase64String(memory.ToArray())}";
+            return await _mediaStorage.SaveFormFileAsync(image, category, extension);
         }
 
-        private IActionResult ToImageResponse(string? imageUrl)
+        private IActionResult ToImageResponse(string? imageUrl, string cacheKey)
         {
             if (string.IsNullOrWhiteSpace(imageUrl)) return NotFound();
 
-            Response.Headers.CacheControl = "public, max-age=2592000, immutable";
-            Response.Headers.Remove("Pragma");
-            Response.Headers.Remove("Expires");
+            SetImageCacheHeaders();
 
             if (!imageUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
             {
@@ -349,48 +354,24 @@ namespace Sybau_Backend.Controllers
                 return LocalRedirect(localPath);
             }
 
-            const string dataPrefix = "data:";
-            const string base64Marker = ";base64,";
-            var markerIndex = imageUrl.IndexOf(base64Marker, StringComparison.OrdinalIgnoreCase);
-            if (markerIndex <= dataPrefix.Length) return BadRequest("Ungueltiges Bildformat.");
+            if (!DataImageCache.TryDecodeDataImage(imageUrl, out var image, out var error) || image == null)
+                return BadRequest(error);
 
-            var contentType = imageUrl[dataPrefix.Length..markerIndex];
-            if (!contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
-                return BadRequest("Ungueltiger Bildtyp.");
-
-            var encodedData = imageUrl[(markerIndex + base64Marker.Length)..];
-            try
-            {
-                return File(Convert.FromBase64String(encodedData), contentType);
-            }
-            catch (FormatException)
-            {
-                return BadRequest("Ungueltige Bilddaten.");
-            }
+            _imageCache.Set(cacheKey, image);
+            return File(image.Bytes, image.ContentType);
         }
 
-        private void DeleteLocalUpload(string? imageUrl)
+        private IActionResult CachedImageResponse(CachedDataImage image)
         {
-            if (string.IsNullOrWhiteSpace(imageUrl) ||
-                !imageUrl.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
+            SetImageCacheHeaders();
+            return File(image.Bytes, image.ContentType);
+        }
 
-            var relativePath = imageUrl.TrimStart('/')
-                .Replace('/', Path.DirectorySeparatorChar);
-            var uploadsRoot = Path.GetFullPath(Path.Combine(_environment.ContentRootPath, "wwwroot", "uploads"));
-            var fullPath = Path.GetFullPath(Path.Combine(_environment.ContentRootPath, "wwwroot", relativePath));
-
-            if (!fullPath.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            if (System.IO.File.Exists(fullPath))
-            {
-                System.IO.File.Delete(fullPath);
-            }
+        private void SetImageCacheHeaders()
+        {
+            Response.Headers.CacheControl = "public, max-age=2592000, immutable";
+            Response.Headers.Remove("Pragma");
+            Response.Headers.Remove("Expires");
         }
 
         private List<int> ReadChestItemIds(ChestFormDto dto)

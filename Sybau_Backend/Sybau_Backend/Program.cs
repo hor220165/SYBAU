@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using Sybau_Backend._Services;
@@ -81,6 +82,13 @@ static string SensitiveRateLimitPartitionKey(HttpContext context)
 }
 
 // Add services to the container.
+builder.Services.AddMemoryCache(options =>
+{
+    options.SizeLimit = 128 * 1024 * 1024;
+});
+builder.Services.AddSingleton<DataImageCache>();
+builder.Services.AddSingleton<MediaStorageService>();
+builder.Services.AddScoped<DataImageMigrationService>();
 builder.Services.AddSignalR();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
@@ -251,11 +259,13 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<FitnessDbContext>();
     db.Database.Migrate();
     app.Logger.LogInformation("Database provider: {ProviderName}", db.Database.ProviderName);
-}
 
-Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads", "profile-images"));
-Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads", "shop-items"));
-Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads", "chests"));
+    var mediaStorage = scope.ServiceProvider.GetRequiredService<MediaStorageService>();
+    mediaStorage.EnsureDirectories();
+
+    var imageMigration = scope.ServiceProvider.GetRequiredService<DataImageMigrationService>();
+    await imageMigration.MigrateAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -325,7 +335,26 @@ staticFileContentTypes.Mappings[".heic"] = "image/heic";
 staticFileContentTypes.Mappings[".heif"] = "image/heif";
 app.UseStaticFiles(new StaticFileOptions
 {
-    ContentTypeProvider = staticFileContentTypes
+    ContentTypeProvider = staticFileContentTypes,
+    OnPrepareResponse = context =>
+    {
+        if (context.Context.Request.Path.StartsWithSegments(MediaStorageService.UploadsRequestPath))
+        {
+            context.Context.Response.Headers.CacheControl = "public, max-age=2592000, immutable";
+        }
+    }
+});
+
+var uploadsStorage = app.Services.GetRequiredService<MediaStorageService>();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsStorage.UploadsRoot),
+    RequestPath = MediaStorageService.UploadsRequestPath,
+    ContentTypeProvider = staticFileContentTypes,
+    OnPrepareResponse = context =>
+    {
+        context.Context.Response.Headers.CacheControl = "public, max-age=2592000, immutable";
+    }
 });
 
 app.UseRateLimiter();

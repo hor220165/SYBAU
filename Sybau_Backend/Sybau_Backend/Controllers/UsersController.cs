@@ -22,20 +22,23 @@ namespace Sybau_Backend.Controllers
         private readonly AchievementService _achievementService;
         private readonly BodyStageService _bodyStageService;
         private readonly AvatarService _avatarService;
-        private readonly IWebHostEnvironment _environment;
+        private readonly DataImageCache _imageCache;
+        private readonly MediaStorageService _mediaStorage;
 
         public UsersController(
             UserService userService,
             AchievementService achievementService,
             BodyStageService bodyStageService,
             AvatarService avatarService,
-            IWebHostEnvironment environment)
+            DataImageCache imageCache,
+            MediaStorageService mediaStorage)
         {
             _userService = userService;
             _achievementService = achievementService;
             _bodyStageService = bodyStageService;
             _avatarService = avatarService;
-            _environment = environment;
+            _imageCache = imageCache;
+            _mediaStorage = mediaStorage;
         }
         
         // GET /users/profile
@@ -254,8 +257,6 @@ namespace Sybau_Backend.Controllers
             var user = await _userService.GetUserById(userId);
             if (user == null) return NotFound();
 
-            DeleteLocalUpload(user.ProfileImageUrl);
-
             if (string.IsNullOrWhiteSpace(extension))
             {
                 extension = (image.ContentType ?? string.Empty).ToLowerInvariant() switch
@@ -268,12 +269,11 @@ namespace Sybau_Backend.Controllers
                 };
             }
 
-            await using var memory = new MemoryStream();
-            await image.CopyToAsync(memory);
-
-            var contentType = GetImageContentType(image.ContentType, extension);
-            var profileImageUrl = $"data:{contentType};base64,{Convert.ToBase64String(memory.ToArray())}";
+            var previousImageUrl = user.ProfileImageUrl;
+            var profileImageUrl = await _mediaStorage.SaveFormFileAsync(image, "profile-images", extension);
             await _userService.SetProfileImageUrlAsync(user.Id, profileImageUrl);
+            _imageCache.Remove(DataImageCache.ProfileKey(user.Id));
+            _mediaStorage.DeletePublicUrl(previousImageUrl);
 
             return Ok(new { profileImageUrl = ProfileMediaUrl.ForUser(user.Id, true) });
         }
@@ -282,59 +282,21 @@ namespace Sybau_Backend.Controllers
         [HttpGet("{id:int}/profile/image")]
         public async Task<IActionResult> GetProfileImage(int id)
         {
+            var cacheKey = DataImageCache.ProfileKey(id);
+            if (_imageCache.TryGet(cacheKey, out var image))
+            {
+                return CachedImageResponse(image);
+            }
+
             var imageUrl = await _userService.GetProfileImageUrlAsync(id);
-            return ToProfileImageResponse(imageUrl);
+            return ToProfileImageResponse(imageUrl, cacheKey);
         }
 
-        private static string GetImageContentType(string? contentType, string extension)
-        {
-            if (!string.IsNullOrWhiteSpace(contentType) &&
-                contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
-            {
-                return contentType.Split(';', 2)[0].Trim().ToLowerInvariant();
-            }
-
-            return extension.ToLowerInvariant() switch
-            {
-                ".png" => "image/png",
-                ".webp" => "image/webp",
-                ".heic" => "image/heic",
-                ".heif" => "image/heif",
-                _ => "image/jpeg"
-            };
-        }
-
-        private void DeleteLocalUpload(string? imageUrl)
-        {
-            if (string.IsNullOrWhiteSpace(imageUrl) ||
-                !imageUrl.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            var relativePath = imageUrl.TrimStart('/')
-                .Replace('/', Path.DirectorySeparatorChar);
-            var uploadsRoot = Path.GetFullPath(Path.Combine(_environment.ContentRootPath, "wwwroot", "uploads"));
-            var fullPath = Path.GetFullPath(Path.Combine(_environment.ContentRootPath, "wwwroot", relativePath));
-
-            if (!fullPath.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            if (System.IO.File.Exists(fullPath))
-            {
-                System.IO.File.Delete(fullPath);
-            }
-        }
-
-        private IActionResult ToProfileImageResponse(string? imageUrl)
+        private IActionResult ToProfileImageResponse(string? imageUrl, string cacheKey)
         {
             if (string.IsNullOrWhiteSpace(imageUrl)) return NotFound();
 
-            Response.Headers.CacheControl = "public, max-age=2592000, immutable";
-            Response.Headers.Remove("Pragma");
-            Response.Headers.Remove("Expires");
+            SetImageCacheHeaders();
 
             if (!imageUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
             {
@@ -356,24 +318,24 @@ namespace Sybau_Backend.Controllers
                 return LocalRedirect(localPath);
             }
 
-            const string dataPrefix = "data:";
-            const string base64Marker = ";base64,";
-            var markerIndex = imageUrl.IndexOf(base64Marker, StringComparison.OrdinalIgnoreCase);
-            if (markerIndex <= dataPrefix.Length) return BadRequest("Ungueltiges Bildformat.");
+            if (!DataImageCache.TryDecodeDataImage(imageUrl, out var image, out var error) || image == null)
+                return BadRequest(error);
 
-            var contentType = imageUrl[dataPrefix.Length..markerIndex];
-            if (!contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
-                return BadRequest("Ungueltiger Bildtyp.");
+            _imageCache.Set(cacheKey, image);
+            return File(image.Bytes, image.ContentType);
+        }
 
-            var encodedData = imageUrl[(markerIndex + base64Marker.Length)..];
-            try
-            {
-                return File(Convert.FromBase64String(encodedData), contentType);
-            }
-            catch (FormatException)
-            {
-                return BadRequest("Ungueltige Bilddaten.");
-            }
+        private IActionResult CachedImageResponse(CachedDataImage image)
+        {
+            SetImageCacheHeaders();
+            return File(image.Bytes, image.ContentType);
+        }
+
+        private void SetImageCacheHeaders()
+        {
+            Response.Headers.CacheControl = "public, max-age=2592000, immutable";
+            Response.Headers.Remove("Pragma");
+            Response.Headers.Remove("Expires");
         }
 
         // DELETE /users/profile/image
@@ -388,9 +350,10 @@ namespace Sybau_Backend.Controllers
             var user = await _userService.GetUserById(userId);
             if (user == null) return NotFound();
 
-            DeleteLocalUpload(user.ProfileImageUrl);
+            _mediaStorage.DeletePublicUrl(user.ProfileImageUrl);
 
             await _userService.SetProfileImageUrlAsync(user.Id, null);
+            _imageCache.Remove(DataImageCache.ProfileKey(user.Id));
 
             return NoContent();
         }
