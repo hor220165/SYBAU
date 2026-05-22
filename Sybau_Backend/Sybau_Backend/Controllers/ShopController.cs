@@ -13,15 +13,18 @@ namespace Sybau_Backend.Controllers
         private readonly ShopService _shopService;
         private readonly DataImageCache _imageCache;
         private readonly MediaStorageService _mediaStorage;
+        private readonly ILogger<ShopController> _logger;
 
         public ShopController(
             ShopService shopService,
             DataImageCache imageCache,
-            MediaStorageService mediaStorage)
+            MediaStorageService mediaStorage,
+            ILogger<ShopController> logger)
         {
             _shopService = shopService;
             _imageCache = imageCache;
             _mediaStorage = mediaStorage;
+            _logger = logger;
         }
 
         [HttpGet("items")]
@@ -117,6 +120,10 @@ namespace Sybau_Backend.Controllers
             {
                 return BadRequest(e.Message);
             }
+            catch (InvalidOperationException e)
+            {
+                return StorageUploadFailed(e);
+            }
         }
 
         [Authorize(Policy = "AdminOnly")]
@@ -164,6 +171,10 @@ namespace Sybau_Backend.Controllers
             {
                 return BadRequest(e.Message);
             }
+            catch (InvalidOperationException e)
+            {
+                return StorageUploadFailed(e);
+            }
         }
 
         [Authorize(Policy = "AdminOnly")]
@@ -197,6 +208,10 @@ namespace Sybau_Backend.Controllers
             catch (ArgumentException e)
             {
                 return BadRequest(e.Message);
+            }
+            catch (InvalidOperationException e)
+            {
+                return StorageUploadFailed(e);
             }
         }
 
@@ -242,6 +257,10 @@ namespace Sybau_Backend.Controllers
             catch (ArgumentException e)
             {
                 return BadRequest(e.Message);
+            }
+            catch (InvalidOperationException e)
+            {
+                return StorageUploadFailed(e);
             }
         }
 
@@ -326,6 +345,14 @@ namespace Sybau_Backend.Controllers
                 throw new ArgumentException("Nur Bilddateien sind erlaubt.");
 
             return await _mediaStorage.SaveFormFileAsync(image, category, extension);
+        }
+
+        private ObjectResult StorageUploadFailed(Exception exception)
+        {
+            _logger.LogError(exception, "Could not save shop image to media storage.");
+            return StatusCode(
+                StatusCodes.Status502BadGateway,
+                "Bild konnte nicht in Supabase Storage gespeichert werden. Bitte Render Environment Variables und den Storage-Bucket pruefen.");
         }
 
         private IActionResult ToImageResponse(string? imageUrl, string cacheKey)

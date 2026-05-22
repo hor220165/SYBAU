@@ -24,6 +24,7 @@ namespace Sybau_Backend.Controllers
         private readonly AvatarService _avatarService;
         private readonly DataImageCache _imageCache;
         private readonly MediaStorageService _mediaStorage;
+        private readonly ILogger<UsersController> _logger;
 
         public UsersController(
             UserService userService,
@@ -31,7 +32,8 @@ namespace Sybau_Backend.Controllers
             BodyStageService bodyStageService,
             AvatarService avatarService,
             DataImageCache imageCache,
-            MediaStorageService mediaStorage)
+            MediaStorageService mediaStorage,
+            ILogger<UsersController> logger)
         {
             _userService = userService;
             _achievementService = achievementService;
@@ -39,6 +41,7 @@ namespace Sybau_Backend.Controllers
             _avatarService = avatarService;
             _imageCache = imageCache;
             _mediaStorage = mediaStorage;
+            _logger = logger;
         }
         
         // GET /users/profile
@@ -270,7 +273,19 @@ namespace Sybau_Backend.Controllers
             }
 
             var previousImageUrl = user.ProfileImageUrl;
-            var profileImageUrl = await _mediaStorage.SaveFormFileAsync(image, "profile-images", extension);
+            string profileImageUrl;
+            try
+            {
+                profileImageUrl = await _mediaStorage.SaveFormFileAsync(image, "profile-images", extension);
+            }
+            catch (InvalidOperationException e)
+            {
+                _logger.LogError(e, "Could not save profile image to media storage.");
+                return StatusCode(
+                    StatusCodes.Status502BadGateway,
+                    "Bild konnte nicht in Supabase Storage gespeichert werden. Bitte Render Environment Variables und den Storage-Bucket pruefen.");
+            }
+
             await _userService.SetProfileImageUrlAsync(user.Id, profileImageUrl);
             _imageCache.Remove(DataImageCache.ProfileKey(user.Id));
             await _mediaStorage.DeletePublicUrlAsync(previousImageUrl);

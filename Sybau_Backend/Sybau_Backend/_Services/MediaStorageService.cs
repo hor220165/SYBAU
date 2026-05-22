@@ -216,8 +216,11 @@ public sealed class MediaStorageService
         RequireConfiguration();
 
         var request = new HttpRequestMessage(method, uri);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _serviceRoleKey);
         request.Headers.TryAddWithoutValidation("apikey", _serviceRoleKey);
+        if (UsesLegacyJwtKey(_serviceRoleKey))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _serviceRoleKey);
+        }
         return request;
     }
 
@@ -401,6 +404,13 @@ public sealed class MediaStorageService
     private static string? FirstNonEmpty(params string?[] values)
     {
         return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim();
+    }
+
+    private static bool UsesLegacyJwtKey(string? apiKey)
+    {
+        return !string.IsNullOrWhiteSpace(apiKey) &&
+               !apiKey.StartsWith("sb_secret_", StringComparison.OrdinalIgnoreCase) &&
+               !apiKey.StartsWith("sb_publishable_", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string Slug(string value)
