@@ -3,9 +3,11 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -29,6 +31,13 @@ part 'app_shell/shared_widgets.dart';
 const String _noProfilePictureAsset = 'assets/Nopfp.png';
 const String _appleHealthLogoAsset = 'assets/applehealth_logo.png';
 const int _achievementPageSize = 4;
+final BaseCacheManager _mediaImageCache = CacheManager(
+  Config(
+    'sybau_media_images',
+    stalePeriod: const Duration(days: 365),
+    maxNrOfCacheObjects: 600,
+  ),
+);
 
 String _lt({required String de, required String en}) {
   return de;
@@ -85,8 +94,8 @@ Widget _buildProfileImageFromUrl(
     return fallback();
   }
 
-  return Image.network(
-    imageUrl,
+  return Image(
+    image: CachedNetworkImageProvider(imageUrl, cacheManager: _mediaImageCache),
     key: key,
     fit: fit,
     gaplessPlayback: gaplessPlayback,
@@ -122,8 +131,8 @@ Widget _buildMediaImageFromUrl(
     return fallback();
   }
 
-  return Image.network(
-    resolved,
+  return Image(
+    image: CachedNetworkImageProvider(resolved, cacheManager: _mediaImageCache),
     width: width,
     height: height,
     fit: fit,
