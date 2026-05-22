@@ -352,7 +352,14 @@ namespace Sybau_Backend.Controllers
             _logger.LogError(exception, "Could not save shop image to media storage.");
             return StatusCode(
                 StatusCodes.Status502BadGateway,
-                "Bild konnte nicht in Supabase Storage gespeichert werden. Bitte Render Environment Variables und den Storage-Bucket pruefen.");
+                $"Bild konnte nicht in Supabase Storage gespeichert werden: {SanitizeStorageError(exception.Message)}");
+        }
+
+        private static string SanitizeStorageError(string message)
+        {
+            return string.IsNullOrWhiteSpace(message)
+                ? "Bitte Render Environment Variables und den Storage-Bucket pruefen."
+                : message.ReplaceLineEndings(" ");
         }
 
         private IActionResult ToImageResponse(string? imageUrl, string cacheKey)
