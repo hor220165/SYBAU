@@ -404,7 +404,12 @@ public sealed class MediaStorageService
         var uploadPreset = _cloudinaryUploadPreset;
         if (!string.IsNullOrWhiteSpace(uploadPreset))
         {
-            return await UploadCloudinaryPresetAsync(stream, contentType, uploadPreset, cancellationToken);
+            return await UploadCloudinaryPresetAsync(
+                stream,
+                contentType,
+                uploadPreset,
+                $"{publicId}{extension}",
+                cancellationToken);
         }
 
         using var multipart = new MultipartFormDataContent();
@@ -452,6 +457,7 @@ public sealed class MediaStorageService
         Stream stream,
         string contentType,
         string uploadPreset,
+        string filenameOverride,
         CancellationToken cancellationToken)
     {
         using var memory = new MemoryStream();
@@ -461,7 +467,8 @@ public sealed class MediaStorageService
         using var form = new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["file"] = dataUri,
-            ["upload_preset"] = uploadPreset
+            ["upload_preset"] = uploadPreset,
+            ["filename_override"] = filenameOverride
         });
 
         using var response = await _httpClient.PostAsync(CloudinaryUploadUri(), form, cancellationToken);
