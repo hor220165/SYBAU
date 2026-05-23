@@ -12,17 +12,20 @@ public sealed class DataImageMigrationService
     private readonly FitnessDbContext _context;
     private readonly MediaStorageService _mediaStorage;
     private readonly IWebHostEnvironment _environment;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<DataImageMigrationService> _logger;
 
     public DataImageMigrationService(
         FitnessDbContext context,
         MediaStorageService mediaStorage,
         IWebHostEnvironment environment,
+        IHttpClientFactory httpClientFactory,
         ILogger<DataImageMigrationService> logger)
     {
         _context = context;
         _mediaStorage = mediaStorage;
         _environment = environment;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
 
@@ -102,10 +105,46 @@ public sealed class DataImageMigrationService
             }
         }
 
+        var remoteItems = await _context.Items
+            .Where(item => item.ImageUrl != null && EF.Functions.Like(item.ImageUrl, "http%"))
+            .ToListAsync();
+        foreach (var item in remoteItems)
+        {
+            if (await TryMoveRemoteImageAsync(item.ImageUrl, "shop-items", $"item-{item.Id}") is { } imageUrl)
+            {
+                item.ImageUrl = imageUrl;
+                migrated++;
+            }
+        }
+
+        var remoteChests = await _context.Chests
+            .Where(chest => EF.Functions.Like(chest.ImageUrl, "http%"))
+            .ToListAsync();
+        foreach (var chest in remoteChests)
+        {
+            if (await TryMoveRemoteImageAsync(chest.ImageUrl, "chests", $"chest-{chest.Id}") is { } imageUrl)
+            {
+                chest.ImageUrl = imageUrl;
+                migrated++;
+            }
+        }
+
+        var remoteUsers = await _context.Users
+            .Where(user => user.ProfileImageUrl != null && EF.Functions.Like(user.ProfileImageUrl, "http%"))
+            .ToListAsync();
+        foreach (var user in remoteUsers)
+        {
+            if (await TryMoveRemoteImageAsync(user.ProfileImageUrl, "profile-images", $"profile-{user.Id}") is { } imageUrl)
+            {
+                user.ProfileImageUrl = imageUrl;
+                migrated++;
+            }
+        }
+
         if (migrated <= 0) return;
 
         await _context.SaveChangesAsync();
-        _logger.LogInformation("Migrated {Count} database image values to Supabase Storage.", migrated);
+        _logger.LogInformation("Migrated {Count} database image values to configured media storage.", migrated);
     }
 
     private async Task<string?> TryMoveDataImageAsync(string? dataImageUrl, string category, string namePrefix)
@@ -142,6 +181,70 @@ public sealed class DataImageMigrationService
             extension);
     }
 
+    private async Task<string?> TryMoveRemoteImageAsync(string? remoteImageUrl, string category, string namePrefix)
+    {
+        if (!_mediaStorage.ShouldMigrateRemoteUrl(remoteImageUrl) ||
+            !Uri.TryCreate(remoteImageUrl, UriKind.Absolute, out var uri))
+        {
+            return null;
+        }
+
+        try
+        {
+            var httpClient = _httpClientFactory.CreateClient();
+            using var response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "Could not migrate remote image {Category} {NamePrefix}: {StatusCode} from {ImageUrl}",
+                    category,
+                    namePrefix,
+                    (int)response.StatusCode,
+                    remoteImageUrl);
+                return null;
+            }
+
+            var contentType = response.Content.Headers.ContentType?.MediaType;
+            if (string.IsNullOrWhiteSpace(contentType) ||
+                !contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning(
+                    "Could not migrate remote image {Category} {NamePrefix}: invalid content type {ContentType}",
+                    category,
+                    namePrefix,
+                    contentType);
+                return null;
+            }
+
+            var bytes = await response.Content.ReadAsByteArrayAsync();
+            if (bytes.Length > 10 * 1024 * 1024)
+            {
+                _logger.LogWarning(
+                    "Could not migrate remote image {Category} {NamePrefix}: image is larger than 10 MB",
+                    category,
+                    namePrefix);
+                return null;
+            }
+
+            return await _mediaStorage.SaveBytesAsync(
+                bytes,
+                category,
+                namePrefix,
+                contentType,
+                ExtensionForContentType(contentType) ?? Path.GetExtension(uri.AbsolutePath));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Could not migrate remote image {Category} {NamePrefix} from {ImageUrl}",
+                category,
+                namePrefix,
+                remoteImageUrl);
+            return null;
+        }
+    }
+
     private string? ResolveLegacyUploadPath(string? legacyImageUrl)
     {
         if (string.IsNullOrWhiteSpace(legacyImageUrl) ||
@@ -175,6 +278,20 @@ public sealed class DataImageMigrationService
             ".heic" => "image/heic",
             ".heif" => "image/heif",
             _ => "image/jpeg"
+        };
+    }
+
+    private static string? ExtensionForContentType(string? contentType)
+    {
+        return (contentType ?? string.Empty).Split(';', 2)[0].Trim().ToLowerInvariant() switch
+        {
+            "image/png" => ".png",
+            "image/webp" => ".webp",
+            "image/gif" => ".gif",
+            "image/heic" => ".heic",
+            "image/heif" => ".heif",
+            "image/jpeg" => ".jpg",
+            _ => null
         };
     }
 }

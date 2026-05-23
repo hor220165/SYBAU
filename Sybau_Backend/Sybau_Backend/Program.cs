@@ -30,7 +30,7 @@ builder.Configuration
     .AddEnvironmentVariables()
     .AddCommandLine(args);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = NormalizePostgresConnectionString(builder.Configuration.GetConnectionString("DefaultConnection"));
 var usePostgres = builder.Environment.IsProduction()
     || IsRenderRuntime()
     || IsPostgresConnectionString(connectionString);
@@ -52,6 +52,68 @@ static bool IsPostgresConnectionString(string? value)
     return value.Contains("Host=", StringComparison.OrdinalIgnoreCase)
         || value.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase)
         || value.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase);
+}
+
+static string? NormalizePostgresConnectionString(string? value)
+{
+    if (string.IsNullOrWhiteSpace(value) ||
+        (!value.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) &&
+         !value.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase)))
+    {
+        return value;
+    }
+
+    var uri = new Uri(value);
+    var userInfo = uri.UserInfo.Split(':', 2);
+    var username = userInfo.Length > 0 ? Uri.UnescapeDataString(userInfo[0]) : string.Empty;
+    var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty;
+    var database = Uri.UnescapeDataString(uri.AbsolutePath.TrimStart('/'));
+    var parameters = QueryParameters(uri.Query);
+
+    var builder = new Npgsql.NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.IsDefaultPort ? 5432 : uri.Port,
+        Database = database,
+        Username = username,
+        Password = password
+    };
+
+    if (parameters.TryGetValue("sslmode", out var sslMode) &&
+        Enum.TryParse<Npgsql.SslMode>(sslMode.Replace("-", string.Empty), ignoreCase: true, out var parsedSslMode))
+    {
+        builder.SslMode = parsedSslMode;
+    }
+    else
+    {
+        builder.SslMode = Npgsql.SslMode.Require;
+    }
+
+    if (parameters.TryGetValue("channel_binding", out var channelBinding) &&
+        Enum.TryParse<Npgsql.ChannelBinding>(channelBinding.Replace("-", string.Empty), ignoreCase: true, out var parsedChannelBinding))
+    {
+        builder.ChannelBinding = parsedChannelBinding;
+    }
+
+    return builder.ConnectionString;
+}
+
+static Dictionary<string, string> QueryParameters(string query)
+{
+    var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    if (string.IsNullOrWhiteSpace(query)) return result;
+
+    foreach (var part in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var pair = part.Split('=', 2);
+        var key = Uri.UnescapeDataString(pair[0].Replace("+", " "));
+        var parameterValue = pair.Length > 1
+            ? Uri.UnescapeDataString(pair[1].Replace("+", " "))
+            : string.Empty;
+        result[key] = parameterValue;
+    }
+
+    return result;
 }
 
 static bool IsRenderRuntime()
