@@ -14,7 +14,13 @@
 
           <div class="equipment-slots left">
             <div class="equip-slot" v-for="slotIdx in [0, 1]" :key="slotIdx" @click="router.push('/avatar')">
-              <div class="equip-slot-inner" :class="{ empty: !boostSlots[slotIdx], equipped: !!boostSlots[slotIdx] }">
+              <div
+                class="equip-slot-inner"
+                :class="[
+                  boostSlotRarityClass(boostSlots[slotIdx]),
+                  { empty: !boostSlots[slotIdx], equipped: !!boostSlots[slotIdx] }
+                ]"
+              >
                 <template v-if="boostSlots[slotIdx]">
                   <div class="equip-item-icon">
                     <img v-if="getBoostImage(boostSlots[slotIdx])" :src="getBoostImage(boostSlots[slotIdx])" alt="" />
@@ -56,7 +62,13 @@
 
           <div class="equipment-slots right">
             <div class="equip-slot" v-for="slotIdx in [2, 3]" :key="slotIdx" @click="router.push('/avatar')">
-              <div class="equip-slot-inner" :class="{ empty: !boostSlots[slotIdx], equipped: !!boostSlots[slotIdx] }">
+              <div
+                class="equip-slot-inner"
+                :class="[
+                  boostSlotRarityClass(boostSlots[slotIdx]),
+                  { empty: !boostSlots[slotIdx], equipped: !!boostSlots[slotIdx] }
+                ]"
+              >
                 <template v-if="boostSlots[slotIdx]">
                   <div class="equip-item-icon">
                     <img v-if="getBoostImage(boostSlots[slotIdx])" :src="getBoostImage(boostSlots[slotIdx])" alt="" />
@@ -255,6 +267,23 @@ const getBoostBadges = (booster: item | null) => {
     ...(coin > 0 ? [{ kind: 'coin', label: `+${coin}%`, name: 'Coins' }] : []),
   ];
 };
+
+const boostRarity = (booster: item | null | undefined): 'common' | 'rare' | 'epic' | 'legendary' | 'mythic' | 'empty' => {
+  if (!booster) return 'empty';
+  const rawRarity = String(booster.rarity ?? (booster as any)?.Rarity ?? '').toLowerCase();
+  if (rawRarity === 'common' || rawRarity === 'rare' || rawRarity === 'epic' || rawRarity === 'legendary' || rawRarity === 'mythic') {
+    return rawRarity;
+  }
+
+  const total = (booster.xpBoostPercentage ?? 0) + (booster.coinBoostPercentage ?? 0);
+  if (total >= 100) return 'mythic';
+  if (total >= 60) return 'legendary';
+  if (total >= 40) return 'epic';
+  if (total >= 20) return 'rare';
+  return 'common';
+};
+
+const boostSlotRarityClass = (booster: item | null | undefined) => `rarity-${boostRarity(booster)}`;
 
 // Stats vom Backend
 const currentStreak = ref(0);
@@ -459,6 +488,9 @@ onMounted(async () => {
 }
 
 .equip-slot-inner {
+  --rarity-color: #94a3b8;
+  --rarity-bg: rgba(148, 163, 184, 0.12);
+  --rarity-border: rgba(148, 163, 184, 0.28);
   width: 100%;
   height: 100%;
   border-radius: 14px;
@@ -475,15 +507,15 @@ onMounted(async () => {
 
 .equip-slot-inner.empty {
   background: rgba(15, 23, 42, 0.5);
-  border: 1px dashed rgba(168, 85, 247, 0.25);
+  border: 1px dashed rgba(148, 163, 184, 0.28);
   backdrop-filter: blur(10px);
 }
 
 .equip-slot-inner.empty:hover {
-  border-color: rgba(168, 85, 247, 0.5);
-  background: rgba(168, 85, 247, 0.07);
+  border-color: rgba(148, 163, 184, 0.46);
+  background: rgba(148, 163, 184, 0.08);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.15);
+  box-shadow: 0 8px 24px rgba(148, 163, 184, 0.12);
 }
 
 .equip-slot-inner::before,
@@ -492,7 +524,7 @@ onMounted(async () => {
   position: absolute;
   width: 10px;
   height: 10px;
-  border-color: rgba(168, 85, 247, 0.4);
+  border-color: var(--rarity-border);
   border-style: solid;
 }
 
@@ -790,23 +822,63 @@ onMounted(async () => {
 /* ══════════════════════════════
    EQUIPPED SLOT
 ══════════════════════════════ */
+.rarity-empty {
+  --rarity-color: #94a3b8;
+  --rarity-bg: rgba(148, 163, 184, 0.12);
+  --rarity-border: rgba(148, 163, 184, 0.28);
+}
+
+.rarity-common {
+  --rarity-color: #cbd5e1;
+  --rarity-bg: rgba(148, 163, 184, 0.16);
+  --rarity-border: rgba(148, 163, 184, 0.34);
+}
+
+.rarity-rare {
+  --rarity-color: #60a5fa;
+  --rarity-bg: rgba(59, 130, 246, 0.17);
+  --rarity-border: rgba(59, 130, 246, 0.38);
+}
+
+.rarity-epic {
+  --rarity-color: #c084fc;
+  --rarity-bg: rgba(168, 85, 247, 0.18);
+  --rarity-border: rgba(168, 85, 247, 0.42);
+}
+
+.rarity-legendary {
+  --rarity-color: #fbbf24;
+  --rarity-bg: rgba(245, 158, 11, 0.18);
+  --rarity-border: rgba(245, 158, 11, 0.42);
+}
+
+.rarity-mythic {
+  --rarity-color: #f472b6;
+  --rarity-bg: rgba(236, 72, 153, 0.18);
+  --rarity-border: rgba(244, 114, 182, 0.44);
+}
+
 .equip-slot-inner.equipped {
-  background: rgba(168, 85, 247, 0.12);
-  border: 1px solid rgba(168, 85, 247, 0.4);
+  background:
+    radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--rarity-color) 22%, transparent), transparent 62%),
+    var(--rarity-bg);
+  border: 1px solid var(--rarity-border);
   backdrop-filter: blur(10px);
   gap: 8px;
 }
 
 .equip-slot-inner.equipped:hover {
-  border-color: rgba(168, 85, 247, 0.7);
-  background: rgba(168, 85, 247, 0.18);
+  border-color: color-mix(in srgb, var(--rarity-color) 72%, transparent);
+  background:
+    radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--rarity-color) 30%, transparent), transparent 64%),
+    color-mix(in srgb, var(--rarity-color) 16%, rgba(15, 23, 42, 0.5));
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.25);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--rarity-color) 24%, transparent);
 }
 
 .equip-slot-inner.equipped .equip-icon {
-  color: rgba(168, 85, 247, 0.9);
-  filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.6));
+  color: color-mix(in srgb, var(--rarity-color) 90%, white 10%);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--rarity-color) 54%, transparent));
 }
 
 .equip-boost {
@@ -818,7 +890,7 @@ onMounted(async () => {
 
 .equip-item-icon {
   font-size: 34px;
-  filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.6));
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--rarity-color) 54%, transparent));
   display: grid;
   place-items: center;
   width: 48px;

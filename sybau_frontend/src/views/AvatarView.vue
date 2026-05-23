@@ -51,11 +51,14 @@
               <div class="equip-slot" v-for="(slot, i) in equipSlots.slice(0, 2)" :key="'left-' + i">
                 <div
                   class="equip-slot-inner"
-                  :class="{
-                    empty: !slot.item,
-                    equipped: !!slot.item,
-                    'slot-highlight': selectingSlotFor !== null
-                  }"
+                  :class="[
+                    equipSlotRarityClass(slot),
+                    {
+                      empty: !slot.item,
+                      equipped: !!slot.item,
+                      'slot-highlight': selectingSlotFor !== null
+                    }
+                  ]"
                   @click="handleSlotClick(i)"
                 >
                   <div class="equip-item-icon" v-if="slot.item">
@@ -92,11 +95,14 @@
               <div class="equip-slot" v-for="(slot, i) in equipSlots.slice(2, 4)" :key="'right-' + i">
                 <div
                   class="equip-slot-inner"
-                  :class="{
-                    empty: !slot.item,
-                    equipped: !!slot.item,
-                    'slot-highlight': selectingSlotFor !== null
-                  }"
+                  :class="[
+                    equipSlotRarityClass(slot),
+                    {
+                      empty: !slot.item,
+                      equipped: !!slot.item,
+                      'slot-highlight': selectingSlotFor !== null
+                    }
+                  ]"
                   @click="handleSlotClick(i + 2)"
                 >
                   <div class="equip-item-icon" v-if="slot.item">
@@ -368,6 +374,9 @@ function equippedCount(id: number): number {
 }
 
 const isEquipped = (id: number) => equippedCount(id) > 0;
+
+const equipSlotRarityClass = (slot: EquipSlot) =>
+  slot.item ? `rarity-${slot.item.rarity}` : 'rarity-empty';
 
 // Kann noch in weitere Slots?
 function canEquipMore(booster: BoosterItem): boolean {
@@ -679,6 +688,9 @@ onMounted(() => loadProfile());
 }
 
 .equip-slot-inner {
+  --rarity-color: #94a3b8;
+  --rarity-bg: rgba(148, 163, 184, 0.12);
+  --rarity-border: rgba(148, 163, 184, 0.28);
   width: 100%;
   height: 100%;
   border-radius: 14px;
@@ -695,40 +707,44 @@ onMounted(() => loadProfile());
 
 .equip-slot-inner.empty {
   background: rgba(15, 23, 42, 0.5);
-  border: 1px dashed rgba(168, 85, 247, 0.25);
+  border: 1px dashed rgba(148, 163, 184, 0.28);
   backdrop-filter: blur(10px);
 }
 
 .equip-slot-inner.empty:hover {
-  border-color: rgba(168, 85, 247, 0.5);
-  background: rgba(168, 85, 247, 0.07);
+  border-color: rgba(148, 163, 184, 0.46);
+  background: rgba(148, 163, 184, 0.08);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.15);
+  box-shadow: 0 8px 24px rgba(148, 163, 184, 0.12);
 }
 
 .equip-slot-inner.slot-highlight.empty {
-  border-color: rgba(168, 85, 247, 0.6);
-  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(148, 163, 184, 0.58);
+  background: rgba(148, 163, 184, 0.1);
   animation: slotPulse 1.5s ease-in-out infinite;
 }
 
 @keyframes slotPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.3); }
-  50% { box-shadow: 0 0 20px 4px rgba(168, 85, 247, 0.4); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(148, 163, 184, 0.24); }
+  50% { box-shadow: 0 0 20px 4px rgba(148, 163, 184, 0.3); }
 }
 
 .equip-slot-inner.equipped {
-  background: rgba(168, 85, 247, 0.12);
-  border: 1px solid rgba(168, 85, 247, 0.5);
+  background:
+    radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--rarity-color) 22%, transparent), transparent 62%),
+    var(--rarity-bg);
+  border: 1px solid var(--rarity-border);
   backdrop-filter: blur(10px);
-  box-shadow: 0 0 20px rgba(168, 85, 247, 0.15);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--rarity-color) 18%, transparent);
   gap: 8px;
 }
 
 .equip-slot-inner.equipped:hover {
-  background: rgba(168, 85, 247, 0.18);
+  background:
+    radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--rarity-color) 30%, transparent), transparent 64%),
+    color-mix(in srgb, var(--rarity-color) 16%, rgba(15, 23, 42, 0.5));
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.25);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--rarity-color) 24%, transparent);
 }
 
 .equip-slot-inner::before,
@@ -737,7 +753,7 @@ onMounted(() => loadProfile());
   position: absolute;
   width: 10px;
   height: 10px;
-  border-color: rgba(168, 85, 247, 0.4);
+  border-color: var(--rarity-border);
   border-style: solid;
 }
 
@@ -755,7 +771,7 @@ onMounted(() => loadProfile());
 
 .equip-item-icon {
   font-size: 34px;
-  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5));
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--rarity-color) 46%, transparent));
   display: grid;
   place-items: center;
   width: 48px;
@@ -1004,6 +1020,12 @@ onMounted(() => loadProfile());
   --rarity-color: #cbd5e1;
   --rarity-bg: rgba(148, 163, 184, 0.16);
   --rarity-border: rgba(148, 163, 184, 0.34);
+}
+
+.rarity-empty {
+  --rarity-color: #94a3b8;
+  --rarity-bg: rgba(148, 163, 184, 0.12);
+  --rarity-border: rgba(148, 163, 184, 0.28);
 }
 
 .rarity-rare {

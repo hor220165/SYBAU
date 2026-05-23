@@ -45,6 +45,69 @@ class _DashboardTabState extends State<DashboardTab> {
 
   double get _arcProgress => _progressPercent / 100;
 
+  String _rarityOf(Booster booster) {
+    final explicit = booster.rarity.toLowerCase();
+    if (explicit == 'common' ||
+        explicit == 'rare' ||
+        explicit == 'epic' ||
+        explicit == 'legendary' ||
+        explicit == 'mythic') {
+      return explicit;
+    }
+
+    final total = booster.xpBoostPercentage + booster.coinBoostPercentage;
+    if (total >= 100) return 'mythic';
+    if (total >= 60) return 'legendary';
+    if (total >= 40) return 'epic';
+    if (total >= 20) return 'rare';
+    return 'common';
+  }
+
+  Color _boosterAccent(Booster booster) {
+    switch (_rarityOf(booster)) {
+      case 'mythic':
+        return const Color(0xFFF472B6);
+      case 'legendary':
+        return const Color(0xFFFBBF24);
+      case 'epic':
+        return const Color(0xFFC084FC);
+      case 'rare':
+        return const Color(0xFF60A5FA);
+      default:
+        return const Color(0xFF94A3B8);
+    }
+  }
+
+  double _slotTintOpacity(String rarity) {
+    switch (rarity) {
+      case 'mythic':
+        return 0.18;
+      case 'legendary':
+        return 0.17;
+      case 'epic':
+        return 0.16;
+      case 'rare':
+        return 0.15;
+      default:
+        return 0.12;
+    }
+  }
+
+  double _slotBorderOpacity(String rarity) {
+    switch (rarity) {
+      case 'mythic':
+        return 0.44;
+      case 'legendary':
+        return 0.48;
+      case 'epic':
+        return 0.38;
+      case 'rare':
+        return 0.36;
+      default:
+        return 0.28;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -175,6 +238,10 @@ class _DashboardTabState extends State<DashboardTab> {
   Widget _buildEquipmentSlot(int index) {
     final booster = _boostSlots[index];
     final isEquipped = booster != null;
+    final rarity = booster == null ? 'empty' : _rarityOf(booster);
+    final accent = booster == null
+        ? const Color(0xFF94A3B8)
+        : _boosterAccent(booster);
 
     return GestureDetector(
       onTap: widget.onOpenAvatar,
@@ -183,14 +250,34 @@ class _DashboardTabState extends State<DashboardTab> {
         height: 90,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
+          gradient: isEquipped
+              ? RadialGradient(
+                  center: const Alignment(0, -0.35),
+                  radius: 0.9,
+                  colors: [
+                    accent.withValues(alpha: _slotTintOpacity(rarity) + 0.08),
+                    accent.withValues(alpha: _slotTintOpacity(rarity)),
+                    const Color(0xFF0F172A).withValues(alpha: 0.48),
+                  ],
+                )
+              : null,
           color: isEquipped
-              ? Color(0xFFA855F7).withOpacity(0.14)
-              : Color(0xFF0F172A).withOpacity(0.55),
+              ? null
+              : const Color(0xFF0F172A).withValues(alpha: 0.55),
           border: Border.all(
             color: isEquipped
-                ? Color(0xFFA855F7).withOpacity(0.45)
-                : Color(0xFFA855F7).withOpacity(0.25),
+                ? accent.withValues(alpha: _slotBorderOpacity(rarity))
+                : const Color(0xFF94A3B8).withValues(alpha: 0.25),
           ),
+          boxShadow: isEquipped
+              ? [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.16),
+                    blurRadius: 18,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : null,
         ),
         child: FittedBox(
           fit: BoxFit.scaleDown,
@@ -211,21 +298,18 @@ class _DashboardTabState extends State<DashboardTab> {
                                   width: 46,
                                   height: 46,
                                   fit: BoxFit.contain,
-                                  fallback: () => const Text(
+                                  fallback: () => Text(
                                     '⚡',
                                     style: TextStyle(
                                       fontSize: 32,
-                                      color: Color(0xFFC084FC),
+                                      color: accent,
                                     ),
                                   ),
                                 ),
                               )
-                            : const Text(
+                            : Text(
                                 '⚡',
-                                style: TextStyle(
-                                  fontSize: 32,
-                                  color: Color(0xFFC084FC),
-                                ),
+                                style: TextStyle(fontSize: 32, color: accent),
                               ),
                       ),
                       Positioned(

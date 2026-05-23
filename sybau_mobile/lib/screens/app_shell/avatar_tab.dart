@@ -743,6 +743,10 @@ class _AvatarTabState extends State<AvatarTab>
   Widget _buildEquipSlot(int index, {double size = 82}) {
     final item = _slots[index];
     final isFilled = item != null;
+    final rarity = item == null ? 'empty' : _rarityOf(item);
+    final accent = item == null
+        ? const Color(0xFF94A3B8)
+        : _boosterAccent(item);
     final iconSize = size * 0.50;
     final valueSize = size * 0.14;
 
@@ -753,14 +757,36 @@ class _AvatarTabState extends State<AvatarTab>
         height: size,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
+          gradient: isFilled
+              ? RadialGradient(
+                  center: const Alignment(0, -0.35),
+                  radius: 0.9,
+                  colors: [
+                    accent.withValues(
+                      alpha: _inventoryTintOpacity(rarity) + 0.08,
+                    ),
+                    accent.withValues(alpha: _inventoryTintOpacity(rarity)),
+                    const Color(0xFF0F172A).withValues(alpha: 0.46),
+                  ],
+                )
+              : null,
           color: isFilled
-              ? Color(0xFFA855F7).withOpacity(0.14)
-              : Color(0xFF0F172A).withOpacity(0.52),
+              ? null
+              : const Color(0xFF0F172A).withValues(alpha: 0.52),
           border: Border.all(
             color: isFilled
-                ? Color(0xFFA855F7).withOpacity(0.45)
-                : Color(0xFFA855F7).withOpacity(0.28),
+                ? accent.withValues(alpha: _inventoryBorderOpacity(rarity))
+                : const Color(0xFF94A3B8).withValues(alpha: 0.28),
           ),
+          boxShadow: isFilled
+              ? [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.16),
+                    blurRadius: 18,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : null,
         ),
         child: FittedBox(
           fit: BoxFit.scaleDown,
