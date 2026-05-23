@@ -255,9 +255,9 @@ class _DashboardTabState extends State<DashboardTab> {
                   center: const Alignment(0, -0.35),
                   radius: 0.9,
                   colors: [
-                    accent.withValues(alpha: _slotTintOpacity(rarity) + 0.08),
-                    accent.withValues(alpha: _slotTintOpacity(rarity)),
-                    const Color(0xFF0F172A).withValues(alpha: 0.48),
+                    accent.withValues(alpha: _slotTintOpacity(rarity) + 0.02),
+                    accent.withValues(alpha: _slotTintOpacity(rarity) * 0.44),
+                    const Color(0xFF020617).withValues(alpha: 0.66),
                   ],
                 )
               : null,
@@ -272,71 +272,82 @@ class _DashboardTabState extends State<DashboardTab> {
           boxShadow: isEquipped
               ? [
                   BoxShadow(
-                    color: accent.withValues(alpha: 0.16),
-                    blurRadius: 18,
+                    color: accent.withValues(alpha: 0.20),
+                    blurRadius: 20,
                     spreadRadius: 1,
                   ),
                 ]
               : null,
         ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: isEquipped
-              ? SizedBox(
-                  width: 90,
-                  height: 90,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Transform.translate(
-                        offset: const Offset(0, -6),
-                        child: booster.imageUrl.isNotEmpty
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: _buildMediaImageFromUrl(
-                                  booster.imageUrl,
-                                  width: 46,
-                                  height: 46,
-                                  fit: BoxFit.contain,
-                                  fallback: () => Text(
-                                    '⚡',
-                                    style: TextStyle(
-                                      fontSize: 32,
-                                      color: accent,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned.fill(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: isEquipped
+                    ? SizedBox(
+                        width: 90,
+                        height: 90,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Transform.translate(
+                              offset: const Offset(0, -7),
+                              child: booster.imageUrl.isNotEmpty
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: _buildMediaImageFromUrl(
+                                        booster.imageUrl,
+                                        width: 46,
+                                        height: 46,
+                                        fit: BoxFit.contain,
+                                        fallback: () => Text(
+                                          '⚡',
+                                          style: TextStyle(
+                                            fontSize: 32,
+                                            color: accent,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : Text(
+                                      '⚡',
+                                      style: TextStyle(
+                                        fontSize: 32,
+                                        color: accent,
+                                      ),
                                     ),
-                                  ),
+                            ),
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: 12,
+                              child: Center(
+                                child: _buildBoosterPercentBadges(
+                                  booster,
+                                  fontSize: 8.6,
+                                  horizontalPadding: 2,
+                                  verticalPadding: 0,
+                                  gap: 4,
                                 ),
-                              )
-                            : Text(
-                                '⚡',
-                                style: TextStyle(fontSize: 32, color: accent),
                               ),
-                      ),
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 11,
-                        child: Center(
-                          child: _buildBoosterPercentBadges(
-                            booster,
-                            fontSize: 10,
-                            horizontalPadding: 4,
-                            verticalPadding: 0,
-                            gap: 5,
-                          ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Text(
+                        _lt(de: 'Leer', en: 'Empty'),
+                        style: const TextStyle(
+                          color: Colors.white24,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                    ],
-                  ),
-                )
-              : Text(
-                  _lt(de: 'Leer', en: 'Empty'),
-                  style: const TextStyle(
-                    color: Colors.white24,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+              ),
+            ),
+            _buildBoosterSlotCorners(accent, inset: 8, length: 11),
+          ],
         ),
       ),
     );

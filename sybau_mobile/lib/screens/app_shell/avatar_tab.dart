@@ -763,10 +763,12 @@ class _AvatarTabState extends State<AvatarTab>
                   radius: 0.9,
                   colors: [
                     accent.withValues(
-                      alpha: _inventoryTintOpacity(rarity) + 0.08,
+                      alpha: _inventoryTintOpacity(rarity) + 0.02,
                     ),
-                    accent.withValues(alpha: _inventoryTintOpacity(rarity)),
-                    const Color(0xFF0F172A).withValues(alpha: 0.46),
+                    accent.withValues(
+                      alpha: _inventoryTintOpacity(rarity) * 0.44,
+                    ),
+                    const Color(0xFF020617).withValues(alpha: 0.64),
                   ],
                 )
               : null,
@@ -781,68 +783,80 @@ class _AvatarTabState extends State<AvatarTab>
           boxShadow: isFilled
               ? [
                   BoxShadow(
-                    color: accent.withValues(alpha: 0.16),
-                    blurRadius: 18,
+                    color: accent.withValues(alpha: 0.20),
+                    blurRadius: 20,
                     spreadRadius: 1,
                   ),
                 ]
               : null,
         ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: isFilled
-              ? SizedBox(
-                  width: size,
-                  height: size,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Transform.translate(
-                        offset: Offset(0, -size * 0.07),
-                        child: item.imageUrl.isNotEmpty
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: _buildMediaImageFromUrl(
-                                  item.imageUrl,
-                                  width: iconSize,
-                                  height: iconSize,
-                                  fit: BoxFit.contain,
-                                  fallback: () => Text(
-                                    _boosterIcon(item),
-                                    style: TextStyle(fontSize: iconSize),
-                                  ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned.fill(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: isFilled
+                    ? SizedBox(
+                        width: size,
+                        height: size,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Transform.translate(
+                              offset: Offset(0, -size * 0.08),
+                              child: item.imageUrl.isNotEmpty
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: _buildMediaImageFromUrl(
+                                        item.imageUrl,
+                                        width: iconSize,
+                                        height: iconSize,
+                                        fit: BoxFit.contain,
+                                        fallback: () => Text(
+                                          _boosterIcon(item),
+                                          style: TextStyle(fontSize: iconSize),
+                                        ),
+                                      ),
+                                    )
+                                  : Text(
+                                      _boosterIcon(item),
+                                      style: TextStyle(fontSize: iconSize),
+                                    ),
+                            ),
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: size * 0.13,
+                              child: Center(
+                                child: _buildBoosterPercentBadges(
+                                  item,
+                                  fontSize: math.max(7.2, valueSize * 0.66),
+                                  horizontalPadding: size < 70 ? 1 : 2,
+                                  verticalPadding: 0,
+                                  gap: size < 70 ? 3 : 4,
                                 ),
-                              )
-                            : Text(
-                                _boosterIcon(item),
-                                style: TextStyle(fontSize: iconSize),
                               ),
-                      ),
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: size * 0.12,
-                        child: Center(
-                          child: _buildBoosterPercentBadges(
-                            item,
-                            fontSize: math.max(8.0, valueSize * 0.78),
-                            horizontalPadding: size < 70 ? 2 : 3,
-                            verticalPadding: 0,
-                            gap: size < 70 ? 4 : 5,
-                          ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Text(
+                        'Leer',
+                        style: TextStyle(
+                          color: Colors.white24,
+                          fontSize: valueSize,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                    ],
-                  ),
-                )
-              : Text(
-                  'Leer',
-                  style: TextStyle(
-                    color: Colors.white24,
-                    fontSize: valueSize,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+              ),
+            ),
+            _buildBoosterSlotCorners(
+              accent,
+              inset: size * 0.09,
+              length: size * 0.12,
+            ),
+          ],
         ),
       ),
     );

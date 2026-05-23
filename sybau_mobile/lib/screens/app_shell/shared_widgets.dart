@@ -101,6 +101,102 @@ Widget _buildBoostPercentBadge({
   );
 }
 
+Widget _buildBoosterSlotCorners(
+  Color color, {
+  required double inset,
+  required double length,
+}) {
+  final cornerColor = color.withValues(alpha: 0.46);
+
+  return IgnorePointer(
+    child: Stack(
+      fit: StackFit.expand,
+      children: [
+        Positioned(
+          top: inset,
+          left: inset,
+          child: _BoosterSlotCorner(
+            color: cornerColor,
+            length: length,
+            edges: const _CornerEdges(top: true, left: true),
+          ),
+        ),
+        Positioned(
+          top: inset,
+          right: inset,
+          child: _BoosterSlotCorner(
+            color: cornerColor,
+            length: length,
+            edges: const _CornerEdges(top: true, right: true),
+          ),
+        ),
+        Positioned(
+          bottom: inset,
+          left: inset,
+          child: _BoosterSlotCorner(
+            color: cornerColor,
+            length: length,
+            edges: const _CornerEdges(bottom: true, left: true),
+          ),
+        ),
+        Positioned(
+          right: inset,
+          bottom: inset,
+          child: _BoosterSlotCorner(
+            color: cornerColor,
+            length: length,
+            edges: const _CornerEdges(right: true, bottom: true),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _CornerEdges {
+  const _CornerEdges({
+    this.top = false,
+    this.right = false,
+    this.bottom = false,
+    this.left = false,
+  });
+
+  final bool top;
+  final bool right;
+  final bool bottom;
+  final bool left;
+}
+
+class _BoosterSlotCorner extends StatelessWidget {
+  const _BoosterSlotCorner({
+    required this.color,
+    required this.length,
+    required this.edges,
+  });
+
+  final Color color;
+  final double length;
+  final _CornerEdges edges;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: length,
+      height: length,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            top: edges.top ? BorderSide(color: color) : BorderSide.none,
+            right: edges.right ? BorderSide(color: color) : BorderSide.none,
+            bottom: edges.bottom ? BorderSide(color: color) : BorderSide.none,
+            left: edges.left ? BorderSide(color: color) : BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _AchievementCard extends StatelessWidget {
   const _AchievementCard({required this.achievement});
 
