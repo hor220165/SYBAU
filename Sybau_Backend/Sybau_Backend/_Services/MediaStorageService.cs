@@ -26,6 +26,7 @@ public sealed class MediaStorageService
     private readonly string? _cloudinaryCloudName;
     private readonly string? _cloudinaryApiKey;
     private readonly string? _cloudinaryApiSecret;
+    private readonly string? _cloudinaryUploadPreset;
 
     public MediaStorageService(
         HttpClient httpClient,
@@ -50,6 +51,10 @@ public sealed class MediaStorageService
             configuration["MediaStorage:CloudinaryApiSecret"],
             configuration["Cloudinary:ApiSecret"],
             Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET"));
+        _cloudinaryUploadPreset = FirstNonEmpty(
+            configuration["MediaStorage:CloudinaryUploadPreset"],
+            configuration["Cloudinary:UploadPreset"],
+            Environment.GetEnvironmentVariable("CLOUDINARY_UPLOAD_PRESET"));
 
         _supabaseUrl = NormalizeBaseUrl(FirstNonEmpty(
             configuration["MediaStorage:SupabaseUrl"],
@@ -79,7 +84,9 @@ public sealed class MediaStorageService
         switch (_provider)
         {
             case StorageProvider.Cloudinary:
-                _logger.LogInformation("Media storage provider: Cloudinary.");
+                _logger.LogInformation(
+                    "Media storage provider: Cloudinary. Upload mode: {Mode}.",
+                    string.IsNullOrWhiteSpace(_cloudinaryUploadPreset) ? "signed" : "upload-preset");
                 return;
             case StorageProvider.Supabase:
                 await EnsureSupabaseReadyAsync(cancellationToken);
@@ -213,8 +220,9 @@ public sealed class MediaStorageService
         var wantsSupabase = string.Equals(_requestedProvider, "Supabase", StringComparison.OrdinalIgnoreCase);
         var cloudinaryConfigured =
             !string.IsNullOrWhiteSpace(_cloudinaryCloudName) &&
-            !string.IsNullOrWhiteSpace(_cloudinaryApiKey) &&
-            !string.IsNullOrWhiteSpace(_cloudinaryApiSecret);
+            ((!string.IsNullOrWhiteSpace(_cloudinaryApiKey) &&
+              !string.IsNullOrWhiteSpace(_cloudinaryApiSecret)) ||
+             !string.IsNullOrWhiteSpace(_cloudinaryUploadPreset));
         var supabaseConfigured =
             !string.IsNullOrWhiteSpace(_supabaseUrl) &&
             !string.IsNullOrWhiteSpace(_supabaseServiceKey);
@@ -395,19 +403,26 @@ public sealed class MediaStorageService
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
         var folder = CloudinaryFolder(category);
         var publicId = CloudinaryPublicId(namePrefix);
-        var signature = CloudinarySignature(new SortedDictionary<string, string>
-        {
-            ["folder"] = folder,
-            ["public_id"] = publicId,
-            ["timestamp"] = timestamp
-        });
 
         using var multipart = new MultipartFormDataContent();
-        multipart.Add(new StringContent(_cloudinaryApiKey!), "api_key");
-        multipart.Add(new StringContent(timestamp), "timestamp");
         multipart.Add(new StringContent(folder), "folder");
         multipart.Add(new StringContent(publicId), "public_id");
-        multipart.Add(new StringContent(signature), "signature");
+        if (!string.IsNullOrWhiteSpace(_cloudinaryUploadPreset))
+        {
+            multipart.Add(new StringContent(_cloudinaryUploadPreset), "upload_preset");
+        }
+        else
+        {
+            var signature = CloudinarySignature(new SortedDictionary<string, string>
+            {
+                ["folder"] = folder,
+                ["public_id"] = publicId,
+                ["timestamp"] = timestamp
+            });
+            multipart.Add(new StringContent(_cloudinaryApiKey!), "api_key");
+            multipart.Add(new StringContent(timestamp), "timestamp");
+            multipart.Add(new StringContent(signature), "signature");
+        }
 
         using var fileContent = new StreamContent(stream);
         fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
@@ -555,7 +570,7 @@ public sealed class MediaStorageService
     private InvalidOperationException MissingConfigurationException()
     {
         return new InvalidOperationException(_requestedProvider?.Equals("Cloudinary", StringComparison.OrdinalIgnoreCase) == true
-            ? "MediaStorage Cloudinary ist nicht konfiguriert. Setze MediaStorage__CloudinaryCloudName, MediaStorage__CloudinaryApiKey und MediaStorage__CloudinaryApiSecret."
+            ? "MediaStorage Cloudinary ist nicht konfiguriert. Setze MediaStorage__CloudinaryCloudName und entweder MediaStorage__CloudinaryUploadPreset oder MediaStorage__CloudinaryApiKey plus MediaStorage__CloudinaryApiSecret."
             : "MediaStorage ist nicht konfiguriert. Setze Cloudinary- oder Supabase-Environment-Variables.");
     }
 
