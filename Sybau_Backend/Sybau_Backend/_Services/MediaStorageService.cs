@@ -402,6 +402,12 @@ public sealed class MediaStorageService
         });
 
         using var multipart = new MultipartFormDataContent();
+        multipart.Add(new StringContent(_cloudinaryApiKey!), "api_key");
+        multipart.Add(new StringContent(timestamp), "timestamp");
+        multipart.Add(new StringContent(folder), "folder");
+        multipart.Add(new StringContent(publicId), "public_id");
+        multipart.Add(new StringContent(signature), "signature");
+
         using var fileContent = new StreamContent(stream);
         fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
         if (length > 0)
@@ -410,11 +416,6 @@ public sealed class MediaStorageService
         }
 
         multipart.Add(fileContent, "file", $"{publicId}{extension}");
-        multipart.Add(new StringContent(_cloudinaryApiKey!), "api_key");
-        multipart.Add(new StringContent(timestamp), "timestamp");
-        multipart.Add(new StringContent(folder), "folder");
-        multipart.Add(new StringContent(publicId), "public_id");
-        multipart.Add(new StringContent(signature), "signature");
 
         using var response = await _httpClient.PostAsync(CloudinaryUploadUri(), multipart, cancellationToken);
         if (!response.IsSuccessStatusCode)
