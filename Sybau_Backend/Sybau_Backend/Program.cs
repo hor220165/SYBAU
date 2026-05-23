@@ -29,6 +29,8 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false)
     .AddEnvironmentVariables()
     .AddCommandLine(args);
+builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
+builder.Logging.AddConsole();
 
 var connectionString = NormalizePostgresConnectionString(builder.Configuration.GetConnectionString("DefaultConnection"));
 var usePostgres = builder.Environment.IsProduction()
