@@ -400,25 +400,27 @@ public sealed class MediaStorageService
         string? namePrefix,
         CancellationToken cancellationToken)
     {
-        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
-        var folder = CloudinaryFolder(category);
         var publicId = CloudinaryPublicId(namePrefix);
+        var uploadPreset = _cloudinaryUploadPreset;
+        var usesUploadPreset = !string.IsNullOrWhiteSpace(uploadPreset);
 
         using var multipart = new MultipartFormDataContent();
-        multipart.Add(new StringContent(folder), "folder");
-        multipart.Add(new StringContent(publicId), "public_id");
-        if (!string.IsNullOrWhiteSpace(_cloudinaryUploadPreset))
+        if (usesUploadPreset)
         {
-            multipart.Add(new StringContent(_cloudinaryUploadPreset), "upload_preset");
+            multipart.Add(new StringContent(uploadPreset!), "upload_preset");
         }
         else
         {
+            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+            var folder = CloudinaryFolder(category);
             var signature = CloudinarySignature(new SortedDictionary<string, string>
             {
                 ["folder"] = folder,
                 ["public_id"] = publicId,
                 ["timestamp"] = timestamp
             });
+            multipart.Add(new StringContent(folder), "folder");
+            multipart.Add(new StringContent(publicId), "public_id");
             multipart.Add(new StringContent(_cloudinaryApiKey!), "api_key");
             multipart.Add(new StringContent(timestamp), "timestamp");
             multipart.Add(new StringContent(signature), "signature");
