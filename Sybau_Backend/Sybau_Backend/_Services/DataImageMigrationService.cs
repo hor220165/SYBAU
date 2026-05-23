@@ -8,6 +8,8 @@ public sealed class DataImageMigrationService
     private const string DataImageLikePattern = "data:image/%";
     private const string LegacyUploadsLikePattern = "/uploads/%";
     private const string LegacyUploadsPrefix = "/uploads/";
+    private const string RemoteImageLikePattern = "http%";
+    private const string SupabaseUrlLikePattern = "%supabase.co%";
 
     private readonly FitnessDbContext _context;
     private readonly MediaStorageService _mediaStorage;
@@ -106,8 +108,11 @@ public sealed class DataImageMigrationService
         }
 
         var remoteItems = await _context.Items
-            .Where(item => item.ImageUrl != null && EF.Functions.Like(item.ImageUrl, "http%"))
+            .Where(item => item.ImageUrl != null &&
+                           (EF.Functions.Like(item.ImageUrl, RemoteImageLikePattern) ||
+                            EF.Functions.Like(item.ImageUrl, SupabaseUrlLikePattern)))
             .ToListAsync();
+        _logger.LogInformation("Image migration found {Count} remote shop item image values to check.", remoteItems.Count);
         foreach (var item in remoteItems)
         {
             if (await TryMoveRemoteImageAsync(item.ImageUrl, "shop-items", $"item-{item.Id}") is { } imageUrl)
@@ -118,8 +123,10 @@ public sealed class DataImageMigrationService
         }
 
         var remoteChests = await _context.Chests
-            .Where(chest => EF.Functions.Like(chest.ImageUrl, "http%"))
+            .Where(chest => EF.Functions.Like(chest.ImageUrl, RemoteImageLikePattern) ||
+                            EF.Functions.Like(chest.ImageUrl, SupabaseUrlLikePattern))
             .ToListAsync();
+        _logger.LogInformation("Image migration found {Count} remote chest image values to check.", remoteChests.Count);
         foreach (var chest in remoteChests)
         {
             if (await TryMoveRemoteImageAsync(chest.ImageUrl, "chests", $"chest-{chest.Id}") is { } imageUrl)
@@ -130,8 +137,11 @@ public sealed class DataImageMigrationService
         }
 
         var remoteUsers = await _context.Users
-            .Where(user => user.ProfileImageUrl != null && EF.Functions.Like(user.ProfileImageUrl, "http%"))
+            .Where(user => user.ProfileImageUrl != null &&
+                           (EF.Functions.Like(user.ProfileImageUrl, RemoteImageLikePattern) ||
+                            EF.Functions.Like(user.ProfileImageUrl, SupabaseUrlLikePattern)))
             .ToListAsync();
+        _logger.LogInformation("Image migration found {Count} remote profile image values to check.", remoteUsers.Count);
         foreach (var user in remoteUsers)
         {
             if (await TryMoveRemoteImageAsync(user.ProfileImageUrl, "profile-images", $"profile-{user.Id}") is { } imageUrl)
@@ -188,14 +198,16 @@ public sealed class DataImageMigrationService
 
     private async Task<string?> TryMoveRemoteImageAsync(string? remoteImageUrl, string category, string namePrefix)
     {
-        if (!_mediaStorage.ShouldMigrateRemoteUrl(remoteImageUrl) ||
-            !Uri.TryCreate(remoteImageUrl, UriKind.Absolute, out var uri))
+        var normalizedUrl = remoteImageUrl?.Trim();
+        if (!_mediaStorage.ShouldMigrateRemoteUrl(normalizedUrl) ||
+            !Uri.TryCreate(normalizedUrl, UriKind.Absolute, out var uri))
         {
             return null;
         }
 
         try
         {
+            _logger.LogInformation("Migrating remote image {Category} {NamePrefix} from {ImageUrl}", category, namePrefix, normalizedUrl);
             var httpClient = _httpClientFactory.CreateClient();
             using var response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
             if (!response.IsSuccessStatusCode)
@@ -205,7 +217,7 @@ public sealed class DataImageMigrationService
                     category,
                     namePrefix,
                     (int)response.StatusCode,
-                    remoteImageUrl);
+                    normalizedUrl);
                 return null;
             }
 
@@ -245,7 +257,7 @@ public sealed class DataImageMigrationService
                 "Could not migrate remote image {Category} {NamePrefix} from {ImageUrl}",
                 category,
                 namePrefix,
-                remoteImageUrl);
+                normalizedUrl);
             return null;
         }
     }

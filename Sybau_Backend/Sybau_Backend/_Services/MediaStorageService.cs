@@ -192,8 +192,9 @@ public sealed class MediaStorageService
 
     public bool ShouldMigrateRemoteUrl(string? imageUrl)
     {
-        if (string.IsNullOrWhiteSpace(imageUrl) ||
-            !Uri.TryCreate(imageUrl, UriKind.Absolute, out var uri) ||
+        var normalizedUrl = imageUrl?.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedUrl) ||
+            !Uri.TryCreate(normalizedUrl, UriKind.Absolute, out var uri) ||
             (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
         {
             return false;
@@ -689,7 +690,7 @@ public sealed class MediaStorageService
     private static bool IsSupabaseStorageUrl(Uri uri)
     {
         return uri.Host.EndsWith(".supabase.co", StringComparison.OrdinalIgnoreCase) &&
-               uri.AbsolutePath.Contains("/storage/v1/object/public/", StringComparison.OrdinalIgnoreCase);
+               uri.AbsolutePath.Contains("/storage/v1/", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string StripQueryAndFragment(string value)
