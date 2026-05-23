@@ -402,29 +402,25 @@ public sealed class MediaStorageService
     {
         var publicId = CloudinaryPublicId(namePrefix);
         var uploadPreset = _cloudinaryUploadPreset;
-        var usesUploadPreset = !string.IsNullOrWhiteSpace(uploadPreset);
+        if (!string.IsNullOrWhiteSpace(uploadPreset))
+        {
+            return await UploadCloudinaryPresetAsync(stream, contentType, uploadPreset, cancellationToken);
+        }
 
         using var multipart = new MultipartFormDataContent();
-        if (usesUploadPreset)
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+        var folder = CloudinaryFolder(category);
+        var signature = CloudinarySignature(new SortedDictionary<string, string>
         {
-            multipart.Add(new StringContent(uploadPreset!), "upload_preset");
-        }
-        else
-        {
-            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
-            var folder = CloudinaryFolder(category);
-            var signature = CloudinarySignature(new SortedDictionary<string, string>
-            {
-                ["folder"] = folder,
-                ["public_id"] = publicId,
-                ["timestamp"] = timestamp
-            });
-            multipart.Add(new StringContent(folder), "folder");
-            multipart.Add(new StringContent(publicId), "public_id");
-            multipart.Add(new StringContent(_cloudinaryApiKey!), "api_key");
-            multipart.Add(new StringContent(timestamp), "timestamp");
-            multipart.Add(new StringContent(signature), "signature");
-        }
+            ["folder"] = folder,
+            ["public_id"] = publicId,
+            ["timestamp"] = timestamp
+        });
+        multipart.Add(new StringContent(folder), "folder");
+        multipart.Add(new StringContent(publicId), "public_id");
+        multipart.Add(new StringContent(_cloudinaryApiKey!), "api_key");
+        multipart.Add(new StringContent(timestamp), "timestamp");
+        multipart.Add(new StringContent(signature), "signature");
 
         using var fileContent = new StreamContent(stream);
         fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
@@ -436,6 +432,39 @@ public sealed class MediaStorageService
         multipart.Add(fileContent, "file", $"{publicId}{extension}");
 
         using var response = await _httpClient.PostAsync(CloudinaryUploadUri(), multipart, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw await StorageExceptionAsync("Cloudinary upload", response);
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        using var document = JsonDocument.Parse(body);
+        if (document.RootElement.TryGetProperty("secure_url", out var secureUrl) &&
+            secureUrl.GetString() is { Length: > 0 } value)
+        {
+            return value;
+        }
+
+        throw new InvalidOperationException("Cloudinary upload succeeded, but no secure_url was returned.");
+    }
+
+    private async Task<string> UploadCloudinaryPresetAsync(
+        Stream stream,
+        string contentType,
+        string uploadPreset,
+        CancellationToken cancellationToken)
+    {
+        using var memory = new MemoryStream();
+        await stream.CopyToAsync(memory, cancellationToken);
+        var dataUri = $"data:{contentType};base64,{Convert.ToBase64String(memory.ToArray())}";
+
+        using var form = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["file"] = dataUri,
+            ["upload_preset"] = uploadPreset
+        });
+
+        using var response = await _httpClient.PostAsync(CloudinaryUploadUri(), form, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             throw await StorageExceptionAsync("Cloudinary upload", response);
