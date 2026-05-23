@@ -76,7 +76,8 @@ static string? NormalizePostgresConnectionString(string? value)
         Port = uri.IsDefaultPort ? 5432 : uri.Port,
         Database = database,
         Username = username,
-        Password = password
+        Password = password,
+        GssEncryptionMode = Npgsql.GssEncryptionMode.Disable
     };
 
     if (parameters.TryGetValue("sslmode", out var sslMode) &&
@@ -340,7 +341,7 @@ _ = Task.Run(async () =>
     }
     catch (Exception ex)
     {
-        app.Logger.LogError(ex, "Image migration to Supabase Storage failed. The app keeps running.");
+        app.Logger.LogError(ex, "Image migration to configured media storage failed. The app keeps running.");
     }
 });
 

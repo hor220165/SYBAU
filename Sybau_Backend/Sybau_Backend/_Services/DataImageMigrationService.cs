@@ -141,7 +141,11 @@ public sealed class DataImageMigrationService
             }
         }
 
-        if (migrated <= 0) return;
+        if (migrated <= 0)
+        {
+            _logger.LogInformation("Image migration checked configured media storage. No database image values needed migration.");
+            return;
+        }
 
         await _context.SaveChangesAsync();
         _logger.LogInformation("Migrated {Count} database image values to configured media storage.", migrated);
