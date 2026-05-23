@@ -153,6 +153,7 @@ builder.Services.AddMemoryCache(options =>
 builder.Services.AddSingleton<DataImageCache>();
 builder.Services.AddHttpClient<MediaStorageService>();
 builder.Services.AddScoped<DataImageMigrationService>();
+builder.Services.AddHostedService<ImageMigrationHostedService>();
 builder.Services.AddSignalR();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
@@ -324,28 +325,6 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
     app.Logger.LogInformation("Database provider: {ProviderName}", db.Database.ProviderName);
 }
-
-_ = Task.Run(async () =>
-{
-    try
-    {
-        await Task.Delay(TimeSpan.FromSeconds(5));
-        using var scope = app.Services.CreateScope();
-        var mediaStorage = scope.ServiceProvider.GetRequiredService<MediaStorageService>();
-        await mediaStorage.EnsureReadyAsync();
-        if (!mediaStorage.IsConfigured)
-        {
-            return;
-        }
-
-        var imageMigration = scope.ServiceProvider.GetRequiredService<DataImageMigrationService>();
-        await imageMigration.MigrateAsync();
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogError(ex, "Image migration to configured media storage failed. The app keeps running.");
-    }
-});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

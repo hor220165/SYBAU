@@ -16,12 +16,37 @@ namespace Sybau_Backend.Controllers
         private readonly FitnessDbContext _context;
         private readonly ChallengeService _challengeService;
         private readonly UserService _userService;
+        private readonly MediaStorageService _mediaStorage;
+        private readonly DataImageMigrationService _imageMigration;
 
-        public AdminController(FitnessDbContext context, ChallengeService challengeService, UserService userService)
+        public AdminController(
+            FitnessDbContext context,
+            ChallengeService challengeService,
+            UserService userService,
+            MediaStorageService mediaStorage,
+            DataImageMigrationService imageMigration)
         {
             _context = context;
             _challengeService = challengeService;
             _userService = userService;
+            _mediaStorage = mediaStorage;
+            _imageMigration = imageMigration;
+        }
+
+        [HttpPost("media/migrate-images")]
+        public async Task<IActionResult> MigrateImages()
+        {
+            await _mediaStorage.EnsureReadyAsync(HttpContext.RequestAborted);
+            if (!_mediaStorage.IsConfigured)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    error = "Media storage is not configured."
+                });
+            }
+
+            var migrated = await _imageMigration.MigrateAsync();
+            return Ok(new { migrated });
         }
 
         // ===== CHALLENGES =====

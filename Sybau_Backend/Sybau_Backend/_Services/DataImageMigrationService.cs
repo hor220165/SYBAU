@@ -29,7 +29,7 @@ public sealed class DataImageMigrationService
         _logger = logger;
     }
 
-    public async Task MigrateAsync()
+    public async Task<int> MigrateAsync()
     {
         var migrated = 0;
 
@@ -144,11 +144,12 @@ public sealed class DataImageMigrationService
         if (migrated <= 0)
         {
             _logger.LogInformation("Image migration checked configured media storage. No database image values needed migration.");
-            return;
+            return migrated;
         }
 
         await _context.SaveChangesAsync();
         _logger.LogInformation("Migrated {Count} database image values to configured media storage.", migrated);
+        return migrated;
     }
 
     private async Task<string?> TryMoveDataImageAsync(string? dataImageUrl, string category, string namePrefix)
