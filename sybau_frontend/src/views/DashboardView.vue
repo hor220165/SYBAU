@@ -535,9 +535,9 @@ onMounted(async () => {
 }
 
 .equip-slot-inner::after {
-  bottom: 6px;
+  top: 6px;
   right: 6px;
-  border-width: 0 1px 1px 0;
+  border-width: 1px 1px 0 0;
 }
 
 .equip-empty {

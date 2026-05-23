@@ -764,9 +764,9 @@ onMounted(() => loadProfile());
 }
 
 .equip-slot-inner::after {
-  bottom: 6px;
+  top: 6px;
   right: 6px;
-  border-width: 0 1px 1px 0;
+  border-width: 1px 1px 0 0;
 }
 
 .equip-item-icon {
@@ -1767,7 +1767,7 @@ onMounted(() => loadProfile());
   .equip-slot-inner::after {
     width: 6px;
     height: 6px;
-    border-color: rgba(168, 85, 247, 0.3);
+    border-color: var(--rarity-border);
   }
 
   .boost-value {

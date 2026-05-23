@@ -130,24 +130,6 @@ Widget _buildBoosterSlotCorners(
             edges: const _CornerEdges(top: true, right: true),
           ),
         ),
-        Positioned(
-          bottom: inset,
-          left: inset,
-          child: _BoosterSlotCorner(
-            color: cornerColor,
-            length: length,
-            edges: const _CornerEdges(bottom: true, left: true),
-          ),
-        ),
-        Positioned(
-          right: inset,
-          bottom: inset,
-          child: _BoosterSlotCorner(
-            color: cornerColor,
-            length: length,
-            edges: const _CornerEdges(right: true, bottom: true),
-          ),
-        ),
       ],
     ),
   );
