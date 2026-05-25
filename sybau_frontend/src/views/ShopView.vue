@@ -6,9 +6,9 @@ import Header from '@/components/Header.vue';
 import ShopFeatureCard from '@/components/ShopFeatureCard.vue';
 import ShopChestCard from '@/components/ShopChestCard.vue';
 import coinIcon from '@/assets/SYBAU_Coin.png';
-import starterChestOpenImage from '@/assets/Starter_Chest_open.png';
-import goldChestOpenImage from '@/assets/Gold_Chest_open.png';
-import prestigeChestOpenImage from '@/assets/Prestige_Chest_open.png';
+import starterChestOpenImage from '@/assets/Starter_Chest_open.webp';
+import goldChestOpenImage from '@/assets/Gold_Chest_open.webp';
+import prestigeChestOpenImage from '@/assets/Prestige_Chest_open.webp';
 import { ItemType } from '@/models/ItemType';
 import type { item } from '@/models/Item';
 import type { ShopDisplayItem } from '@/models/ShopDisplayItem';
@@ -40,9 +40,22 @@ const dailyCountdownNowMs = ref(Date.now());
 const { refreshUser } = useAuth();
 const { text, translate } = useLanguage();
 let dailyCountdownTimer: number | undefined;
+const preloadedImages = new Set<string>();
 
 const popupMessage = ref("");
 const popupType = ref<"success" | "error" | "info">("success");
+
+const preloadImage = (imageUrl?: string | null) => {
+  if (!imageUrl || preloadedImages.has(imageUrl)) return;
+  preloadedImages.add(imageUrl);
+  const image = new Image();
+  image.decoding = 'async';
+  image.src = imageUrl;
+};
+
+const preloadOpenChestImages = () => {
+  [starterChestOpenImage, goldChestOpenImage, prestigeChestOpenImage].forEach(preloadImage);
+};
 
 const syncCoinsFromStorage = () => {
   const raw = JSON.parse(localStorage.getItem('user') || '{}');
@@ -479,6 +492,7 @@ const loadPageData = async () => {
 
 onMounted(() => {
   void loadPageData();
+  window.setTimeout(preloadOpenChestImages, 250);
   dailyCountdownTimer = window.setInterval(tickDailyCountdown, 1000);
 });
 
@@ -683,13 +697,27 @@ onUnmounted(() => {
               type="button"
               @click="revealChest"
             >
-              <img :src="chestOpening.imageUrl" alt="" class="opening-chest-image" />
+              <img
+                :src="chestOpening.imageUrl"
+                alt=""
+                class="opening-chest-image"
+                loading="eager"
+                decoding="async"
+                fetchpriority="high"
+              />
               <span class="opening-text">{{ text('Klicke zum Öffnen', 'Click to open') }}</span>
             </button>
 
             <div v-else class="opened-chest-scene">
               <div class="opened-chest-reveal" :class="{ 'has-reward': openedReward }">
-                <img :src="getOpenChestImage(chestOpening)" alt="" class="opened-chest-image" />
+                <img
+                  :src="getOpenChestImage(chestOpening)"
+                  alt=""
+                  class="opened-chest-image"
+                  loading="eager"
+                  decoding="async"
+                  fetchpriority="high"
+                />
                 <div v-if="openedReward" class="reward-card reward-from-chest">
                   <div class="reward-burst"></div>
                   <div class="reward-image">
@@ -697,6 +725,8 @@ onUnmounted(() => {
                       v-if="rewardImageUrl(openedReward)"
                       :src="rewardImageUrl(openedReward)"
                       alt=""
+                      loading="eager"
+                      decoding="async"
                     />
                     <span v-else>✨</span>
                   </div>

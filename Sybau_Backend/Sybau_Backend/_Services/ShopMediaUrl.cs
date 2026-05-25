@@ -12,7 +12,7 @@ public static class ShopMediaUrl
     {
         if (string.IsNullOrWhiteSpace(storedUrl)) return storedUrl;
         return storedUrl.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase)
-            ? imageEndpoint
+            ? MediaUrlVersion.Append(imageEndpoint, storedUrl)
             : storedUrl;
     }
 }

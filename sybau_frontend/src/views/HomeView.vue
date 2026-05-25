@@ -117,15 +117,15 @@
 import FooterComponent from '@/components/FooterComponent.vue';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import shortLogo from '@/assets/Sybau_logo_short.png';
+import shortLogo from '@/assets/Sybau_logo_short.webp';
 import skinnySprite from '@/assets/Spritesheet_Skinny.png';
 import normalSprite from '@/assets/Spritesheet_Normal.png';
 import bodybuilderSprite from '@/assets/Spritesheet_Bodybuilder.png';
-import dashboardMockup from '@/assets/mockups/Dashboard-Mockup2.png';
-import workoutsMockup from '@/assets/mockups/Workouts-Mockup.png';
-import questsMockup from '@/assets/mockups/Quests-Mockup.png';
-import shopMockup from '@/assets/mockups/Shop-Mockup.png';
-import leaderboardMockup from '@/assets/mockups/Leaderboard-Mockup.png';
+import dashboardMockup from '@/assets/mockups/Dashboard-Mockup2.webp';
+import workoutsMockup from '@/assets/mockups/Workouts-Mockup.webp';
+import questsMockup from '@/assets/mockups/Quests-Mockup.webp';
+import shopMockup from '@/assets/mockups/Shop-Mockup.webp';
+import leaderboardMockup from '@/assets/mockups/Leaderboard-Mockup.webp';
 
 const router = useRouter();
 const statsBox = ref<HTMLElement | null>(null);

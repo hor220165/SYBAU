@@ -3,7 +3,9 @@ namespace Sybau_Backend._Services;
 public static class ProfileMediaUrl
 {
     public static string? ForUser(int userId, string? storedProfileImageUrl) =>
-        HasUsableStoredImage(storedProfileImageUrl) ? $"/users/{userId}/profile/image" : null;
+        HasUsableStoredImage(storedProfileImageUrl)
+            ? MediaUrlVersion.Append($"/users/{userId}/profile/image", storedProfileImageUrl)
+            : null;
 
     public static string? ForUser(int userId, bool hasProfileImage) =>
         hasProfileImage ? $"/users/{userId}/profile/image" : null;

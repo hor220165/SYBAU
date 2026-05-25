@@ -399,7 +399,7 @@ app.UseStaticFiles(new StaticFileOptions
     {
         if (context.Context.Request.Path.StartsWithSegments("/uploads"))
         {
-            context.Context.Response.Headers.CacheControl = "public, max-age=2592000, immutable";
+            context.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
         }
     }
 });

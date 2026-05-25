@@ -5,7 +5,7 @@ import { useAuth } from "@/composables/useAuth";
 import { useCoins } from '@/composables/useCoins';
 import { useNotifications } from '@/composables/useNotifications';
 import NotificationBell from '@/components/NotificationBell.vue';
-import logoUrl from '@/assets/Sybau_logo_short.png';
+import logoUrl from '@/assets/Sybau_logo_short.webp';
 import starIconUrl from '@/assets/Star_Pixel.png';
 import xpIconUrl from '@/assets/XP_Pixel.png';
 import coinIconUrl from '@/assets/SYBAU_Coin.png';

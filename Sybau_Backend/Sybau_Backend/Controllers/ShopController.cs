@@ -416,7 +416,7 @@ namespace Sybau_Backend.Controllers
 
         private void SetImageCacheHeaders()
         {
-            Response.Headers.CacheControl = "public, max-age=2592000, immutable";
+            Response.Headers.CacheControl = "public, max-age=31536000, immutable";
             Response.Headers.Remove("Pragma");
             Response.Headers.Remove("Expires");
         }
