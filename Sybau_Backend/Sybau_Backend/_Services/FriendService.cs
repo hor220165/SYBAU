@@ -142,9 +142,7 @@ public class FriendService
                 f.Id,
                 FriendId = f.RequesterId == userId ? f.AddresseeId : f.RequesterId,
                 FriendUserName = f.RequesterId == userId ? f.Addressee.UserName : f.Requester.UserName,
-                FriendHasProfileImage = f.RequesterId == userId
-                    ? f.Addressee.ProfileImageUrl != null && f.Addressee.ProfileImageUrl != string.Empty
-                    : f.Requester.ProfileImageUrl != null && f.Requester.ProfileImageUrl != string.Empty,
+                FriendProfileImageUrl = f.RequesterId == userId ? f.Addressee.ProfileImageUrl : f.Requester.ProfileImageUrl,
                 FriendLevel = f.RequesterId == userId ? f.Addressee.Avatar.Level : f.Requester.Avatar.Level,
                 FriendExperience = f.RequesterId == userId ? f.Addressee.Avatar.Experience : f.Requester.Avatar.Experience,
                 FriendsSince = f.AcceptedAt ?? f.CreatedAt
@@ -156,7 +154,7 @@ public class FriendService
             Id = f.Id,
             FriendId = f.FriendId,
             FriendUserName = f.FriendUserName,
-            FriendProfileImageUrl = ProfileMediaUrl.ForUser(f.FriendId, f.FriendHasProfileImage),
+            FriendProfileImageUrl = ProfileMediaUrl.ForUser(f.FriendId, f.FriendProfileImageUrl),
             FriendLevel = f.FriendLevel,
             FriendExperience = f.FriendExperience,
             FriendBodyStage = _bodyStageService.GetBodyStage(f.FriendLevel).ToString(),
@@ -175,7 +173,7 @@ public class FriendService
                 f.Id,
                 FromUserId = f.Requester.Id,
                 FromUserName = f.Requester.UserName,
-                FromUserHasProfileImage = f.Requester.ProfileImageUrl != null && f.Requester.ProfileImageUrl != string.Empty,
+                FromUserProfileImageUrl = f.Requester.ProfileImageUrl,
                 FromUserLevel = f.Requester.Avatar.Level,
                 f.CreatedAt
             })
@@ -186,7 +184,7 @@ public class FriendService
             Id = f.Id,
             FromUserId = f.FromUserId,
             FromUserName = f.FromUserName,
-            FromUserProfileImageUrl = ProfileMediaUrl.ForUser(f.FromUserId, f.FromUserHasProfileImage),
+            FromUserProfileImageUrl = ProfileMediaUrl.ForUser(f.FromUserId, f.FromUserProfileImageUrl),
             FromUserLevel = f.FromUserLevel,
             SentAt = f.CreatedAt
         });
@@ -203,7 +201,7 @@ public class FriendService
                 f.Id,
                 ToUserId = f.Addressee.Id,
                 ToUserName = f.Addressee.UserName,
-                ToUserHasProfileImage = f.Addressee.ProfileImageUrl != null && f.Addressee.ProfileImageUrl != string.Empty,
+                ToUserProfileImageUrl = f.Addressee.ProfileImageUrl,
                 ToUserLevel = f.Addressee.Avatar.Level,
                 f.CreatedAt
             })
@@ -214,7 +212,7 @@ public class FriendService
             Id = f.Id,
             ToUserId = f.ToUserId,
             ToUserName = f.ToUserName,
-            ToUserProfileImageUrl = ProfileMediaUrl.ForUser(f.ToUserId, f.ToUserHasProfileImage),
+            ToUserProfileImageUrl = ProfileMediaUrl.ForUser(f.ToUserId, f.ToUserProfileImageUrl),
             ToUserLevel = f.ToUserLevel,
             SentAt = f.CreatedAt
         });
@@ -241,7 +239,7 @@ public class FriendService
             {
                 u.Id,
                 u.UserName,
-                HasProfileImage = u.ProfileImageUrl != null && u.ProfileImageUrl != string.Empty,
+                u.ProfileImageUrl,
                 u.Avatar.Experience,
                 u.Avatar.Level
             })
@@ -252,7 +250,7 @@ public class FriendService
             Id = u.Id,
             Rank = index + 1,
             UserName = u.UserName,
-            ProfileImageUrl = ProfileMediaUrl.ForUser(u.Id, u.HasProfileImage),
+            ProfileImageUrl = ProfileMediaUrl.ForUser(u.Id, u.ProfileImageUrl),
             Experience = u.Experience,
             Level = u.Level
         });

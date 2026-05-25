@@ -105,7 +105,7 @@ public class WorkoutsController : ControllerBase
         }
     }
 
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize]
     [HttpPost("exercises")]
     public async Task<IActionResult> CreateExercise([FromBody] CreateExerciseDto dto)
     {

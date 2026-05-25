@@ -178,11 +178,13 @@ onUnmounted(() => {
 }
 
 .navbar {
+  box-sizing: border-box;
   display: flex;
   justify-content: center;
   gap: 8px;
   padding: 0 40px;
   height: 60px;
+  max-width: 100%;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: sticky;
   top: 83px;

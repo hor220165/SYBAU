@@ -8,9 +8,10 @@
         <div class="profile-avatar-wrap">
           <div class="profile-avatar">
             <img
-              :src="profileImageUrl || noProfilePicture"
+              :src="displayProfileImageUrl"
               :alt="currentUsername"
               class="profile-avatar-image"
+              @error="profileImageFailed = true"
             />
           </div>
           <button
@@ -187,13 +188,13 @@
         </div>
         <div class="heatmap-body">
           <div class="heatmap-weekdays">
-            <span></span>
             <span>Mo</span>
-            <span></span>
+            <span>Di</span>
             <span>Mi</span>
-            <span></span>
+            <span>Do</span>
             <span>Fr</span>
-            <span></span>
+            <span>Sa</span>
+            <span>So</span>
           </div>
           <div class="heatmap-grid">
             <div
@@ -513,6 +514,7 @@ const popupMessage = ref('');
 const popupType = ref<'success' | 'error'>('success');
 const profileImageInput = ref<HTMLInputElement | null>(null);
 const showImageActions = ref(false);
+const profileImageFailed = ref(false);
 
 const profileUnchanged = computed(() => {
   return editingUsername.value.trim() === currentUsername.value
@@ -521,6 +523,11 @@ const profileUnchanged = computed(() => {
 
 const currentEmail = computed(() => user.value?.email ?? user.value?.Email ?? settingsCopy.value.noEmail);
 const profileImageUrl = computed(() => resolveMediaUrl(user.value?.profileImageUrl ?? user.value?.ProfileImageUrl ?? ''));
+const displayProfileImageUrl = computed(() => profileImageFailed.value ? noProfilePicture : (profileImageUrl.value || noProfilePicture));
+
+watch(profileImageUrl, () => {
+  profileImageFailed.value = false;
+});
 
 async function saveProfile() {
   savingProfile.value = true;

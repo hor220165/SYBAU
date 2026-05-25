@@ -105,14 +105,14 @@
       />
     </div>
 
-    <!-- Create Custom Workout Card -->
+    <!-- Create Custom Exercise Card -->
     <div class="custom-workout-card">
       <div class="custom-content">
-        <h3>{{ text('Erstelle dein eigenes Workout', 'Create your own workout') }}</h3>
-        <p>{{ text('Kombiniere Übungen und verdiene Bonus-XP', 'Combine exercises and earn bonus XP') }}</p>
+        <h3>{{ text('Erstelle deine eigene Übung', 'Create your own exercise') }}</h3>
+        <p>{{ text('Lege Schwierigkeit und Eintragsformat fest.', 'Choose difficulty and logging format.') }}</p>
       </div>
-      <button class="create-btn" @click="showCreateWorkout = true">
-        {{ text('Workout erstellen', 'Create workout') }}
+      <button class="create-btn" @click="showCreateExercise = true">
+        {{ text('Übung erstellen', 'Create exercise') }}
       </button>
     </div>
 
@@ -152,25 +152,25 @@
    <!-- Footer -->
     <FooterComponent />
 
-  <!-- Create Workout Modal -->
-  <div v-if="showCreateWorkout" class="workout-modal-overlay" @click.self="showCreateWorkout = false">
+  <!-- Create Exercise Modal -->
+  <div v-if="showCreateExercise" class="workout-modal-overlay" @click.self="showCreateExercise = false">
     <div class="create-workout-modal">
       <div class="modal-header-cw">
-        <h2>{{ text('Neues Workout erstellen', 'Create new workout') }}</h2>
-        <button class="close-btn-cw" type="button" aria-label="Schließen" data-tooltip="Schließen" @click="showCreateWorkout = false">&times;</button>
+        <h2>{{ text('Neue Übung erstellen', 'Create new exercise') }}</h2>
+        <button class="close-btn-cw" type="button" aria-label="Schließen" data-tooltip="Schließen" @click="showCreateExercise = false">&times;</button>
       </div>
-      <form @submit.prevent="handleCreateWorkout">
+      <form @submit.prevent="handleCreateExercise">
         <div class="form-group-cw">
           <label>{{ text('Name', 'Name') }}</label>
-          <input v-model="newWorkout.name" type="text" required :placeholder="text('z.B. Oberkörper Power', 'e.g. Upper body power')">
+          <input v-model="newExercise.name" type="text" required :placeholder="text('z.B. Liegestütze', 'e.g. Push-ups')">
         </div>
         <div class="form-group-cw">
           <label>{{ text('Beschreibung', 'Description') }}</label>
-          <input v-model="newWorkout.description" type="text" :placeholder="text('Optional', 'Optional')">
+          <input v-model="newExercise.description" type="text" :placeholder="text('Optional', 'Optional')">
         </div>
         <div class="form-group-cw">
           <label>{{ text('Kategorie', 'Category') }}</label>
-          <select v-model.number="newWorkout.category" required>
+          <select v-model.number="newExercise.category" required>
             <option value="" disabled>-- {{ text('Wähle Kategorie', 'Choose category') }} --</option>
             <option :value="0">Strength</option>
             <option :value="1">Core</option>
@@ -179,19 +179,30 @@
           </select>
         </div>
         <div class="form-group-cw">
-          <label>{{ text('Übungen', 'Exercises') }}</label>
-          <div v-for="(entry, idx) in newWorkout.exercises" :key="idx" class="exercise-row-cw">
-            <select v-model.number="entry.exerciseId" required>
-              <option value="0" disabled>-- {{ text('Übung wählen', 'Choose exercise') }} --</option>
-              <option v-for="ex in exercises" :key="ex.id" :value="ex.id">{{ translate(ex.name) }}</option>
-            </select>
-            <input v-model.number="entry.dailyLimit" type="number" min="1" :placeholder="text('Limit', 'Limit')" class="limit-input-cw">
-            <button type="button" class="remove-btn-cw" @click="newWorkout.exercises.splice(idx, 1)" v-if="newWorkout.exercises.length > 1">✕</button>
-          </div>
-          <button type="button" class="add-exercise-btn" @click="newWorkout.exercises.push({ exerciseId: 0, dailyLimit: 50 })">+ {{ text('Übung hinzufügen', 'Add exercise') }}</button>
+          <label>{{ text('Schwierigkeit', 'Difficulty') }}</label>
+          <select v-model.number="newExercise.difficulty" required>
+            <option :value="0">Easy</option>
+            <option :value="1">Medium</option>
+            <option :value="2">Hard</option>
+          </select>
+        </div>
+        <div class="form-group-cw">
+          <label>{{ text('Eintragsformat', 'Logging format') }}</label>
+          <select
+            v-model="newExercise.unit"
+            required
+            @change="newExercise.dailyLimit = newExercise.unit === 'Time' ? 600 : 50"
+          >
+            <option value="Reps">{{ text('Einheiten', 'Units') }}</option>
+            <option value="Time">{{ text('Zeit', 'Time') }}</option>
+          </select>
+        </div>
+        <div class="form-group-cw">
+          <label>{{ newExercise.unit === 'Time' ? text('Tageslimit (Sekunden)', 'Daily limit (seconds)') : text('Tageslimit (Einheiten)', 'Daily limit (units)') }}</label>
+          <input v-model.number="newExercise.dailyLimit" type="number" required min="1" :placeholder="newExercise.unit === 'Time' ? '600' : '50'">
         </div>
         <div class="modal-actions-cw">
-          <button type="button" class="btn-cancel-cw" @click="showCreateWorkout = false">{{ text('Abbrechen', 'Cancel') }}</button>
+          <button type="button" class="btn-cancel-cw" @click="showCreateExercise = false">{{ text('Abbrechen', 'Cancel') }}</button>
           <button type="submit" class="btn-create-cw">{{ text('Erstellen', 'Create') }}</button>
         </div>
       </form>
@@ -427,7 +438,7 @@ interface ExerciseLocal {
 
 const exercises = ref<ExerciseLocal[]>([]);
 const workouts = ref<any[]>([]);
-const showCreateWorkout = ref(false);
+const showCreateExercise = ref(false);
 const totalExercises = ref(0);
 const todayActivity = ref({ steps: 0, kilometers: 0 });
 const expandedWorkout = ref<number | null>(null);
@@ -441,11 +452,13 @@ const repsDrafts = ref<Record<number, number>>({});
 const timeDrafts = ref<Record<number, string>>({});
 const distanceDrafts = ref<Record<number, number>>({});
 const distanceUnits = ref<Record<number, 'm' | 'km'>>({});
-const newWorkout = ref({
+const newExercise = ref({
   name: '',
   description: '',
   category: '' as number | '',
-  exercises: [{ exerciseId: 0, dailyLimit: 50 }] as { exerciseId: number; dailyLimit: number }[]
+  difficulty: 1,
+  unit: 'Reps' as 'Reps' | 'Time',
+  dailyLimit: 50,
 });
 
 onMounted(async () => {
@@ -767,31 +780,49 @@ function toggleWorkoutExpand(id: number) {
   expandedWorkout.value = expandedWorkout.value === id ? null : id;
 }
 
-async function handleCreateWorkout() {
-  const validExercises = newWorkout.value.exercises.filter(e => e.exerciseId > 0);
-  if (validExercises.length === 0) {
+async function handleCreateExercise() {
+  if (!newExercise.value.name.trim()) {
     popupType.value = 'error';
-    popupMessage.value = 'Bitte mindestens eine Übung hinzufügen';
+    popupMessage.value = text('Bitte gib einen Übungsnamen ein.', 'Please enter an exercise name.');
     return;
   }
+  if (newExercise.value.category === '') {
+    popupType.value = 'error';
+    popupMessage.value = text('Bitte wähle eine Kategorie.', 'Please choose a category.');
+    return;
+  }
+  if (Number(newExercise.value.dailyLimit ?? 0) <= 0) {
+    popupType.value = 'error';
+    popupMessage.value = text('Bitte gib ein Tageslimit ein.', 'Please enter a daily limit.');
+    return;
+  }
+
   try {
-    await workoutService.createWorkout({
-      name: newWorkout.value.name,
-      description: newWorkout.value.description || null,
-      category: newWorkout.value.category,
-      exercises: validExercises
+    const difficultyName = mapDifficulty(newExercise.value.difficulty);
+    await workoutService.createExercise({
+      name: newExercise.value.name.trim(),
+      description: newExercise.value.description.trim() || null,
+      category: newExercise.value.category,
+      difficulty: newExercise.value.difficulty,
+      unit: newExercise.value.unit,
+      xpPerRep: difficultyXp[difficultyName] ?? 1,
+      dailyLimit: Number(newExercise.value.dailyLimit)
     });
-    showCreateWorkout.value = false;
-    newWorkout.value = {
+    showCreateExercise.value = false;
+    newExercise.value = {
       name: '',
       description: '',
       category: '',
-      exercises: [{ exerciseId: 0, dailyLimit: 50 }]
+      difficulty: 1,
+      unit: 'Reps',
+      dailyLimit: 50,
     };
-    await loadWorkouts();
+    await loadExercises();
+    popupType.value = 'success';
+    popupMessage.value = text('Übung erstellt.', 'Exercise created.');
   } catch (err: any) {
     popupType.value = 'error';
-    popupMessage.value = err.response?.data || text('Fehler beim Erstellen des Workouts', 'Could not create workout');
+    popupMessage.value = err.response?.data || text('Fehler beim Erstellen der Übung', 'Could not create exercise');
   }
 }
 

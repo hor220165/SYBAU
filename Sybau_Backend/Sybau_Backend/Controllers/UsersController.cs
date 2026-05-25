@@ -77,7 +77,7 @@ namespace Sybau_Backend.Controllers
                 Id = user.Id,
                 UserName = user.UserName,
                 Email = user.Email,
-                ProfileImageUrl = ProfileMediaUrl.ForUser(user.Id, user.HasProfileImage),
+                ProfileImageUrl = ProfileMediaUrl.ForUser(user.Id, user.ProfileImageUrl),
                 Coins = user.Coins,
                 TotalXp = CalculateTotalXp(user.AvatarLevel, user.AvatarExperience),
                 Avatar = avatarDto,
@@ -118,7 +118,7 @@ namespace Sybau_Backend.Controllers
                 {
                     Id = user.Id,
                     UserName = user.UserName,
-                    ProfileImageUrl = ProfileMediaUrl.ForUser(user.Id, user.HasProfileImage),
+                    ProfileImageUrl = ProfileMediaUrl.ForUser(user.Id, user.ProfileImageUrl),
                     IsPrivate = true
                 });
             }
@@ -195,7 +195,7 @@ namespace Sybau_Backend.Controllers
             {
                 Id = user.Id,
                 UserName = user.UserName,
-                ProfileImageUrl = ProfileMediaUrl.ForUser(user.Id, user.HasProfileImage),
+                ProfileImageUrl = ProfileMediaUrl.ForUser(user.Id, user.ProfileImageUrl),
                 IsPrivate = false,
                 Avatar = avatarDto,
                 TotalXp = CalculateTotalXp(user.AvatarLevel, user.AvatarExperience),
@@ -308,7 +308,7 @@ namespace Sybau_Backend.Controllers
             _imageCache.Remove(DataImageCache.ProfileKey(user.Id));
             await _mediaStorage.DeletePublicUrlAsync(previousImageUrl);
 
-            return Ok(new { profileImageUrl = ProfileMediaUrl.ForUser(user.Id, true) });
+            return Ok(new { profileImageUrl = ProfileMediaUrl.ForUser(user.Id, profileImageUrl) });
         }
 
         // GET /users/{id}/profile/image
@@ -328,32 +328,24 @@ namespace Sybau_Backend.Controllers
         private IActionResult ToProfileImageResponse(string? imageUrl, string cacheKey)
         {
             if (string.IsNullOrWhiteSpace(imageUrl)) return NotFound();
-
-            SetImageCacheHeaders();
+            if (!ProfileMediaUrl.HasUsableStoredImage(imageUrl)) return NotFound();
 
             if (!imageUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
             {
                 if (Uri.TryCreate(imageUrl, UriKind.Absolute, out var absoluteUri) &&
                     (absoluteUri.Scheme == Uri.UriSchemeHttp || absoluteUri.Scheme == Uri.UriSchemeHttps))
                 {
+                    SetImageCacheHeaders();
                     return Redirect(imageUrl);
                 }
 
-                var localPath = imageUrl.StartsWith("/", StringComparison.Ordinal)
-                    ? imageUrl
-                    : $"/{imageUrl}";
-                if (localPath.StartsWith("//", StringComparison.Ordinal) ||
-                    localPath.StartsWith("/\\", StringComparison.Ordinal))
-                {
-                    return BadRequest("Ungueltiger Bildpfad.");
-                }
-
-                return LocalRedirect(localPath);
+                return NotFound();
             }
 
             if (!DataImageCache.TryDecodeDataImage(imageUrl, out var image, out var error) || image == null)
                 return BadRequest(error);
 
+            SetImageCacheHeaders();
             _imageCache.Set(cacheKey, image);
             return File(image.Bytes, image.ContentType);
         }
@@ -516,7 +508,7 @@ namespace Sybau_Backend.Controllers
                 Id = u.Id,
                 UserName = u.UserName,
                 Email = u.Email,
-                ProfileImageUrl = ProfileMediaUrl.ForUser(u.Id, !string.IsNullOrWhiteSpace(u.ProfileImageUrl)),
+                ProfileImageUrl = ProfileMediaUrl.ForUser(u.Id, u.ProfileImageUrl),
                 Coins = u.Coins,
                 IsAdmin = u.IsAdmin,
                 IsProfilePrivate = u.IsProfilePrivate,
@@ -563,7 +555,7 @@ namespace Sybau_Backend.Controllers
                 Id = user.Id,
                 UserName = user.UserName,
                 Email = user.Email,
-                ProfileImageUrl = ProfileMediaUrl.ForUser(user.Id, !string.IsNullOrWhiteSpace(user.ProfileImageUrl)),
+                ProfileImageUrl = ProfileMediaUrl.ForUser(user.Id, user.ProfileImageUrl),
                 Coins = user.Coins,
                 Avatar = avatarDto,
                 IsAdmin = user.IsAdmin,

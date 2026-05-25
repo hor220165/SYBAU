@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Star } from 'lucide-vue-next';
 import type { LeaderboardDisplayEntry } from '@/models/LeaderboardDisplayEntry';
 import { resolveMediaUrl } from '@/services/api';
@@ -21,6 +21,12 @@ const rankType = computed(() => {
 });
 
 const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImageUrl));
+const profileImageFailed = ref(false);
+const displayProfileImageUrl = computed(() => profileImageFailed.value ? noProfilePicture : (profileImageUrl.value || noProfilePicture));
+
+watch(profileImageUrl, () => {
+  profileImageFailed.value = false;
+});
 </script>
 
 <template>
@@ -36,9 +42,10 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
       @click="emit('openProfile', player.Id)"
     >
       <img
-        :src="profileImageUrl || noProfilePicture"
+        :src="displayProfileImageUrl"
         :alt="player.UserName"
         class="avatar-image"
+        @error="profileImageFailed = true"
       />
     </button>
 

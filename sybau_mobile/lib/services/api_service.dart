@@ -867,6 +867,12 @@ class ApiService {
     return _authedPostJson('/workouts', payload);
   }
 
+  static Future<Map<String, dynamic>> createExercise(
+    Map<String, dynamic> payload,
+  ) async {
+    return _authedPostJson('/workouts/exercises', payload);
+  }
+
   static Future<Map<String, dynamic>> getQuestStats() async {
     return _authedGetJson('/quests/stats');
   }

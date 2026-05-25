@@ -42,6 +42,12 @@ const activityYears = computed<number[]>(() => {
     .sort((a, b) => b - a);
 });
 const selectedActivityYear = computed(() => activityYears.value[0] ?? new Date().getFullYear());
+const profileImageFailed = ref(false);
+const displayProfileImageUrl = computed(() => profileImageFailed.value ? noProfilePicture : (profileImageUrl.value || noProfilePicture));
+
+watch(profileImageUrl, () => {
+  profileImageFailed.value = false;
+});
 
 const unlockedAchievements = computed(() => achievements.value.filter((item) => item.unlocked ?? item.Unlocked).length);
 const maxAchievementPage = computed(() => Math.max(0, Math.ceil(achievements.value.length / 4) - 1));
@@ -216,7 +222,7 @@ watch(
           <div v-else-if="failed" class="sheet-state">Profil konnte nicht geladen werden.</div>
           <template v-else-if="profile">
             <header class="profile-head">
-              <img :src="profileImageUrl || noProfilePicture" alt="" class="profile-image" />
+              <img :src="displayProfileImageUrl" alt="" class="profile-image" @error="profileImageFailed = true" />
               <div class="profile-copy">
                 <h2>{{ profile.userName ?? profile.UserName }}</h2>
                 <p v-if="!isPrivate">Level {{ level }} • {{ formatCompact(totalXp) }} XP</p>
@@ -293,13 +299,13 @@ watch(
                 </div>
                 <div class="heatmap-body">
                   <div class="heatmap-weekdays">
-                    <span></span>
                     <span>Mo</span>
-                    <span></span>
+                    <span>Di</span>
                     <span>Mi</span>
-                    <span></span>
+                    <span>Do</span>
                     <span>Fr</span>
-                    <span></span>
+                    <span>Sa</span>
+                    <span>So</span>
                   </div>
                   <div class="heatmap-grid">
                     <div v-for="week in activityHeatmapWeeks" :key="week.start" class="heatmap-week">

@@ -48,9 +48,9 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
   final TextEditingController _newWorkoutDescriptionController =
       TextEditingController();
   int? _newWorkoutCategory;
-  List<Map<String, int>> _newWorkoutExercises = <Map<String, int>>[
-    <String, int>{'exerciseId': 0, 'dailyLimit': 50},
-  ];
+  int _newExerciseDifficulty = 1;
+  String _newExerciseUnit = 'Reps';
+  int _newExerciseDailyLimit = 50;
 
   static const List<String> _filters = <String>[
     'Alle',
@@ -1104,28 +1104,13 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
     });
   }
 
-  List<Map<String, dynamic>> get _exerciseOptions {
-    return _exercises
-        .map((dynamic e) {
-          final m = _map(e);
-          final id = _toInt(m['id']);
-          if (id == 0) return null;
-          return <String, dynamic>{
-            'id': id,
-            'name': _string(m['name'], fallback: 'Übung $id'),
-          };
-        })
-        .whereType<Map<String, dynamic>>()
-        .toList(growable: false);
-  }
-
   void _resetCreateWorkoutForm() {
     _newWorkoutNameController.clear();
     _newWorkoutDescriptionController.clear();
     _newWorkoutCategory = null;
-    _newWorkoutExercises = <Map<String, int>>[
-      <String, int>{'exerciseId': 0, 'dailyLimit': 50},
-    ];
+    _newExerciseDifficulty = 1;
+    _newExerciseUnit = 'Reps';
+    _newExerciseDailyLimit = 50;
   }
 
   void _openCreateWorkoutForm() {
@@ -1142,33 +1127,10 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
     });
   }
 
-  void _addWorkoutExerciseRow() {
+  void _changeExerciseDailyLimit(int delta) {
+    final next = (_newExerciseDailyLimit + delta).clamp(1, 9999);
     setState(() {
-      _newWorkoutExercises.add(<String, int>{
-        'exerciseId': 0,
-        'dailyLimit': 50,
-      });
-    });
-  }
-
-  void _removeWorkoutExerciseRow(int index) {
-    if (_newWorkoutExercises.length <= 1) return;
-    setState(() {
-      _newWorkoutExercises.removeAt(index);
-    });
-  }
-
-  void _setWorkoutExerciseId(int index, int? exerciseId) {
-    setState(() {
-      _newWorkoutExercises[index]['exerciseId'] = exerciseId ?? 0;
-    });
-  }
-
-  void _changeWorkoutDailyLimit(int index, int delta) {
-    final current = _newWorkoutExercises[index]['dailyLimit'] ?? 1;
-    final next = (current + delta).clamp(1, 9999);
-    setState(() {
-      _newWorkoutExercises[index]['dailyLimit'] = next;
+      _newExerciseDailyLimit = next.toInt();
     });
   }
 
@@ -1179,8 +1141,8 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
     if (name.isEmpty) {
       widget.showSnack(
         _lt(
-          de: 'Bitte gib einen Workout-Namen ein.',
-          en: 'Please enter a workout name.',
+          de: 'Bitte gib einen Übungsnamen ein.',
+          en: 'Please enter an exercise name.',
         ),
       );
       return;
@@ -1194,35 +1156,24 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
       return;
     }
 
-    final selectedExercises = _newWorkoutExercises
-        .where((row) => (row['exerciseId'] ?? 0) > 0)
-        .map(
-          (row) => <String, dynamic>{
-            'exerciseId': row['exerciseId'],
-            'dailyLimit': row['dailyLimit'] ?? 50,
-          },
-        )
-        .toList(growable: false);
-
-    if (selectedExercises.isEmpty) {
-      widget.showSnack(
-        _lt(
-          de: 'Bitte mindestens eine Übung hinzufügen.',
-          en: 'Please add at least one exercise.',
-        ),
-      );
-      return;
-    }
-
     setState(() => _creatingWorkout = true);
     try {
-      await ApiService.createWorkout(<String, dynamic>{
+      final xpPerRep = switch (_newExerciseDifficulty) {
+        0 => 1,
+        2 => 5,
+        _ => 2,
+      };
+
+      await ApiService.createExercise(<String, dynamic>{
         'name': name,
         'description': _newWorkoutDescriptionController.text.trim().isEmpty
             ? null
             : _newWorkoutDescriptionController.text.trim(),
         'category': category,
-        'exercises': selectedExercises,
+        'difficulty': _newExerciseDifficulty,
+        'unit': _newExerciseUnit,
+        'xpPerRep': xpPerRep,
+        'dailyLimit': _newExerciseDailyLimit,
       });
 
       if (!mounted) return;
@@ -1231,15 +1182,15 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
         _showCreateWorkoutForm = false;
         _resetCreateWorkoutForm();
       });
-      widget.showSnack(_lt(de: 'Workout erstellt.', en: 'Workout created.'));
+      widget.showSnack(_lt(de: 'Übung erstellt.', en: 'Exercise created.'));
       await _load();
     } catch (_) {
       if (!mounted) return;
       setState(() => _creatingWorkout = false);
       widget.showSnack(
         _lt(
-          de: 'Workout konnte nicht erstellt werden.',
-          en: 'Workout could not be created.',
+          de: 'Übung konnte nicht erstellt werden.',
+          en: 'Exercise could not be created.',
         ),
       );
     }
@@ -2263,8 +2214,8 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
               children: [
                 Text(
                   _lt(
-                    de: 'Erstelle dein eigenes Workout',
-                    en: 'Create your own workout',
+                    de: 'Erstelle deine eigene Übung',
+                    en: 'Create your own exercise',
                   ),
                   style: const TextStyle(
                     color: Colors.white,
@@ -2275,8 +2226,8 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                 const SizedBox(height: 4),
                 Text(
                   _lt(
-                    de: 'Kombiniere Übungen und verdiene Bonus-XP',
-                    en: 'Combine exercises and earn bonus XP',
+                    de: 'Lege Schwierigkeit und Eintragsformat fest.',
+                    en: 'Choose difficulty and logging format.',
                   ),
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.7),
@@ -2308,10 +2259,7 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                           height: 46,
                           child: Center(
                             child: Text(
-                              _lt(
-                                de: 'Workout erstellen',
-                                en: 'Create workout',
-                              ),
+                              _lt(de: 'Übung erstellen', en: 'Create exercise'),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
@@ -2329,8 +2277,8 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                     decoration: InputDecoration(
                       labelText: _lt(de: 'Name', en: 'Name'),
                       hintText: _lt(
-                        de: 'z.B. Oberkörper Power',
-                        en: 'e.g. Upper body power',
+                        de: 'z.B. Liegestütze',
+                        en: 'e.g. Push-ups',
                       ),
                       hintStyle: TextStyle(
                         color: Colors.white.withOpacity(0.45),
@@ -2434,121 +2382,132 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                       setState(() => _newWorkoutCategory = value);
                     },
                   ),
-                  const SizedBox(height: 12),
-                  ..._newWorkoutExercises.asMap().entries.map((entry) {
-                    final idx = entry.key;
-                    final row = entry.value;
-                    final selectedExerciseId = row['exerciseId'];
-                    final dailyLimit = row['dailyLimit'] ?? 50;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: Colors.white.withOpacity(0.04),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.1),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<int>(
+                    value: _newExerciseDifficulty,
+                    dropdownColor: Color(0xFF1F1B2E),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: _lt(de: 'Schwierigkeit', en: 'Difficulty'),
+                      labelStyle: TextStyle(
+                        color: Colors.white.withOpacity(0.78),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.04),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: Colors.white.withOpacity(0.16),
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: Colors.white.withOpacity(0.16),
+                        ),
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem<int>(value: 0, child: Text('Easy')),
+                      DropdownMenuItem<int>(value: 1, child: Text('Medium')),
+                      DropdownMenuItem<int>(value: 2, child: Text('Hard')),
+                    ],
+                    onChanged: (value) {
+                      setState(() => _newExerciseDifficulty = value ?? 1);
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: _newExerciseUnit,
+                    dropdownColor: Color(0xFF1F1B2E),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: _lt(
+                        de: 'Eintragsformat',
+                        en: 'Logging format',
+                      ),
+                      labelStyle: TextStyle(
+                        color: Colors.white.withOpacity(0.78),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.04),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: Colors.white.withOpacity(0.16),
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: Colors.white.withOpacity(0.16),
+                        ),
+                      ),
+                    ),
+                    items: [
+                      DropdownMenuItem<String>(
+                        value: 'Reps',
+                        child: Text(_lt(de: 'Einheiten', en: 'Units')),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'Time',
+                        child: Text(_lt(de: 'Zeit', en: 'Time')),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _newExerciseUnit = value;
+                        _newExerciseDailyLimit = value == 'Time' ? 600 : 50;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white.withOpacity(0.04),
+                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _newExerciseUnit == 'Time'
+                                ? _lt(
+                                    de: 'Tageslimit: $_newExerciseDailyLimit Sekunden',
+                                    en: 'Daily limit: $_newExerciseDailyLimit seconds',
+                                  )
+                                : _lt(
+                                    de: 'Tageslimit: $_newExerciseDailyLimit Einheiten',
+                                    en: 'Daily limit: $_newExerciseDailyLimit units',
+                                  ),
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            DropdownButtonFormField<int>(
-                              value: selectedExerciseId == 0
-                                  ? null
-                                  : selectedExerciseId,
-                              dropdownColor: Color(0xFF1F1B2E),
-                              style: const TextStyle(color: Colors.white),
-                              decoration: InputDecoration(
-                                labelText: _lt(
-                                  de: 'Übung wählen',
-                                  en: 'Choose exercise',
-                                ),
-                                labelStyle: TextStyle(
-                                  color: Colors.white.withOpacity(0.72),
-                                ),
-                                filled: true,
-                                fillColor: Colors.white.withOpacity(0.04),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(
-                                    color: Colors.white.withOpacity(0.14),
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(
-                                    color: Colors.white.withOpacity(0.14),
-                                  ),
-                                ),
-                              ),
-                              items: _exerciseOptions
-                                  .map(
-                                    (option) => DropdownMenuItem<int>(
-                                      value: option['id'] as int,
-                                      child: Text(
-                                        _td(option['name'] as String),
-                                      ),
-                                    ),
-                                  )
-                                  .toList(growable: false),
-                              onChanged: (value) =>
-                                  _setWorkoutExerciseId(idx, value),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Limit: $dailyLimit',
-                                    style: TextStyle(
-                                      color: Colors.white.withOpacity(0.8),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () =>
-                                      _changeWorkoutDailyLimit(idx, -1),
-                                  icon: const Icon(
-                                    Icons.remove_circle_outline,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () =>
-                                      _changeWorkoutDailyLimit(idx, 1),
-                                  icon: const Icon(
-                                    Icons.add_circle_outline,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                if (_newWorkoutExercises.length > 1)
-                                  IconButton(
-                                    onPressed: () =>
-                                        _removeWorkoutExerciseRow(idx),
-                                    icon: const Icon(
-                                      Icons.close,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ],
+                        IconButton(
+                          onPressed: () => _changeExerciseDailyLimit(
+                            _newExerciseUnit == 'Time' ? -30 : -1,
+                          ),
+                          icon: const Icon(
+                            Icons.remove_circle_outline,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                    );
-                  }),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: _addWorkoutExerciseRow,
-                      icon: const Icon(Icons.add, color: Color(0xFFF9A8D4)),
-                      label: Text(
-                        _lt(de: 'Übung hinzufügen', en: 'Add exercise'),
-                        style: const TextStyle(color: Color(0xFFF9A8D4)),
-                      ),
+                        IconButton(
+                          onPressed: () => _changeExerciseDailyLimit(
+                            _newExerciseUnit == 'Time' ? 30 : 1,
+                          ),
+                          icon: const Icon(
+                            Icons.add_circle_outline,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 6),

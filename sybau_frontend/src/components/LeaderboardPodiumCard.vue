@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Crown, Star } from 'lucide-vue-next';
 import type { LeaderboardDisplayEntry } from '@/models/LeaderboardDisplayEntry';
 import { resolveMediaUrl } from '@/services/api';
@@ -22,6 +22,12 @@ const cardClass = computed(() => {
 
 const badgeLabel = computed(() => `#${props.place}`);
 const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImageUrl));
+const profileImageFailed = ref(false);
+const displayProfileImageUrl = computed(() => profileImageFailed.value ? noProfilePicture : (profileImageUrl.value || noProfilePicture));
+
+watch(profileImageUrl, () => {
+  profileImageFailed.value = false;
+});
 
 // Pattern removed
 </script>
@@ -35,9 +41,10 @@ const profileImageUrl = computed(() => resolveMediaUrl(props.player.ProfileImage
     <button class="avatar-shell" type="button" @click="emit('openProfile', player.Id)">
       <div class="avatar-core">
         <img
-          :src="profileImageUrl || noProfilePicture"
+          :src="displayProfileImageUrl"
           :alt="player.UserName"
           class="avatar-image"
+          @error="profileImageFailed = true"
         />
       </div>
     </button>

@@ -167,7 +167,7 @@ public class AuthService
                 user.Id,
                 user.UserName,
                 user.Email,
-                ProfileImageUrl = ProfileMediaUrl.ForUser(user.Id, !string.IsNullOrWhiteSpace(user.ProfileImageUrl)),
+                ProfileImageUrl = ProfileMediaUrl.ForUser(user.Id, user.ProfileImageUrl),
                 user.IsAdmin,
             }
         };

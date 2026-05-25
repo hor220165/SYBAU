@@ -24,9 +24,12 @@ public class WorkoutService
     public async Task<ExerciseDto> CreateExerciseAsync(CreateExerciseDto dto)
     {
         if (dto == null) throw new ArgumentNullException(nameof(dto));
+        if (string.IsNullOrWhiteSpace(dto.Name)) throw new ArgumentException("Name ist erforderlich.");
+        if (dto.DailyLimit <= 0) throw new ArgumentException("Tageslimit muss groesser als 0 sein.");
 
         var exerciseUnit = NormalizeExerciseUnit(dto.ResolveUnit());
-        var exercise = new Exercise(dto.Name, dto.Description, dto.Category, dto.Difficulty, dto.XpPerRep, dto.DailyLimit, exerciseUnit);
+        var description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim();
+        var exercise = new Exercise(dto.Name.Trim(), description, dto.Category, dto.Difficulty, dto.XpPerRep, dto.DailyLimit, exerciseUnit);
         _context.Exercises.Add(exercise);
         await _context.SaveChangesAsync();
 

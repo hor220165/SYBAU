@@ -26,7 +26,7 @@ public class UserService
         public int Id { get; init; }
         public string UserName { get; init; } = string.Empty;
         public string Email { get; init; } = string.Empty;
-        public bool HasProfileImage { get; init; }
+        public string? ProfileImageUrl { get; init; }
         public int Coins { get; init; }
         public bool IsAdmin { get; init; }
         public bool IsProfilePrivate { get; init; }
@@ -49,7 +49,7 @@ public class UserService
                 Id = u.Id,
                 UserName = u.UserName,
                 Email = u.Email,
-                HasProfileImage = u.ProfileImageUrl != null && u.ProfileImageUrl != string.Empty,
+                ProfileImageUrl = u.ProfileImageUrl,
                 Coins = u.Coins,
                 IsAdmin = u.IsAdmin,
                 IsProfilePrivate = u.IsProfilePrivate,
@@ -92,7 +92,7 @@ public class UserService
             {
                 u.Id,
                 u.UserName,
-                HasProfileImage = u.ProfileImageUrl != null && u.ProfileImageUrl != string.Empty,
+                u.ProfileImageUrl,
                 u.Avatar.Experience,
                 u.Avatar.Level
             })
@@ -112,7 +112,7 @@ public class UserService
                 Id = u.User.Id,
                 Rank = index + 1,
                 UserName = u.User.UserName,
-                ProfileImageUrl = ProfileMediaUrl.ForUser(u.User.Id, u.User.HasProfileImage),
+                ProfileImageUrl = ProfileMediaUrl.ForUser(u.User.Id, u.User.ProfileImageUrl),
                 Experience = u.User.Experience,
                 TotalXp = u.TotalXp,
                 Level = u.User.Level
@@ -139,7 +139,7 @@ public class UserService
             {
                 u.Id,
                 u.UserName,
-                HasProfileImage = u.ProfileImageUrl != null && u.ProfileImageUrl != string.Empty,
+                u.ProfileImageUrl,
                 u.Avatar.Level,
                 u.Avatar.Experience
             })
@@ -149,7 +149,7 @@ public class UserService
         {
             Id = u.Id,
             UserName = u.UserName,
-            ProfileImageUrl = ProfileMediaUrl.ForUser(u.Id, u.HasProfileImage),
+            ProfileImageUrl = ProfileMediaUrl.ForUser(u.Id, u.ProfileImageUrl),
             Level = u.Level,
             TotalXp = CalculateTotalXp(u.Level, u.Experience)
         });
