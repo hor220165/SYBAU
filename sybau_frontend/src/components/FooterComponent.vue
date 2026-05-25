@@ -17,14 +17,22 @@
 </template>
 
 <script setup lang="ts">
+import { nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
-const navigateTo = (path: string) => {
-  router.push(path).then(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  });
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+};
+
+const navigateTo = async (path: string) => {
+  await router.push(path);
+  await nextTick();
+  scrollToTop();
+  window.requestAnimationFrame(scrollToTop);
 };
 </script>
 

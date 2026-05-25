@@ -9,9 +9,12 @@
         <h1 class="impressum-title">Impressum</h1>
 
         <section class="impressum-section">
-          <h2>Informationspflicht gemäß § 5 E-Commerce-Gesetz</h2>
+          <h2>Projekt</h2>
           <p><strong>DidimDynamics</strong></p>
-          <p>Studentenprojekt</p>
+          <p>
+            SYBAU ist ein Schülerprojekt der Spengergasse. Die App verbindet Training mit
+            Avatar-Fortschritt, XP, Coins, Quests und einem Shop-System.
+          </p>
           <p>
             Spengergasse 20<br>
             1050 Wien<br>
@@ -22,8 +25,8 @@
         <section class="impressum-section">
           <h2>Kontakt</h2>
           <p>
-            E-Mail: <a href="mailto:hor220165@spengergasse.at">hor220165@spengergasse.at</a><br>
-            Website: <a href="https://github.com/hor220165/DidimDynamics" target="_blank">github.com/hor220165/DidimDynamics</a>
+            Bei Fragen zum Projekt oder zu gespeicherten Daten ist das Team per E-Mail erreichbar:
+            <a href="mailto:hor220165@spengergasse.at">hor220165@spengergasse.at</a>
           </p>
         </section>
 
@@ -50,38 +53,19 @@
         </section>
 
         <section class="impressum-section">
-          <h2>Haftungsausschluss</h2>
-          
-          <h3>Haftung für Inhalte</h3>
+          <h2>Hinweis</h2>
           <p>
-            Die Inhalte unserer Webseite wurden mit größter Sorgfalt erstellt. Für die Richtigkeit, 
-            Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen. 
-            Gemäß § 7 ECG sind wir für eigene Inhalte auf diesen Seiten nach den allgemeinen 
-            Gesetzen verantwortlich.
-          </p>
-
-          <h3>Haftung für Links</h3>
-          <p>
-            Unser Angebot enthält Links zu externen Webseiten Dritter, auf deren Inhalte wir keinen 
-            Einfluss haben. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter 
-            oder Betreiber der Seiten verantwortlich.
-          </p>
-
-          <h3>Urheberrecht</h3>
-          <p>
-            Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen 
-            dem österreichischen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und 
-            jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen 
-            Zustimmung des jeweiligen Autors bzw. Erstellers.
+            SYBAU ist kein medizinisches Angebot. Trainingsdaten und Fortschritte dienen nur der
+            Nutzung der App und ersetzen keine professionelle Beratung.
           </p>
         </section>
 
         <section class="impressum-section">
-          <h2>Datenschutz</h2>
+          <h2>Daten und Datenschutz</h2>
           <p>
-            Die vollständige Datenschutzerklärung finden Sie unter
-            <a href="/datenschutz">/datenschutz</a>. Dort erklären wir, welche Daten SYBAU speichert,
-            wofür sie verwendet werden und welche Rechte betroffene Personen haben.
+            SYBAU speichert nur Daten, die für Account, Login, Profil, Training, Freunde,
+            Fortschritt und Shop-Funktionen gebraucht werden. Die ausführliche Erklärung steht auf
+            der Seite <RouterLink to="/datenschutz">Datenschutz</RouterLink>.
           </p>
         </section>
 
@@ -94,9 +78,23 @@
 </template>
 
 <script setup lang="ts">
+import { nextTick, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
+
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+};
+
+onMounted(async () => {
+  scrollToTop();
+  await nextTick();
+  scrollToTop();
+  window.requestAnimationFrame(scrollToTop);
+});
 
 const goBack = () => {
   router.back();

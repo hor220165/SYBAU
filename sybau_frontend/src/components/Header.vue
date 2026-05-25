@@ -95,7 +95,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   <!-- Header -->
   <header class="header">
     <div class="logo-section">
-      <button class="logo-button" type="button" @click="navigateTo('/home')" aria-label="Zur Landingpage">
+      <button class="logo-button" type="button" @click="navigateTo('/')" aria-label="Zur Landingpage">
         <img :src="logoUrl" alt="Sybau_Logo" class="logo-img" />
       </button>
     </div>

@@ -16,7 +16,8 @@ import DatenschutzView from '@/views/DatenschutzView.vue';
 const routes = [
     {
       path: '/',
-      redirect: '/home'
+      component: HomeView,
+      alias: '/home'
     },
     {
       path: '/auth',
@@ -24,15 +25,13 @@ const routes = [
     },
     {
       path: '/impressum',
-      component: ImpressumView
+      component: ImpressumView,
+      meta: { scrollToTop: true }
     },
     {
       path: '/datenschutz',
-      component: DatenschutzView
-    },
-    {
-        path: '/home',
-        component: HomeView
+      component: DatenschutzView,
+      meta: { scrollToTop: true }
     },
     {
       path: '/dashboard',
@@ -76,7 +75,8 @@ const routes = [
 export const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior(_to, _from, savedPosition) {
+  scrollBehavior(to, _from, savedPosition) {
+    if (to.meta.scrollToTop) return { top: 0, left: 0 };
     if (savedPosition) return savedPosition;
     return { top: 0, left: 0 };
   }
@@ -90,7 +90,7 @@ router.beforeEach((to, _from, next) => {
       next();
     } else {
       alert('Du hast keine Admin-Berechtigung!');
-      next('/home');
+      next('/');
     }
   } else {
     next();

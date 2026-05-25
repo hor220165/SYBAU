@@ -2,7 +2,7 @@
   <div class="landing-page">
     <header class="landing-header">
       <div class="container header-inner">
-        <button class="logo-button" type="button" @click="navigateTo('/home')" aria-label="SYBAU Home">
+        <button class="logo-button" type="button" @click="navigateTo('/')" aria-label="SYBAU Home">
           <img :src="shortLogo" alt="SYBAU Logo" class="logo-image">
         </button>
 

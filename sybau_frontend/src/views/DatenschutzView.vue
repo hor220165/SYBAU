@@ -6,51 +6,45 @@
       <article class="legal-content">
         <h1>Datenschutzerklärung</h1>
         <p class="intro">
-          Diese Datenschutzerklärung beschreibt, welche personenbezogenen Daten im Rahmen des
-          Schülerprojekts SYBAU verarbeitet werden. Sie ersetzt keine anwaltliche Prüfung, ist aber
-          auf die im Projekt verwendeten Funktionen abgestimmt.
+          Hier erklären wir kurz und verständlich, welche Daten SYBAU braucht, wo sie gespeichert
+          werden und wofür sie verwendet werden.
         </p>
 
         <section>
           <h2>Verantwortlicher</h2>
           <p>
-            DidimDynamics, Studentenprojekt, Spengergasse 20, 1050 Wien, Österreich.
+            DidimDynamics, Schülerprojekt der Spengergasse, Spengergasse 20, 1050 Wien, Österreich.
             Kontakt: <a href="mailto:hor220165@spengergasse.at">hor220165@spengergasse.at</a>
           </p>
         </section>
 
         <section>
-          <h2>Welche Daten werden verarbeitet?</h2>
+          <h2>Welche Daten speichert SYBAU?</h2>
           <ul>
-            <li>Accountdaten: Benutzername, E-Mail-Adresse und verschlüsselter Passwort-Hash.</li>
-            <li>Profildaten: Profilbild, Privatsphäre-Einstellung, Avatar-Level, XP, Coins, Booster und Items.</li>
-            <li>Trainingsdaten: Workouts, Übungen, Wiederholungen, Zeiten, Distanzen, Quests, Achievements und Aktivitätsverlauf.</li>
-            <li>Soziale Daten: Freundschaften, Freundschaftsanfragen, Challenges und Benachrichtigungen.</li>
-            <li>Technische Daten: JWT-Login-Token, Cookie-/Storage-Einwilligung und notwendige Server-Logs.</li>
+            <li>Account: Benutzername, E-Mail-Adresse und ein geschützter Passwort-Hash.</li>
+            <li>Profil: Profilbild, Privatsphäre-Einstellung, Avatar-Level, XP, Coins, Booster und Items.</li>
+            <li>Training: Übungen, Wiederholungen, Zeiten, Distanzen, Quests, Achievements und Aktivität.</li>
+            <li>Freunde: Freundschaften, Anfragen, Challenges und Benachrichtigungen.</li>
+            <li>Browser: Login-Token, ein kleiner User-Cache und die Cookie-/Storage-Auswahl.</li>
           </ul>
         </section>
 
         <section>
-          <h2>Zwecke und Rechtsgrundlagen</h2>
+          <h2>Wofür werden die Daten genutzt?</h2>
           <p>
-            Die Verarbeitung erfolgt, damit Accounts erstellt, Logins abgesichert, Spielfortschritt
-            gespeichert, Profile angezeigt und App-Funktionen wie Freunde, Leaderboard, Shop,
-            Quests und Workouts bereitgestellt werden können. Rechtsgrundlage ist vor allem die
-            Vertragserfüllung bzw. Durchführung der gewünschten App-Funktionen nach Art. 6 Abs. 1 lit. b DSGVO.
-            Für notwendige Sicherheit, Missbrauchsschutz und Fehleranalyse stützen wir uns auf
-            berechtigte Interessen nach Art. 6 Abs. 1 lit. f DSGVO. Optionale Einwilligungen können
-            jederzeit widerrufen werden.
+            Die Daten werden verwendet, damit Login, Profil, Fortschritt, Training, Leaderboard,
+            Shop, Freunde und Benachrichtigungen funktionieren. Außerdem helfen technische Daten
+            dabei, Fehler zu finden und den Account vor Missbrauch zu schützen.
           </p>
         </section>
 
         <section>
-          <h2>Speicherung und Anbieter</h2>
+          <h2>Wo liegen die Daten?</h2>
           <p>
-            Das Frontend wird über Vercel ausgeliefert. Die API läuft auf Render. In Produktion ist
-            die Datenbank eine PostgreSQL-Datenbank bei Supabase. Medien wie Profil-, Item- und
-            Chest-Bilder werden in Supabase Storage gespeichert. Lokal in der Entwicklung wird
-            SQLite verwendet. Im Browser werden der Login-Token, ein kleiner User-Cache und die
-            Cookie-Auswahl in localStorage gespeichert.
+            Die Website wird über Vercel ausgeliefert. Die API läuft auf Render. Die Produktionsdaten
+            liegen in einer PostgreSQL-Datenbank bei Supabase. Bilder für Profile, Items und Chests
+            liegen in Supabase Storage. Im Browser werden Login-Token, User-Cache und Cookie-Auswahl
+            in localStorage gespeichert.
           </p>
         </section>
 
@@ -58,38 +52,37 @@
           <h2>Speicherdauer</h2>
           <p>
             Account- und Fortschrittsdaten bleiben gespeichert, solange der Account besteht.
-            Profilbilder können entfernt werden. Nach einer Account-Löschung werden die zugehörigen
-            Accountdaten gelöscht, soweit keine technischen oder gesetzlichen Gründe eine kurze
-            Restaufbewahrung erfordern.
+            Profilbilder können entfernt werden. Bei einer Account-Löschung werden die zugehörigen
+            Daten gelöscht, soweit das technisch möglich ist und keine kurze Restaufbewahrung nötig
+            ist.
           </p>
         </section>
 
         <section>
-          <h2>Empfänger und Weitergabe</h2>
+          <h2>Wer bekommt Daten?</h2>
           <p>
-            Daten werden nicht zu Werbezwecken verkauft. Technische Empfänger sind Vercel für das
-            Frontend, Render für die API sowie Supabase für Datenbank und Medienablage. SYBAU nutzt
-            keinen Google Login und kein Google Tracking. Echtgeld-Käufe sind aktuell nur als
-            Platzhalter im Shop sichtbar; es werden dafür keine Zahlungsdaten verarbeitet oder
-            gespeichert.
+            Die Daten werden nicht verkauft und nicht für Werbung weitergegeben. Technisch beteiligt
+            sind Vercel für die Website, Render für die API und Supabase für Datenbank und Bilder.
+            SYBAU nutzt keinen Google Login und kein Google Tracking. Echtgeld-Käufe sind aktuell nur
+            ein Platzhalter im Shop; es werden dafür keine Zahlungsdaten verarbeitet.
           </p>
         </section>
 
         <section>
-          <h2>Betroffenenrechte</h2>
+          <h2>Deine Rechte</h2>
           <p>
-            Betroffene Personen können Auskunft, Berichtigung, Löschung, Einschränkung der
-            Verarbeitung, Datenübertragbarkeit und Widerspruch verlangen. Außerdem besteht das Recht,
-            sich bei der Österreichischen Datenschutzbehörde zu beschweren.
+            Du kannst fragen, welche Daten gespeichert sind, falsche Daten berichtigen lassen oder
+            die Löschung deines Accounts verlangen. Du kannst dich außerdem bei der Österreichischen
+            Datenschutzbehörde beschweren.
           </p>
         </section>
 
         <section>
           <h2>Sicherheit</h2>
           <p>
-            Passwörter werden nicht im Klartext gespeichert, sondern gehasht. Authentifizierung
-            erfolgt über JWT, sensible API-Endpunkte sind rate-limitiert und dynamische API-Antworten
-            werden mit No-Store-Headern ausgeliefert.
+            Passwörter werden nicht im Klartext gespeichert. Für Logins verwendet SYBAU JWT-Token,
+            wichtige API-Endpunkte sind begrenzt und dynamische Antworten werden nicht im Browser
+            zwischengespeichert.
           </p>
         </section>
 
@@ -100,13 +93,22 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { nextTick, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
-onMounted(() => {
+const scrollToTop = () => {
   window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+};
+
+onMounted(async () => {
+  scrollToTop();
+  await nextTick();
+  scrollToTop();
+  window.requestAnimationFrame(scrollToTop);
 });
 
 const goBack = () => {
