@@ -248,7 +248,7 @@ builder.Services.AddCors(options =>
                 }
 
                 return uri.Scheme == Uri.UriSchemeHttps
-                    && uri.Host.EndsWith(".netlify.app", StringComparison.OrdinalIgnoreCase)
+                    && uri.Host.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase)
                     && uri.Host.Contains("sybau", StringComparison.OrdinalIgnoreCase);
             }
 
@@ -412,43 +412,5 @@ app.UseAuthorization();
 app.MapGet("/health", () => Results.Ok(new { status = "ok", app = "sybau" }));
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
-app.MapFallback(async context =>
-{
-    var requestPath = context.Request.Path;
-    if (!ShouldServeSpaFallback(requestPath))
-    {
-        context.Response.StatusCode = StatusCodes.Status404NotFound;
-        return;
-    }
-
-    var webRoot = app.Environment.WebRootPath
-        ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot");
-    var indexPath = Path.Combine(webRoot, "index.html");
-    if (!File.Exists(indexPath))
-    {
-        context.Response.StatusCode = StatusCodes.Status404NotFound;
-        return;
-    }
-
-    context.Response.ContentType = "text/html; charset=utf-8";
-    await context.Response.SendFileAsync(indexPath);
-});
 
 app.Run();
-
-static bool ShouldServeSpaFallback(PathString requestPath)
-{
-    if (requestPath.HasValue && Path.HasExtension(requestPath.Value)) return false;
-
-    return !requestPath.StartsWithSegments("/auth") &&
-           !requestPath.StartsWithSegments("/users") &&
-           !requestPath.StartsWithSegments("/friends") &&
-           !requestPath.StartsWithSegments("/quests") &&
-           !requestPath.StartsWithSegments("/achievements") &&
-           !requestPath.StartsWithSegments("/workouts") &&
-           !requestPath.StartsWithSegments("/shop") &&
-           !requestPath.StartsWithSegments("/admin") &&
-           !requestPath.StartsWithSegments("/hubs") &&
-           !requestPath.StartsWithSegments("/uploads") &&
-           !requestPath.StartsWithSegments("/health");
-}

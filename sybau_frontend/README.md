@@ -2,12 +2,20 @@
 
 Vue 3 + TypeScript + Vite frontend.
 
-## Netlify
+## Vercel
 
-The repository root contains `netlify.toml`, which tells Netlify to build this app from
-`sybau_frontend`, publish `dist`, and route Vue history URLs back to `index.html`.
+Import the repository in Vercel and set the project root directory to `sybau_frontend`.
 
-Netlify uses this public build variable:
+Use these build settings:
+
+```text
+Framework Preset: Vite
+Install Command: npm ci
+Build Command: npm run build
+Output Directory: dist
+```
+
+Set this public build variable for Production and Preview:
 
 ```bash
 VITE_API_URL=https://sybau-xll5.onrender.com
@@ -15,10 +23,11 @@ VITE_API_URL=https://sybau-xll5.onrender.com
 
 For local development, the frontend falls back to `http://localhost:5243` when `VITE_API_URL` is not set.
 
-The backend CORS allowlist must include the deployed Netlify origin:
+`vercel.json` routes Vue history URLs such as `/profile` and `/workouts` back to `index.html`.
+
+The backend CORS allowlist accepts SYBAU Vercel preview domains ending in `.vercel.app`.
+After adding a final custom domain, add that exact origin to the backend CORS configuration too:
 
 ```text
-https://sybau-fitness.netlify.app
+https://your-domain.example
 ```
-
-Add your custom production domain too if you use one.

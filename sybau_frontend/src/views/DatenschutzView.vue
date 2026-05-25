@@ -46,7 +46,7 @@
         <section>
           <h2>Speicherung und Anbieter</h2>
           <p>
-            Das Frontend wird über Netlify ausgeliefert. Die API läuft auf Render. In Produktion ist
+            Das Frontend wird über Vercel ausgeliefert. Die API läuft auf Render. In Produktion ist
             die Datenbank eine PostgreSQL-Datenbank bei Supabase. Medien wie Profil-, Item- und
             Chest-Bilder werden in Supabase Storage gespeichert. Lokal in der Entwicklung wird
             SQLite verwendet. Im Browser werden der Login-Token, ein kleiner User-Cache und die
@@ -67,7 +67,7 @@
         <section>
           <h2>Empfänger und Weitergabe</h2>
           <p>
-            Daten werden nicht zu Werbezwecken verkauft. Technische Empfänger sind Netlify für das
+            Daten werden nicht zu Werbezwecken verkauft. Technische Empfänger sind Vercel für das
             Frontend, Render für die API sowie Supabase für Datenbank und Medienablage. SYBAU nutzt
             keinen Google Login und kein Google Tracking. Echtgeld-Käufe sind aktuell nur als
             Platzhalter im Shop sichtbar; es werden dafür keine Zahlungsdaten verarbeitet oder
