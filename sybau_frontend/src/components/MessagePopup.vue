@@ -3,7 +3,7 @@ import { ref, watch, nextTick } from "vue";
 
 const props = defineProps<{
   message: string
-  type?: "success" | "error"
+  type?: "success" | "error" | "info"
   duration?: number
 }>();
 
@@ -47,7 +47,7 @@ watch(
       </button>
 
       <div class="popup-title">
-        {{ type === "error" ? "Error" : "Success" }}
+        {{ type === "error" ? "Error" : type === "info" ? "Info" : "Success" }}
       </div>
 
       <div class="popup-text">
@@ -87,6 +87,14 @@ watch(
   border: 1px solid rgba(248, 113, 113, 0.7);
   box-shadow: 0 0 12px rgba(248, 113, 113, 0.5),
               0 0 24px rgba(248, 113, 113, 0.35),
+              0 10px 25px rgba(0,0,0,0.5);
+}
+
+.popup.info {
+  background: rgba(30, 64, 175, 0.95);
+  border: 1px solid rgba(96, 165, 250, 0.72);
+  box-shadow: 0 0 12px rgba(96, 165, 250, 0.45),
+              0 0 24px rgba(96, 165, 250, 0.3),
               0 10px 25px rgba(0,0,0,0.5);
 }
 

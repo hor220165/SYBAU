@@ -72,13 +72,11 @@ export const authService = {
     login: (email: string, password: string) =>
         API.post('/auth/login', { email, password }),
     register: (username: string, email: string, password: string) =>
-        API.post('/auth/register', { username, email, password }),
-    googleLogin: (idToken: string) =>
-        API.post('/auth/google', { idToken })
+        API.post('/auth/register', { username, email, password })
 };
 
 export const userService = {
-    // Hole User aus localStorage statt API (falls bereits vorhanden)
+    // Hole User aus localStorage statt API, wenn bereits vorhanden
     getProfile: async () => {
         const { data } = await API.get('/users/profile');
         const normalized = normalizeUser(data);
@@ -130,6 +128,7 @@ export const itemService = {
     getChests: () => API.get('/shop/chests'),
     getUserItems: () => API.get('/users/items'),
     buyItem: (itemId: number) => API.post(`/shop/buy-item/${itemId}`),
+    startRealMoneyPurchase: (itemId: number) => API.post(`/shop/real-money/${itemId}/start`),
     sellItem: (itemId: number, quantity = 1) => API.post(`/shop/sell-item/${itemId}`, { quantity }),
     openChest: (chestId: number) => API.post(`/shop/chests/${chestId}/open`)
 };

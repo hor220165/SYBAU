@@ -112,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router'; 
 import { useAuth } from '@/composables/useAuth';
 import { userService } from '@/services/api';
@@ -121,10 +121,8 @@ import ValidatedEmailInput from '@/components/ValidatedEmailInput.vue';
 import ValidatedPasswordInput from '@/components/ValidatedPasswordInput.vue';
 
 const router = useRouter(); 
-const { login, googleLogin } = useAuth();
+const { login } = useAuth();
 const { text } = useLanguage();
-
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
 const isLogin = ref(true); 
 const email = ref(''); 
@@ -133,40 +131,10 @@ const username = ref('');
 const privacyAccepted = ref(false);
 const loading = ref(false);
 const errorMessage = ref('');
-const googleLoginButtonRef = ref<HTMLDivElement | null>(null);
-const googleRegisterButtonRef = ref<HTMLDivElement | null>(null);
 const loginEmailRef = ref<{ validate: () => boolean; normalizedValue: () => string } | null>(null);
 const loginPasswordRef = ref<{ validate: () => boolean } | null>(null);
 const registerEmailRef = ref<{ validate: () => boolean; normalizedValue: () => string } | null>(null);
 const registerPasswordRef = ref<{ validate: () => boolean } | null>(null);
-let googleScriptEl: HTMLScriptElement | null = null;
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: {
-            client_id: string;
-            callback: (response: { credential?: string }) => void;
-          }) => void;
-          renderButton: (
-            parent: HTMLElement,
-            options: {
-              type?: 'standard' | 'icon';
-              theme?: 'outline' | 'filled_blue' | 'filled_black';
-              size?: 'large' | 'medium' | 'small';
-              text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
-              shape?: 'pill' | 'rectangular' | 'circle' | 'square';
-              logo_alignment?: 'left' | 'center';
-              width?: number;
-            },
-          ) => void;
-        };
-      };
-    };
-  }
-}
 
 const parseError = (err: any, fallback: string): string => {
   const data = err.response?.data;
@@ -182,30 +150,6 @@ const parseError = (err: any, fallback: string): string => {
 
 const goToHome = () => {
   router.push('/');
-};
-
-const renderGoogleButtons = async () => {
-  await nextTick();
-  if (!window.google?.accounts.id || !googleClientId) return;
-
-  const renderConfig = {
-    theme: 'outline' as const,
-    size: 'medium' as const,
-    text: 'signin_with' as const,
-    shape: 'pill' as const,
-    logo_alignment: 'left' as const,
-    width: 460,
-  };
-
-  if (googleLoginButtonRef.value) {
-    googleLoginButtonRef.value.innerHTML = '';
-    window.google.accounts.id.renderButton(googleLoginButtonRef.value, renderConfig);
-  }
-
-  if (googleRegisterButtonRef.value) {
-    googleRegisterButtonRef.value.innerHTML = '';
-    window.google.accounts.id.renderButton(googleRegisterButtonRef.value, renderConfig);
-  }
 };
 
 const handleLogin = async () => {
@@ -258,74 +202,6 @@ const handleRegister = async () => {
   }
 }; 
 
-const handleGoogleCredential = async (response: { credential?: string }) => {
-  if (!response.credential) {
-    errorMessage.value = 'Google Login fehlgeschlagen.';
-    return;
-  }
-
-  loading.value = true;
-  errorMessage.value = '';
-  try {
-    const res = await googleLogin(response.credential);
-    const token = res.data?.token;
-    if (token) {
-      await userService.getProfile();
-      router.push('/dashboard');
-    } else {
-      errorMessage.value = 'Kein Token erhalten — Google Login fehlgeschlagen.';
-    }
-  } catch (err: any) {
-    errorMessage.value = parseError(err, 'Google Login fehlgeschlagen.');
-  } finally {
-    loading.value = false;
-  }
-};
-
-const ensureGoogleScript = async () => {
-  if (!googleClientId) {
-    return;
-  }
-
-  if (window.google?.accounts.id) {
-    window.google.accounts.id.initialize({
-      client_id: googleClientId,
-      callback: handleGoogleCredential,
-    });
-    await renderGoogleButtons();
-    return;
-  }
-
-  await new Promise<void>((resolve, reject) => {
-    googleScriptEl = document.createElement('script');
-    googleScriptEl.src = 'https://accounts.google.com/gsi/client';
-    googleScriptEl.async = true;
-    googleScriptEl.defer = true;
-    googleScriptEl.onload = () => resolve();
-    googleScriptEl.onerror = () => reject(new Error('Google script failed'));
-    document.head.appendChild(googleScriptEl);
-  });
-
-  window.google?.accounts.id.initialize({
-    client_id: googleClientId,
-    callback: handleGoogleCredential,
-  });
-  await renderGoogleButtons();
-};
-
-onMounted(() => {
-  void ensureGoogleScript();
-});
-
-watch(isLogin, () => {
-  void renderGoogleButtons();
-});
-
-onBeforeUnmount(() => {
-  if (googleScriptEl?.parentNode) {
-    googleScriptEl.parentNode.removeChild(googleScriptEl);
-  }
-});
 </script>
 
 <style>
@@ -597,75 +473,6 @@ body {
   opacity: 0.7;
   cursor: not-allowed;
   transform: none;
-}
-
-.auth-divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 18px;
-}
-
-.auth-divider span {
-  flex: 1;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.auth-divider p {
-  color: #8b9bb4;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.google-btn {
-  margin-top: 18px;
-  height: 52px;
-  border-radius: 999px;
-  border: 2px solid #8a8a8a;
-  background: #ffffff;
-  color: #202124;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.google-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
-}
-
-.google-mark {
-  color: #4285f4;
-  font-size: 2rem;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.google-btn-host {
-  margin-top: 18px;
-  display: flex;
-  justify-content: center;
-}
-
-.google-btn-host > div {
-  width: 100%;
-}
-
-/* Make the GIS button thinner */
-.google-btn-host iframe {
-  height: 40px !important;
-}
-
-.google-btn-host > div > div {
-  max-height: 40px;
 }
 
 /* === Spinner === */

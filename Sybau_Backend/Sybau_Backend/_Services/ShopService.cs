@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Sybau_Backend.Data;
 using Sybau_Backend.DTOs;
 using Sybau_Backend.Models;
@@ -21,6 +22,7 @@ public class ShopService
         public string Description { get; set; } = string.Empty;
         public ItemType Type { get; set; }
         public int Price { get; set; }
+        public decimal? RealMoneyPrice { get; set; }
         public int XpBoostPercent { get; set; }
         public int CoinBoostPercent { get; set; }
         public ItemRarity Rarity { get; set; }
@@ -121,6 +123,7 @@ public class ShopService
          var item = new Item(dto.Name,dto.Description,dto.Type,dto.Price,dto.XpBoostPercentage, dto.CoinBoostPercentage, dto.Rarity);
          if (dto.MaxQuantity > 0) item.MaxQuantity = dto.MaxQuantity;
          item.ImageUrl = dto.ImageUrl;
+         item.RealMoneyPrice = NormalizeRealMoneyPrice(dto.RealMoneyPrice);
          
          _context.Items.Add(item);
          await _context.SaveChangesAsync();
@@ -139,6 +142,7 @@ public class ShopService
         item.Description = dto.Description;
         item.Type = dto.Type;
         item.Price = dto.Price;
+        item.RealMoneyPrice = NormalizeRealMoneyPrice(dto.RealMoneyPrice);
         item.XpBoostPercent = dto.XpBoostPercentage;
         item.CoinBoostPercent = dto.CoinBoostPercentage;
         item.Rarity = dto.Rarity;
@@ -195,6 +199,7 @@ public class ShopService
                         Description = chestItem.Item.Description,
                         Type = chestItem.Item.Type,
                         Price = chestItem.Item.Price,
+                        RealMoneyPrice = chestItem.Item.RealMoneyPrice,
                         XpBoostPercent = chestItem.Item.XpBoostPercent,
                         CoinBoostPercent = chestItem.Item.CoinBoostPercent,
                         Rarity = chestItem.Item.Rarity,
@@ -240,6 +245,7 @@ public class ShopService
                         Description = chestItem.Item.Description,
                         Type = chestItem.Item.Type,
                         Price = chestItem.Item.Price,
+                        RealMoneyPrice = chestItem.Item.RealMoneyPrice,
                         XpBoostPercent = chestItem.Item.XpBoostPercent,
                         CoinBoostPercent = chestItem.Item.CoinBoostPercent,
                         Rarity = chestItem.Item.Rarity,
@@ -372,6 +378,28 @@ public class ShopService
 
         await _context.SaveChangesAsync();
         return null; // null = Erfolg
+    }
+
+    public async Task<(int StatusCode, string Message)> StartRealMoneyPurchaseAsync(int userId, int itemId)
+    {
+        var userExists = await _context.Users.AsNoTracking().AnyAsync(user => user.Id == userId);
+        if (!userExists) return (StatusCodes.Status404NotFound, "Benutzer nicht gefunden.");
+
+        var item = await _context.Items
+            .AsNoTracking()
+            .Where(candidate => candidate.Id == itemId)
+            .Select(candidate => new
+            {
+                candidate.Id,
+                candidate.RealMoneyPrice
+            })
+            .FirstOrDefaultAsync();
+
+        if (item == null) return (StatusCodes.Status404NotFound, "Item nicht gefunden.");
+        if (!item.RealMoneyPrice.HasValue || item.RealMoneyPrice.Value <= 0)
+            return (StatusCodes.Status400BadRequest, "Dieses Item hat keinen Echtgeldpreis.");
+
+        return (StatusCodes.Status501NotImplemented, "Echtgeld-Käufe sind noch in Arbeit.");
     }
 
     public async Task<(string? error, object? result)> SellItemAsync(int userId, int itemId, int quantity = 1)
@@ -572,6 +600,7 @@ public class ShopService
             Description = item.Description,
             Type = item.Type,
             Price = item.Price,
+            RealMoneyPrice = item.RealMoneyPrice,
             XpBoostPercent = item.XpBoostPercent,
             CoinBoostPercent = item.CoinBoostPercent,
             Rarity = item.Rarity,
@@ -675,6 +704,12 @@ public class ShopService
         return Math.Max(1, (int)Math.Ceiling(rawPrice / 5m) * 5);
     }
 
+    private static decimal? NormalizeRealMoneyPrice(decimal? price)
+    {
+        if (price is null || price <= 0) return null;
+        return decimal.Round(price.Value, 2, MidpointRounding.AwayFromZero);
+    }
+
     private static ChestDto ToChestDto(Chest chest)
     {
         return new ChestDto
@@ -719,6 +754,7 @@ public class ShopService
             Type = item.Type,
             BasePrice = item.Price,
             Price = DailyShopPrice(item),
+            RealMoneyPrice = item.RealMoneyPrice,
             XpBoostPercentage = item.XpBoostPercent,
             CoinBoostPercentage = item.CoinBoostPercent,
             Rarity = item.Rarity,
@@ -737,6 +773,7 @@ public class ShopService
             Description = item.Description,
             Type = item.Type,
             Price = item.Price,
+            RealMoneyPrice = item.RealMoneyPrice,
             XpBoostPercentage = item.XpBoostPercent,
             CoinBoostPercentage = item.CoinBoostPercent,
             Rarity = item.Rarity,
@@ -755,6 +792,7 @@ public class ShopService
             Description = item.Description,
             Type = item.Type,
             Price = item.Price,
+            RealMoneyPrice = item.RealMoneyPrice,
             XpBoostPercentage = item.XpBoostPercent,
             CoinBoostPercentage = item.CoinBoostPercent,
             Rarity = item.Rarity,

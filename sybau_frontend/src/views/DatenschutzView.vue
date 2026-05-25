@@ -47,19 +47,10 @@
           <h2>Speicherung und Anbieter</h2>
           <p>
             Das Frontend wird über Netlify ausgeliefert. Die API läuft auf Render. In Produktion ist
-            eine PostgreSQL-Datenbank vorgesehen; Medien wie Profil- und Itembilder werden je nach
-            Konfiguration in Supabase Storage oder Cloudinary gespeichert. Lokal in der Entwicklung
-            wird SQLite verwendet. Im Browser werden der Login-Token, ein kleiner User-Cache und die
+            die Datenbank eine PostgreSQL-Datenbank bei Supabase. Medien wie Profil-, Item- und
+            Chest-Bilder werden in Supabase Storage gespeichert. Lokal in der Entwicklung wird
+            SQLite verwendet. Im Browser werden der Login-Token, ein kleiner User-Cache und die
             Cookie-Auswahl in localStorage gespeichert.
-          </p>
-        </section>
-
-        <section>
-          <h2>Google Login</h2>
-          <p>
-            Falls Google Login aktiviert ist, verarbeitet SYBAU die von Google übermittelten
-            Basisdaten wie E-Mail-Adresse, Name und Profilbild, um einen Account zu erstellen oder
-            den Login durchzuführen.
           </p>
         </section>
 
@@ -76,9 +67,11 @@
         <section>
           <h2>Empfänger und Weitergabe</h2>
           <p>
-            Daten werden nicht zu Werbezwecken verkauft. Eine Verarbeitung durch technische Anbieter
-            kann stattfinden, soweit sie für Hosting, Datenbank, Medienablage, Google Login oder
-            Betriebssicherheit notwendig ist.
+            Daten werden nicht zu Werbezwecken verkauft. Technische Empfänger sind Netlify für das
+            Frontend, Render für die API sowie Supabase für Datenbank und Medienablage. SYBAU nutzt
+            keinen Google Login und kein Google Tracking. Echtgeld-Käufe sind aktuell nur als
+            Platzhalter im Shop sichtbar; es werden dafür keine Zahlungsdaten verarbeitet oder
+            gespeichert.
           </p>
         </section>
 

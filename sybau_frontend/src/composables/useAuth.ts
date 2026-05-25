@@ -44,27 +44,11 @@ export function useAuth() {
     return authService.register(username, email, password);
   };
 
-  const googleLogin = async (idToken: string) => {
-    const res = await authService.googleLogin(idToken);
-    const token = res.data?.token;
-    const u = res.data?.user;
-    if (token) localStorage.setItem('token', token);
-    if (u) {
-      const userToStore = normalizeUser(u);
-      if (userToStore) {
-        localStorage.setItem('user', JSON.stringify(userToStore));
-        user.value = userToStore;
-      }
-    }
-    await refreshProfile();
-    return res;
-  };
-
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     user.value = null;
   };
 
-  return { user, login, register, googleLogin, logout, refreshUser, refreshProfile };
+  return { user, login, register, logout, refreshUser, refreshProfile };
 }

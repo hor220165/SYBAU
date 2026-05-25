@@ -85,7 +85,6 @@ const progressPercent = computed(() => {
   position: relative;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
-  cursor: pointer;
 }
 
 .quest-card:hover {

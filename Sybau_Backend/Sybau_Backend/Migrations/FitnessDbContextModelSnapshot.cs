@@ -15,7 +15,7 @@ namespace Sybau_Backend.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.5");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.8");
 
             modelBuilder.Entity("Sybau_Backend.Models.Achievement", b =>
                 {
@@ -247,6 +247,414 @@ namespace Sybau_Backend.Migrations
                             Type = "MonthlyQuestsCompleted",
                             UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             XpReward = 3000
+                        },
+                        new
+                        {
+                            Id = 17,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Laufe insgesamt 1 km",
+                            Key = "first-kilometer",
+                            TargetValue = 1,
+                            Title = "First Kilometer",
+                            Type = "TotalKilometers",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 100
+                        },
+                        new
+                        {
+                            Id = 18,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Laufe insgesamt 10 km",
+                            Key = "distance-rookie",
+                            TargetValue = 10,
+                            Title = "Distance Rookie",
+                            Type = "TotalKilometers",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 250
+                        },
+                        new
+                        {
+                            Id = 19,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Laufe insgesamt 25 km",
+                            Key = "road-runner",
+                            TargetValue = 25,
+                            Title = "Road Runner",
+                            Type = "TotalKilometers",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 350
+                        },
+                        new
+                        {
+                            Id = 20,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Laufe insgesamt 100 km",
+                            Key = "ultra-runner",
+                            TargetValue = 100,
+                            Title = "Ultra Runner",
+                            Type = "TotalKilometers",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 800
+                        },
+                        new
+                        {
+                            Id = 21,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Laufe insgesamt 250 km",
+                            Key = "horizon-chaser",
+                            TargetValue = 250,
+                            Title = "Horizon Chaser",
+                            Type = "TotalKilometers",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 1600
+                        },
+                        new
+                        {
+                            Id = 22,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Laufe insgesamt 500 km",
+                            Key = "world-walker",
+                            TargetValue = 500,
+                            Title = "World Walker",
+                            Type = "TotalKilometers",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 3000
+                        },
+                        new
+                        {
+                            Id = 23,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Mache insgesamt 500 Wiederholungen",
+                            Key = "rep-starter",
+                            TargetValue = 500,
+                            Title = "Rep Starter",
+                            Type = "TotalReps",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 150
+                        },
+                        new
+                        {
+                            Id = 24,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Mache insgesamt 2.500 Wiederholungen",
+                            Key = "rep-machine",
+                            TargetValue = 2500,
+                            Title = "Rep Machine",
+                            Type = "TotalReps",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 300
+                        },
+                        new
+                        {
+                            Id = 25,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Mache insgesamt 5.000 Wiederholungen",
+                            Key = "steel-engine",
+                            TargetValue = 5000,
+                            Title = "Steel Engine",
+                            Type = "TotalReps",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 450
+                        },
+                        new
+                        {
+                            Id = 26,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Mache insgesamt 25.000 Wiederholungen",
+                            Key = "titan-arms",
+                            TargetValue = 25000,
+                            Title = "Titan Arms",
+                            Type = "TotalReps",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 1200
+                        },
+                        new
+                        {
+                            Id = 27,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Mache insgesamt 50.000 Wiederholungen",
+                            Key = "rep-overlord",
+                            TargetValue = 50000,
+                            Title = "Rep Overlord",
+                            Type = "TotalReps",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 2200
+                        },
+                        new
+                        {
+                            Id = 28,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Mache insgesamt 100.000 Wiederholungen",
+                            Key = "motion-master",
+                            TargetValue = 100000,
+                            Title = "Motion Master",
+                            Type = "TotalReps",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 4000
+                        },
+                        new
+                        {
+                            Id = 29,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Erreiche eine 3-Tage Streak",
+                            Key = "spark-streak",
+                            TargetValue = 3,
+                            Title = "Spark Streak",
+                            Type = "CurrentStreak",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 150
+                        },
+                        new
+                        {
+                            Id = 30,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Erreiche eine 7-Tage Streak",
+                            Key = "week-flame",
+                            TargetValue = 7,
+                            Title = "Week Flame",
+                            Type = "CurrentStreak",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 300
+                        },
+                        new
+                        {
+                            Id = 31,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Erreiche eine 14-Tage Streak",
+                            Key = "two-week-burn",
+                            TargetValue = 14,
+                            Title = "Two Week Burn",
+                            Type = "CurrentStreak",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 500
+                        },
+                        new
+                        {
+                            Id = 32,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Erreiche eine 30-Tage Streak",
+                            Key = "monthly-fire",
+                            TargetValue = 30,
+                            Title = "Monthly Fire",
+                            Type = "CurrentStreak",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 900
+                        },
+                        new
+                        {
+                            Id = 33,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Erreiche eine 180-Tage Streak",
+                            Key = "unstoppable",
+                            TargetValue = 180,
+                            Title = "Unstoppable",
+                            Type = "CurrentStreak",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 3500
+                        },
+                        new
+                        {
+                            Id = 34,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Erreiche eine 365-Tage Streak",
+                            Key = "year-of-fire",
+                            TargetValue = 365,
+                            Title = "Year of Fire",
+                            Type = "CurrentStreak",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 7000
+                        },
+                        new
+                        {
+                            Id = 35,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Schließe 1 Quest ab",
+                            Key = "quest-initiate",
+                            TargetValue = 1,
+                            Title = "Quest Initiate",
+                            Type = "QuestsCompleted",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 100
+                        },
+                        new
+                        {
+                            Id = 36,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Schließe 25 Quests ab",
+                            Key = "quest-veteran",
+                            TargetValue = 25,
+                            Title = "Quest Veteran",
+                            Type = "QuestsCompleted",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 600
+                        },
+                        new
+                        {
+                            Id = 37,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Schließe 50 Quests ab",
+                            Key = "quest-master",
+                            TargetValue = 50,
+                            Title = "Quest Master",
+                            Type = "QuestsCompleted",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 1100
+                        },
+                        new
+                        {
+                            Id = 38,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Schließe 100 Quests ab",
+                            Key = "quest-legend",
+                            TargetValue = 100,
+                            Title = "Quest Legend",
+                            Type = "QuestsCompleted",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 2200
+                        },
+                        new
+                        {
+                            Id = 39,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Erreiche Level 5",
+                            Key = "level-spark",
+                            TargetValue = 5,
+                            Title = "Level Spark",
+                            Type = "Level",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 200
+                        },
+                        new
+                        {
+                            Id = 40,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Erreiche Level 15",
+                            Key = "ascender",
+                            TargetValue = 15,
+                            Title = "Ascender",
+                            Type = "Level",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 600
+                        },
+                        new
+                        {
+                            Id = 41,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Erreiche Level 35",
+                            Key = "power-house",
+                            TargetValue = 35,
+                            Title = "Power House",
+                            Type = "Level",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 1200
+                        },
+                        new
+                        {
+                            Id = 42,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Erreiche Level 75",
+                            Key = "apex-level",
+                            TargetValue = 75,
+                            Title = "Apex Level",
+                            Type = "Level",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 3000
+                        },
+                        new
+                        {
+                            Id = 43,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Erreiche Level 100",
+                            Key = "level-immortal",
+                            TargetValue = 100,
+                            Title = "Level Immortal",
+                            Type = "Level",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 5000
+                        },
+                        new
+                        {
+                            Id = 44,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Trainiere an 7 verschiedenen Tagen",
+                            Key = "steady-start",
+                            TargetValue = 7,
+                            Title = "Steady Start",
+                            Type = "TrainingDays",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 250
+                        },
+                        new
+                        {
+                            Id = 45,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Trainiere an 14 verschiedenen Tagen",
+                            Key = "disciplined",
+                            TargetValue = 14,
+                            Title = "Disciplined",
+                            Type = "TrainingDays",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 400
+                        },
+                        new
+                        {
+                            Id = 46,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Trainiere an 60 verschiedenen Tagen",
+                            Key = "habit-forged",
+                            TargetValue = 60,
+                            Title = "Habit Forged",
+                            Type = "TrainingDays",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 1200
+                        },
+                        new
+                        {
+                            Id = 47,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Trainiere an 100 verschiedenen Tagen",
+                            Key = "century-club",
+                            TargetValue = 100,
+                            Title = "Century Club",
+                            Type = "TrainingDays",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 2000
+                        },
+                        new
+                        {
+                            Id = 48,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Mache 2.500 Wiederholungen in 7 Tagen",
+                            Key = "weekly-beast",
+                            TargetValue = 2500,
+                            Title = "Weekly Beast",
+                            Type = "WeeklyReps",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 700
+                        },
+                        new
+                        {
+                            Id = 49,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Schließe 6 monatliche Quests ab",
+                            Key = "monthly-collector",
+                            TargetValue = 6,
+                            Title = "Monthly Collector",
+                            Type = "MonthlyQuestsCompleted",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 1500
+                        },
+                        new
+                        {
+                            Id = 50,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Trainiere 4 Kategorien in einer Woche",
+                            Key = "full-spectrum",
+                            TargetValue = 4,
+                            Title = "Full Spectrum",
+                            Type = "WeeklyCategories",
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            XpReward = 800
                         });
                 });
 
@@ -611,6 +1019,10 @@ namespace Sybau_Backend.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal?>("RealMoneyPrice")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -675,7 +1087,7 @@ namespace Sybau_Backend.Migrations
                         new
                         {
                             Id = 1,
-                            CoinReward = 10,
+                            CoinReward = 50,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Schließe eine Übung ab",
                             Name = "Tägliches Training",
@@ -689,7 +1101,7 @@ namespace Sybau_Backend.Migrations
                         new
                         {
                             Id = 2,
-                            CoinReward = 15,
+                            CoinReward = 75,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Mache insgesamt 100 Wiederholungen",
                             Name = "Wiederholungsjäger",
@@ -703,7 +1115,7 @@ namespace Sybau_Backend.Migrations
                         new
                         {
                             Id = 3,
-                            CoinReward = 12,
+                            CoinReward = 65,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Schließe 3 verschiedene Übungen ab",
                             Name = "Fleißiger Athlet",
@@ -717,7 +1129,7 @@ namespace Sybau_Backend.Migrations
                         new
                         {
                             Id = 4,
-                            CoinReward = 50,
+                            CoinReward = 250,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Schließe 20 Übungen diese Woche ab",
                             Name = "Cardio Champion",
@@ -731,7 +1143,7 @@ namespace Sybau_Backend.Migrations
                         new
                         {
                             Id = 5,
-                            CoinReward = 60,
+                            CoinReward = 300,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Mache insgesamt 1.000 Wiederholungen diese Woche",
                             Name = "Kraft Krieger",
@@ -745,7 +1157,7 @@ namespace Sybau_Backend.Migrations
                         new
                         {
                             Id = 6,
-                            CoinReward = 80,
+                            CoinReward = 400,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Trainiere an 5 verschiedenen Tagen diese Woche",
                             Name = "Consistency King",
@@ -759,7 +1171,7 @@ namespace Sybau_Backend.Migrations
                         new
                         {
                             Id = 7,
-                            CoinReward = 200,
+                            CoinReward = 1000,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Schließe 60 Übungen diesen Monat ab",
                             Name = "Marathon Meister",
@@ -773,7 +1185,7 @@ namespace Sybau_Backend.Migrations
                         new
                         {
                             Id = 8,
-                            CoinReward = 300,
+                            CoinReward = 1250,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Mache insgesamt 10.000 Wiederholungen diesen Monat",
                             Name = "Iron Body",
@@ -787,7 +1199,7 @@ namespace Sybau_Backend.Migrations
                         new
                         {
                             Id = 9,
-                            CoinReward = 500,
+                            CoinReward = 1500,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Trainiere an 20 verschiedenen Tagen diesen Monat",
                             Name = "Transformer",
@@ -801,7 +1213,7 @@ namespace Sybau_Backend.Migrations
                         new
                         {
                             Id = 10,
-                            CoinReward = 12,
+                            CoinReward = 60,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Laufe 10.000 Schritte",
                             Name = "Step Master",
@@ -815,7 +1227,7 @@ namespace Sybau_Backend.Migrations
                         new
                         {
                             Id = 11,
-                            CoinReward = 50,
+                            CoinReward = 250,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Laufe insgesamt 10 km diese Woche",
                             Name = "Wanderer",
@@ -829,7 +1241,7 @@ namespace Sybau_Backend.Migrations
                         new
                         {
                             Id = 12,
-                            CoinReward = 200,
+                            CoinReward = 1000,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Laufe insgesamt 42 km diesen Monat",
                             Name = "Marathon Läufer",

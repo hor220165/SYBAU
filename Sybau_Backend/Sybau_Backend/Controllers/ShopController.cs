@@ -294,6 +294,18 @@ namespace Sybau_Backend.Controllers
             return Ok();
         }
 
+        [HttpPost("real-money/{itemId}/start")]
+        [Authorize]
+        public async Task<IActionResult> StartRealMoneyPurchase(int itemId)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            var userId = int.Parse(userIdClaim);
+            var result = await _shopService.StartRealMoneyPurchaseAsync(userId, itemId);
+            return StatusCode(result.StatusCode, new { message = result.Message });
+        }
+
         [HttpPost("sell-item/{itemId}")]
         [Authorize]
         public async Task<IActionResult> SellItem(int itemId, [FromBody] SellItemRequestDto? request)
@@ -316,6 +328,7 @@ namespace Sybau_Backend.Controllers
                 Description = form.Description,
                 Type = form.Type,
                 Price = form.Price,
+                RealMoneyPrice = form.RealMoneyPrice,
                 XpBoostPercentage = form.XpBoostPercentage,
                 CoinBoostPercentage = form.CoinBoostPercentage,
                 Rarity = form.Rarity,

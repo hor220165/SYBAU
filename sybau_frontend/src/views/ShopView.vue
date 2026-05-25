@@ -20,6 +20,7 @@ import MessagePopup from '@/components/MessagePopup.vue';
 import { useLanguage } from '@/composables/useLanguage';
 
 const items = ref<ShopDisplayItem[]>([]);
+const realMoneyItems = ref<ShopDisplayItem[]>([]);
 const chests = ref<Chest[]>([]);
 const ownedItems = ref<Record<number, number>>({});
 const currentCoins = ref(0);
@@ -27,6 +28,7 @@ const loading = ref(true);
 const error = ref('');
 const successMessage = ref('');
 const buyingItemId = ref<number | null>(null);
+const realMoneyBusyItemId = ref<number | null>(null);
 const openingChestId = ref<number | null>(null);
 const chestOpening = ref<Chest | null>(null);
 const openedReward = ref<any | null>(null);
@@ -40,7 +42,7 @@ const { text, translate } = useLanguage();
 let dailyCountdownTimer: number | undefined;
 
 const popupMessage = ref("");
-const popupType = ref<"success" | "error">("success");
+const popupType = ref<"success" | "error" | "info">("success");
 
 const syncCoinsFromStorage = () => {
   const raw = JSON.parse(localStorage.getItem('user') || '{}');
@@ -69,6 +71,13 @@ const getCoinBoostValue = (shopItem: item) =>
     (shopItem as any).CoinBoostPercent ??
     0,
   );
+
+const getRealMoneyPriceValue = (shopItem: item) => {
+  const raw = shopItem.realMoneyPrice ?? (shopItem as any).RealMoneyPrice;
+  if (raw === null || raw === undefined || raw === '') return null;
+  const price = Number(raw);
+  return Number.isFinite(price) && price > 0 ? price : null;
+};
 
 const getCategory = (shopItem: item): ShopDisplayItem['category'] => {
   const searchBase = `${shopItem.name} ${shopItem.description}`.toLowerCase();
@@ -172,6 +181,7 @@ const toDisplayItem = (shopItem: item): ShopDisplayItem => {
     name: shopItem.name,
     description: shopItem.description,
     price: Number(shopItem.price ?? 0),
+    realMoneyPrice: getRealMoneyPriceValue(shopItem),
     type: shopItem.type,
     xpBoostPercentage,
     coinBoostPercentage,
@@ -184,6 +194,14 @@ const toDisplayItem = (shopItem: item): ShopDisplayItem => {
     ownedQuantity: ownedItems.value[shopItem.id] ?? 0,
   };
 };
+
+const formatRealMoneyPrice = (value?: number | null) =>
+  Number(value ?? 0).toLocaleString('de-AT', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
 const dailyCountdown = computed(() => {
   const expiresAt = Date.parse(dailyShopExpiresAtUtc.value);
@@ -240,6 +258,19 @@ const loadShopItems = async () => {
     error.value = shopError.response?.data?.message || shopError.response?.data || text('Fehler beim Laden der Shop-Items', 'Could not load shop items');
   } finally {
     loading.value = false;
+  }
+};
+
+const loadRealMoneyItems = async () => {
+  try {
+    const response = await itemService.getShopItems();
+    const rawItems = Array.isArray(response.data) ? response.data : [];
+    realMoneyItems.value = rawItems
+      .map(toDisplayItem)
+      .filter(item => Number(item.realMoneyPrice ?? 0) > 0);
+  } catch (shopError) {
+    console.error('Fehler beim Laden der Echtgeld-Angebote:', shopError);
+    realMoneyItems.value = [];
   }
 };
 
@@ -361,6 +392,26 @@ const requestBuyItem = (shopItem: ShopDisplayItem) => {
   pendingPurchase.value = { type: 'item', item: shopItem };
 };
 
+const requestRealMoneyPurchase = async (shopItem: ShopDisplayItem) => {
+  if (realMoneyBusyItemId.value !== null) return;
+  realMoneyBusyItemId.value = shopItem.id;
+
+  try {
+    const response = await itemService.startRealMoneyPurchase(shopItem.id);
+    popupType.value = 'info';
+    popupMessage.value = response.data?.message || text('Echtgeld-Käufe sind noch in Arbeit.', 'Real-money purchases are still in progress.');
+  } catch (purchaseError: any) {
+    const message =
+      purchaseError.response?.data?.message ||
+      purchaseError.response?.data ||
+      text('Echtgeld-Käufe sind noch in Arbeit.', 'Real-money purchases are still in progress.');
+    popupType.value = purchaseError.response?.status === 501 ? 'info' : 'error';
+    popupMessage.value = message;
+  } finally {
+    realMoneyBusyItemId.value = null;
+  }
+};
+
 const confirmPurchase = () => {
   if (!pendingPurchase.value) return;
   if (pendingPurchase.value.type === 'item') {
@@ -413,7 +464,7 @@ const loadPageData = async () => {
   syncCoinsFromStorage();
   await loadProfile();
   await loadOwnedItems();
-  await Promise.all([loadShopItems(), loadChests()]);
+  await Promise.all([loadShopItems(), loadChests(), loadRealMoneyItems()]);
 };
 
 onMounted(() => {
@@ -497,6 +548,45 @@ onUnmounted(() => {
               :busy="openingChestId === chest.id"
               @open="requestOpenChest"
             />
+          </div>
+        </section>
+
+        <section v-if="realMoneyItems.length" class="section-card">
+          <div class="section-heading section-heading-spread">
+            <div>
+              <div class="title-with-icon">
+                <h2>Echtgeld-Angebote</h2>
+              </div>
+              <p>Die Preise kommen aus dem Admin-Bereich. Die Zahlungsabwicklung ist noch nicht freigeschaltet.</p>
+            </div>
+          </div>
+
+          <div class="real-money-grid">
+            <article
+              v-for="shopItem in realMoneyItems"
+              :key="`real-money-${shopItem.id}`"
+              class="real-money-card"
+            >
+              <div class="real-money-image-shell">
+                <img v-if="shopItem.imageUrl" :src="shopItem.imageUrl" alt="" class="real-money-image" />
+                <Package v-else :size="42" />
+              </div>
+
+              <div class="real-money-copy">
+                <h3>{{ translate(shopItem.name) }}</h3>
+                <p>{{ shopItem.categoryLabel }}</p>
+                <strong>{{ formatRealMoneyPrice(shopItem.realMoneyPrice) }}</strong>
+              </div>
+
+              <button
+                class="real-money-buy"
+                type="button"
+                :disabled="realMoneyBusyItemId === shopItem.id"
+                @click="requestRealMoneyPurchase(shopItem)"
+              >
+                {{ realMoneyBusyItemId === shopItem.id ? '...' : 'Kaufen' }}
+              </button>
+            </article>
           </div>
         </section>
 
@@ -740,14 +830,16 @@ onUnmounted(() => {
   margin-bottom: 18px;
 }
 
-.coin-pack-grid {
+.coin-pack-grid,
+.real-money-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
   align-items: stretch;
 }
 
-.coin-pack-card {
+.coin-pack-card,
+.real-money-card {
   position: relative;
   min-height: 252px;
   display: flex;
@@ -763,13 +855,16 @@ onUnmounted(() => {
   box-shadow: 0 20px 38px rgba(2, 6, 23, 0.22);
 }
 
-.coin-pack-image-shell {
+.coin-pack-image-shell,
+.real-money-image-shell {
   min-height: 116px;
   display: grid;
   place-items: center;
+  color: #fce7f3;
 }
 
-.coin-pack-image {
+.coin-pack-image,
+.real-money-image {
   width: min(148px, 70%);
   height: 116px;
   object-fit: contain;
@@ -777,13 +872,15 @@ onUnmounted(() => {
   filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.42));
 }
 
-.coin-pack-copy {
+.coin-pack-copy,
+.real-money-copy {
   margin-top: auto;
   display: grid;
   gap: 8px;
 }
 
-.coin-pack-copy h3 {
+.coin-pack-copy h3,
+.real-money-copy h3 {
   margin: 0;
   color: white;
   font-size: clamp(1.12rem, 1.8vw, 1.45rem);
@@ -791,7 +888,17 @@ onUnmounted(() => {
   font-weight: 900;
 }
 
-.coin-pack-copy strong {
+.real-money-copy p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.coin-pack-copy strong,
+.real-money-copy strong {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -808,7 +915,8 @@ onUnmounted(() => {
   image-rendering: pixelated;
 }
 
-.coin-pack-buy {
+.coin-pack-buy,
+.real-money-buy {
   position: absolute;
   right: 16px;
   bottom: 16px;
@@ -827,7 +935,25 @@ onUnmounted(() => {
   box-shadow: 0 14px 28px rgba(21, 128, 61, 0.16), inset 0 0 20px rgba(34, 197, 94, 0.08);
   font-weight: 900;
   line-height: 1;
+}
+
+.coin-pack-buy {
   cursor: default;
+}
+
+.real-money-buy {
+  cursor: pointer;
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.real-money-buy:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+.real-money-buy:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 
 .confirm-overlay {
@@ -1349,7 +1475,8 @@ onUnmounted(() => {
   }
 
   .chest-grid,
-  .coin-pack-grid {
+  .coin-pack-grid,
+  .real-money-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1370,7 +1497,8 @@ onUnmounted(() => {
   }
 
   .chest-grid,
-  .coin-pack-grid {
+  .coin-pack-grid,
+  .real-money-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
@@ -1379,33 +1507,39 @@ onUnmounted(() => {
     padding: 16px;
   }
 
-  .coin-pack-card {
+  .coin-pack-card,
+  .real-money-card {
     min-height: 198px;
     padding: 10px;
     padding-bottom: 52px;
     border-radius: 18px;
   }
 
-  .coin-pack-image-shell {
+  .coin-pack-image-shell,
+  .real-money-image-shell {
     min-height: 76px;
   }
 
-  .coin-pack-image {
+  .coin-pack-image,
+  .real-money-image {
     width: min(92px, 88%);
     height: 74px;
   }
 
-  .coin-pack-copy {
+  .coin-pack-copy,
+  .real-money-copy {
     gap: 6px;
   }
 
-  .coin-pack-copy h3 {
+  .coin-pack-copy h3,
+  .real-money-copy h3 {
     font-size: 0.82rem;
     line-height: 1.08;
     text-align: center;
   }
 
-  .coin-pack-copy strong {
+  .coin-pack-copy strong,
+  .real-money-copy strong {
     justify-content: center;
     gap: 5px;
     font-size: 1rem;
@@ -1416,7 +1550,13 @@ onUnmounted(() => {
     height: 18px;
   }
 
-  .coin-pack-buy {
+  .real-money-copy p {
+    text-align: center;
+    font-size: 0.68rem;
+  }
+
+  .coin-pack-buy,
+  .real-money-buy {
     left: 10px;
     right: 10px;
     bottom: 10px;

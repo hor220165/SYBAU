@@ -30,7 +30,6 @@ defineProps<{
   padding: 18px;
   backdrop-filter: blur(14px);
   transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
-  cursor: pointer;
   display: flex;
   flex-direction: column;
   justify-content: space-between;

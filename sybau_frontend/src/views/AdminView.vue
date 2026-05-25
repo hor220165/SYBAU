@@ -266,6 +266,10 @@
                   <input v-model.number="shopItemForm.price" type="number" required min="0">
                 </div>
                 <div class="form-group">
+                  <label>Echtgeldbetrag (€)</label>
+                  <input v-model.number="shopItemForm.realMoneyPrice" type="number" min="0" step="0.01" placeholder="Optional">
+                </div>
+                <div class="form-group">
                   <label>Item Typ</label>
                   <select v-model="shopItemForm.type" required>
                     <option value="">-- Wähle einen Typ --</option>
@@ -330,6 +334,7 @@
                 </div>
                 <div class="card-stats">
                   <span><img src="../assets/SYBAU_Coin.png" alt="" class="pixel-icon" /> {{ item.price }} Münzen</span>
+                  <span v-if="getRealMoneyPrice(item) !== null">€ {{ formatRealMoneyPrice(getRealMoneyPrice(item) ?? 0) }}</span>
                   <span><Package :size="15" /> {{ item.type }}</span>
                   <span v-if="item.xpBoostPercentage > 0"><img src="../assets/XP_Pixel.png" alt="" class="pixel-icon" /> +{{ item.xpBoostPercentage }}% XP</span>
                   <span v-if="item.coinBoostPercentage > 0"><img src="../assets/SYBAU_Coin.png" alt="" class="pixel-icon" /> +{{ item.coinBoostPercentage }}% Coins</span>
@@ -714,6 +719,7 @@ const shopItemForm = ref({
   name: '',
   description: '',
   price: 0,
+  realMoneyPrice: null as number | null,
   type: '',
   xpBoostPercentage: 0,
   coinBoostPercentage: 0,
@@ -901,6 +907,7 @@ const openShopForm = () => {
     name: '',
     description: '',
     price: 0,
+    realMoneyPrice: null,
     type: '',
     xpBoostPercentage: 0,
     coinBoostPercentage: 0,
@@ -924,6 +931,7 @@ const editShopItem = (item: any) => {
     name: item.name ?? '',
     description: item.description ?? '',
     price: Number(item.price ?? 0),
+    realMoneyPrice: getRealMoneyPrice(item),
     type: normalizeItemType(item.type),
     xpBoostPercentage: Number(item.xpBoostPercentage ?? item.xpBoostPercent ?? 0),
     coinBoostPercentage: Number(item.coinBoostPercentage ?? item.coinBoostPercent ?? 0),
@@ -949,6 +957,14 @@ const normalizeRarity = (value: unknown) => {
 const getShopImage = (item: any) => resolveMediaUrl(item?.imageUrl ?? item?.ImageUrl ?? '');
 const getChestImage = (chest: any) => resolveMediaUrl(chest?.imageUrl ?? chest?.ImageUrl ?? '');
 const getChestItems = (chest: any) => chest?.items ?? chest?.Items ?? [];
+const getRealMoneyPrice = (item: any) => {
+  const raw = item?.realMoneyPrice ?? item?.RealMoneyPrice;
+  if (raw === null || raw === undefined || raw === '') return null;
+  const price = Number(raw);
+  return Number.isFinite(price) && price > 0 ? price : null;
+};
+const formatRealMoneyPrice = (price: number) =>
+  price.toLocaleString('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const handleShopImageChange = (event: Event) => {
   const input = event.target as HTMLInputElement;

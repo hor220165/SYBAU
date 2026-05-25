@@ -5,6 +5,7 @@ export interface item{
     name: string,
     description: string,
     price: number,
+    realMoneyPrice?: number | null,
     type: ItemType,
     xpBoostPercentage: number,
     coinBoostPercentage: number,

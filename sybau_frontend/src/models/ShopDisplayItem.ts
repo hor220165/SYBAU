@@ -5,6 +5,7 @@ export interface ShopDisplayItem {
   name: string;
   description: string;
   price: number;
+  realMoneyPrice?: number | null;
   type: ItemType | string;
   xpBoostPercentage: number;
   coinBoostPercentage: number;

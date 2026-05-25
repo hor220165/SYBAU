@@ -67,6 +67,7 @@ public class FitnessDbContext:DbContext
         {
             entity.Property(e => e.Type).HasConversion<string>();
             entity.Property(e => e.Rarity).HasConversion<string>();
+            entity.Property(e => e.RealMoneyPrice).HasPrecision(10, 2);
         });
 
         modelBuilder.Entity<ChestItem>(entity =>

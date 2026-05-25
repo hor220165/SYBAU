@@ -13,6 +13,7 @@ export interface CreateShopItemDto {
   name: string;
   description: string;
   price: number;
+  realMoneyPrice?: number | null;
   type: string;
   xpBoostPercentage?: number;
   coinBoostPercentage?: number;
@@ -47,6 +48,7 @@ const shopItemToFormData = (data: CreateShopItemDto) => {
   formData.append('name', data.name);
   formData.append('description', data.description);
   formData.append('price', String(data.price));
+  formData.append('realMoneyPrice', data.realMoneyPrice == null ? '' : String(data.realMoneyPrice));
   formData.append('type', data.type);
   formData.append('xpBoostPercentage', String(data.xpBoostPercentage ?? 0));
   formData.append('coinBoostPercentage', String(data.coinBoostPercentage ?? 0));

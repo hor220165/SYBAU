@@ -12,6 +12,7 @@ public class ItemDto
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public ItemType Type { get; set; }
     public int Price { get; set; }
+    public decimal? RealMoneyPrice { get; set; }
     public int XpBoostPercentage { get; set; }
     public int CoinBoostPercentage { get; set; }
     [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -28,6 +29,7 @@ public class ShopItemFormDto
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public ItemType Type { get; set; }
     public int Price { get; set; }
+    public decimal? RealMoneyPrice { get; set; }
     public int XpBoostPercentage { get; set; }
     public int CoinBoostPercentage { get; set; }
     [JsonConverter(typeof(JsonStringEnumConverter))]

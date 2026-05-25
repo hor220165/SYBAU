@@ -13,7 +13,7 @@ public class Item : BaseEntity<int>
     {
         if(string.IsNullOrWhiteSpace(name)) throw new ArgumentNullException(nameof(name));
         if(string.IsNullOrWhiteSpace(description)) throw new ArgumentNullException(nameof(description));
-        if(price  <= 0) throw new ArgumentOutOfRangeException(nameof(price));
+        if(price < 0) throw new ArgumentOutOfRangeException(nameof(price));
         if(type == ItemType.Booster && xpBoostPercent <= 0 && coinBoostPercent <= 0)
             throw new ArgumentException("XP- oder Coin-Boost muss > 0 sein.");
         
@@ -31,6 +31,7 @@ public class Item : BaseEntity<int>
     
     public ItemType Type { get; set; }
     public int Price { get; set; }
+    public decimal? RealMoneyPrice { get; set; }
     public int XpBoostPercent { get; set; }
     public int CoinBoostPercent { get; set; }
     public ItemRarity Rarity { get; set; } = ItemRarity.Common;
