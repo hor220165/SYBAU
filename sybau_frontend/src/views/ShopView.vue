@@ -50,6 +50,7 @@ const syncCoinsFromStorage = () => {
 };
 
 const normalizeTypeValue = (value: unknown) => {
+  if (value === ItemType.RealMoney || value === 'RealMoney' || value === 'realMoney' || value === 'realmoney' || value === 'Echtgeld') return 'RealMoney';
   if (value === ItemType.Booster || value === 'Booster' || value === 'booster') return 'Booster';
   return 'Cosmetic';
 };
@@ -80,6 +81,10 @@ const getRealMoneyPriceValue = (shopItem: item) => {
 };
 
 const getCategory = (shopItem: item): ShopDisplayItem['category'] => {
+  if (normalizeTypeValue(shopItem.type) === 'RealMoney') {
+    return 'item';
+  }
+
   const searchBase = `${shopItem.name} ${shopItem.description}`.toLowerCase();
 
   if (/chest|crate|box|truhe|bundle|pack/.test(searchBase)) {
@@ -186,7 +191,9 @@ const toDisplayItem = (shopItem: item): ShopDisplayItem => {
     xpBoostPercentage,
     coinBoostPercentage,
     category,
-    categoryLabel: category === 'chest' ? text('Chest', 'Chest') : category === 'boost' ? text('Boost', 'Boost') : text('Item', 'Item'),
+    categoryLabel: normalizeTypeValue(shopItem.type) === 'RealMoney'
+      ? text('Coins', 'Coins')
+      : category === 'chest' ? text('Chest', 'Chest') : category === 'boost' ? text('Boost', 'Boost') : text('Item', 'Item'),
     rarity,
     icon: getIcon(category, rarity),
     imageUrl: resolveMediaUrl(shopItem.imageUrl ?? (shopItem as any).ImageUrl ?? ''),
@@ -202,6 +209,9 @@ const formatRealMoneyPrice = (value?: number | null) =>
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+
+const formatCoinAmount = (value?: number | null) =>
+  Number(value ?? 0).toLocaleString('de-AT', { maximumFractionDigits: 0 });
 
 const dailyCountdown = computed(() => {
   const expiresAt = Date.parse(dailyShopExpiresAtUtc.value);
@@ -267,7 +277,7 @@ const loadRealMoneyItems = async () => {
     const rawItems = Array.isArray(response.data) ? response.data : [];
     realMoneyItems.value = rawItems
       .map(toDisplayItem)
-      .filter(item => Number(item.realMoneyPrice ?? 0) > 0);
+      .filter(item => normalizeTypeValue(item.type) === 'RealMoney' && Number(item.realMoneyPrice ?? 0) > 0);
   } catch (shopError) {
     console.error('Fehler beim Laden der Echtgeld-Angebote:', shopError);
     realMoneyItems.value = [];
@@ -575,7 +585,10 @@ onUnmounted(() => {
               <div class="real-money-copy">
                 <h3>{{ translate(shopItem.name) }}</h3>
                 <p>{{ shopItem.categoryLabel }}</p>
-                <strong>{{ formatRealMoneyPrice(shopItem.realMoneyPrice) }}</strong>
+                <strong class="real-money-coins">
+                  <img :src="coinIcon" alt="" />
+                  {{ formatCoinAmount(shopItem.price) }} Coins
+                </strong>
               </div>
 
               <button
@@ -584,7 +597,7 @@ onUnmounted(() => {
                 :disabled="realMoneyBusyItemId === shopItem.id"
                 @click="requestRealMoneyPurchase(shopItem)"
               >
-                {{ realMoneyBusyItemId === shopItem.id ? '...' : 'Kaufen' }}
+                {{ realMoneyBusyItemId === shopItem.id ? '...' : formatRealMoneyPrice(shopItem.realMoneyPrice) }}
               </button>
             </article>
           </div>
@@ -915,12 +928,19 @@ onUnmounted(() => {
   image-rendering: pixelated;
 }
 
+.real-money-coins img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
 .coin-pack-buy,
 .real-money-buy {
   position: absolute;
   right: 16px;
   bottom: 16px;
-  min-width: 96px;
+  min-width: 112px;
   min-height: 44px;
   display: inline-flex;
   align-items: center;
@@ -1545,7 +1565,8 @@ onUnmounted(() => {
     font-size: 1rem;
   }
 
-  .coin-pack-copy img {
+  .coin-pack-copy img,
+  .real-money-coins img {
     width: 18px;
     height: 18px;
   }

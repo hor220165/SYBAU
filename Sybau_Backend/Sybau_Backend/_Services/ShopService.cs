@@ -100,7 +100,7 @@ public class ShopService
         var now = DateTime.SpecifyKind(utcNow ?? DateTime.UtcNow, DateTimeKind.Utc);
         var resetAt = GetRotationStartUtc(now);
         var expiresAt = resetAt.AddDays(1);
-        var items = await SelectItemSummaries(_context.Items.AsNoTracking())
+        var items = await SelectItemSummaries(_context.Items.AsNoTracking().Where(item => item.Type != ItemType.RealMoney))
             .OrderBy(i => i.Id)
             .ToListAsync();
 
@@ -119,9 +119,10 @@ public class ShopService
     public async Task<Item> AddItemAsync(ItemDto dto)
     {
          if(dto == null)throw new ArgumentNullException(nameof(dto));
+         NormalizeShopItemDto(dto);
 
          var item = new Item(dto.Name,dto.Description,dto.Type,dto.Price,dto.XpBoostPercentage, dto.CoinBoostPercentage, dto.Rarity);
-         if (dto.MaxQuantity > 0) item.MaxQuantity = dto.MaxQuantity;
+         item.MaxQuantity = dto.Type == ItemType.RealMoney ? 0 : dto.MaxQuantity > 0 ? dto.MaxQuantity : item.MaxQuantity;
          item.ImageUrl = dto.ImageUrl;
          item.RealMoneyPrice = NormalizeRealMoneyPrice(dto.RealMoneyPrice);
          
@@ -134,6 +135,7 @@ public class ShopService
     public async Task<Item?> UpdateItemAsync(int id, ItemDto dto)
     {
         if (dto == null) throw new ArgumentNullException(nameof(dto));
+        NormalizeShopItemDto(dto);
 
         var item = await _context.Items.FindAsync(id);
         if (item == null) return null;
@@ -146,7 +148,7 @@ public class ShopService
         item.XpBoostPercent = dto.XpBoostPercentage;
         item.CoinBoostPercent = dto.CoinBoostPercentage;
         item.Rarity = dto.Rarity;
-        item.MaxQuantity = dto.MaxQuantity > 0 ? dto.MaxQuantity : item.MaxQuantity;
+        item.MaxQuantity = dto.Type == ItemType.RealMoney ? 0 : dto.MaxQuantity > 0 ? dto.MaxQuantity : item.MaxQuantity;
         if (!string.IsNullOrWhiteSpace(dto.ImageUrl))
         {
             item.ImageUrl = dto.ImageUrl;
@@ -277,6 +279,7 @@ public class ShopService
         var itemIds = dto.ItemIds.Distinct().ToList();
         var items = await _context.Items.Where(i => itemIds.Contains(i.Id)).ToListAsync();
         if (items.Count != itemIds.Count) throw new ArgumentException("Mindestens ein Chest-Item wurde nicht gefunden.");
+        if (items.Any(item => item.Type == ItemType.RealMoney)) throw new ArgumentException("Echtgeld-Angebote können nicht in Chests gelegt werden.");
 
         var chest = new Chest(dto.Name, dto.Price, imageUrl)
         {
@@ -309,6 +312,7 @@ public class ShopService
         var itemIds = dto.ItemIds.Distinct().ToList();
         var items = await _context.Items.Where(i => itemIds.Contains(i.Id)).ToListAsync();
         if (items.Count != itemIds.Count) throw new ArgumentException("Mindestens ein Chest-Item wurde nicht gefunden.");
+        if (items.Any(item => item.Type == ItemType.RealMoney)) throw new ArgumentException("Echtgeld-Angebote können nicht in Chests gelegt werden.");
 
         chest.Name = dto.Name;
         chest.Price = dto.Price;
@@ -391,13 +395,14 @@ public class ShopService
             .Select(candidate => new
             {
                 candidate.Id,
+                candidate.Type,
                 candidate.RealMoneyPrice
             })
             .FirstOrDefaultAsync();
 
         if (item == null) return (StatusCodes.Status404NotFound, "Item nicht gefunden.");
-        if (!item.RealMoneyPrice.HasValue || item.RealMoneyPrice.Value <= 0)
-            return (StatusCodes.Status400BadRequest, "Dieses Item hat keinen Echtgeldpreis.");
+        if (item.Type != ItemType.RealMoney || !item.RealMoneyPrice.HasValue || item.RealMoneyPrice.Value <= 0)
+            return (StatusCodes.Status400BadRequest, "Dieses Item ist kein Echtgeld-Angebot.");
 
         return (StatusCodes.Status501NotImplemented, "Echtgeld-Käufe sind noch in Arbeit.");
     }
@@ -708,6 +713,25 @@ public class ShopService
     {
         if (price is null || price <= 0) return null;
         return decimal.Round(price.Value, 2, MidpointRounding.AwayFromZero);
+    }
+
+    private static void NormalizeShopItemDto(ItemDto dto)
+    {
+        if (dto.Type == ItemType.RealMoney)
+        {
+            if (dto.Price <= 0) throw new ArgumentException("Echtgeld-Angebote brauchen eine Coin-Menge.");
+            if (!dto.RealMoneyPrice.HasValue || dto.RealMoneyPrice.Value <= 0)
+                throw new ArgumentException("Echtgeld-Angebote brauchen einen Eurobetrag.");
+
+            dto.XpBoostPercentage = 0;
+            dto.CoinBoostPercentage = 0;
+            dto.Rarity = ItemRarity.Common;
+            dto.MaxQuantity = 0;
+            dto.RealMoneyPrice = NormalizeRealMoneyPrice(dto.RealMoneyPrice);
+            return;
+        }
+
+        dto.RealMoneyPrice = null;
     }
 
     private static ChestDto ToChestDto(Chest chest)

@@ -6,7 +6,7 @@ export interface item{
     description: string,
     price: number,
     realMoneyPrice?: number | null,
-    type: ItemType,
+    type: ItemType | string,
     xpBoostPercentage: number,
     coinBoostPercentage: number,
     rarity?: 'common' | 'rare' | 'epic' | 'legendary' | 'mythic',

@@ -262,22 +262,29 @@
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Preis (Münzen)</label>
-                  <input v-model.number="shopItemForm.price" type="number" required min="0">
+                  <label>{{ isShopFormRealMoney ? 'Coins im Pack' : 'Preis (Münzen)' }}</label>
+                  <input
+                    v-model.number="shopItemForm.price"
+                    type="number"
+                    required
+                    :min="isShopFormRealMoney ? 1 : 0"
+                    :placeholder="isShopFormRealMoney ? 'z.B. 750' : ''"
+                  >
                 </div>
-                <div class="form-group">
+                <div v-if="isShopFormRealMoney" class="form-group">
                   <label>Echtgeldbetrag (€)</label>
-                  <input v-model.number="shopItemForm.realMoneyPrice" type="number" min="0" step="0.01" placeholder="Optional">
+                  <input v-model.number="shopItemForm.realMoneyPrice" type="number" required min="0.01" step="0.01" placeholder="z.B. 1.99">
                 </div>
                 <div class="form-group">
                   <label>Item Typ</label>
-                  <select v-model="shopItemForm.type" required>
+                  <select v-model="shopItemForm.type" required @change="syncShopItemTypeFields">
                     <option value="">-- Wähle einen Typ --</option>
                     <option value="Cosmetic">Cosmetic</option>
                     <option value="Booster">Booster</option>
+                    <option value="RealMoney">Echtgeld</option>
                   </select>
                 </div>
-                <div class="form-group">
+                <div v-if="!isShopFormRealMoney" class="form-group">
                   <label>Rarity</label>
                   <select v-model="shopItemForm.rarity" required>
                     <option value="Common">Common</option>
@@ -287,8 +294,8 @@
                     <option value="Mythic">Mythisch</option>
                   </select>
                 </div>
-                <div class="form-group boost-form-group">
-                  <label>Boosts (optional)</label>
+                <div v-if="isShopFormBooster" class="form-group boost-form-group">
+                  <label>Boosts</label>
                   <div class="boost-input-row">
                     <div>
                       <label>XP Boost %</label>
@@ -333,9 +340,9 @@
                   </div>
                 </div>
                 <div class="card-stats">
-                  <span><img src="../assets/SYBAU_Coin.png" alt="" class="pixel-icon" /> {{ item.price }} Münzen</span>
+                  <span><img src="../assets/SYBAU_Coin.png" alt="" class="pixel-icon" /> {{ item.price }} {{ isRealMoneyShopItem(item) ? 'Coins' : 'Münzen' }}</span>
                   <span v-if="getRealMoneyPrice(item) !== null">€ {{ formatRealMoneyPrice(getRealMoneyPrice(item) ?? 0) }}</span>
-                  <span><Package :size="15" /> {{ item.type }}</span>
+                  <span><Package :size="15" /> {{ getItemTypeLabel(item.type) }}</span>
                   <span v-if="item.xpBoostPercentage > 0"><img src="../assets/XP_Pixel.png" alt="" class="pixel-icon" /> +{{ item.xpBoostPercentage }}% XP</span>
                   <span v-if="item.coinBoostPercentage > 0"><img src="../assets/SYBAU_Coin.png" alt="" class="pixel-icon" /> +{{ item.coinBoostPercentage }}% Coins</span>
                 </div>
@@ -412,7 +419,7 @@
               <div class="form-group">
                 <label>Items in dieser Chest</label>
                 <div class="chest-item-picker">
-                  <label v-for="item in shopItems" :key="item.id" class="chest-item-option">
+                  <label v-for="item in chestEligibleShopItems" :key="item.id" class="chest-item-option">
                     <input v-model="chestForm.itemIds" type="checkbox" :value="item.id">
                     <span class="chest-option-image">
                       <img v-if="getShopImage(item)" :src="getShopImage(item)" alt="">
@@ -728,6 +735,9 @@ const shopItemForm = ref({
 const shopItemImageFile = ref<File | null>(null);
 const shopItemImagePreview = ref('');
 const shopItems = ref<item[]>([]);
+const isShopFormRealMoney = computed(() => shopItemForm.value.type === 'RealMoney');
+const isShopFormBooster = computed(() => shopItemForm.value.type === 'Booster');
+const chestEligibleShopItems = computed(() => shopItems.value.filter(item => !isRealMoneyShopItem(item)));
 const showChestForm = ref(false);
 const editingChest = ref<any | null>(null);
 const chestForm = ref({
@@ -941,9 +951,18 @@ const editShopItem = (item: any) => {
 };
 
 const normalizeItemType = (value: unknown) => {
+  if (value === 2 || value === '2' || value === 'RealMoney' || value === 'realMoney' || value === 'realmoney' || value === 'Echtgeld') return 'RealMoney';
   if (value === 1 || value === '1' || value === 'Booster' || value === 'booster') return 'Booster';
   return 'Cosmetic';
 };
+
+const getItemTypeLabel = (value: unknown) => {
+  const normalized = normalizeItemType(value);
+  if (normalized === 'RealMoney') return 'Echtgeld';
+  return normalized;
+};
+
+const isRealMoneyShopItem = (item: any) => normalizeItemType(item?.type ?? item?.Type) === 'RealMoney';
 
 const normalizeRarity = (value: unknown) => {
   const raw = String(value || 'Common').toLowerCase();
@@ -966,6 +985,22 @@ const getRealMoneyPrice = (item: any) => {
 const formatRealMoneyPrice = (price: number) =>
   price.toLocaleString('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+const syncShopItemTypeFields = () => {
+  if (isShopFormRealMoney.value) {
+    shopItemForm.value.xpBoostPercentage = 0;
+    shopItemForm.value.coinBoostPercentage = 0;
+    shopItemForm.value.rarity = 'Common';
+    shopItemForm.value.realMoneyPrice = Number(shopItemForm.value.realMoneyPrice ?? 0) || null;
+    return;
+  }
+
+  shopItemForm.value.realMoneyPrice = null;
+  if (!isShopFormBooster.value) {
+    shopItemForm.value.xpBoostPercentage = 0;
+    shopItemForm.value.coinBoostPercentage = 0;
+  }
+};
+
 const handleShopImageChange = (event: Event) => {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0] ?? null;
@@ -974,6 +1009,10 @@ const handleShopImageChange = (event: Event) => {
 };
 
 const buildShopItemDescription = () => {
+  if (isShopFormRealMoney.value) {
+    return `${Number(shopItemForm.value.price ?? 0).toLocaleString('de-AT')} Coins`;
+  }
+
   const parts = [];
   if (Number(shopItemForm.value.xpBoostPercentage) > 0) {
     parts.push(`${shopItemForm.value.xpBoostPercentage}% XP-Boost`);
@@ -986,13 +1025,28 @@ const buildShopItemDescription = () => {
 
 const saveShopItem = async () => {
   try {
+    syncShopItemTypeFields();
     if (!editingShopItem.value && !shopItemImageFile.value) {
       showMessage('Bitte ein Bild für das Shop-Item auswählen', 'error');
       return;
     }
+    if (isShopFormRealMoney.value) {
+      if (Number(shopItemForm.value.price ?? 0) <= 0) {
+        showMessage('Bitte die Coin-Menge für das Echtgeld-Angebot eintragen', 'error');
+        return;
+      }
+      if (Number(shopItemForm.value.realMoneyPrice ?? 0) <= 0) {
+        showMessage('Bitte den Echtgeldbetrag eintragen', 'error');
+        return;
+      }
+    }
     const payload = {
       ...shopItemForm.value,
       description: buildShopItemDescription(),
+      realMoneyPrice: isShopFormRealMoney.value ? shopItemForm.value.realMoneyPrice : null,
+      xpBoostPercentage: isShopFormBooster.value ? shopItemForm.value.xpBoostPercentage : 0,
+      coinBoostPercentage: isShopFormBooster.value ? shopItemForm.value.coinBoostPercentage : 0,
+      rarity: isShopFormRealMoney.value ? 'Common' : shopItemForm.value.rarity,
       imageFile: shopItemImageFile.value
     };
     if (editingShopItem.value) {
@@ -1060,6 +1114,7 @@ const editChest = (chest: any) => {
   editingChest.value = chest;
   chestImageFile.value = null;
   chestImagePreview.value = getChestImage(chest);
+  const eligibleIds = new Set(chestEligibleShopItems.value.map(item => Number(item.id)));
   chestForm.value = {
     name: chest.name ?? chest.Name ?? '',
     price: Number(chest.price ?? chest.Price ?? 0),
@@ -1068,7 +1123,9 @@ const editChest = (chest: any) => {
     epicChance: Number(chest.epicChance ?? chest.EpicChance ?? 8),
     legendaryChance: Number(chest.legendaryChance ?? chest.LegendaryChance ?? 2),
     mythicChance: Number(chest.mythicChance ?? chest.MythicChance ?? 0),
-    itemIds: getChestItems(chest).map((item: any) => Number(item.id ?? item.Id)).filter(Boolean)
+    itemIds: getChestItems(chest)
+      .map((item: any) => Number(item.id ?? item.Id))
+      .filter((id: number) => Boolean(id) && eligibleIds.has(id))
   };
   showChestForm.value = true;
 };
@@ -1092,6 +1149,11 @@ const saveChest = async () => {
     }
     if (chestForm.value.itemIds.length === 0) {
       showMessage('Bitte mindestens ein Item in die Chest legen', 'error');
+      return;
+    }
+    const eligibleIds = new Set(chestEligibleShopItems.value.map(item => Number(item.id)));
+    if (chestForm.value.itemIds.some(id => !eligibleIds.has(Number(id)))) {
+      showMessage('Echtgeld-Angebote können nicht in Chests gelegt werden', 'error');
       return;
     }
 

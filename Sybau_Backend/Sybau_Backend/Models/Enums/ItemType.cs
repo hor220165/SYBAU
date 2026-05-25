@@ -3,5 +3,6 @@
 public enum ItemType
 {
     Cosmetic,
-    Booster
+    Booster,
+    RealMoney
 }
