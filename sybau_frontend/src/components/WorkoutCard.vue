@@ -25,7 +25,13 @@
       </span>
     </div>
     
-    <button v-if="editorOpen" class="inline-close-btn" @click.stop="$emit('closeEditor')" :aria-label="text('Schließen', 'Close')">
+    <button
+      v-if="editorOpen"
+      class="inline-close-btn"
+      :aria-label="text('Schließen', 'Close')"
+      :data-tooltip="text('Schließen', 'Close')"
+      @click.stop="$emit('closeEditor')"
+    >
       &times;
     </button>
 

@@ -8,7 +8,7 @@
           <template v-if="phase === 'setup'">
             <div class="timer-header">
               <h2>{{ exerciseName }}</h2>
-              <button class="timer-close" @click="cancel">&times;</button>
+              <button class="timer-close" type="button" aria-label="Timer schließen" data-tooltip="Timer schließen" @click="cancel">&times;</button>
             </div>
             <p class="timer-sub">
               {{ exerciseType === 'Time' ? 'Drücke Start und beginne deine Zeit.' : 'Drücke Start, mache deine Wiederholungen und trage sie danach ein.' }}
@@ -64,7 +64,7 @@
           <template v-if="phase === 'enter-reps'">
             <div class="timer-header">
               <h2>{{ exerciseName }}</h2>
-              <button class="timer-close" @click="cancel">&times;</button>
+              <button class="timer-close" type="button" aria-label="Timer schließen" data-tooltip="Timer schließen" @click="cancel">&times;</button>
             </div>
             <div class="timer-stage">
               <div class="ring-shell ring-shell-compact ring-shell-frozen">

@@ -42,7 +42,7 @@ watch(
       v-if="visible"
       :class="['popup', type]"
     >
-      <button class="popup-close" @click="closePopup">
+      <button class="popup-close" type="button" aria-label="Schließen" data-tooltip="Schließen" @click="closePopup">
         ✕
       </button>
 

@@ -157,7 +157,7 @@
     <div class="create-workout-modal">
       <div class="modal-header-cw">
         <h2>{{ text('Neues Workout erstellen', 'Create new workout') }}</h2>
-        <button class="close-btn-cw" @click="showCreateWorkout = false">&times;</button>
+        <button class="close-btn-cw" type="button" aria-label="Schließen" data-tooltip="Schließen" @click="showCreateWorkout = false">&times;</button>
       </div>
       <form @submit.prevent="handleCreateWorkout">
         <div class="form-group-cw">
@@ -260,7 +260,7 @@
       <template v-else>
         <div class="modal-header-cw">
           <h2>{{ workoutSession.name }}</h2>
-          <button class="close-btn-cw" @click="closeWorkoutSession">&times;</button>
+          <button class="close-btn-cw" type="button" aria-label="Schließen" data-tooltip="Schließen" @click="closeWorkoutSession">&times;</button>
         </div>
 
         <!-- Limit-Hinweis oben -->

@@ -44,7 +44,7 @@
         <div class="avatar-section">
           <div class="avatar-glow-bg"></div>
 
-          <h2 class="username-clean">{{ userName || 'Champion' }}</h2>
+          <h2 class="username-clean">{{ userName || text('Profil wird geladen...', 'Loading profile...') }}</h2>
 
           <div class="avatar-row">
             <div class="equipment-slots left">
@@ -217,6 +217,8 @@
             <button
               class="confirm-stepper-btn"
               type="button"
+              aria-label="Menge verringern"
+              data-tooltip="Menge verringern"
               :disabled="pendingSellQuantity <= 1"
               @click="adjustPendingSellQuantity(-1)"
             >
@@ -226,6 +228,8 @@
             <button
               class="confirm-stepper-btn"
               type="button"
+              aria-label="Menge erhöhen"
+              data-tooltip="Menge erhöhen"
               :disabled="pendingSellQuantity >= pendingSell.quantity"
               @click="adjustPendingSellQuantity(1)"
             >
@@ -279,8 +283,10 @@ import coinIcon from '@/assets/SYBAU_Coin.png';
 
 const { refreshProfile } = useAuth();
 const { text, translate } = useLanguage();
-const userName = ref('');
-const bodyStage = ref('skinny');
+const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+const storedAvatar = storedUser.avatar ?? storedUser.Avatar ?? {};
+const userName = ref(storedUser.userName ?? storedUser.UserName ?? storedUser.username ?? '');
+const bodyStage = ref(storedAvatar.bodyStage ?? storedAvatar.BodyStage ?? 'skinny');
 
 interface BoosterItem {
   id: number;

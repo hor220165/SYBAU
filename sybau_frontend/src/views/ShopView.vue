@@ -6,9 +6,6 @@ import Header from '@/components/Header.vue';
 import ShopFeatureCard from '@/components/ShopFeatureCard.vue';
 import ShopChestCard from '@/components/ShopChestCard.vue';
 import coinIcon from '@/assets/SYBAU_Coin.png';
-import starterPackImage from '@/assets/Starter_Pack.png';
-import plusPackImage from '@/assets/Plus_Pack.png';
-import proPackImage from '@/assets/Pro_Pack.png';
 import starterChestOpenImage from '@/assets/Starter_Chest_open.png';
 import goldChestOpenImage from '@/assets/Gold_Chest_open.png';
 import prestigeChestOpenImage from '@/assets/Prestige_Chest_open.png';
@@ -26,7 +23,7 @@ const items = ref<ShopDisplayItem[]>([]);
 const chests = ref<Chest[]>([]);
 const ownedItems = ref<Record<number, number>>({});
 const currentCoins = ref(0);
-const loading = ref(false);
+const loading = ref(true);
 const error = ref('');
 const successMessage = ref('');
 const buyingItemId = ref<number | null>(null);
@@ -44,12 +41,6 @@ let dailyCountdownTimer: number | undefined;
 
 const popupMessage = ref("");
 const popupType = ref<"success" | "error">("success");
-
-const coinPacks = [
-  { name: 'Starter Pack', coins: '750', price: '1,99 €', image: starterPackImage },
-  { name: 'Plus Pack', coins: '2.250', price: '4,99 €', image: plusPackImage },
-  { name: 'Pro Pack', coins: '5.000', price: '9,99 €', image: proPackImage }
-];
 
 const syncCoinsFromStorage = () => {
   const raw = JSON.parse(localStorage.getItem('user') || '{}');
@@ -509,31 +500,6 @@ onUnmounted(() => {
           </div>
         </section>
 
-        <section class="section-card">
-          <div class="section-heading">
-            <div class="title-with-icon">
-              <h2>{{ text('Coin Pakete', 'Coin packs') }}</h2>
-            </div>
-            <p>{{ text('Echtgeld-Käufe werden bald aktiviert.', 'Real-money purchases will be activated soon.') }}</p>
-          </div>
-
-          <div class="coin-pack-grid">
-            <article v-for="pack in coinPacks" :key="pack.name" class="coin-pack-card">
-              <div class="coin-pack-image-shell">
-                <img :src="pack.image" :alt="pack.name" class="coin-pack-image" />
-              </div>
-              <div class="coin-pack-copy">
-                <h3>{{ pack.name }}</h3>
-                <strong>
-                  <img :src="coinIcon" alt="" />
-                  {{ pack.coins }}
-                </strong>
-              </div>
-              <button class="coin-pack-buy" type="button" aria-disabled="true">{{ pack.price }}</button>
-            </article>
-          </div>
-        </section>
-
         <section class="section-card earn-card">
           <div class="earn-copy">
             <div class="earn-title">
@@ -596,7 +562,16 @@ onUnmounted(() => {
       <Transition name="chest-open">
         <div v-if="chestOpening" class="chest-open-overlay" @click.self="closeChestOpening">
           <div class="chest-open-stage" :class="{ revealed: chestRevealStarted }">
-            <button v-if="openedReward" class="chest-open-close" type="button" @click="closeChestOpening">&times;</button>
+            <button
+              v-if="openedReward"
+              class="chest-open-close"
+              type="button"
+              aria-label="Schließen"
+              data-tooltip="Schließen"
+              @click="closeChestOpening"
+            >
+              &times;
+            </button>
 
             <button
               v-if="!chestRevealStarted"

@@ -89,6 +89,8 @@ export const userService = {
     },
     getPublicProfile: (id: number) =>
         API.get(`/users/${id}/profile`),
+    searchUsers: (query: string, limit = 8) =>
+        API.get('/users/search', { params: { query, limit } }),
     getLeaderboard: () => API.get('/users/leaderboard'),
     updateProfile: (data: { UserName?: string; IsProfilePrivate?: boolean }) =>
         API.put('/users/profile', data),

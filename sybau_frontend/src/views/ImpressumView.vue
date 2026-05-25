@@ -77,16 +77,11 @@
         </section>
 
         <section class="impressum-section">
-          <h2>Datenschutzerklärung</h2>
+          <h2>Datenschutz</h2>
           <p>
-            Die Nutzung unserer Webseite ist in der Regel ohne Angabe personenbezogener Daten möglich. 
-            Soweit auf unseren Seiten personenbezogene Daten (beispielsweise Name, Anschrift oder 
-            E-Mail-Adressen) erhoben werden, erfolgt dies stets auf freiwilliger Basis. Diese Daten 
-            werden ohne Ihre ausdrückliche Zustimmung nicht an Dritte weitergegeben.
-          </p>
-          <p>
-            Wir weisen darauf hin, dass die Datenübertragung im Internet Sicherheitslücken aufweisen 
-            kann. Ein lückenloser Schutz der Daten vor dem Zugriff durch Dritte ist nicht möglich.
+            Die vollständige Datenschutzerklärung finden Sie unter
+            <a href="/datenschutz">/datenschutz</a>. Dort erklären wir, welche Daten SYBAU speichert,
+            wofür sie verwendet werden und welche Rechte betroffene Personen haben.
           </p>
         </section>
 

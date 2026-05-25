@@ -13,7 +13,13 @@
               class="profile-avatar-image"
             />
           </div>
-          <button class="avatar-edit-btn" @click="toggleImageActions" type="button" aria-label="Profilbild bearbeiten">
+          <button
+            class="avatar-edit-btn"
+            type="button"
+            aria-label="Profilbild bearbeiten"
+            data-tooltip="Profilbild bearbeiten"
+            @click="toggleImageActions"
+          >
             <Pencil :size="14" />
           </button>
           <div v-if="showImageActions" class="avatar-action-menu">
@@ -52,25 +58,25 @@
       <StatCard
         :icon="`<circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/>`"
         :label="settingsCopy.totalWorkouts"
-        :value="String(profileStats.totalWorkouts)"
+        :value="statsLoading ? '…' : String(profileStats.totalWorkouts)"
         cardClass="stat-purple"
       />
       <StatCard
         :icon="`<rect width='18' height='18' x='3' y='4' rx='2' ry='2'/><line x1='16' x2='16' y1='2' y2='6'/><line x1='8' x2='8' y1='2' y2='6'/><line x1='3' x2='21' y1='10' y2='10'/>`"
         :label="settingsCopy.trainingTime"
-        :value="profileStats.trainingHours + 'h'"
+        :value="statsLoading ? '…' : profileStats.trainingHours + 'h'"
         cardClass="stat-blue"
       />
       <StatCard
         :icon="`<path d='M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'/>`"
         :label="settingsCopy.caloriesBurned"
-        :value="profileStats.caloriesBurned.toLocaleString(locale)"
+        :value="statsLoading ? '…' : profileStats.caloriesBurned.toLocaleString(locale)"
         cardClass="stat-orange"
       />
       <StatCard
         :icon="`<polyline points='22 7 13.5 15.5 8.5 10.5 2 17'/><polyline points='16 7 22 7 22 13'/>`"
         :label="settingsCopy.longestStreak"
-        :value="profileStats.longestStreak + ' ' + settingsCopy.days"
+        :value="statsLoading ? '…' : profileStats.longestStreak + ' ' + settingsCopy.days"
         cardClass="stat-green"
       />
     </div>
@@ -81,12 +87,26 @@
           <div class="section-icon" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/></svg>`"></div>
           <h2>Achievements</h2>
         </div>
-        <span class="achievement-count">{{ unlockedCount }} / {{ totalAchievements }} {{ settingsCopy.unlocked }}</span>
+        <span class="achievement-count">
+          {{ achievementsLoading ? 'Lädt…' : `${unlockedCount} / ${totalAchievements} ${settingsCopy.unlocked}` }}
+        </span>
       </div>
 
       <div class="achievements-carousel">
-        <button class="carousel-btn prev" @click="previousAchievements" :disabled="currentAchievementIndex === 0">&#8592;</button>
-        <div class="achievements-grid">
+        <button
+          class="carousel-btn prev"
+          type="button"
+          :disabled="achievementsLoading || currentAchievementIndex === 0"
+          aria-label="Vorherige Achievements"
+          data-tooltip="Vorherige Achievements"
+          @click="previousAchievements"
+        >
+          &#8592;
+        </button>
+        <div v-if="achievementsLoading" class="achievements-grid achievement-skeleton-grid" aria-label="Achievements werden geladen">
+          <div v-for="i in visibleCount" :key="i" class="achievement-skeleton"></div>
+        </div>
+        <div v-else class="achievements-grid">
           <AchievementCard
             v-for="achievement in visibleAchievements"
             :key="achievement.id"
@@ -96,10 +116,19 @@
             :unlocked="achievement.unlocked"
           />
         </div>
-        <button class="carousel-btn next" @click="nextAchievements" :disabled="currentAchievementIndex >= achievements.length - visibleCount">&#8594;</button>
+        <button
+          class="carousel-btn next"
+          type="button"
+          :disabled="achievementsLoading || currentAchievementIndex >= achievements.length - visibleCount"
+          aria-label="Nächste Achievements"
+          data-tooltip="Nächste Achievements"
+          @click="nextAchievements"
+        >
+          &#8594;
+        </button>
       </div>
 
-      <div class="carousel-dots">
+      <div v-if="!achievementsLoading && achievements.length" class="carousel-dots">
         <span
           v-for="(_, i) in Math.ceil(achievements.length / visibleCount)"
           :key="i"
@@ -257,12 +286,13 @@
                 @click="settingsView = 'main'"
                 type="button"
                 :aria-label="settingsCopy.back"
+                :data-tooltip="settingsCopy.back"
               >
                 <ArrowLeft :size="18" />
               </button>
               <h2>{{ settingsView === 'password' ? settingsCopy.passwordTitle : settingsCopy.settings }}</h2>
             </div>
-            <button class="close-btn" @click="closeSettings">&#10005;</button>
+            <button class="close-btn" @click="closeSettings" aria-label="Schließen" data-tooltip="Schließen">&#10005;</button>
           </div>
           <div class="settings-content">
             <template v-if="settingsView === 'main'">
@@ -343,14 +373,20 @@
 
             <template v-else>
               <section class="settings-section password-panel">
-                <div class="field">
-                  <label>{{ settingsCopy.oldPassword }}</label>
-                  <input type="password" v-model="oldPassword" />
-                </div>
-                <div class="field">
-                  <label>{{ settingsCopy.newPassword }}</label>
-                  <input type="password" v-model="newPassword" />
-                </div>
+                <ValidatedPasswordInput
+                  ref="oldPasswordRef"
+                  v-model="oldPassword"
+                  :label="settingsCopy.oldPassword"
+                  autocomplete="current-password"
+                />
+                <ValidatedPasswordInput
+                  ref="newPasswordRef"
+                  v-model="newPassword"
+                  :label="settingsCopy.newPassword"
+                  autocomplete="new-password"
+                  require-strength
+                  show-requirements
+                />
                 <button class="btn-primary" @click="changePassword" :disabled="changingPassword">{{ settingsCopy.savePassword }}</button>
               </section>
             </template>
@@ -385,6 +421,7 @@ import { useLeaderboard } from '@/composables/useLeaderboard';
 import { userService, achievementService, resolveMediaUrl } from '@/services/api';
 import FooterComponent from '@/components/FooterComponent.vue';
 import MessagePopup from '@/components/MessagePopup.vue';
+import ValidatedPasswordInput from '@/components/ValidatedPasswordInput.vue';
 import type { Achievement, ProfileStats } from '@/models/Achievement';
 import noProfilePicture from '@/assets/Nopfp.png';
 import { ArrowLeft, ChevronRight, LockKeyhole, Pencil } from 'lucide-vue-next';
@@ -397,6 +434,7 @@ const { sortedLeaderboard, loadLeaderboard } = useLeaderboard();
 const longestStreak = ref(0);
 const currentStreak = ref(0);
 const profileStats = ref<ProfileStats>({ totalWorkouts: 0, trainingHours: 0, caloriesBurned: 0, longestStreak: 0, currentStreak: 0 });
+const statsLoading = ref(true);
 
 const showSettings = ref(false);
 const settingsView = ref<'main' | 'password'>('main');
@@ -569,9 +607,14 @@ const leaderboardPosition = computed(() => {
 const oldPassword = ref('');
 const newPassword = ref('');
 const changingPassword = ref(false);
+const oldPasswordRef = ref<{ validate: () => boolean } | null>(null);
+const newPasswordRef = ref<{ validate: () => boolean } | null>(null);
 
 async function changePassword() {
-  if (!oldPassword.value || !newPassword.value) {
+  const oldPasswordValid = oldPasswordRef.value?.validate() ?? false;
+  const newPasswordValid = newPasswordRef.value?.validate() ?? false;
+
+  if (!oldPasswordValid || !newPasswordValid) {
     popupType.value = 'error';
     popupMessage.value = settingsCopy.value.fillBothFields;
     return;
@@ -669,6 +712,7 @@ const achievementIcons: Record<string, string> = {
 const defaultAchievementIcon = `<path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/>`;
 
 const achievements = ref<Array<{ id: number; icon: string; title: string; description: string; unlocked: boolean }>>([]);
+const achievementsLoading = ref(true);
 
 const visibleAchievements = computed(() =>
   achievements.value.slice(currentAchievementIndex.value, currentAchievementIndex.value + visibleCount.value)
@@ -985,36 +1029,57 @@ async function loadRecentActivities() {
   }
 }
 
+async function loadAchievementsAndStats() {
+  achievementsLoading.value = true;
+  statsLoading.value = true;
+  try {
+    const [achievementsRes, statsRes] = await Promise.all([
+      achievementService.getAll(),
+      achievementService.getProfileStats()
+    ]);
+    achievements.value = (achievementsRes.data as Achievement[]).map(a => ({
+      id: a.id,
+      icon: achievementIcons[a.key] || defaultAchievementIcon,
+      title: a.title,
+      description: a.description,
+      unlocked: a.unlocked
+    }));
+    profileStats.value = statsRes.data;
+    longestStreak.value = statsRes.data.longestStreak ?? 0;
+    currentStreak.value = statsRes.data.currentStreak ?? 0;
+  } catch {
+    achievements.value = [];
+  } finally {
+    achievementsLoading.value = false;
+    statsLoading.value = false;
+  }
+}
+
 onMounted(async () => {
   try {
-    await userService.getProfile();
-    user.value = JSON.parse(localStorage.getItem('user') || '{}');
-    editingUsername.value = user.value.userName;
-    await loadLeaderboard();
+    const profilePromise = userService.getProfile().then(() => {
+      user.value = JSON.parse(localStorage.getItem('user') || '{}');
+      editingUsername.value = user.value?.userName ?? '';
+    });
+    const leaderboardPromise = loadLeaderboard();
+    const achievementsPromise = loadAchievementsAndStats();
+    const activityYearsPromise = loadActivityYears();
+    const recentPromise = loadRecentActivities();
 
-    // Achievements & Stats vom Backend laden
-    try {
-      const [achievementsRes, statsRes] = await Promise.all([
-        achievementService.getAll(),
-        achievementService.getProfileStats()
-      ]);
-      achievements.value = (achievementsRes.data as Achievement[]).map(a => ({
-        id: a.id,
-        icon: achievementIcons[a.key] || defaultAchievementIcon,
-        title: a.title,
-        description: a.description,
-        unlocked: a.unlocked
-      }));
-      profileStats.value = statsRes.data;
-      longestStreak.value = statsRes.data.longestStreak ?? 0;
-      currentStreak.value = statsRes.data.currentStreak ?? 0;
-    } catch { /* Achievements/Stats nicht verfügbar */ }
+    await Promise.allSettled([
+      profilePromise,
+      leaderboardPromise,
+      achievementsPromise,
+      activityYearsPromise,
+      recentPromise,
+    ]);
 
-    await loadActivityYears();
+    editingUsername.value = user.value?.userName ?? '';
     await loadWeeklyActivity();
-    await loadRecentActivities();
   } catch (err) {
     console.error('Fehler beim Laden', err);
+    achievementsLoading.value = false;
+    statsLoading.value = false;
   }
 });
 </script>
@@ -1280,6 +1345,26 @@ onMounted(async () => {
   gap: 16px;
   flex: 1;
   min-width: 0;
+}
+
+.achievement-skeleton-grid {
+  grid-auto-rows: minmax(150px, 1fr);
+}
+
+.achievement-skeleton {
+  min-height: 150px;
+  border-radius: 16px;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent),
+    rgba(255, 255, 255, 0.06);
+  background-size: 220% 100%, 100% 100%;
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  to {
+    background-position: -220% 0, 0 0;
+  }
 }
 
 /* Dots */

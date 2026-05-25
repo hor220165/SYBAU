@@ -8,7 +8,7 @@
 
         <div class="avatar-glow-bg"></div>
 
-        <h2 class="username-clean">{{ userName || 'Champion' }}</h2>
+        <h2 class="username-clean">{{ userName || text('Profil wird geladen...', 'Loading profile...') }}</h2>
 
         <div class="avatar-row">
 
@@ -140,7 +140,7 @@
           <div class="stats-bar-sep"></div>
           <div class="stats-bar-item">
             <div class="stats-bar-icon trophy" v-html="`<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/></svg>`"></div>
-            <span class="stats-bar-value">{{ unlockedAchievements }}/{{ totalAchievements }}</span>
+            <span class="stats-bar-value">{{ statsLoaded ? `${unlockedAchievements}/${totalAchievements}` : '…' }}</span>
             <span class="stats-bar-label">Badges</span>
           </div>
           <div class="stats-bar-sep"></div>
@@ -167,7 +167,7 @@
         />
         <StatCard
           :icon="`<path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/><path d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/>`"
-          label="Achievements" :value="unlockedAchievements + '/' + totalAchievements" cardClass="achievements-card"
+          label="Achievements" :value="statsLoaded ? unlockedAchievements + '/' + totalAchievements : '…'" cardClass="achievements-card"
         />
         <StatCard
           :icon="`<circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/>`"
@@ -186,7 +186,15 @@
         <div class="boost-modal">
           <div class="boost-modal-header">
             <h3>{{ text('Booster auswählen', 'Choose booster') }} - Slot {{ selectedSlotIndex + 1 }}</h3>
-            <button class="boost-modal-close" @click="showBoostModal = false">&times;</button>
+            <button
+              class="boost-modal-close"
+              type="button"
+              aria-label="Schließen"
+              data-tooltip="Schließen"
+              @click="showBoostModal = false"
+            >
+              &times;
+            </button>
           </div>
           <div class="boost-modal-body">
             <div v-if="ownedBoosters.length === 0" class="boost-modal-empty">
@@ -248,13 +256,15 @@ import { useLeaderboard } from '@/composables/useLeaderboard';
 import { useRouter } from 'vue-router';
 import { useLanguage } from '@/composables/useLanguage';
 
-const userName = ref('');
-const email = ref('');
-const coins = ref(0);
-const level = ref(1);
-const currentXp = ref(0);
-const xpForNextLevel = ref(1000);
-const bodyStage = ref('skinny');
+const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+const storedAvatar = storedUser.avatar ?? storedUser.Avatar ?? {};
+const userName = ref(storedUser.userName ?? storedUser.UserName ?? storedUser.username ?? '');
+const email = ref(storedUser.email ?? storedUser.Email ?? '');
+const coins = ref(Number(storedUser.coins ?? storedUser.Coins ?? 0));
+const level = ref(Number(storedAvatar.level ?? storedAvatar.Level ?? 1));
+const currentXp = ref(Number(storedAvatar.experience ?? storedAvatar.Experience ?? 0));
+const xpForNextLevel = ref(Number(storedAvatar.xpForNextLevel ?? storedAvatar.XpForNextLevel ?? 1000));
+const bodyStage = ref(storedAvatar.bodyStage ?? storedAvatar.BodyStage ?? 'skinny');
 const router = useRouter();
 const { text, translate, locale } = useLanguage();
 
@@ -295,6 +305,7 @@ const totalQuests = ref(0);
 const caloriesBurned = ref(0);
 const todayXp = ref(0);
 const totalXp = ref(0);
+const statsLoaded = ref(false);
 
 // Booster State
 const boostSlots = ref<Array<item | null>>([null, null, null, null]);
@@ -410,6 +421,7 @@ onMounted(async () => {
     currentStreak.value = stats.currentStreak ?? 0;
     todayXp.value = xpRes.data?.todayXp ?? 0;
     totalXp.value = xpRes.data?.totalXp ?? 0;
+    statsLoaded.value = true;
   } catch { /* stats nicht verfügbar */ }
 });
 </script>

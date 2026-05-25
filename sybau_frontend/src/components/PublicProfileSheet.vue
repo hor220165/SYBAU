@@ -207,7 +207,7 @@ watch(
       <div v-if="visible" class="sheet-backdrop" @click.self="emit('close')">
         <section class="profile-sheet">
           <div class="sheet-handle"></div>
-          <button class="close-btn" type="button" @click="emit('close')" aria-label="Schließen">
+          <button class="close-btn" type="button" @click="emit('close')" aria-label="Schließen" data-tooltip="Schließen">
             <X :size="18" />
           </button>
 

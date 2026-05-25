@@ -147,7 +147,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 
       <NotificationBell />
 
-      <button class="logout-btn" @click="logout">
+      <button class="logout-btn" type="button" aria-label="Abmelden" data-tooltip="Abmelden" @click="logout">
         <img src="../assets/logout_Icon.png" alt="logout" class="logout-icon">
       </button>
     </div>
@@ -160,6 +160,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 20px;
   padding: 16px 40px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: transparent;
@@ -173,6 +174,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 .logo-section {
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
 }
 
 .logo-button {
@@ -194,6 +196,8 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 .stats-header {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
   gap: 20px;
   overflow: visible;
 }
@@ -393,9 +397,17 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 
   .stats-header {
     gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .stats-header::-webkit-scrollbar {
+    display: none;
   }
 
   .stat-item {
+    flex: 0 0 auto;
     gap: 6px;
   }
 
@@ -404,7 +416,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   }
 
   .stat-label {
-    font-size: 9px;
+    display: none;
   }
 
   .stat-icon {
@@ -453,10 +465,6 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 
   .stat-item {
     gap: 4px;
-  }
-
-  .stat-label {
-    font-size: 8px;
   }
 
   .stat-icon {

@@ -33,40 +33,20 @@
             class="form"
             @submit.prevent="handleLogin"
           >
-            <label>E-Mail</label>
-            <input
-              type="email"
-              placeholder="example@gmail.com"
+            <ValidatedEmailInput
+              ref="loginEmailRef"
               v-model="email"
+              :label="'E-Mail'"
               autocomplete="email"
-              required
+              block-disposable
             />
-            
-            <label>{{ text('Passwort', 'Password') }}</label>
-            <div class="password-input-wrapper">
-              <input 
-                :type="showPassword ? 'text' : 'password'" 
-                placeholder="••••••••" 
-                v-model="password" 
-                autocomplete="current-password"
-                required
-              />
-              <button 
-                type="button" 
-                class="toggle-password" 
-                @click="showPassword = !showPassword"
-                tabindex="-1"
-              >
-                <svg v-if="!showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
-                </svg>
-              </button>
-            </div>
+
+            <ValidatedPasswordInput
+              ref="loginPasswordRef"
+              v-model="password"
+              :label="text('Passwort', 'Password')"
+              autocomplete="current-password"
+            />
             
             <button type="submit" class="primary-btn" :disabled="loading">
               <span v-if="loading" class="spinner"></span>
@@ -93,40 +73,31 @@
               autocomplete="username"
               required
             />
-            <label>E-Mail</label>
-            <input
-              placeholder="example@gmail.com"
-              type="email"
+            <ValidatedEmailInput
+              ref="registerEmailRef"
               v-model="email"
+              :label="'E-Mail'"
               autocomplete="email"
-              required
+              block-disposable
             />
-            
-            <label>{{ text('Passwort', 'Password') }}</label>
-            <div class="password-input-wrapper">
-              <input 
-                :type="showPassword ? 'text' : 'password'" 
-                placeholder="••••••••" 
-                v-model="password" 
-                autocomplete="new-password"
-                required
-              />
-              <button 
-                type="button" 
-                class="toggle-password" 
-                @click="showPassword = !showPassword"
-                tabindex="-1"
-              >
-                <svg v-if="!showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
-                </svg>
-              </button>
-            </div>
+
+            <ValidatedPasswordInput
+              ref="registerPasswordRef"
+              v-model="password"
+              :label="text('Passwort', 'Password')"
+              autocomplete="new-password"
+              require-strength
+              show-requirements
+            />
+
+            <label class="privacy-check">
+              <input v-model="privacyAccepted" type="checkbox" required />
+              <span>
+                Ich habe die
+                <router-link to="/datenschutz" target="_blank">Datenschutzerklärung</router-link>
+                gelesen und akzeptiere die Verarbeitung meiner Daten für SYBAU.
+              </span>
+            </label>
             
             <button type="submit" class="primary-btn" :disabled="loading">
               <span v-if="loading" class="spinner"></span>
@@ -141,11 +112,13 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'; 
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router'; 
 import { useAuth } from '@/composables/useAuth';
 import { userService } from '@/services/api';
 import { useLanguage } from '@/composables/useLanguage';
+import ValidatedEmailInput from '@/components/ValidatedEmailInput.vue';
+import ValidatedPasswordInput from '@/components/ValidatedPasswordInput.vue';
 
 const router = useRouter(); 
 const { login, googleLogin } = useAuth();
@@ -157,11 +130,15 @@ const isLogin = ref(true);
 const email = ref(''); 
 const password = ref(''); 
 const username = ref(''); 
-const showPassword = ref(false);
+const privacyAccepted = ref(false);
 const loading = ref(false);
 const errorMessage = ref('');
 const googleLoginButtonRef = ref<HTMLDivElement | null>(null);
 const googleRegisterButtonRef = ref<HTMLDivElement | null>(null);
+const loginEmailRef = ref<{ validate: () => boolean; normalizedValue: () => string } | null>(null);
+const loginPasswordRef = ref<{ validate: () => boolean } | null>(null);
+const registerEmailRef = ref<{ validate: () => boolean; normalizedValue: () => string } | null>(null);
+const registerPasswordRef = ref<{ validate: () => boolean } | null>(null);
 let googleScriptEl: HTMLScriptElement | null = null;
 
 declare global {
@@ -232,9 +209,14 @@ const renderGoogleButtons = async () => {
 };
 
 const handleLogin = async () => {
+  const emailValid = loginEmailRef.value?.validate() ?? false;
+  const passwordValid = loginPasswordRef.value?.validate() ?? false;
+  if (!emailValid || !passwordValid) return;
+
   loading.value = true;
   errorMessage.value = '';
   try { 
+    email.value = loginEmailRef.value?.normalizedValue() ?? email.value.trim();
     const res = await login(email.value, password.value); 
     const token = res.data?.token; 
     if (token) {
@@ -251,9 +233,19 @@ const handleLogin = async () => {
 };
 
 const handleRegister = async () => {
+  const emailValid = registerEmailRef.value?.validate() ?? false;
+  const passwordValid = registerPasswordRef.value?.validate() ?? false;
+  if (!emailValid || !passwordValid) return;
+
+  if (!privacyAccepted.value) {
+    errorMessage.value = 'Bitte akzeptiere die Datenschutzerklärung.';
+    return;
+  }
+
   loading.value = true;
   errorMessage.value = '';
   try { 
+    email.value = registerEmailRef.value?.normalizedValue() ?? email.value.trim();
     const { register } = useAuth();
     await register(username.value, email.value, password.value); 
     await login(email.value, password.value); 
@@ -514,6 +506,29 @@ body {
 
 .form input::placeholder {
   color: #6b7280;
+}
+
+.privacy-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  color: #a0aec0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.privacy-check input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  margin: 2px 0 0;
+  accent-color: #ff2d75;
+}
+
+.privacy-check a {
+  color: #ff5e9a;
+  font-weight: 700;
 }
 
 /* === Password Input Wrapper === */

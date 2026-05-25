@@ -3,7 +3,7 @@ import type { LeaderBoard } from '@/models/LeaderBoard';
 import { userService } from '@/services/api';
 
 const leaderboard = ref<LeaderBoard[]>([]);
-const loading = ref(false);
+const loading = ref(true);
 const error = ref<string | null>(null);
 
 export async function loadLeaderboard() {
@@ -11,10 +11,6 @@ export async function loadLeaderboard() {
   error.value = null;
   try {
     const res = await userService.getLeaderboard();
-    // Debug: log the full response to inspect shape during development
-    // eslint-disable-next-line no-console
-    console.debug('getLeaderboard response', res);
-
     // Handle common response shapes: either the array is at res.data or res.data.data
     const raw = Array.isArray(res.data) ? res.data : Array.isArray(res.data?.data) ? res.data.data : null;
 

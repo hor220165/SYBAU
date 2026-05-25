@@ -11,6 +11,7 @@ import AdminView from "@/views/AdminView.vue";
 import HomeView from "@/views/HomeView.vue";
 import ImpressumView from '@/views/ImpressumView.vue';
 import FriendsView from '@/views/FriendsView.vue';
+import DatenschutzView from '@/views/DatenschutzView.vue';
 
 const routes = [
     {
@@ -24,6 +25,10 @@ const routes = [
     {
       path: '/impressum',
       component: ImpressumView
+    },
+    {
+      path: '/datenschutz',
+      component: DatenschutzView
     },
     {
         path: '/home',
@@ -70,7 +75,11 @@ const routes = [
 
 export const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
+  scrollBehavior(_to, _from, savedPosition) {
+    if (savedPosition) return savedPosition;
+    return { top: 0, left: 0 };
+  }
 })
 
 // Route Guard für Admin-Schutz

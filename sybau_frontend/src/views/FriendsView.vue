@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import {
   Users, UserPlus, Swords, Trophy, Check, X,
   Search, Clock, Trash2, Plus, Target, EyeOff
@@ -40,7 +40,8 @@ const showPopup = (msg: string, type: 'success' | 'error' = 'success') => {
 
 // ───── State ─────
 const activeTab = ref<'friends' | 'requests' | 'challenges'>('friends');
-const loading = ref(false);
+const loading = ref(true);
+const searchingUsers = ref(false);
 
 const friends = ref<FriendshipDto[]>([]);
 const pendingRequests = ref<FriendRequestDto[]>([]);
@@ -49,6 +50,7 @@ const challenges = ref<FriendChallengeDto[]>([]);
 const userDirectory = ref<any[]>([]);
 
 const searchQuery = ref('');
+let searchTimer: number | undefined;
 
 // Challenge erstellen
 const showChallengeModal = ref(false);
@@ -87,7 +89,7 @@ const sentRequestNames = computed(() => new Set(
 
 const searchResults = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
-  if (!query) return [];
+  if (query.length < 3) return [];
   return userDirectory.value
     .filter((user) => {
       const userName = String(user.userName ?? user.UserName ?? user.username ?? '').toLowerCase();
@@ -303,17 +305,46 @@ const loadChallenges = async () => {
 };
 
 const loadUserDirectory = async () => {
+  const query = searchQuery.value.trim();
+  if (query.length < 3) {
+    userDirectory.value = [];
+    return;
+  }
+
+  searchingUsers.value = true;
   try {
-    const { data } = await userService.getLeaderboard();
+    const { data } = await userService.searchUsers(query, 8);
     userDirectory.value = Array.isArray(data) ? data : [];
-  } catch (e) { console.error('Fehler beim Laden der Nutzersuche', e); }
+  } catch (e) {
+    console.error('Fehler beim Laden der Nutzersuche', e);
+    userDirectory.value = [];
+  } finally {
+    searchingUsers.value = false;
+  }
 };
 
 const loadAll = async () => {
   loading.value = true;
-  await Promise.all([loadFriends(), loadRequests(), loadSentRequests(), loadChallenges(), loadUserDirectory()]);
-  loading.value = false;
+  try {
+    await Promise.all([loadFriends(), loadRequests(), loadSentRequests(), loadChallenges()]);
+  } finally {
+    loading.value = false;
+  }
 };
+
+watch(searchQuery, (value) => {
+  window.clearTimeout(searchTimer);
+  const query = value.trim();
+  if (query.length < 3) {
+    searchingUsers.value = false;
+    userDirectory.value = [];
+    return;
+  }
+
+  searchTimer = window.setTimeout(() => {
+    void loadUserDirectory();
+  }, 250);
+});
 
 // ───── Actions ─────
 const sendFriendRequest = async (userName = searchQuery.value.trim()) => {
@@ -469,6 +500,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  window.clearTimeout(searchTimer);
   offSignalREvent(handleSignalR);
 });
 </script>
@@ -511,12 +543,16 @@ onUnmounted(() => {
             <input v-model="searchQuery" placeholder="Benutzername suchen..." />
           </div>
 
-          <p v-if="searchQuery.trim() && !searchResults.length" class="inline-empty">Keine passenden Nutzer gefunden.</p>
+          <p v-if="searchQuery.trim().length > 0 && searchQuery.trim().length < 3" class="inline-empty">
+            Gib mindestens 3 Zeichen ein.
+          </p>
+          <p v-else-if="searchingUsers" class="inline-empty">Suche läuft…</p>
+          <p v-else-if="searchQuery.trim().length >= 3 && !searchResults.length" class="inline-empty">Keine passenden Nutzer gefunden.</p>
 
           <div v-if="searchResults.length" class="friends-list search-results">
             <div v-for="user in searchResults" :key="getUserName(user)" class="friend-card">
               <div class="friend-avatar">
-                <button class="avatar-button" type="button" @click="openUserProfile(getUserId(user))">
+                <button class="avatar-button" type="button" aria-label="Profil öffnen" data-tooltip="Profil öffnen" @click="openUserProfile(getUserId(user))">
                   <img
                     v-if="canShowProfileImage(`search-${getUserId(user)}`, getUserImage(user))"
                     :src="getUserImage(user)"
@@ -552,7 +588,7 @@ onUnmounted(() => {
           <div v-if="friends.length" class="friends-list">
             <div v-for="f in friends" :key="f.id" class="friend-card">
               <div class="friend-avatar">
-                <button class="avatar-button" type="button" @click="openUserProfile(getFriendId(f))">
+                <button class="avatar-button" type="button" aria-label="Profil öffnen" data-tooltip="Profil öffnen" @click="openUserProfile(getFriendId(f))">
                   <img
                     v-if="canShowProfileImage(`friend-${getFriendId(f)}`, getFriendImage(f))"
                     :src="getFriendImage(f)"
@@ -567,10 +603,10 @@ onUnmounted(() => {
                 <span class="friend-meta">Lv {{ getFriendLevel(f) }} · {{ formatCompact(getFriendXp(f)) }} XP</span>
               </div>
               <div class="friend-actions">
-                <button class="icon-action-btn challenge-btn" @click="openChallengeModal(getFriendId(f))" title="Herausfordern">
+                <button class="icon-action-btn challenge-btn" type="button" aria-label="Herausfordern" data-tooltip="Herausfordern" @click="openChallengeModal(getFriendId(f))">
                   <Trophy :size="18" />
                 </button>
-                <button class="icon-action-btn remove-btn" @click="removeFriend(f.id)" title="Entfernen">
+                <button class="icon-action-btn remove-btn" type="button" aria-label="Entfernen" data-tooltip="Entfernen" @click="removeFriend(f.id)">
                   <Trash2 :size="18" />
                 </button>
               </div>
@@ -591,7 +627,7 @@ onUnmounted(() => {
           <div v-if="pendingRequests.length" class="requests-list">
             <div v-for="req in pendingRequests" :key="req.id" class="request-card">
               <div class="friend-avatar">
-                <button class="avatar-button" type="button" @click="openUserProfile(req.fromUserId)">
+                <button class="avatar-button" type="button" aria-label="Profil öffnen" data-tooltip="Profil öffnen" @click="openUserProfile(req.fromUserId)">
                   <img
                     v-if="canShowProfileImage(`from-${req.fromUserId}`, getRequestImage(req, 'from'))"
                     :src="getRequestImage(req, 'from')"
@@ -620,7 +656,7 @@ onUnmounted(() => {
           <div v-if="sentRequests.length" class="requests-list">
             <div v-for="req in sentRequests" :key="req.id" class="request-card">
               <div class="friend-avatar">
-                <button class="avatar-button" type="button" @click="openUserProfile(req.toUserId)">
+                <button class="avatar-button" type="button" aria-label="Profil öffnen" data-tooltip="Profil öffnen" @click="openUserProfile(req.toUserId)">
                   <img
                     v-if="canShowProfileImage(`to-${req.toUserId}`, getRequestImage(req, 'to'))"
                     :src="getRequestImage(req, 'to')"

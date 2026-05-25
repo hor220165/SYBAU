@@ -8,7 +8,7 @@
 
         <nav class="nav-buttons" aria-label="Landing Navigation">
           <button class="nav-btn" type="button" @click="navigateTo('/auth')">{{ copy.login }}</button>
-          <button class="webplayer-btn" type="button" @click="openWebplayer">{{ copy.webplayer }}</button>
+          <button class="webplayer-btn" type="button" @click="startFree">{{ copy.startFree }}</button>
         </nav>
       </div>
     </header>
@@ -23,7 +23,7 @@
             {{ copy.heroSubtitle }}
           </p>
           <div class="hero-actions fade-in delay-2">
-            <button class="primary-btn" type="button" @click="openWebplayer">{{ copy.primaryAction }}</button>
+            <button class="primary-btn" type="button" @click="startFree">{{ copy.primaryAction }}</button>
           </div>
         </div>
       </section>
@@ -133,10 +133,10 @@ let observer: IntersectionObserver | null = null;
 
 const copy = {
   login: 'Login',
-  webplayer: 'Webplayer',
+  startFree: 'Kostenlos starten',
   heroTitle: 'Trainieren, leveln, sichtbar stärker werden.',
   heroSubtitle: 'Dein Training wird zu Fortschritt, den du jeden Tag direkt siehst.',
-  primaryAction: 'Webplayer öffnen',
+  primaryAction: 'Kostenlos starten',
   avatarTitle: 'Drei Phasen, kein abstrakter Fortschritt.',
   avatarText: 'Der Charakter entwickelt sich mit deinem Training. Die Veränderung bleibt bewusst sichtbar und simpel.',
   avatarAria: 'Avatar Phasen',
@@ -225,7 +225,7 @@ const navigateTo = (path: string) => {
   router.push(path);
 };
 
-const openWebplayer = () => {
+const startFree = () => {
   router.push(localStorage.getItem('token') ? '/dashboard' : '/auth');
 };
 

@@ -13,6 +13,15 @@ public class UserDto
     public bool IsProfilePrivate { get; set; }
 }
 
+public class UserSearchDto
+{
+    public int Id { get; set; }
+    public string UserName { get; set; } = string.Empty;
+    public string? ProfileImageUrl { get; set; }
+    public int Level { get; set; }
+    public int TotalXp { get; set; }
+}
+
 public class PublicUserProfileDto
 {
     public int Id { get; set; }

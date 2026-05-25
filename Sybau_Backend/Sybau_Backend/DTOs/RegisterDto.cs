@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Sybau_Backend.Validation;
 
 namespace Sybau_Backend.DTOs;
 
@@ -11,11 +12,13 @@ public class RegisterDto
     
     [Required]
     [EmailAddress]
+    [NotDisposableEmail]
     [MaxLength(200)]
     public string Email { get; set; } = "";
     
     [Required]
-    [MinLength(6, ErrorMessage = "Passwort muss mindestens 6 Zeichen lang sein.")]
-    [MaxLength(128)]
+    [MinLength(AuthValidation.MinPasswordLength, ErrorMessage = AuthValidation.PasswordPolicyMessage)]
+    [MaxLength(AuthValidation.MaxPasswordLength)]
+    [StrongPassword]
     public string Password { get; set; } = "";
 }

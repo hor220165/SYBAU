@@ -88,6 +88,24 @@ namespace Sybau_Backend.Controllers
 
         // GET /users/{id}/profile
         [Authorize]
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchUsers([FromQuery] string query = "", [FromQuery] int limit = 8)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            var trimmedQuery = query.Trim();
+            if (trimmedQuery.Length < 3)
+            {
+                return Ok(Array.Empty<UserSearchDto>());
+            }
+
+            var users = await _userService.SearchUsersAsync(int.Parse(userIdClaim), trimmedQuery, limit);
+            return Ok(users);
+        }
+
+        // GET /users/{id}/profile
+        [Authorize]
         [HttpGet("{id:int}/profile")]
         public async Task<IActionResult> GetPublicProfile(int id)
         {

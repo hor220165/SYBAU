@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Sybau_Backend.Data;
 using Sybau_Backend.Models;
+using Sybau_Backend.Validation;
 
 namespace Sybau_Backend._Services;
 
@@ -45,6 +46,7 @@ public class AuthService
         var email = principal.FindFirstValue(ClaimTypes.Email) ?? principal.FindFirstValue("email");
         if (string.IsNullOrWhiteSpace(email))
             throw new Exception("Google Konto enthält keine E-Mail.");
+        email = AuthValidation.NormalizeEmail(email);
 
         var givenName = principal.FindFirstValue("given_name");
         var familyName = principal.FindFirstValue("family_name");
@@ -53,7 +55,7 @@ public class AuthService
 
         var user = await _context.Users
             .Include(u => u.Avatar)
-            .FirstOrDefaultAsync(u => u.Email == email);
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == email);
 
         if (user == null)
         {
@@ -100,11 +102,16 @@ public class AuthService
         return CreateAuthResponse(user, config);
     }
 
-    public async Task<User?> LoginAsync(string email, string password)
+    public async Task<User> LoginAsync(string email, string password)
     {
+        email = AuthValidation.NormalizeEmail(email);
+
+        if (!AuthValidation.HasValidEmailShape(email) || AuthValidation.IsDisposableEmail(email))
+            throw new Exception("Ungültige E-Mail oder Passwort.");
+
         var user = await _context.Users
             .Include(u => u.Avatar)
-            .FirstOrDefaultAsync(u => u.Email == email);
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == email);
 
         if (user == null)
             throw new Exception("Ungültige E-Mail oder Passwort.");
@@ -117,14 +124,23 @@ public class AuthService
 
     public async Task<User> RegisterAsync(string userName, string email, string password)
     {
-        if (await _context.Users.AnyAsync(u => u.Email == email))
+        email = AuthValidation.NormalizeEmail(email);
+        userName = userName.Trim();
+
+        if (!AuthValidation.HasValidEmailShape(email))
+            throw new Exception("Bitte gib eine gültige E-Mail-Adresse ein.");
+
+        if (AuthValidation.IsDisposableEmail(email))
+            throw new Exception("Temporäre E-Mail-Adressen sind nicht erlaubt.");
+
+        if (await _context.Users.AnyAsync(u => u.Email.ToLower() == email))
             throw new Exception("Diese E-Mail wird bereits verwendet.");
 
         if (string.IsNullOrWhiteSpace(userName))
             throw new Exception("Benutzername darf nicht leer sein.");
 
-        if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
-            throw new Exception("Passwort muss mindestens 6 Zeichen lang sein.");
+        if (string.IsNullOrWhiteSpace(password) || !AuthValidation.IsStrongPassword(password))
+            throw new Exception(AuthValidation.PasswordPolicyMessage);
 
         var tempUser = new User(userName, null, null, email, "tempHash");
         var passwordHash = _passwordHasher.HashPassword(tempUser, password);

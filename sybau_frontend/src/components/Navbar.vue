@@ -1,5 +1,12 @@
 <template>
-  <button class="mobile-menu-btn" :class="{ 'below-header': headerVisible }" @click="mobileMenuOpen = !mobileMenuOpen">
+  <button
+    class="mobile-menu-btn"
+    type="button"
+    :class="{ 'below-header': headerVisible }"
+    aria-label="Navigation öffnen"
+    data-tooltip="Navigation"
+    @click="mobileMenuOpen = !mobileMenuOpen"
+  >
     <span class="hamburger-icon">☰</span>
   </button>
 

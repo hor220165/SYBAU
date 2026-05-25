@@ -9,6 +9,7 @@
         <div class="footer-right">
           <p class="footer-copyright">&copy; 2026 SYBAU. Alle Rechte vorbehalten.</p>
           <button class="footer-link" @click="navigateTo('/impressum')">Impressum</button>
+          <button class="footer-link" @click="navigateTo('/datenschutz')">Datenschutz</button>
         </div>
       </div>
     </div>
@@ -21,7 +22,9 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 
 const navigateTo = (path: string) => {
-  router.push(path);
+  router.push(path).then(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  });
 };
 </script>
 

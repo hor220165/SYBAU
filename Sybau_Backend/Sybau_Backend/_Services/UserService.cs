@@ -122,6 +122,39 @@ public class UserService
         return leaderboard;
     }
 
+    public async Task<IEnumerable<UserSearchDto>> SearchUsersAsync(int currentUserId, string query, int limit = 8)
+    {
+        var normalizedQuery = query.Trim().ToLowerInvariant();
+        if (normalizedQuery.Length < 3) return [];
+
+        var users = await _context.Users
+            .AsNoTracking()
+            .Where(u =>
+                u.Id != currentUserId &&
+                u.IsAdmin == false &&
+                u.UserName.ToLower().Contains(normalizedQuery))
+            .OrderBy(u => u.UserName)
+            .Take(Math.Clamp(limit, 1, 20))
+            .Select(u => new
+            {
+                u.Id,
+                u.UserName,
+                HasProfileImage = u.ProfileImageUrl != null && u.ProfileImageUrl != string.Empty,
+                u.Avatar.Level,
+                u.Avatar.Experience
+            })
+            .ToListAsync();
+
+        return users.Select(u => new UserSearchDto
+        {
+            Id = u.Id,
+            UserName = u.UserName,
+            ProfileImageUrl = ProfileMediaUrl.ForUser(u.Id, u.HasProfileImage),
+            Level = u.Level,
+            TotalXp = CalculateTotalXp(u.Level, u.Experience)
+        });
+    }
+
     private static int CalculateTotalXp(int level, int experience)
     {
         var total = 0;

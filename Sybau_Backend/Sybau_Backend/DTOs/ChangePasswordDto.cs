@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Sybau_Backend.Validation;
 
 namespace Sybau_Backend.DTOs;
 
@@ -8,7 +9,8 @@ public class ChangePasswordDto
     public string OldPassword { get; set; } = string.Empty;
     
     [Required]
-    [MinLength(6, ErrorMessage = "Neues Passwort muss mindestens 6 Zeichen lang sein.")]
-    [MaxLength(128)]
+    [MinLength(AuthValidation.MinPasswordLength, ErrorMessage = AuthValidation.PasswordPolicyMessage)]
+    [MaxLength(AuthValidation.MaxPasswordLength)]
+    [StrongPassword]
     public string NewPassword { get; set; }  = string.Empty;
 }
