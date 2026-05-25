@@ -587,7 +587,8 @@ onUnmounted(() => {
                 <p>{{ shopItem.categoryLabel }}</p>
                 <strong class="real-money-coins">
                   <img :src="coinIcon" alt="" />
-                  {{ formatCoinAmount(shopItem.price) }} Coins
+                  <span class="coin-amount">{{ formatCoinAmount(shopItem.price) }}</span>
+                  <span class="coin-label">Coins</span>
                 </strong>
               </div>
 
@@ -933,6 +934,11 @@ onUnmounted(() => {
   height: 24px;
   object-fit: contain;
   image-rendering: pixelated;
+}
+
+.coin-amount,
+.coin-label {
+  white-space: nowrap;
 }
 
 .coin-pack-buy,
@@ -1517,10 +1523,14 @@ onUnmounted(() => {
   }
 
   .chest-grid,
-  .coin-pack-grid,
-  .real-money-grid {
+  .coin-pack-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
+  }
+
+  .real-money-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .section-card {
@@ -1563,6 +1573,10 @@ onUnmounted(() => {
     justify-content: center;
     gap: 5px;
     font-size: 1rem;
+  }
+
+  .real-money-copy strong {
+    justify-content: flex-start;
   }
 
   .coin-pack-copy img,

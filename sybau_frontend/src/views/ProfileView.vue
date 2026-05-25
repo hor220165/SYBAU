@@ -873,6 +873,8 @@ function activityLevel(value: number): number {
 const activityHeatmapWeeks = computed<Array<{ start: string; monthLabel: string; days: ActivityHeatmapDay[] }>>(() => {
   const { start, visualEnd, today } = getHeatmapRange();
   const todayKey = toDateString(today);
+  const selectedYear = selectedActivityYear.value;
+  const firstDayOfYearKey = toDateString(new Date(selectedYear, 0, 1));
   const weeks = [];
   const unitLabel = activityUnitLabel();
 
@@ -889,7 +891,10 @@ const activityHeatmapWeeks = computed<Array<{ start: string; monthLabel: string;
       const dateLabel = formatActivityDateLabel(key);
       const valueLabel = `${value.toLocaleString('de-DE')} ${unitLabel}`;
 
-      if (!monthLabel && (date.getDate() === 1 || toDateString(cursor) === toDateString(start))) {
+      if (
+        !monthLabel &&
+        ((key === firstDayOfYearKey) || (date.getFullYear() === selectedYear && date.getDate() === 1))
+      ) {
         monthLabel = monthFormatter.format(date);
       }
 

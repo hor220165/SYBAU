@@ -7,7 +7,7 @@
         </button>
 
         <nav class="nav-buttons" aria-label="Landing Navigation">
-          <button class="nav-btn" type="button" @click="navigateTo('/auth')">{{ copy.login }}</button>
+          <button class="nav-btn" type="button" @click="goToLogin">{{ copy.login }}</button>
           <button class="webplayer-btn" type="button" @click="startFree">{{ copy.startFree }}</button>
         </nav>
       </div>
@@ -225,8 +225,14 @@ const navigateTo = (path: string) => {
   router.push(path);
 };
 
+const goToLogin = () => {
+  router.push({ path: '/auth', query: { mode: 'login' } });
+};
+
 const startFree = () => {
-  router.push(localStorage.getItem('token') ? '/dashboard' : '/auth');
+  router.push(localStorage.getItem('token')
+    ? '/dashboard'
+    : { path: '/auth', query: { mode: 'register' } });
 };
 
 const animateCounter = (index: number, target: number, duration = 1600) => {
@@ -834,13 +840,11 @@ onUnmounted(() => {
     height: 34px;
   }
 
-  .nav-btn {
-    display: none;
-  }
-
+  .nav-btn,
   .webplayer-btn {
-    padding: 0 16px;
+    padding: 0 14px;
     height: 40px;
+    font-size: 0.9rem;
   }
 
   .hero-section {

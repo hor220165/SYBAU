@@ -139,6 +139,7 @@ const activityHeatmapWeeks = computed(() => {
   });
 
   const weeks = [];
+  const firstDayOfYearKey = dateKey(new Date(year, 0, 1));
   for (let cursor = new Date(start); cursor <= visualEnd; cursor = addDays(cursor, 7)) {
     const days = [];
     let monthLabel = '';
@@ -148,7 +149,7 @@ const activityHeatmapWeeks = computed(() => {
       const entry = activityByDate.get(key) ?? { reps: 0, steps: 0 };
       const value = activityValue(entry);
       const isFuture = day > today;
-      if (!monthLabel && (day.getDate() === 1 || dateKey(cursor) === dateKey(start))) {
+      if (!monthLabel && (key === firstDayOfYearKey || (day.getFullYear() === year && day.getDate() === 1))) {
         monthLabel = monthFormatter.format(day);
       }
       days.push({

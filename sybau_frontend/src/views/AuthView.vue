@@ -18,10 +18,10 @@
         <!-- Toggle -->
         <div class="toggle">
           <div class="toggle-indicator" :class="{ right: !isLogin }"></div>
-          <button :class="{ active: isLogin }" @click="isLogin = true">
+          <button :class="{ active: isLogin }" @click="setAuthMode('login')">
             Login
           </button>
-          <button :class="{ active: !isLogin }" @click="isLogin = false">
+          <button :class="{ active: !isLogin }" @click="setAuthMode('register')">
             {{ text('Registrieren', 'Register') }}
           </button>
         </div>
@@ -55,7 +55,7 @@
             <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
             <div class="switch-text">
               <label>{{ text('Noch kein Account?', 'No account yet?') }}</label>
-              <label class="switch-link" @click="isLogin = false"
+              <label class="switch-link" @click="setAuthMode('register')"
                 >{{ text('jetzt registrieren', 'register now') }}</label
               >
             </div>
@@ -112,8 +112,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router'; 
+import { ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router'; 
 import { useAuth } from '@/composables/useAuth';
 import { userService } from '@/services/api';
 import { useLanguage } from '@/composables/useLanguage';
@@ -121,10 +121,11 @@ import ValidatedEmailInput from '@/components/ValidatedEmailInput.vue';
 import ValidatedPasswordInput from '@/components/ValidatedPasswordInput.vue';
 
 const router = useRouter(); 
+const route = useRoute();
 const { login } = useAuth();
 const { text } = useLanguage();
 
-const isLogin = ref(true); 
+const isLogin = ref(route.query.mode !== 'register'); 
 const email = ref(''); 
 const password = ref(''); 
 const username = ref(''); 
@@ -151,6 +152,23 @@ const parseError = (err: any, fallback: string): string => {
 const goToHome = () => {
   router.push('/');
 };
+
+const setAuthMode = (mode: 'login' | 'register') => {
+  isLogin.value = mode === 'login';
+  errorMessage.value = '';
+  if (route.query.mode !== mode) {
+    router.replace({ path: '/auth', query: { ...route.query, mode } });
+  }
+};
+
+watch(
+  () => route.query.mode,
+  (mode) => {
+    isLogin.value = mode !== 'register';
+    errorMessage.value = '';
+  },
+  { immediate: true }
+);
 
 const handleLogin = async () => {
   const emailValid = loginEmailRef.value?.validate() ?? false;
