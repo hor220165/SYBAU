@@ -5,6 +5,11 @@ import { useAuth } from "@/composables/useAuth";
 import { useCoins } from '@/composables/useCoins';
 import { useNotifications } from '@/composables/useNotifications';
 import NotificationBell from '@/components/NotificationBell.vue';
+import logoUrl from '@/assets/Sybau_logo_short.png';
+import starIconUrl from '@/assets/Star_Pixel.png';
+import xpIconUrl from '@/assets/XP_Pixel.png';
+import coinIconUrl from '@/assets/SYBAU_Coin.png';
+import logoutIconUrl from '@/assets/logout_Icon.png';
 
 const { logout, navigateTo } = useNavigation();
 const { user, refreshProfile } = useAuth();
@@ -91,14 +96,14 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
   <header class="header">
     <div class="logo-section">
       <button class="logo-button" type="button" @click="navigateTo('/home')" aria-label="Zur Landingpage">
-        <img src="../assets/Sybau_logo_short.png" alt="Sybau_Logo" class="logo-img" />
+        <img :src="logoUrl" alt="Sybau_Logo" class="logo-img" />
       </button>
     </div>
 
     <!-- Stats header -->
     <div class="stats-header">
       <div class="stat-item level">
-        <img src="../assets/Star_Pixel.png" alt="Level" class="stat-icon level-icon">
+        <img :src="starIconUrl" alt="Level" class="stat-icon level-icon">
         <div class="stat-info">
           <span class="stat-label">Level</span>
           <span class="stat-value">{{ userLevel }}</span>
@@ -108,7 +113,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
       <div class="stat-divider"></div>
 
       <div class="stat-item xp">
-        <img src="../assets/XP_Pixel.png" alt="XP" class="stat-icon xp-icon">
+        <img :src="xpIconUrl" alt="XP" class="stat-icon xp-icon">
         <div class="stat-info">
           <span class="stat-label">XP</span>
           <span class="stat-value">{{ formatCoins(userXP) }}</span>
@@ -128,7 +133,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
       <div class="stat-divider"></div>
 
       <div class="stat-item coins">
-        <img src="../assets/SYBAU_Coin.png" alt="Coins" class="stat-icon coin-icon">
+        <img :src="coinIconUrl" alt="Coins" class="stat-icon coin-icon">
         <div class="stat-info">
           <span class="stat-label">Coins</span>
           <span class="stat-value">{{ formatCoins(userCoins) }}</span>
@@ -148,7 +153,7 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
       <NotificationBell />
 
       <button class="logout-btn" type="button" aria-label="Abmelden" data-tooltip="Abmelden" @click="logout">
-        <img src="../assets/logout_Icon.png" alt="logout" class="logout-icon">
+        <img :src="logoutIconUrl" alt="logout" class="logout-icon">
       </button>
     </div>
   </header>

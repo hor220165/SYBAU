@@ -11,7 +11,23 @@ const API = axios.create({
 
 export function resolveMediaUrl(path?: string | null) {
     if (!path) return '';
+    if (isLegacyProfileUploadUrl(path)) return '';
     return resolveApiUrl(path);
+}
+
+function isLegacyProfileUploadUrl(value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+
+    if (/^\/?uploads\/profile-images\//i.test(trimmed)) return true;
+
+    try {
+        const base = typeof window !== 'undefined' ? window.location.origin : 'https://sybau-xll5.onrender.com';
+        const url = new URL(trimmed, base);
+        return /^\/uploads\/profile-images\//i.test(url.pathname);
+    } catch {
+        return false;
+    }
 }
 
 export function normalizeUser(data: any) {

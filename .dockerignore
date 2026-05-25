@@ -1,0 +1,9 @@
+**/bin
+**/obj
+**/node_modules
+**/dist
+.git
+.idea
+.vscode
+.DS_Store
+sybau_mobile/build
