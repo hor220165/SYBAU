@@ -309,15 +309,6 @@ class _QuestsTabState extends State<QuestsTab> {
                           ),
                         ),
                       ),
-                      const Spacer(),
-                      Text(
-                        _string(m['timeLeft']),
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.58),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 10),

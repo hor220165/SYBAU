@@ -297,16 +297,29 @@ public class QuestService
     {
         var periodEnd = GetPeriodEnd(uq.Quest.Type, uq.PeriodStart);
         var remaining = periodEnd - now;
+        if (remaining < TimeSpan.Zero) remaining = TimeSpan.Zero;
 
         string timeLeft;
-        if (remaining.TotalDays >= 1)
+        if (uq.Quest.Type == QuestType.Daily)
+        {
+            timeLeft = $"{(int)remaining.TotalHours:00}:{remaining.Minutes:00}:{remaining.Seconds:00}";
+        }
+        else if (remaining.TotalDays >= 1)
+        {
             timeLeft = $"{(int)remaining.TotalDays}d {remaining.Hours}h";
+        }
         else if (remaining.TotalHours >= 1)
+        {
             timeLeft = $"{(int)remaining.TotalHours}h";
+        }
         else if (remaining.TotalMinutes >= 1)
+        {
             timeLeft = $"{(int)remaining.TotalMinutes}min";
+        }
         else
+        {
             timeLeft = "< 1min";
+        }
 
         return new UserQuestDto
         {

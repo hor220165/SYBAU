@@ -4,6 +4,10 @@
       <div class="container header-inner">
         <button class="logo-button" type="button" @click="navigateTo('/')" aria-label="SYBAU Home">
           <img :src="shortLogo" alt="SYBAU Logo" class="logo-image">
+          <span class="landing-brand" aria-hidden="true">
+            <span class="landing-brand-name">SYBAU</span>
+            <span class="landing-brand-tagline">Shape Your Body And Unleash</span>
+          </span>
         </button>
 
         <nav class="nav-buttons" aria-label="Landing Navigation">
@@ -329,15 +333,39 @@ onUnmounted(() => {
 .logo-button {
   display: inline-flex;
   align-items: center;
+  gap: 12px;
   padding: 0;
   border: 0;
   background: transparent;
+  color: white;
+  cursor: pointer;
 }
 
 .logo-image {
   height: 42px;
   width: auto;
   display: block;
+}
+
+.landing-brand {
+  display: grid;
+  gap: 3px;
+  line-height: 1;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.landing-brand-name {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.landing-brand-tagline {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
 }
 
 .nav-buttons,
@@ -840,6 +868,19 @@ onUnmounted(() => {
     height: 34px;
   }
 
+  .logo-button {
+    gap: 9px;
+  }
+
+  .landing-brand-name {
+    font-size: 18px;
+  }
+
+  .landing-brand-tagline {
+    font-size: 8px;
+    letter-spacing: 0.04em;
+  }
+
   .nav-btn,
   .webplayer-btn {
     padding: 0 14px;
@@ -987,6 +1028,41 @@ onUnmounted(() => {
 }
 
 @media (max-width: 520px) {
+  .header-inner {
+    min-height: auto;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    padding: 14px 0;
+  }
+
+  .nav-buttons {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .nav-btn,
+  .webplayer-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 10px;
+    font-size: 0.82rem;
+  }
+
+  .landing-brand-name {
+    font-size: 15px;
+    letter-spacing: 0.06em;
+  }
+
+  .landing-brand-tagline {
+    font-size: 7px;
+    letter-spacing: 0.02em;
+  }
+
+  .hero-section {
+    min-height: calc(100svh - 118px);
+    padding-top: 56px;
+  }
+
   .hero-actions {
     width: auto;
   }

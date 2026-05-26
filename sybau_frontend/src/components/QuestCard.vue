@@ -5,11 +5,6 @@
       {{ translate(rarity) }}
     </div>
 
-    <!-- Time Left -->
-    <div class="time-badge">
-      {{ timeLeft }}
-    </div>
-
     <!-- Quest Info -->
     <h3 class="quest-title">{{ translate(title) }}</h3>
     <p class="quest-description">{{ translate(description) }}</p>
@@ -64,7 +59,6 @@ const props = defineProps<{
   maxProgress: number;
   xpReward: number;
   coinReward: number;
-  timeLeft: string;
   isCompleted: boolean;
   isRewardClaimed: boolean;
 }>();
@@ -146,22 +140,6 @@ const progressPercent = computed(() => {
   background: rgba(251, 191, 36, 0.2);
   border: 1px solid rgba(251, 191, 36, 0.4);
   color: #fbbf24;
-}
-
-.time-badge {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  padding: 6px 12px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
 /* Quest Info */

@@ -962,9 +962,6 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   String _activityMonthLabel(List<Map<String, dynamic>> week) {
-    final firstActivityDate = _weeklyActivity.isEmpty
-        ? ''
-        : _string(_map(_weeklyActivity.first)['date']);
     const months = <String>[
       'Jan',
       'Feb',
@@ -980,13 +977,18 @@ class _ProfileTabState extends State<ProfileTab> {
       'Dez',
     ];
     for (final day in week) {
+      final date = DateTime.tryParse(_string(day['date']));
+      if (date != null &&
+          date.year == _selectedActivityYear &&
+          date.month == 1 &&
+          date.day == 1) {
+        return months.first;
+      }
+    }
+    for (final day in week) {
       final dayOfMonth = _toInt(day['day']);
       final month = _toInt(day['month']);
-      final date = _string(day['date']);
-      final isFirstVisibleWeek = date.isNotEmpty && date == firstActivityDate;
-      if ((isFirstVisibleWeek || dayOfMonth == 1) &&
-          month >= 1 &&
-          month <= 12) {
+      if (dayOfMonth == 1 && month >= 1 && month <= 12) {
         return months[month - 1];
       }
     }
