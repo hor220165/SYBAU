@@ -1241,6 +1241,36 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
     return 1;
   }
 
+  Widget _buildExerciseRewardMetric({
+    required String assetPath,
+    required String label,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Image.asset(
+          assetPath,
+          width: 16,
+          height: 16,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.none,
+        ),
+        const SizedBox(width: 5),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.75),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Color _categoryBg(String category) {
     switch (category) {
       case 'Cardio':
@@ -1703,100 +1733,88 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 14,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          _td(difficulty),
-                          style: TextStyle(
-                            color: _difficultyColor(difficulty),
-                            fontWeight: FontWeight.w800,
-                            fontSize: 14,
-                            shadows: [
-                              Shadow(
-                                color: _difficultyColor(
-                                  difficulty,
-                                ).withOpacity(0.55),
-                                blurRadius: 10,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
-                            color: unit == 'Time'
-                                ? Color(0xFFFBBF24).withOpacity(0.18)
-                                : unit == 'Distance'
-                                ? Color(0xFF22C55E).withOpacity(0.18)
-                                : Color(0xFF3B82F6).withOpacity(0.18),
-                            border: Border.all(
-                              color: unit == 'Time'
-                                  ? Color(0xFFFBBF24).withOpacity(0.35)
-                                  : unit == 'Distance'
-                                  ? Color(0xFF22C55E).withOpacity(0.35)
-                                  : Color(0xFF3B82F6).withOpacity(0.35),
-                            ),
-                          ),
-                          child: Text(
-                            unit,
-                            style: TextStyle(
-                              color: unit == 'Time'
-                                  ? Color(0xFFFDE047)
-                                  : unit == 'Distance'
-                                  ? Color(0xFF86EFAC)
-                                  : Color(0xFF93C5FD),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
+                        Wrap(
+                          spacing: 14,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            const Icon(
-                              Icons.bolt,
-                              size: 14,
-                              color: Color(0xFFFBBF24),
-                            ),
-                            const SizedBox(width: 4),
                             Text(
-                              '+$xpPerRep XP/${unit == 'Time'
-                                  ? 'Sek'
-                                  : unit == 'Distance'
-                                  ? 'm'
-                                  : 'Rep'}',
+                              _td(difficulty),
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.75),
-                                fontWeight: FontWeight.w600,
+                                color: _difficultyColor(difficulty),
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
+                                shadows: [
+                                  Shadow(
+                                    color: _difficultyColor(
+                                      difficulty,
+                                    ).withOpacity(0.55),
+                                    blurRadius: 10,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(999),
+                                color: unit == 'Time'
+                                    ? Color(0xFFFBBF24).withOpacity(0.18)
+                                    : unit == 'Distance'
+                                    ? Color(0xFF22C55E).withOpacity(0.18)
+                                    : Color(0xFF3B82F6).withOpacity(0.18),
+                                border: Border.all(
+                                  color: unit == 'Time'
+                                      ? Color(0xFFFBBF24).withOpacity(0.35)
+                                      : unit == 'Distance'
+                                      ? Color(0xFF22C55E).withOpacity(0.35)
+                                      : Color(0xFF3B82F6).withOpacity(0.35),
+                                ),
+                              ),
+                              child: Text(
+                                unit,
+                                style: TextStyle(
+                                  color: unit == 'Time'
+                                      ? Color(0xFFFDE047)
+                                      : unit == 'Distance'
+                                      ? Color(0xFF86EFAC)
+                                      : Color(0xFF93C5FD),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ],
                         ),
+                        const SizedBox(height: 9),
                         Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
-                              Icons.monetization_on,
-                              size: 14,
-                              color: Color(0xFFFACC15),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _coinRewardText(
-                                amount: coinRewardAmount,
-                                interval: coinRewardInterval,
-                                unit: unit,
+                            Expanded(
+                              child: _buildExerciseRewardMetric(
+                                assetPath: 'assets/XP_Pixel.png',
+                                label:
+                                    '+$xpPerRep XP/${unit == 'Time'
+                                        ? 'Sek'
+                                        : unit == 'Distance'
+                                        ? 'm'
+                                        : 'Rep'}',
                               ),
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.75),
-                                fontWeight: FontWeight.w600,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _buildExerciseRewardMetric(
+                                assetPath: 'assets/SYBAU_Coin.png',
+                                label: _coinRewardText(
+                                  amount: coinRewardAmount,
+                                  interval: coinRewardInterval,
+                                  unit: unit,
+                                ),
                               ),
                             ),
                           ],

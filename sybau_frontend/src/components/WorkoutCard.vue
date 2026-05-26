@@ -13,20 +13,24 @@
     
     <!-- Bottom Row -->
     <div class="workout-meta">
-      <span class="difficulty" :class="`difficulty-${difficulty.toLowerCase()}`">
-        {{ translate(difficulty) }}
-      </span>
-      <span class="unit-badge" :class="`unit-${unitLabel.toLowerCase()}`">
-        {{ unitLabel }}
-      </span>
-      <span class="xp">
-        <img src="../assets/XP_Pixel.png" alt="" />
-        +{{ xp }} XP / {{ unitSingular }}
-      </span>
-      <span class="xp coin-reward">
-        <img src="../assets/SYBAU_Coin.png" alt="" />
-        {{ coinRewardText }}
-      </span>
+      <div class="meta-badges">
+        <span class="difficulty" :class="`difficulty-${difficulty.toLowerCase()}`">
+          {{ translate(difficulty) }}
+        </span>
+        <span class="unit-badge" :class="`unit-${unitLabel.toLowerCase()}`">
+          {{ unitLabel }}
+        </span>
+      </div>
+      <div class="reward-row">
+        <span class="reward-chip">
+          <img src="../assets/XP_Pixel.png" alt="" />
+          +{{ xp }} XP / {{ unitSingular }}
+        </span>
+        <span class="reward-chip coin-reward">
+          <img src="../assets/SYBAU_Coin.png" alt="" />
+          {{ coinRewardText }}
+        </span>
+      </div>
     </div>
     
     <button
@@ -301,11 +305,26 @@ defineEmits<{
 /* Meta Row */
 .workout-meta {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.meta-badges,
+.reward-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.meta-badges {
+  gap: 14px;
+}
+
+.reward-row {
+  gap: 12px;
 }
 
 /* Difficulty - MIT SCHATTEN statt Box */
@@ -359,7 +378,7 @@ defineEmits<{
   color: #86efac;
 }
 
-.xp {
+.reward-chip {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -368,7 +387,7 @@ defineEmits<{
   color: rgba(255, 255, 255, 0.7);
 }
 
-.xp img {
+.reward-chip img {
   width: 16px;
   height: 16px;
   object-fit: contain;
@@ -570,6 +589,19 @@ defineEmits<{
 
   .workout-title {
     font-size: 20px;
+  }
+
+  .reward-row {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .reward-chip {
+    min-width: 0;
+    white-space: nowrap;
+    font-size: clamp(12px, 3.3vw, 14px);
   }
 
   .inline-log-panel {
