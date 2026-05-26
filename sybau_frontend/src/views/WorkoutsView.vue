@@ -97,6 +97,9 @@
           :exercises="[translate(exercise.description)]"
           :difficulty="exercise.difficulty"
           :xp="exercise.xpPerRep"
+          :coin-reward-amount="exercise.coinRewardAmount"
+          :coin-reward-interval="exercise.coinRewardInterval"
+          :coin-reward-unit="exercise.coinRewardUnit"
           :unit="exercise.unit"
           :completed="exercise.todayCount >= exercise.dailyLimit"
           :editor-open="activeExerciseEditorId === exercise.id"
@@ -339,6 +342,7 @@ import ExerciseTimerOverlay from '@/components/ExerciseTimerOverlay.vue';
 import { workoutService, achievementService, questService } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
 import { useLanguage } from '@/composables/useLanguage';
+import { dispatchRewardFlash } from '@/utils/rewardFlash';
 import { BarChart3, CalendarDays, Flame, Search, Zap } from 'lucide-vue-next';
 
 const { refreshProfile } = useAuth();
@@ -374,6 +378,9 @@ interface ExerciseLocal {
   category: string;
   icon: string;
   xpPerRep: number;
+  coinRewardAmount: number;
+  coinRewardInterval: number;
+  coinRewardUnit: string;
   dailyLimit: number;
   todayCount: number;
   difficulty: 'Easy' | 'Medium' | 'Hard';
@@ -612,6 +619,9 @@ async function loadExercises() {
         category: cat,
         icon: '',
         xpPerRep: e.xpPerRep ?? difficultyXp[diff] ?? 2,
+        coinRewardAmount: e.coinRewardAmount ?? e.CoinRewardAmount ?? coinRewardAmountFor(diff),
+        coinRewardInterval: e.coinRewardInterval ?? e.CoinRewardInterval ?? coinRewardIntervalFor(diff, mapUnit(e.unit ?? e.Unit)),
+        coinRewardUnit: e.coinRewardUnit ?? e.CoinRewardUnit ?? coinRewardUnitFor(mapUnit(e.unit ?? e.Unit)),
         dailyLimit: e.dailyLimit ?? difficultyDailyLimit[diff] ?? 200,
         todayCount: e.todayCount ?? 0,
         difficulty: diff,
@@ -636,6 +646,24 @@ function mapUnit(val: any): 'Reps' | 'Time' | 'Distance' {
   return 'Reps';
 }
 
+function coinRewardIntervalFor(difficulty: ExerciseLocal['difficulty'], unit: ExerciseLocal['unit']) {
+  void difficulty;
+  void unit;
+  return 1;
+}
+
+function coinRewardAmountFor(difficulty: ExerciseLocal['difficulty']) {
+  if (difficulty === 'Hard') return 5;
+  if (difficulty === 'Medium') return 2;
+  return 1;
+}
+
+function coinRewardUnitFor(unit: ExerciseLocal['unit']) {
+  if (unit === 'Time') return text('Sek', 'sec');
+  if (unit === 'Distance') return 'm';
+  return 'Reps';
+}
+
 function formatAmount(value: number, unit: ExerciseLocal['unit']) {
   if (unit === 'Time') return secondsToTime(value);
   if (unit === 'Distance') {
@@ -655,16 +683,16 @@ function numberFromResult(result: any, ...keys: string[]) {
 }
 
 function rewardTotals(result: any, fallbackXp = 0) {
-  const baseXp = result?.xpEarned ?? result?.XpEarned ?? fallbackXp;
+  const totalXp = result?.xpEarned ?? result?.XpEarned;
+  const totalCoins = result?.coinsEarned ?? result?.CoinsEarned;
   return {
-    xp: Math.max(0, (Number(baseXp) || 0) + numberFromResult(result, 'bonusXp', 'BonusXp')),
-    coins: Math.max(0, numberFromResult(result, 'coinsEarned', 'CoinsEarned') + numberFromResult(result, 'bonusCoins', 'BonusCoins'))
+    xp: Math.max(0, totalXp != null ? Number(totalXp) || 0 : fallbackXp + numberFromResult(result, 'bonusXp', 'BonusXp')),
+    coins: Math.max(0, totalCoins != null ? Number(totalCoins) || 0 : numberFromResult(result, 'bonusCoins', 'BonusCoins'))
   };
 }
 
 function flashHeaderReward(rewards: { xp: number; coins: number }) {
-  if (rewards.xp <= 0 && rewards.coins <= 0) return;
-  window.dispatchEvent(new CustomEvent('sybau:reward-flash', { detail: rewards }));
+  dispatchRewardFlash(rewards);
 }
 
 function refreshQuestBadge() {

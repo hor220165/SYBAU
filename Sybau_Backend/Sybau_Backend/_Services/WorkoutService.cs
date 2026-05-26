@@ -29,7 +29,7 @@ public class WorkoutService
 
         var exerciseUnit = NormalizeExerciseUnit(dto.ResolveUnit());
         var description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim();
-        var exercise = new Exercise(dto.Name.Trim(), description, dto.Category, dto.Difficulty, dto.XpPerRep, dto.DailyLimit, exerciseUnit);
+        var exercise = new Exercise(dto.Name.Trim(), description, dto.Category, dto.Difficulty, ExerciseRewardRules.XpPerUnit(dto.Difficulty), dto.DailyLimit, exerciseUnit);
         _context.Exercises.Add(exercise);
         await _context.SaveChangesAsync();
 
@@ -41,7 +41,10 @@ public class WorkoutService
             Category = exercise.Category,
             Difficulty = exercise.Difficulty,
             Unit = exercise.Unit,
-            XpPerRep = exercise.XpPerRep,
+            XpPerRep = ExerciseRewardRules.XpPerUnit(exercise.Difficulty),
+            CoinRewardAmount = ExerciseRewardRules.CoinRewardAmount(exercise.Difficulty),
+            CoinRewardInterval = ExerciseRewardRules.CoinInterval(exercise.Difficulty, exercise.Unit),
+            CoinRewardUnit = ExerciseRewardRules.CoinUnitLabel(exercise.Unit),
             DailyLimit = exercise.DailyLimit,
             TodayCount = 0
         };
@@ -59,7 +62,7 @@ public class WorkoutService
         exercise.Category = dto.Category;
         exercise.Difficulty = dto.Difficulty;
         exercise.Unit = NormalizeExerciseUnit(dto.ResolveUnit());
-        exercise.XpPerRep = dto.XpPerRep;
+        exercise.XpPerRep = ExerciseRewardRules.XpPerUnit(dto.Difficulty);
         exercise.DailyLimit = dto.DailyLimit;
 
         await _context.SaveChangesAsync();
@@ -72,7 +75,10 @@ public class WorkoutService
             Category = exercise.Category,
             Difficulty = exercise.Difficulty,
             Unit = exercise.Unit,
-            XpPerRep = exercise.XpPerRep,
+            XpPerRep = ExerciseRewardRules.XpPerUnit(exercise.Difficulty),
+            CoinRewardAmount = ExerciseRewardRules.CoinRewardAmount(exercise.Difficulty),
+            CoinRewardInterval = ExerciseRewardRules.CoinInterval(exercise.Difficulty, exercise.Unit),
+            CoinRewardUnit = ExerciseRewardRules.CoinUnitLabel(exercise.Unit),
             DailyLimit = exercise.DailyLimit,
             TodayCount = 0
         };
@@ -94,7 +100,10 @@ public class WorkoutService
             Category = exercise.Category,
             Difficulty = exercise.Difficulty,
             Unit = exercise.Unit,
-            XpPerRep = exercise.XpPerRep,
+            XpPerRep = ExerciseRewardRules.XpPerUnit(exercise.Difficulty),
+            CoinRewardAmount = ExerciseRewardRules.CoinRewardAmount(exercise.Difficulty),
+            CoinRewardInterval = ExerciseRewardRules.CoinInterval(exercise.Difficulty, exercise.Unit),
+            CoinRewardUnit = ExerciseRewardRules.CoinUnitLabel(exercise.Unit),
             DailyLimit = exercise.DailyLimit,
             TodayCount = 0
         };
@@ -152,6 +161,10 @@ public class WorkoutService
         foreach (var exercise in exercises)
         {
             exercise.Unit = NormalizeExerciseUnit(exercise.Unit);
+            exercise.XpPerRep = ExerciseRewardRules.XpPerUnit(exercise.Difficulty);
+            exercise.CoinRewardAmount = ExerciseRewardRules.CoinRewardAmount(exercise.Difficulty);
+            exercise.CoinRewardInterval = ExerciseRewardRules.CoinInterval(exercise.Difficulty, exercise.Unit);
+            exercise.CoinRewardUnit = ExerciseRewardRules.CoinUnitLabel(exercise.Unit);
         }
 
         return exercises;
@@ -311,13 +324,7 @@ public class WorkoutService
 
     private static string NormalizeExerciseUnit(string? rawUnit)
     {
-        var value = (rawUnit ?? string.Empty).Trim().ToLowerInvariant();
-        return value switch
-        {
-            "1" or "time" => "Time",
-            "2" or "distance" => "Distance",
-            _ => "Reps"
-        };
+        return ExerciseRewardRules.NormalizeUnit(rawUnit);
     }
 
     /// <summary>
@@ -375,6 +382,8 @@ public class WorkoutService
 
         var exercise = await _context.Exercises.FindAsync(exerciseId);
         if (exercise == null) return null;
+        exercise.Unit = NormalizeExerciseUnit(exercise.Unit);
+        var xpPerUnit = ExerciseRewardRules.XpPerUnit(exercise.Difficulty);
 
         var today = date ?? DateOnly.FromDateTime(DateTime.UtcNow);
         var todayTotal = await _context.UserExerciseLogs
@@ -395,12 +404,11 @@ public class WorkoutService
         var (xpBoostPct, coinBoostPct) = await GetEquippedBoostsAsync(userId);
 
         // XP berechnen mit Booster-Boost
-        var baseXp = (int)Math.Round(exercise.XpPerRep * reps);
+        var baseXp = (int)Math.Round(xpPerUnit * reps);
         var bonusXp = (int)Math.Round(baseXp * xpBoostPct / 100.0);
         var totalXp = baseXp + bonusXp;
 
-        // Coins berechnen: 1 Coin pro 3 Reps als Basis (mindestens 1 Coin)
-        var baseCoins = Math.Max(1, (int)Math.Ceiling(reps / 3.0));
+        var baseCoins = ExerciseRewardRules.CoinsEarned(exercise.Difficulty, exercise.Unit, todayTotal, reps);
         var bonusCoins = (int)Math.Round(baseCoins * coinBoostPct / 100.0);
         var totalCoins = baseCoins + bonusCoins;
 
@@ -418,7 +426,7 @@ public class WorkoutService
         await _questService.UpdateQuestProgressAsync(userId);
 
         // Achievement-Check
-        await _achievementService.CheckAndUnlockAsync(userId);
+        var achievementXp = await _achievementService.CheckAndUnlockAsync(userId);
 
         return new ExerciseDto
         {
@@ -428,10 +436,13 @@ public class WorkoutService
             Category = exercise.Category,
             Difficulty = exercise.Difficulty,
             Unit = exercise.Unit,
-            XpPerRep = exercise.XpPerRep,
+            XpPerRep = xpPerUnit,
+            CoinRewardAmount = ExerciseRewardRules.CoinRewardAmount(exercise.Difficulty),
+            CoinRewardInterval = ExerciseRewardRules.CoinInterval(exercise.Difficulty, exercise.Unit),
+            CoinRewardUnit = ExerciseRewardRules.CoinUnitLabel(exercise.Unit),
             DailyLimit = exercise.DailyLimit,
             TodayCount = todayTotal + reps,
-            XpEarned = totalXp,
+            XpEarned = totalXp + achievementXp,
             BonusXp = bonusXp,
             BoostPercent = xpBoostPct,
             CoinsEarned = totalCoins,

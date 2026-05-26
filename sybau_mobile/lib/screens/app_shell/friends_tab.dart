@@ -3,11 +3,13 @@ part of '../app_shell_screen.dart';
 class FriendsTab extends StatefulWidget {
   const FriendsTab({
     required this.onRefreshHeader,
+    required this.onRewardEarned,
     required this.showSnack,
     super.key,
   });
 
   final Future<void> Function() onRefreshHeader;
+  final void Function({int xp, int coins}) onRewardEarned;
   final void Function(String) showSnack;
 
   @override
@@ -533,6 +535,10 @@ class _FriendsTabState extends State<FriendsTab> {
       );
       await _load();
       await widget.onRefreshHeader();
+      widget.onRewardEarned(
+        xp: _toInt(data['xpEarned'] ?? data['XpEarned']),
+        coins: _toInt(data['coinsEarned'] ?? data['CoinsEarned']),
+      );
     } catch (_) {
       widget.showSnack(
         _lt(

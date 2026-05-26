@@ -101,10 +101,10 @@ public class FriendChallengeService
     }
 
     // Fortschritt aktualisieren (amount = tatsächliche Einheiten addieren)
-    public async Task<(bool success, string message)> UpdateProgressAsync(int challengeId, int userId, int amount)
+    public async Task<(bool success, string message, int xpEarned, int coinsEarned)> UpdateProgressAsync(int challengeId, int userId, int amount)
     {
         if (amount < 1)
-            return (false, "Menge muss mindestens 1 sein.");
+            return (false, "Menge muss mindestens 1 sein.", 0, 0);
 
         var challenge = await _context.FriendChallenges
             .Include(fc => fc.Challenger).ThenInclude(u => u.Avatar)
@@ -112,20 +112,20 @@ public class FriendChallengeService
             .FirstOrDefaultAsync(fc => fc.Id == challengeId);
 
         if (challenge == null)
-            return (false, "Challenge nicht gefunden.");
+            return (false, "Challenge nicht gefunden.", 0, 0);
 
         if (challenge.Status != FriendChallengeStatus.Accepted)
-            return (false, "Challenge ist nicht aktiv.");
+            return (false, "Challenge ist nicht aktiv.", 0, 0);
 
         if (challenge.ExpiresAt < DateTime.UtcNow)
         {
             challenge.Status = FriendChallengeStatus.Expired;
             await _context.SaveChangesAsync();
-            return (false, "Challenge ist abgelaufen.");
+            return (false, "Challenge ist abgelaufen.", 0, 0);
         }
 
         if (challenge.ChallengerId != userId && challenge.OpponentId != userId)
-            return (false, "Du bist nicht Teil dieser Challenge.");
+            return (false, "Du bist nicht Teil dieser Challenge.", 0, 0);
 
         // Fortschritt addieren (nicht ersetzen)
         if (challenge.ChallengerId == userId)
@@ -160,9 +160,9 @@ public class FriendChallengeService
         await _context.SaveChangesAsync();
 
         if (currentProgress >= challenge.GoalAmount)
-            return (true, $"Challenge gewonnen! +{challenge.XpReward} XP, +{challenge.CoinReward} Coins erhalten.");
+            return (true, $"Challenge gewonnen! +{challenge.XpReward} XP, +{challenge.CoinReward} Coins erhalten.", challenge.XpReward, challenge.CoinReward);
 
-        return (true, $"Fortschritt: {currentProgress}/{challenge.GoalAmount}");
+        return (true, $"Fortschritt: {currentProgress}/{challenge.GoalAmount}", 0, 0);
     }
 
     // Alle Challenges eines Users abrufen

@@ -23,6 +23,10 @@
         <img src="../assets/XP_Pixel.png" alt="" />
         +{{ xp }} XP / {{ unitSingular }}
       </span>
+      <span class="xp coin-reward">
+        <img src="../assets/SYBAU_Coin.png" alt="" />
+        {{ coinRewardText }}
+      </span>
     </div>
     
     <button
@@ -105,6 +109,9 @@ const props = withDefaults(defineProps<{
   exercises: string[];
   difficulty: 'Easy' | 'Medium' | 'Hard';
   xp: number;
+  coinRewardAmount?: number;
+  coinRewardInterval?: number;
+  coinRewardUnit?: string;
   unit?: 'Reps' | 'Time' | 'Distance';
   completed?: boolean;
   editorOpen?: boolean;
@@ -117,6 +124,9 @@ const props = withDefaults(defineProps<{
   calories?: number;
 }>(), {
   unit: 'Reps',
+  coinRewardAmount: 1,
+  coinRewardInterval: 1,
+  coinRewardUnit: 'Reps',
   completed: false,
   editorOpen: false,
   draftReps: 0,
@@ -144,6 +154,27 @@ const unitSingular = computed(() => {
   if (props.unit === 'Time') return text('Sek', 'sec');
   if (props.unit === 'Distance') return 'm';
   return 'Rep';
+});
+
+const coinRewardUnitLabel = computed(() => {
+  if (props.coinRewardUnit) return props.coinRewardUnit;
+  if (props.unit === 'Time') return text('Sek', 'sec');
+  if (props.unit === 'Distance') return 'm';
+  return 'Reps';
+});
+
+const coinRewardUnitSingular = computed(() => {
+  if (props.unit === 'Time') return text('Sek', 'sec');
+  if (props.unit === 'Distance') return 'm';
+  return 'Rep';
+});
+
+const coinRewardText = computed(() => {
+  const amount = Math.max(0, Number(props.coinRewardAmount ?? 0));
+  const interval = Math.max(1, Number(props.coinRewardInterval ?? 1));
+  const coinLabel = amount === 1 ? 'Coin' : 'Coins';
+  if (interval === 1) return `${amount} ${coinLabel} / ${coinRewardUnitSingular.value}`;
+  return `${amount} ${coinLabel} / ${interval} ${coinRewardUnitLabel.value}`;
 });
 
 const usesTimer = computed(() => props.unit !== 'Distance');
@@ -271,6 +302,7 @@ defineEmits<{
 .workout-meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 16px;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -340,6 +372,11 @@ defineEmits<{
   width: 16px;
   height: 16px;
   object-fit: contain;
+}
+
+.coin-reward img {
+  width: 15px;
+  height: 15px;
 }
 
 /* Button */

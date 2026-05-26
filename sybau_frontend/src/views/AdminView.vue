@@ -528,8 +528,11 @@
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>XP pro {{ unitSingularLabels[normalizeUnitValue(exerciseForm.unit)] ?? 'Einheit' }}</label>
-                  <input v-model.number="exerciseForm.xpPerRep" type="number" required min="0" step="0.1">
+                  <label>Belohnung</label>
+                  <div class="reward-preview">
+                    <span><img src="../assets/XP_Pixel.png" alt="" class="pixel-icon" /> {{ exerciseFormXp }} XP/{{ unitShortLabels[normalizeUnitValue(exerciseForm.unit)] }}</span>
+                    <span><img src="../assets/SYBAU_Coin.png" alt="" class="pixel-icon" /> {{ exerciseFormCoinText }}</span>
+                  </div>
                 </div>
                 <div class="form-group">
                   <label>Tägliches Limit ({{ unitLimitHints[normalizeUnitValue(exerciseForm.unit)] ?? 'Anzahl' }})</label>
@@ -566,7 +569,8 @@
                   <span><Layers :size="15" /> {{ categoryLabels[ex.category] ?? ex.category }}</span>
                   <span><Activity :size="15" /> {{ difficultyLabels[ex.difficulty] ?? ex.difficulty }}</span>
                   <span><RotateCcw :size="15" /> {{ unitLabels[normalizeUnitValue(ex.unit ?? ex.Unit)] }}</span>
-                  <span><img src="../assets/XP_Pixel.png" alt="" class="pixel-icon" /> {{ ex.xpPerRep }} XP/{{ unitShortLabels[normalizeUnitValue(ex.unit ?? ex.Unit)] }}</span>
+                  <span><img src="../assets/XP_Pixel.png" alt="" class="pixel-icon" /> {{ exerciseXpFor(ex) }} XP/{{ unitShortLabels[normalizeUnitValue(ex.unit ?? ex.Unit)] }}</span>
+                  <span><img src="../assets/SYBAU_Coin.png" alt="" class="pixel-icon" /> {{ exerciseCoinTextFor(ex) }}</span>
                   <span><RotateCcw :size="15" /> Limit: {{ formatExerciseLimit(ex.dailyLimit, ex.unit ?? ex.Unit) }}/Tag</span>
                 </div>
               </div>
@@ -791,7 +795,7 @@ const difficultyLabels: Record<number, string> = { 0: 'Easy', 1: 'Medium', 2: 'H
 type ExerciseUnitKey = 'reps' | 'time' | 'distance';
 const unitLabels: Record<ExerciseUnitKey, string> = { reps: 'Reps', time: 'Time', distance: 'Distance' };
 const unitShortLabels: Record<ExerciseUnitKey, string> = { reps: 'Rep', time: 'Sek', distance: 'm' };
-const unitSingularLabels: Record<ExerciseUnitKey, string> = { reps: 'Rep', time: 'Sekunde', distance: 'Meter' };
+const coinUnitLabels: Record<ExerciseUnitKey, string> = { reps: 'Reps', time: 'Sek', distance: 'm' };
 const unitLimitHints: Record<ExerciseUnitKey, string> = { reps: 'Reps', time: 'Sekunden', distance: 'Meter' };
 
 // User Management
@@ -1329,6 +1333,45 @@ const normalizeExerciseDifficulty = (raw: unknown): number => {
   return 0;
 };
 
+const xpForDifficulty = (difficulty: unknown): number => {
+  const normalized = normalizeExerciseDifficulty(difficulty);
+  if (normalized === 2) return 5;
+  if (normalized === 1) return 2;
+  return 1;
+};
+
+const coinAmountFor = (difficulty: unknown): number => xpForDifficulty(difficulty);
+
+const coinIntervalFor = (difficulty: unknown, unit: unknown): number => {
+  void difficulty;
+  void unit;
+  return 1;
+};
+
+const coinTextFor = (amount: number, interval: number, unit: unknown): string => {
+  const coinLabel = amount === 1 ? 'Coin' : 'Coins';
+  if (interval <= 1) return `${amount} ${coinLabel} / ${unitShortLabels[normalizeUnitValue(unit)]}`;
+  return `${amount} ${coinLabel} / ${interval} ${coinUnitLabels[normalizeUnitValue(unit)]}`;
+};
+
+const exerciseFormXp = computed(() => xpForDifficulty(exerciseForm.value.difficulty));
+const exerciseFormCoinAmount = computed(() => coinAmountFor(exerciseForm.value.difficulty));
+const exerciseFormCoinInterval = computed(() => coinIntervalFor(exerciseForm.value.difficulty, exerciseForm.value.unit));
+const exerciseFormCoinText = computed(() =>
+  coinTextFor(exerciseFormCoinAmount.value, exerciseFormCoinInterval.value, exerciseForm.value.unit)
+);
+const exerciseXpFor = (exercise: any) => xpForDifficulty(exercise.difficulty ?? exercise.Difficulty);
+const exerciseCoinAmountFor = (exercise: any) => {
+  return Number(exercise.coinRewardAmount ?? exercise.CoinRewardAmount)
+    || coinAmountFor(exercise.difficulty ?? exercise.Difficulty);
+};
+const exerciseCoinIntervalFor = (exercise: any) => {
+  return Number(exercise.coinRewardInterval ?? exercise.CoinRewardInterval)
+    || coinIntervalFor(exercise.difficulty ?? exercise.Difficulty, exercise.unit ?? exercise.Unit);
+};
+const exerciseCoinTextFor = (exercise: any) =>
+  coinTextFor(exerciseCoinAmountFor(exercise), exerciseCoinIntervalFor(exercise), exercise.unit ?? exercise.Unit);
+
 const buildExercisePayload = () => {
   const unit = normalizeUnitText(exerciseForm.value.unit);
   return {
@@ -1337,7 +1380,7 @@ const buildExercisePayload = () => {
     category: normalizeExerciseCategory(exerciseForm.value.category),
     difficulty: normalizeExerciseDifficulty(exerciseForm.value.difficulty),
     unit,
-    xpPerRep: Number(exerciseForm.value.xpPerRep ?? 1),
+    xpPerRep: exerciseFormXp.value,
     dailyLimit: Number(exerciseForm.value.dailyLimit ?? 200)
   };
 };
@@ -1706,6 +1749,28 @@ onMounted(async () => {
 .boost-input-row label {
   font-size: 0.82rem;
   color: #94a3b8;
+}
+
+.reward-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 46px;
+  align-items: center;
+}
+
+.reward-preview span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #fce7f3;
+  font-weight: 800;
+  font-size: 0.86rem;
 }
 
 .section-header-secondary {

@@ -151,7 +151,12 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
     return _exercises.fold<int>(0, (int sum, dynamic e) {
       final m = _map(e);
       final reps = _toInt(m['todayCount']);
-      final xpPerRep = _toInt(m['xpPerRep'], fallback: 1);
+      final xpPerRep = _toInt(
+        m['xpPerRep'],
+        fallback: _xpForDifficulty(
+          _difficultyLabel(m['difficulty'] ?? m['Difficulty']),
+        ),
+      );
       return sum + (reps * xpPerRep);
     });
   }
@@ -267,6 +272,46 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
     if (s == 'time') return 'Time';
     if (s == 'distance') return 'Distance';
     return 'Reps';
+  }
+
+  int _coinRewardInterval(String difficulty, String unit) {
+    if (difficulty.isEmpty && unit.isEmpty) return 1;
+    return 1;
+  }
+
+  int _coinRewardAmount(String difficulty) {
+    return _xpForDifficulty(difficulty);
+  }
+
+  String _coinRewardUnit(String unit) {
+    if (unit == 'Time') return 'Sek';
+    if (unit == 'Distance') return 'm';
+    return 'Reps';
+  }
+
+  int _coinRewardIntervalForExercise(Map<String, dynamic> exercise) {
+    return _toInt(
+      exercise['coinRewardInterval'] ?? exercise['CoinRewardInterval'],
+      fallback: _coinRewardInterval(
+        _difficultyLabel(exercise['difficulty'] ?? exercise['Difficulty']),
+        _normalizeUnit(exercise['unit'] ?? exercise['Unit']),
+      ),
+    );
+  }
+
+  String _coinRewardText({
+    required int amount,
+    required int interval,
+    required String unit,
+  }) {
+    final coinLabel = amount == 1 ? 'Coin' : 'Coins';
+    final unitLabel = unit == 'Time'
+        ? 'Sek'
+        : unit == 'Distance'
+        ? 'm'
+        : 'Rep';
+    if (interval <= 1) return '$amount $coinLabel / $unitLabel';
+    return '$amount $coinLabel / $interval ${_coinRewardUnit(unit)}';
   }
 
   String _secondsToTime(int value) {
@@ -559,12 +604,8 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
       );
       if (!mounted) return;
       final xpEarned = _toInt(result['xpEarned'] ?? result['XpEarned'] ?? 0);
-      final bonusXp = _toInt(result['bonusXp'] ?? result['BonusXp'] ?? 0);
       final coinsEarned = _toInt(
         result['coinsEarned'] ?? result['CoinsEarned'] ?? 0,
-      );
-      final bonusCoins = _toInt(
-        result['bonusCoins'] ?? result['BonusCoins'] ?? 0,
       );
       setState(() {
         map['todayCount'] = _toInt(map['todayCount']) + amount;
@@ -575,10 +616,7 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
         _expandedRepEditors.remove(id);
       });
       await widget.onRefreshHeader();
-      widget.onRewardEarned(
-        xp: xpEarned + bonusXp,
-        coins: coinsEarned + bonusCoins,
-      );
+      widget.onRewardEarned(xp: xpEarned, coins: coinsEarned);
       await widget.onQuestStatusChanged();
     } catch (_) {
       widget.showSnack(
@@ -1120,12 +1158,8 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
       final result = await ApiService.logExercise(exerciseId: id, reps: amount);
       if (!mounted) return;
       final xpEarned = _toInt(result['xpEarned'] ?? result['XpEarned'] ?? 0);
-      final bonusXp = _toInt(result['bonusXp'] ?? result['BonusXp'] ?? 0);
       final coinsEarned = _toInt(
         result['coinsEarned'] ?? result['CoinsEarned'] ?? 0,
-      );
-      final bonusCoins = _toInt(
-        result['bonusCoins'] ?? result['BonusCoins'] ?? 0,
       );
       setState(() {
         map['todayCount'] = _toInt(map['todayCount']) + amount;
@@ -1136,10 +1170,7 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
         _expandedRepEditors.remove(id);
       });
       await widget.onRefreshHeader();
-      widget.onRewardEarned(
-        xp: xpEarned + bonusXp,
-        coins: coinsEarned + bonusCoins,
-      );
+      widget.onRewardEarned(xp: xpEarned, coins: coinsEarned);
       await widget.onQuestStatusChanged();
     } catch (_) {
       widget.showSnack(
@@ -1202,6 +1233,12 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
     if (s == 'easy') return 'Easy';
     if (s == 'hard') return 'Hard';
     return 'Medium';
+  }
+
+  int _xpForDifficulty(String difficulty) {
+    if (difficulty == 'Hard') return 5;
+    if (difficulty == 'Medium') return 2;
+    return 1;
   }
 
   Color _categoryBg(String category) {
@@ -1570,9 +1607,20 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
           ..._filteredExercises.map((dynamic e) {
             final m = _map(e);
             final exerciseId = _toInt(m['id']);
-            final category = _categoryLabel(m['category']);
-            final difficulty = _difficultyLabel(m['difficulty']);
-            final xpPerRep = _toInt(m['xpPerRep'], fallback: 1);
+            final category = _categoryLabel(m['category'] ?? m['Category']);
+            final difficulty = _difficultyLabel(
+              m['difficulty'] ?? m['Difficulty'],
+            );
+            final unit = _normalizeUnit(m['unit'] ?? m['Unit']);
+            final xpPerRep = _toInt(
+              m['xpPerRep'] ?? m['XpPerRep'],
+              fallback: _xpForDifficulty(difficulty),
+            );
+            final coinRewardAmount = _toInt(
+              m['coinRewardAmount'] ?? m['CoinRewardAmount'],
+              fallback: _coinRewardAmount(difficulty),
+            );
+            final coinRewardInterval = _coinRewardIntervalForExercise(m);
             final remaining = _remainingFor(m);
             final repsDraft = _draftFor(m);
             final editorOpen = _isRepEditorOpen(exerciseId);
@@ -1655,7 +1703,10 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Row(
+                    Wrap(
+                      spacing: 14,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
                           _td(difficulty),
@@ -1673,7 +1724,6 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 14),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
@@ -1681,33 +1731,25 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                           ),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(999),
-                            color:
-                                _normalizeUnit(m['unit'] ?? m['Unit']) == 'Time'
+                            color: unit == 'Time'
                                 ? Color(0xFFFBBF24).withOpacity(0.18)
-                                : _normalizeUnit(m['unit'] ?? m['Unit']) ==
-                                      'Distance'
+                                : unit == 'Distance'
                                 ? Color(0xFF22C55E).withOpacity(0.18)
                                 : Color(0xFF3B82F6).withOpacity(0.18),
                             border: Border.all(
-                              color:
-                                  _normalizeUnit(m['unit'] ?? m['Unit']) ==
-                                      'Time'
+                              color: unit == 'Time'
                                   ? Color(0xFFFBBF24).withOpacity(0.35)
-                                  : _normalizeUnit(m['unit'] ?? m['Unit']) ==
-                                        'Distance'
+                                  : unit == 'Distance'
                                   ? Color(0xFF22C55E).withOpacity(0.35)
                                   : Color(0xFF3B82F6).withOpacity(0.35),
                             ),
                           ),
                           child: Text(
-                            _normalizeUnit(m['unit'] ?? m['Unit']),
+                            unit,
                             style: TextStyle(
-                              color:
-                                  _normalizeUnit(m['unit'] ?? m['Unit']) ==
-                                      'Time'
+                              color: unit == 'Time'
                                   ? Color(0xFFFDE047)
-                                  : _normalizeUnit(m['unit'] ?? m['Unit']) ==
-                                        'Distance'
+                                  : unit == 'Distance'
                                   ? Color(0xFF86EFAC)
                                   : Color(0xFF93C5FD),
                               fontSize: 11,
@@ -1715,23 +1757,49 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 14),
-                        const Icon(
-                          Icons.bolt,
-                          size: 14,
-                          color: Color(0xFFFBBF24),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.bolt,
+                              size: 14,
+                              color: Color(0xFFFBBF24),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '+$xpPerRep XP/${unit == 'Time'
+                                  ? 'Sek'
+                                  : unit == 'Distance'
+                                  ? 'm'
+                                  : 'Rep'}',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.75),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '+$xpPerRep XP/${_normalizeUnit(m['unit'] ?? m['Unit']) == 'Time'
-                              ? 'Sek'
-                              : _normalizeUnit(m['unit'] ?? m['Unit']) == 'Distance'
-                              ? 'm'
-                              : 'Rep'}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.75),
-                            fontWeight: FontWeight.w600,
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.monetization_on,
+                              size: 14,
+                              color: Color(0xFFFACC15),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _coinRewardText(
+                                amount: coinRewardAmount,
+                                interval: coinRewardInterval,
+                                unit: unit,
+                              ),
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.75),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

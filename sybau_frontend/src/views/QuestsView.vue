@@ -146,6 +146,7 @@ import MessagePopup from '@/components/MessagePopup.vue';
 import { questService } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
 import { useLanguage } from '@/composables/useLanguage';
+import { dispatchRewardFlash, rewardFlashFrom } from '@/utils/rewardFlash';
 import type { UserQuest, QuestStats } from '@/models/Quest';
 import { Flag, Trophy, Zap } from 'lucide-vue-next';
 
@@ -203,6 +204,7 @@ const claimReward = async (quest: UserQuest) => {
     const { data } = await questService.claimReward(quest.id);
     showPopup(data.message, 'success');
     await Promise.all([loadQuests(), refreshProfile()]);
+    dispatchRewardFlash(rewardFlashFrom(data));
   } catch (e: any) {
     showPopup(e.response?.data?.message || text('Fehler beim Einfordern.', 'Could not claim reward.'), 'error');
   }

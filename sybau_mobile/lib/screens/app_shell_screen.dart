@@ -347,6 +347,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
         await _refreshQuestBadge();
       }
       if (result.hasRewards) {
+        _showHeaderReward(xp: result.xpEarned, coins: result.coinsEarned);
         _showSnack(
           'Health automatisch synchronisiert: +${_formatCompactNumber(result.xpEarned)} XP, +${_formatCompactNumber(result.coinsEarned)} Coins.',
         );
@@ -708,12 +709,14 @@ class _AppShellScreenState extends State<AppShellScreen> {
       case AppTab.quests:
         return QuestsTab(
           onRefreshHeader: () => _loadHeaderProfile(),
+          onRewardEarned: _showHeaderReward,
           onQuestStatusChanged: _refreshQuestBadge,
           showSnack: _showSnack,
         );
       case AppTab.avatar:
         return AvatarTab(
           onRefreshHeader: () => _loadHeaderProfile(),
+          onRewardEarned: _showHeaderReward,
           showSnack: _showSnack,
         );
       case AppTab.shop:
@@ -724,6 +727,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
       case AppTab.friends:
         return FriendsTab(
           onRefreshHeader: () => _loadHeaderProfile(),
+          onRewardEarned: _showHeaderReward,
           showSnack: _showSnack,
         );
       case AppTab.leaderboard:
@@ -731,6 +735,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
       case AppTab.profile:
         return ProfileTab(
           onRefreshHeader: () => _loadHeaderProfile(),
+          onRewardEarned: _showHeaderReward,
           showSnack: _showSnack,
         );
     }

@@ -12,6 +12,7 @@ import PublicProfileSheet from '@/components/PublicProfileSheet.vue';
 import { friendService, resolveMediaUrl, userService } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
 import { useNotifications } from '@/composables/useNotifications';
+import { dispatchRewardFlash, rewardFlashFrom } from '@/utils/rewardFlash';
 import type { FriendshipDto, FriendRequestDto, SentFriendRequestDto, FriendChallengeDto, CreateFriendChallengeDto } from '@/models/Friend';
 
 const { refreshProfile } = useAuth();
@@ -477,6 +478,7 @@ const updateProgress = async () => {
     await loadChallenges();
     // Profil refreshen (Coins/XP könnten sich geändert haben)
     await refreshProfile();
+    dispatchRewardFlash(rewardFlashFrom(data));
   } catch (e: any) {
     showPopup(e.response?.data?.message || 'Fehler beim Aktualisieren.', 'error');
   }

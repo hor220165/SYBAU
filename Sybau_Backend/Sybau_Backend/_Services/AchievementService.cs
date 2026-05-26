@@ -53,7 +53,7 @@ public class AchievementService
     /// <summary>
     /// Prüft alle Achievements und schaltet neue frei.
     /// </summary>
-    public async Task CheckAndUnlockAsync(int userId)
+    public async Task<int> CheckAndUnlockAsync(int userId)
     {
         var achievements = await _context.Achievements.ToListAsync();
         var alreadyUnlocked = await _context.UserAchievements
@@ -62,7 +62,7 @@ public class AchievementService
             .ToHashSetAsync();
 
         var locked = achievements.Where(a => !alreadyUnlocked.Contains(a.Id)).ToList();
-        if (locked.Count == 0) return;
+        if (locked.Count == 0) return 0;
 
         // Alle benötigten Stats auf einmal laden
         var stats = await GatherUserStatsAsync(userId);
@@ -92,7 +92,10 @@ public class AchievementService
                 await _userService.AddXpAndHandleLevelUp(user, totalXp);
             }
             await _context.SaveChangesAsync();
+            return totalXp;
         }
+
+        return 0;
     }
 
     /// <summary>
@@ -141,10 +144,10 @@ public class AchievementService
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var todayLogs = await _context.UserExerciseLogs
             .Where(l => l.UserId == userId && l.Date == today)
-            .Select(l => new { l.Reps, l.Exercise.XpPerRep })
+            .Select(l => new { l.Reps, l.Exercise.Difficulty })
             .ToListAsync();
 
-        return todayLogs.Sum(l => (int)Math.Round(l.Reps * l.XpPerRep));
+        return todayLogs.Sum(l => (int)Math.Round(l.Reps * ExerciseRewardRules.XpPerUnit(l.Difficulty)));
     }
 
     /// <summary>

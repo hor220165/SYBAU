@@ -3,12 +3,14 @@ part of '../app_shell_screen.dart';
 class QuestsTab extends StatefulWidget {
   const QuestsTab({
     required this.onRefreshHeader,
+    required this.onRewardEarned,
     required this.onQuestStatusChanged,
     required this.showSnack,
     super.key,
   });
 
   final Future<void> Function() onRefreshHeader;
+  final void Function({int xp, int coins}) onRewardEarned;
   final Future<void> Function() onQuestStatusChanged;
   final void Function(String) showSnack;
 
@@ -48,6 +50,10 @@ class _QuestsTabState extends State<QuestsTab> {
         final healthResult = await HealthSyncService.syncIfEnabled();
         if (healthResult?.hasRewards == true) {
           await widget.onRefreshHeader();
+          widget.onRewardEarned(
+            xp: healthResult!.xpEarned,
+            coins: healthResult.coinsEarned,
+          );
         }
       } catch (_) {
         // Keep the quests screen usable even if Health sync is temporarily unavailable.
@@ -80,12 +86,16 @@ class _QuestsTabState extends State<QuestsTab> {
 
   Future<void> _claim(int userQuestId) async {
     try {
-      await ApiService.claimQuestReward(userQuestId);
+      final result = await ApiService.claimQuestReward(userQuestId);
       widget.showSnack(
         _lt(de: 'Belohnung eingesammelt.', en: 'Reward claimed.'),
       );
       await _load(showLoader: false);
       await widget.onRefreshHeader();
+      widget.onRewardEarned(
+        xp: _toInt(result['xpEarned'] ?? result['XpEarned']),
+        coins: _toInt(result['coinsEarned'] ?? result['CoinsEarned']),
+      );
     } catch (_) {
       widget.showSnack(
         _lt(

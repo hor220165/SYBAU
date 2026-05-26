@@ -278,6 +278,7 @@ import MessagePopup from '@/components/MessagePopup.vue';
 import { itemService, resolveMediaUrl, userService } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
 import { useLanguage } from '@/composables/useLanguage';
+import { dispatchRewardFlash } from '@/utils/rewardFlash';
 import xpIcon from '@/assets/XP_Pixel.png';
 import coinIcon from '@/assets/SYBAU_Coin.png';
 
@@ -423,6 +424,7 @@ const confirmSellBooster = async () => {
     pendingSellQuantity.value = 1;
     await loadProfile();
     await refreshProfile();
+    dispatchRewardFlash({ coins: sellPrice });
     popupType.value = 'success';
     popupMessage.value = `${quantity}x ${booster.name} verkauft. +${sellPrice} Coins`;
   } catch (error: any) {

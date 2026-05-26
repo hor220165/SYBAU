@@ -11,6 +11,9 @@ public class ExerciseDto
     public ExerciseDifficulty Difficulty { get; set; }
     public string Unit { get; set; } = "Reps";
     public double XpPerRep { get; set; }
+    public int CoinRewardAmount { get; set; } = 1;
+    public int CoinRewardInterval { get; set; }
+    public string CoinRewardUnit { get; set; } = "Reps";
     public int DailyLimit { get; set; }
     public int TodayCount { get; set; }
 

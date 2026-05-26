@@ -194,10 +194,10 @@ public class FriendsController : ControllerBase
         var userId = GetUserId();
         if (userId == null) return Unauthorized();
 
-        var (success, message) = await _friendChallengeService.UpdateProgressAsync(id, userId.Value, dto.Amount);
+        var (success, message, xpEarned, coinsEarned) = await _friendChallengeService.UpdateProgressAsync(id, userId.Value, dto.Amount);
         if (!success) return BadRequest(new { message });
 
-        return Ok(new { message });
+        return Ok(new { message, xpEarned, coinsEarned });
     }
 
     // DELETE /friends/challenges/{id}

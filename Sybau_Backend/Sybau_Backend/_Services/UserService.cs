@@ -408,18 +408,28 @@ public class UserService
         var activities = new List<RecentActivityDto>();
 
         // 1) Workout-Sessions: Jeder Exercise-Log einzeln
-        var workoutActivities = await _context.UserExerciseLogs
+        var workoutLogs = await _context.UserExerciseLogs
             .Where(l => l.UserId == userId)
             .Include(l => l.Exercise)
             .OrderByDescending(l => l.CreatedAt)
+            .Select(l => new
+            {
+                l.Exercise.Name,
+                l.Reps,
+                l.Exercise.Difficulty,
+                l.CreatedAt
+            })
+            .ToListAsync();
+
+        var workoutActivities = workoutLogs
             .Select(l => new RecentActivityDto
             {
                 Type = "workout",
-                Title = l.Exercise.Name + " – " + l.Reps + " Reps",
-                Xp = (int)Math.Round(l.Reps * l.Exercise.XpPerRep),
+                Title = l.Name + " – " + l.Reps + " Reps",
+                Xp = (int)Math.Round(l.Reps * ExerciseRewardRules.XpPerUnit(l.Difficulty)),
                 Timestamp = l.CreatedAt
             })
-            .ToListAsync();
+            .ToList();
         activities.AddRange(workoutActivities);
 
         // 2) Abgeschlossene Quests

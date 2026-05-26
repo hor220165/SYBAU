@@ -3,11 +3,13 @@ part of '../app_shell_screen.dart';
 class AvatarTab extends StatefulWidget {
   const AvatarTab({
     required this.onRefreshHeader,
+    required this.onRewardEarned,
     required this.showSnack,
     super.key,
   });
 
   final Future<void> Function() onRefreshHeader;
+  final void Function({int xp, int coins}) onRewardEarned;
   final void Function(String) showSnack;
 
   @override
@@ -264,6 +266,7 @@ class _AvatarTabState extends State<AvatarTab>
       );
       await _load();
       await widget.onRefreshHeader();
+      widget.onRewardEarned(coins: sellPrice);
     } catch (_) {
       if (!mounted) return;
       setState(() => _sellingItem = false);

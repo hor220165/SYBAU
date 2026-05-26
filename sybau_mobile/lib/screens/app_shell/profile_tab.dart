@@ -3,11 +3,13 @@ part of '../app_shell_screen.dart';
 class ProfileTab extends StatefulWidget {
   const ProfileTab({
     required this.onRefreshHeader,
+    required this.onRewardEarned,
     required this.showSnack,
     super.key,
   });
 
   final Future<void> Function() onRefreshHeader;
+  final void Function({int xp, int coins}) onRewardEarned;
   final void Function(String) showSnack;
 
   @override
@@ -78,6 +80,12 @@ class _ProfileTabState extends State<ProfileTab> {
         if (healthResult?.hasNewData == true ||
             healthResult?.hasRewards == true) {
           unawaited(widget.onRefreshHeader());
+        }
+        if (healthResult?.hasRewards == true) {
+          widget.onRewardEarned(
+            xp: healthResult!.xpEarned,
+            coins: healthResult.coinsEarned,
+          );
         }
       } catch (_) {
         // Das Profil soll auch ohne Health-Zugriff sofort nutzbar bleiben.
@@ -345,6 +353,9 @@ class _ProfileTabState extends State<ProfileTab> {
       if (!mounted) return;
       await _load();
       await widget.onRefreshHeader();
+      if (result.hasRewards) {
+        widget.onRewardEarned(xp: result.xpEarned, coins: result.coinsEarned);
+      }
       final rewardText = result.hasRewards
           ? ' +${_formatCompactNumber(result.xpEarned)} XP, +${_formatCompactNumber(result.coinsEarned)} Coins.'
           : '';
