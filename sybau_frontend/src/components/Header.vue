@@ -97,6 +97,10 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
     <div class="logo-section">
       <button class="logo-button" type="button" @click="navigateTo('/')" aria-label="Zur Landingpage">
         <img :src="logoUrl" alt="Sybau_Logo" class="logo-img" />
+        <span class="brand-copy" aria-hidden="true">
+          <span class="brand-name">SYBAU</span>
+          <span class="brand-tagline">Shape Your Body And Unleash</span>
+        </span>
       </button>
     </div>
 
@@ -185,16 +189,41 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 .logo-button {
   display: inline-flex;
   align-items: center;
+  gap: 12px;
   padding: 0;
   border: 0;
   background: transparent;
   cursor: pointer;
+  color: white;
 }
 
 .logo-img {
   height: 50px;
   width: auto;
   object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.brand-copy {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.brand-name {
+  color: white;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.brand-tagline {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
 }
 
 /* Stats Header */
@@ -358,6 +387,14 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
     height: 32px;
   }
 
+  .brand-name {
+    font-size: 18px;
+  }
+
+  .brand-tagline {
+    font-size: 8px;
+  }
+
   .stats-header {
     gap: 16px;
   }
@@ -398,6 +435,20 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 
   .logo-img {
     height: 28px;
+  }
+
+  .logo-button {
+    gap: 8px;
+  }
+
+  .brand-name {
+    font-size: 15px;
+    letter-spacing: 0.06em;
+  }
+
+  .brand-tagline {
+    font-size: 7px;
+    letter-spacing: 0.02em;
   }
 
   .stats-header {
@@ -462,6 +513,18 @@ const userCoins = computed(() => user.value?.coins ?? user.value?.Coins ?? 0);
 
   .logo-img {
     height: 22px;
+  }
+
+  .logo-button {
+    gap: 6px;
+  }
+
+  .brand-name {
+    font-size: 13px;
+  }
+
+  .brand-tagline {
+    font-size: 6px;
   }
 
   .stats-header {

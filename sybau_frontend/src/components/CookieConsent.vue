@@ -27,25 +27,15 @@
 import { onMounted, ref } from 'vue';
 import { ShieldCheck } from 'lucide-vue-next';
 
-const storageKey = 'sybau_cookie_consent_v2';
 const visible = ref(false);
 
 type ConsentChoice = 'accepted' | 'declined';
 
 onMounted(() => {
-  try {
-    visible.value = localStorage.getItem(storageKey) == null;
-  } catch {
-    visible.value = true;
-  }
+  visible.value = true;
 });
 
-function saveConsent(choice: ConsentChoice) {
-  try {
-    localStorage.setItem(storageKey, choice);
-  } catch {
-    /* Consent UI can still be dismissed if storage is unavailable. */
-  }
+function saveConsent(_choice: ConsentChoice) {
   visible.value = false;
 }
 </script>
