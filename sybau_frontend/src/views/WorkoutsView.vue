@@ -62,16 +62,27 @@
     </section>
 
     <!-- Filter Buttons -->
-    <div class="filter-section">
-      <button
-          v-for="filter in filters"
-          :key="filter"
-          class="filter-btn"
-          :class="{ active: activeFilter === filter }"
-          @click="activeFilter = filter"
-      >
-        {{ translate(filter) }}
-      </button>
+    <div class="filter-toolbar">
+      <div class="filter-section">
+        <button
+            v-for="filter in filters"
+            :key="filter"
+            class="filter-btn"
+            :class="{ active: activeFilter === filter }"
+            @click="activeFilter = filter"
+        >
+          {{ translate(filter) }}
+        </button>
+      </div>
+      <label class="exercise-search">
+        <Search :size="18" />
+        <input
+            v-model="searchQuery"
+            type="search"
+            :placeholder="text('Übung suchen...', 'Search exercise...')"
+            :aria-label="text('Übung suchen', 'Search exercise')"
+        />
+      </label>
     </div>
 
     <!-- Workouts Grid -->
@@ -103,17 +114,6 @@
           @set-distance-unit="setDistanceUnit(exercise, $event)"
           @submit-log="exercise.unit === 'Distance' ? submitInlineExercise(exercise) : openTimerFor(exercise)"
       />
-    </div>
-
-    <!-- Create Custom Exercise Card -->
-    <div class="custom-workout-card">
-      <div class="custom-content">
-        <h3>{{ text('Erstelle deine eigene Übung', 'Create your own exercise') }}</h3>
-        <p>{{ text('Lege Schwierigkeit und Eintragsformat fest.', 'Choose difficulty and logging format.') }}</p>
-      </div>
-      <button class="create-btn" @click="showCreateExercise = true">
-        {{ text('Übung erstellen', 'Create exercise') }}
-      </button>
     </div>
 
     <!-- Saved Workouts Section -->
@@ -151,63 +151,6 @@
 
    <!-- Footer -->
     <FooterComponent />
-
-  <!-- Create Exercise Modal -->
-  <div v-if="showCreateExercise" class="workout-modal-overlay" @click.self="showCreateExercise = false">
-    <div class="create-workout-modal">
-      <div class="modal-header-cw">
-        <h2>{{ text('Neue Übung erstellen', 'Create new exercise') }}</h2>
-        <button class="close-btn-cw" type="button" aria-label="Schließen" data-tooltip="Schließen" @click="showCreateExercise = false">&times;</button>
-      </div>
-      <form @submit.prevent="handleCreateExercise">
-        <div class="form-group-cw">
-          <label>{{ text('Name', 'Name') }}</label>
-          <input v-model="newExercise.name" type="text" required :placeholder="text('z.B. Liegestütze', 'e.g. Push-ups')">
-        </div>
-        <div class="form-group-cw">
-          <label>{{ text('Beschreibung', 'Description') }}</label>
-          <input v-model="newExercise.description" type="text" :placeholder="text('Optional', 'Optional')">
-        </div>
-        <div class="form-group-cw">
-          <label>{{ text('Kategorie', 'Category') }}</label>
-          <select v-model.number="newExercise.category" required>
-            <option value="" disabled>-- {{ text('Wähle Kategorie', 'Choose category') }} --</option>
-            <option :value="0">Strength</option>
-            <option :value="1">Core</option>
-            <option :value="2">Cardio</option>
-            <option :value="3">Flexibility</option>
-          </select>
-        </div>
-        <div class="form-group-cw">
-          <label>{{ text('Schwierigkeit', 'Difficulty') }}</label>
-          <select v-model.number="newExercise.difficulty" required>
-            <option :value="0">Easy</option>
-            <option :value="1">Medium</option>
-            <option :value="2">Hard</option>
-          </select>
-        </div>
-        <div class="form-group-cw">
-          <label>{{ text('Eintragsformat', 'Logging format') }}</label>
-          <select
-            v-model="newExercise.unit"
-            required
-            @change="newExercise.dailyLimit = newExercise.unit === 'Time' ? 600 : 50"
-          >
-            <option value="Reps">{{ text('Einheiten', 'Units') }}</option>
-            <option value="Time">{{ text('Zeit', 'Time') }}</option>
-          </select>
-        </div>
-        <div class="form-group-cw">
-          <label>{{ newExercise.unit === 'Time' ? text('Tageslimit (Sekunden)', 'Daily limit (seconds)') : text('Tageslimit (Einheiten)', 'Daily limit (units)') }}</label>
-          <input v-model.number="newExercise.dailyLimit" type="number" required min="1" :placeholder="newExercise.unit === 'Time' ? '600' : '50'">
-        </div>
-        <div class="modal-actions-cw">
-          <button type="button" class="btn-cancel-cw" @click="showCreateExercise = false">{{ text('Abbrechen', 'Cancel') }}</button>
-          <button type="submit" class="btn-create-cw">{{ text('Erstellen', 'Create') }}</button>
-        </div>
-      </form>
-    </div>
-  </div>
 
   <!-- Workout Session Modal -->
   <div v-if="workoutSession" class="workout-modal-overlay" @click.self="closeWorkoutSession">
@@ -396,12 +339,13 @@ import ExerciseTimerOverlay from '@/components/ExerciseTimerOverlay.vue';
 import { workoutService, achievementService, questService } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
 import { useLanguage } from '@/composables/useLanguage';
-import { BarChart3, CalendarDays, Flame, Zap } from 'lucide-vue-next';
+import { BarChart3, CalendarDays, Flame, Search, Zap } from 'lucide-vue-next';
 
 const { refreshProfile } = useAuth();
 const { text, translate, locale } = useLanguage();
 
 const activeFilter = ref('Alle');
+const searchQuery = ref('');
 const loading = ref(true);
 
 const popupMessage = ref('');
@@ -438,7 +382,6 @@ interface ExerciseLocal {
 
 const exercises = ref<ExerciseLocal[]>([]);
 const workouts = ref<any[]>([]);
-const showCreateExercise = ref(false);
 const totalExercises = ref(0);
 const todayActivity = ref({ steps: 0, kilometers: 0 });
 const expandedWorkout = ref<number | null>(null);
@@ -452,14 +395,6 @@ const repsDrafts = ref<Record<number, number>>({});
 const timeDrafts = ref<Record<number, string>>({});
 const distanceDrafts = ref<Record<number, number>>({});
 const distanceUnits = ref<Record<number, 'm' | 'km'>>({});
-const newExercise = ref({
-  name: '',
-  description: '',
-  category: '' as number | '',
-  difficulty: 1,
-  unit: 'Reps' as 'Reps' | 'Time',
-  dailyLimit: 50,
-});
 
 onMounted(async () => {
   await Promise.all([loadExercises(), loadWorkouts(), loadProfileStats(), loadTodayActivity()]);
@@ -754,18 +689,57 @@ function mapCategory(val: any): string {
 }
 
 
-const filteredExercises = computed(() => {
-  if (activeFilter.value === 'Alle') {
-    return exercises.value;
-  }
-  
-  return exercises.value.filter(e => e.category === activeFilter.value);
-});
+const normalizedSearch = computed(() => searchQuery.value.trim().toLowerCase());
 
-const filteredWorkouts = computed(() => {
-  if (activeFilter.value === 'Alle') return workouts.value;
-  return workouts.value.filter(w => mapCategory(w.category) === activeFilter.value);
-});
+function includesSearch(values: Array<string | number | null | undefined>) {
+  const query = normalizedSearch.value;
+  if (!query) return true;
+  return values.some((value) => String(value ?? '').toLowerCase().includes(query));
+}
+
+function matchesExerciseSearch(exercise: ExerciseLocal) {
+  return includesSearch([
+    exercise.name,
+    exercise.description,
+    exercise.category,
+    translate(exercise.category),
+    exercise.difficulty,
+    translate(exercise.difficulty),
+    exercise.unit
+  ]);
+}
+
+function matchesWorkoutSearch(workout: any) {
+  const rawExercises = workout.exercises ?? workout.Exercises;
+  const workoutExercises = Array.isArray(rawExercises) ? rawExercises : [];
+  const category = mapCategory(workout.category ?? workout.Category);
+
+  return includesSearch([
+    workout.name ?? workout.Name,
+    workout.description ?? workout.Description,
+    category,
+    translate(category),
+    ...workoutExercises.flatMap((exercise: any) => [
+      exercise.exerciseName ?? exercise.ExerciseName,
+      exercise.name ?? exercise.Name,
+      mapDifficulty(exercise.difficulty ?? exercise.Difficulty)
+    ])
+  ]);
+}
+
+const filteredExercises = computed(() =>
+  exercises.value.filter((exercise) =>
+    (activeFilter.value === 'Alle' || exercise.category === activeFilter.value) &&
+    matchesExerciseSearch(exercise)
+  )
+);
+
+const filteredWorkouts = computed(() =>
+  workouts.value.filter((workout) =>
+    (activeFilter.value === 'Alle' || mapCategory(workout.category ?? workout.Category) === activeFilter.value) &&
+    matchesWorkoutSearch(workout)
+  )
+);
 
 async function loadWorkouts() {
   try {
@@ -778,52 +752,6 @@ async function loadWorkouts() {
 
 function toggleWorkoutExpand(id: number) {
   expandedWorkout.value = expandedWorkout.value === id ? null : id;
-}
-
-async function handleCreateExercise() {
-  if (!newExercise.value.name.trim()) {
-    popupType.value = 'error';
-    popupMessage.value = text('Bitte gib einen Übungsnamen ein.', 'Please enter an exercise name.');
-    return;
-  }
-  if (newExercise.value.category === '') {
-    popupType.value = 'error';
-    popupMessage.value = text('Bitte wähle eine Kategorie.', 'Please choose a category.');
-    return;
-  }
-  if (Number(newExercise.value.dailyLimit ?? 0) <= 0) {
-    popupType.value = 'error';
-    popupMessage.value = text('Bitte gib ein Tageslimit ein.', 'Please enter a daily limit.');
-    return;
-  }
-
-  try {
-    const difficultyName = mapDifficulty(newExercise.value.difficulty);
-    await workoutService.createExercise({
-      name: newExercise.value.name.trim(),
-      description: newExercise.value.description.trim() || null,
-      category: newExercise.value.category,
-      difficulty: newExercise.value.difficulty,
-      unit: newExercise.value.unit,
-      xpPerRep: difficultyXp[difficultyName] ?? 1,
-      dailyLimit: Number(newExercise.value.dailyLimit)
-    });
-    showCreateExercise.value = false;
-    newExercise.value = {
-      name: '',
-      description: '',
-      category: '',
-      difficulty: 1,
-      unit: 'Reps',
-      dailyLimit: 50,
-    };
-    await loadExercises();
-    popupType.value = 'success';
-    popupMessage.value = text('Übung erstellt.', 'Exercise created.');
-  } catch (err: any) {
-    popupType.value = 'error';
-    popupMessage.value = err.response?.data || text('Fehler beim Erstellen der Übung', 'Could not create exercise');
-  }
 }
 
 // ===== WORKOUT SESSION =====
@@ -1127,11 +1055,20 @@ const submitInlineExercise = async (exercise: ExerciseLocal) => {
 }
 
 /* Filter Section */
-.filter-section {
+.filter-toolbar {
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 12px;
   margin-bottom: 32px;
   flex-wrap: wrap;
+}
+
+.filter-section {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex: 1 1 420px;
 }
 
 .filter-btn {
@@ -1160,65 +1097,41 @@ const submitInlineExercise = async (exercise: ExerciseLocal) => {
   box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
 }
 
+.exercise-search {
+  min-height: 46px;
+  flex: 0 1 320px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(30, 41, 59, 0.6);
+  color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+}
+
+.exercise-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.exercise-search input::placeholder {
+  color: rgba(255, 255, 255, 0.52);
+}
+
 /* Workouts Grid */
 .workouts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 24px;
   margin-bottom: 40px;
-}
-
-/* Custom Workout Card */
-.custom-workout-card {
-  background: rgba(30, 41, 59, 0.6);
-  border: 2px solid rgba(236, 72, 153, 0.3);
-  border-radius: 20px;
-  padding: 40px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-}
-
-.custom-workout-card:hover {
-  border-color: rgba(236, 72, 153, 0.5);
-  background: rgba(30, 41, 59, 0.8);
-  box-shadow: 0 8px 24px rgba(236, 72, 153, 0.2);
-}
-
-.custom-content h3 {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  color: white;
-}
-
-.custom-content p {
-  font-size: 14px;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.create-btn {
-  padding: 14px 32px;
-  border-radius: 12px;
-  border: none;
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
-  color: white;
-  font-weight: 600;
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
-}
-
-.create-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(236, 72, 153, 0.4);
 }
 
 /* Responsive */
@@ -1308,8 +1221,16 @@ const submitInlineExercise = async (exercise: ExerciseLocal) => {
     line-height: 1.12;
   }
 
+  .filter-toolbar {
+    gap: 10px;
+  }
+
   .filter-section {
     gap: 8px;
+  }
+
+  .exercise-search {
+    flex-basis: 100%;
   }
 
   .filter-btn {
@@ -1322,21 +1243,6 @@ const submitInlineExercise = async (exercise: ExerciseLocal) => {
     gap: 16px;
   }
 
-  .custom-workout-card {
-    flex-direction: column;
-    gap: 20px;
-    text-align: center;
-    padding: 24px;
-  }
-
-  .custom-content h3 {
-    font-size: 20px;
-  }
-
-  .create-btn {
-    width: 100%;
-    justify-content: center;
-  }
 }
 
 /* Small Mobile (480px und kleiner) */
@@ -1409,23 +1315,6 @@ const submitInlineExercise = async (exercise: ExerciseLocal) => {
   .filter-btn {
     padding: 8px 14px;
     font-size: 13px;
-  }
-
-  .custom-workout-card {
-    padding: 20px;
-  }
-
-  .custom-content h3 {
-    font-size: 18px;
-  }
-
-  .custom-content p {
-    font-size: 13px;
-  }
-
-  .create-btn {
-    padding: 12px 24px;
-    font-size: 14px;
   }
 }
 

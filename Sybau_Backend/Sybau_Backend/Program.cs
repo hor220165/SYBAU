@@ -162,6 +162,7 @@ builder.Services.AddScoped<ShopService>();
 builder.Services.AddScoped<BodyStageService>();
 builder.Services.AddScoped<AvatarService>();
 builder.Services.AddScoped<WorkoutService>();
+builder.Services.AddScoped<DefaultExerciseSeeder>();
 builder.Services.AddScoped<QuestService>();
 builder.Services.AddScoped<AchievementService>();
 builder.Services.AddScoped<FriendService>();
@@ -323,6 +324,8 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<FitnessDbContext>();
     db.Database.Migrate();
+    var exerciseSeeder = scope.ServiceProvider.GetRequiredService<DefaultExerciseSeeder>();
+    await exerciseSeeder.SeedAsync();
     app.Logger.LogInformation("Database provider: {ProviderName}", db.Database.ProviderName);
 }
 
