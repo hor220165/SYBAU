@@ -53,7 +53,7 @@
           <div class="section-title">
             <h2>{{ text('Tägliche Quests', 'Daily Quests') }}</h2>
           </div>
-          <span class="renewal-badge">{{ dailyQuests[0]?.timeLeft }}</span>
+          <span v-if="dailyTimeLeft" class="renewal-badge">{{ dailyTimeLeft }}</span>
         </div>
         <div class="quests-grid">
           <QuestCard
@@ -134,7 +134,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import Header from '@/components/Header.vue';
 import Navbar from '@/components/Navbar.vue';
 import QuestCard from '@/components/QuestCard.vue';
@@ -154,10 +154,17 @@ const allQuests = ref<UserQuest[]>([]);
 const stats = ref<QuestStats>({ completed: 0, active: 0, totalXpEarned: 0 });
 const loading = ref(true);
 const popup = ref({ message: '', type: 'success' as 'success' | 'error', visible: false });
+const dailyCountdownSeconds = ref<number | null>(null);
+let dailyCountdownTimer: number | undefined;
+let dailyCountdownReloaded = false;
 
 const dailyQuests = computed(() => allQuests.value.filter(q => q.type === 'daily'));
 const weeklyQuests = computed(() => allQuests.value.filter(q => q.type === 'weekly'));
 const monthlyQuests = computed(() => allQuests.value.filter(q => q.type === 'monthly'));
+const dailyTimeLeft = computed(() => {
+  if (dailyCountdownSeconds.value === null) return dailyQuests.value[0]?.timeLeft ?? '';
+  return formatDailyTimeLeft(dailyCountdownSeconds.value);
+});
 
 const showPopup = (message: string, type: 'success' | 'error') => {
   popup.value = { message, type, visible: true };
@@ -175,6 +182,47 @@ const formatNumber = (value: number) => {
   const compact = value / unit.amount;
   const digits = compact >= 100 || Number.isInteger(compact) ? 0 : 1;
   return `${compact.toFixed(digits).replace('.', ',')}${unit.suffix}`;
+};
+
+const parseDailyTimeLeft = (value?: string) => {
+  const match = value?.match(/^(\d+):([0-5]\d):([0-5]\d)$/);
+  if (!match) return null;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const seconds = Number(match[3]);
+  if (![hours, minutes, seconds].every(Number.isFinite)) return null;
+
+  return Math.max(0, hours * 3600 + minutes * 60 + seconds);
+};
+
+const formatDailyTimeLeft = (value: number) => {
+  const totalSeconds = Math.max(0, value);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
+
+const syncDailyCountdown = () => {
+  dailyCountdownSeconds.value = parseDailyTimeLeft(dailyQuests.value[0]?.timeLeft);
+  dailyCountdownReloaded = false;
+};
+
+const startDailyCountdown = () => {
+  if (dailyCountdownTimer !== undefined) return;
+
+  dailyCountdownTimer = window.setInterval(() => {
+    if (dailyCountdownSeconds.value === null) return;
+    if (dailyCountdownSeconds.value <= 0) return;
+
+    dailyCountdownSeconds.value -= 1;
+
+    if (dailyCountdownSeconds.value === 0 && !dailyCountdownReloaded) {
+      dailyCountdownReloaded = true;
+      window.setTimeout(() => void loadQuests(), 1000);
+    }
+  }, 1000);
 };
 
 const loadQuests = async () => {
@@ -209,8 +257,18 @@ const claimReward = async (quest: UserQuest) => {
 
 onMounted(async () => {
   await loadQuests();
+  syncDailyCountdown();
+  startDailyCountdown();
   loading.value = false;
 });
+
+onUnmounted(() => {
+  if (dailyCountdownTimer !== undefined) {
+    window.clearInterval(dailyCountdownTimer);
+  }
+});
+
+watch(() => dailyQuests.value[0]?.timeLeft, syncDailyCountdown);
 </script>
 
 <style scoped>

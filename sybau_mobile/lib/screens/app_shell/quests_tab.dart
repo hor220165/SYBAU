@@ -22,6 +22,8 @@ class _QuestsTabState extends State<QuestsTab> {
   bool _loading = true;
   List<dynamic> _quests = <dynamic>[];
   Map<String, dynamic> _stats = <String, dynamic>{};
+  int? _dailyCountdownSeconds;
+  Timer? _dailyCountdownTimer;
 
   List<dynamic> get _dailyQuests => _quests
       .where((dynamic q) => _questType(_map(q)) == 'daily')
@@ -39,6 +41,13 @@ class _QuestsTabState extends State<QuestsTab> {
   void initState() {
     super.initState();
     unawaited(_load());
+    _startDailyCountdown();
+  }
+
+  @override
+  void dispose() {
+    _dailyCountdownTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _load({bool showLoader = true}) async {
@@ -64,9 +73,13 @@ class _QuestsTabState extends State<QuestsTab> {
         ApiService.getQuestStats(),
       ]);
       if (!mounted) return;
+      final loadedQuests = results[0] as List<dynamic>;
       setState(() {
-        _quests = results[0] as List<dynamic>;
+        _quests = loadedQuests;
         _stats = _map(results[1]);
+        _dailyCountdownSeconds = _parseDailyCountdownSeconds(
+          _dailyTimeLeftFrom(loadedQuests),
+        );
         _loading = false;
       });
       await widget.onQuestStatusChanged();
@@ -135,6 +148,58 @@ class _QuestsTabState extends State<QuestsTab> {
     if (target <= 0) return 0;
     final pct = ((_questProgress(quest) / target) * 100).round();
     return pct.clamp(0, 100);
+  }
+
+  String _dailyTimeLeftFrom(List<dynamic> quests) {
+    for (final quest in quests) {
+      final map = _map(quest);
+      if (_questType(map) == 'daily') return _string(map['timeLeft']);
+    }
+    return '';
+  }
+
+  int? _parseDailyCountdownSeconds(String value) {
+    final parts = value.split(':');
+    if (parts.length != 3) return null;
+
+    final hours = int.tryParse(parts[0]);
+    final minutes = int.tryParse(parts[1]);
+    final seconds = int.tryParse(parts[2]);
+    if (hours == null || minutes == null || seconds == null) return null;
+    if (hours < 0 ||
+        minutes < 0 ||
+        minutes > 59 ||
+        seconds < 0 ||
+        seconds > 59) {
+      return null;
+    }
+
+    return math.max(0, hours * 3600 + minutes * 60 + seconds);
+  }
+
+  String _formatDailyCountdown(int value) {
+    final totalSeconds = math.max(0, value);
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+    return '${hours.toString().padLeft(2, '0')}:'
+        '${minutes.toString().padLeft(2, '0')}:'
+        '${seconds.toString().padLeft(2, '0')}';
+  }
+
+  void _startDailyCountdown() {
+    _dailyCountdownTimer ??= Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || _dailyCountdownSeconds == null) return;
+      if (_dailyCountdownSeconds! <= 0) return;
+
+      if (_dailyCountdownSeconds! == 1) {
+        setState(() => _dailyCountdownSeconds = 0);
+        unawaited(_load(showLoader: false));
+        return;
+      }
+
+      setState(() => _dailyCountdownSeconds = _dailyCountdownSeconds! - 1);
+    });
   }
 
   Color _rarityAccent(String rarity) {
@@ -217,7 +282,9 @@ class _QuestsTabState extends State<QuestsTab> {
 
     final accent = _sectionAccent(type);
     final first = _map(quests.first);
-    final timeLeft = _string(first['timeLeft']);
+    final timeLeft = type == 'daily' && _dailyCountdownSeconds != null
+        ? _formatDailyCountdown(_dailyCountdownSeconds!)
+        : _string(first['timeLeft']);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
