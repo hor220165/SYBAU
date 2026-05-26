@@ -205,6 +205,7 @@
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				40FA03D835B843BC9A1E08A8 /* [CP] Embed Pods Frameworks */,
 				D6B97619255286F81763CD92 /* [CP] Copy Pods Resources */,
+				9F1A7C4B2B6A4F129C2E3A81 /* Sign Native Asset Frameworks */,
 			);
 			buildRules = (
 			);
@@ -345,6 +346,21 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
+		};
+		9F1A7C4B2B6A4F129C2E3A81 /* Sign Native Asset Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Sign Native Asset Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n\nFRAMEWORKS_DIR=\"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}\"\nNATIVE_FRAMEWORK=\"${FRAMEWORKS_DIR}/objective_c.framework\"\n\nif [ \"${PLATFORM_NAME}\" = \"iphoneos\" ] && [ -d \"${NATIVE_FRAMEWORK}\" ]; then\n  BINARY=\"${NATIVE_FRAMEWORK}/objective_c\"\n\n  if [ -f \"${BINARY}\" ] && /usr/bin/lipo -info \"${BINARY}\" | /usr/bin/grep -q \"x86_64\"; then\n    /usr/bin/lipo \"${BINARY}\" -remove x86_64 -output \"${BINARY}\"\n  fi\n\n  if [ \"${CODE_SIGNING_ALLOWED}\" != \"NO\" ] && [ -n \"${EXPANDED_CODE_SIGN_IDENTITY}\" ]; then\n    /usr/bin/codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --preserve-metadata=identifier \"${NATIVE_FRAMEWORK}\"\n  fi\nfi\n";
 		};
 		D6B97619255286F81763CD92 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
