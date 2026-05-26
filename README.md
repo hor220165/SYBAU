@@ -3,33 +3,33 @@
 <div align="center">
   <img src="sybau_frontend/src/assets/Sybau_logo_short.webp" alt="SYBAU Logo" width="120"/>
 
-  **Fitness-Tracking mit Avatar-Fortschritt, Quests, Coins, Shop und Leaderboard.**
+  **Shape Your Body And Unleash - Training, Motivation und Fortschritt in einer App.**
 </div>
 
 ---
 
-## Live
+## Website
 
-- Website: https://sybau-fitness.vercel.app
-- API: https://sybau-xll5.onrender.com
+SYBAU ist online erreichbar unter:
+
+https://sybau-fitness.vercel.app
 
 ## Projektidee
 
-SYBAU verbindet Training mit Gamification. Nutzer erstellen Workouts und Übungen, sammeln XP und Coins, leveln ihren Avatar, erledigen Quests, öffnen Chests, nutzen Booster und vergleichen ihren Fortschritt über Freunde und Leaderboards.
+SYBAU macht Training spielerischer und übersichtlicher. Nutzer können Übungen eintragen, Fortschritt sammeln, ihren Avatar verbessern und sich durch Quests, Coins, Chests und Achievements weiter motivieren.
 
-Das Projekt besteht aus Web-App, Backend-API und Mobile-App.
+Das Ziel ist, Fitness nicht nur als Liste von Zahlen zu zeigen, sondern als sichtbaren Fortschritt, der sich jeden Tag ein Stück weiterentwickelt.
 
-## Features
+## Was SYBAU bietet
 
-- Login und Registrierung mit E-Mail- und Passwortvalidierung
-- Profil mit Avatar, XP, Coins, Achievements und Weekly Activity
-- Workout- und Übungsverwaltung mit Zeit- oder Einheiten-Erfassung
-- Daily und Weekly Quests mit Belohnungen
-- Shop mit Items, Boostern, Chests und Echtgeld-Angeboten als vorbereiteter Platzhalter
-- Admin-Bereich zum Verwalten von Shop-Items, Chests, Bildern und Echtgeldpreisen
-- Freunde, Freundschaftsanfragen, öffentliche Profile und Leaderboard
-- Cookie-Hinweis, Impressum und Datenschutzerklärung
-- Optimierte WebP-Assets, Cache-Header und reduzierte Bildübertragung
+- Einen eigenen Account mit Profil und Avatar
+- Workouts und Übungen, die nach Trainingseinheiten eingetragen werden können
+- Fortschritt durch Level, XP, Coins und Achievements
+- Tägliche und wöchentliche Aufgaben mit Belohnungen
+- Einen Shop mit Items, Boostern und Chests
+- Freunde, öffentliche Profile und ein Leaderboard
+- Eine Weekly Activity, die den Trainingsverlauf sichtbar macht
+- Einen Admin-Bereich zum Verwalten der Inhalte
 
 ## Tech Stack
 
@@ -55,53 +55,12 @@ Das Projekt besteht aus Web-App, Backend-API und Mobile-App.
 - Flutter und Dart
 - Gemeinsame API-Anbindung an das SYBAU Backend
 
-## Deployment
+## Domain
 
-Das Frontend liegt auf Vercel. Die Vercel-Projekteinstellungen befinden sich in `sybau_frontend/README.md`.
-
-Die API läuft auf Render. In Produktion erwartet das Backend eine PostgreSQL-Verbindung, einen JWT-Key und konfigurierte Medien-Storage-Variablen.
-
-Medien wie Profilbilder, Shop-Items und Chests werden nicht mehr als Base64 in der Datenbank gespeichert, sondern als Dateien im Storage abgelegt. Alte Bilddaten können über die bestehende Migration in den Storage verschoben werden.
-
-## Lokal starten
-
-### Backend
-
-```bash
-cd Sybau_Backend/Sybau_Backend
-dotnet restore
-dotnet ef database update
-ASPNETCORE_ENVIRONMENT=Development dotnet run
-```
-
-Standard-URL lokal:
+Die aktuelle öffentliche Domain lautet:
 
 ```text
-http://localhost:5243
-```
-
-### Frontend
-
-```bash
-cd sybau_frontend
-npm install
-npm run dev
-```
-
-Standard-URL lokal:
-
-```text
-http://localhost:5173
-```
-
-Wenn `VITE_API_URL` nicht gesetzt ist, nutzt das Frontend lokal automatisch `http://localhost:5243`.
-
-### Mobile
-
-```bash
-cd sybau_mobile
-flutter pub get
-flutter run
+https://sybau-fitness.vercel.app
 ```
 
 ## Wichtige Ordner
