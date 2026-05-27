@@ -385,15 +385,81 @@ const rarityLabel = computed(() =>
   cursor: not-allowed;
 }
 
-@media (max-width: 680px) {
-  .rarity-label {
+@media (max-width: 760px) {
+  .feature-card {
+    min-height: 274px;
+    padding: 18px 8px 8px;
+    border-radius: 18px;
+  }
+
+  .feature-count {
+    top: 6px;
+    right: 6px;
+    font-size: 0.68rem;
+  }
+
+  .feature-main-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 7px;
+    margin-top: 0;
+    padding-right: 0;
+  }
+
+  .feature-icon {
+    width: 100%;
+    height: 96px;
+    border: 0;
+    border-radius: 14px;
+    background: transparent;
+    box-shadow: none;
+    font-size: 2.6rem;
+  }
+
+  .feature-icon::before,
+  .feature-icon::after {
     display: none;
   }
 
+  .feature-image {
+    width: 92px;
+    height: 92px;
+  }
+
+  .feature-copy {
+    padding-top: 0;
+    text-align: center;
+  }
+
+  .feature-title {
+    min-height: 30px;
+    margin: 0;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 0.84rem;
+    line-height: 1.05;
+  }
+
+  .rarity-label {
+    margin-top: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.58rem;
+    letter-spacing: 0.14em;
+    white-space: nowrap;
+  }
+
   .boost-row {
-    gap: 8px;
-    margin-top: 22px;
-    padding-bottom: 20px;
+    min-height: 38px;
+    margin-top: 6px;
+    padding-bottom: 0;
+    align-content: center;
+    justify-content: center;
+    gap: 3px;
+    border-bottom: 0;
   }
 
   .boost-pill {
@@ -401,16 +467,40 @@ const rarityLabel = computed(() =>
     padding: 0;
     border: 0;
     background: transparent;
-    font-size: 0.86rem;
+    font-size: 0.66rem;
+    line-height: 1;
+    text-align: center;
   }
 
   .feature-price-row {
+    margin-top: auto;
+    padding-top: 6px;
     flex-direction: column;
     align-items: stretch;
   }
 
   .corner-button {
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
     justify-content: center;
+    padding: 0 6px;
+    border-radius: 9px;
+  }
+
+  .coin-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .button-price {
+    gap: 5px;
+    --price-font-size: 0.95rem;
+  }
+
+  .button-price.price-medium,
+  .button-price.price-compact {
+    --price-font-size: 0.82rem;
   }
 }
 

@@ -1552,15 +1552,12 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
   }
 
+  .feature-grid,
   .chest-grid,
-  .coin-pack-grid {
+  .coin-pack-grid,
+  .real-money-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
-  }
-
-  .real-money-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
   }
 
   .section-card {
@@ -1606,7 +1603,7 @@ onUnmounted(() => {
   }
 
   .real-money-copy strong {
-    justify-content: flex-start;
+    justify-content: center;
   }
 
   .coin-pack-copy img,
@@ -1616,8 +1613,11 @@ onUnmounted(() => {
   }
 
   .real-money-copy p {
-    text-align: center;
-    font-size: 0.68rem;
+    display: none;
+  }
+
+  .coin-label {
+    display: none;
   }
 
   .coin-pack-buy,
@@ -1630,6 +1630,15 @@ onUnmounted(() => {
     padding: 0 8px;
     border-radius: 8px;
     font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .feature-grid,
+  .chest-grid,
+  .coin-pack-grid,
+  .real-money-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

@@ -10,9 +10,35 @@ const API = axios.create({
 });
 
 export function resolveMediaUrl(path?: string | null) {
-    if (!path) return '';
-    if (isLegacyProfileUploadUrl(path)) return '';
-    return resolveApiUrl(path);
+    const normalizedPath = normalizeMediaPath(path);
+    if (!normalizedPath) return '';
+    if (isLegacyProfileUploadUrl(normalizedPath)) return '';
+    return resolveApiUrl(normalizedPath);
+}
+
+function normalizeMediaPath(value?: string | null) {
+    const trimmed = value?.trim();
+    if (!trimmed) return '';
+
+    if (!/^(https?:)/i.test(trimmed)) return trimmed;
+
+    try {
+        const mediaUrl = new URL(trimmed);
+        if (!isLoopbackHost(mediaUrl.hostname)) return trimmed;
+
+        const apiUrl = new URL(API_BASE_URL);
+        return `${apiUrl.origin}${mediaUrl.pathname}${mediaUrl.search}${mediaUrl.hash}`;
+    } catch {
+        return trimmed;
+    }
+}
+
+function isLoopbackHost(hostname: string) {
+    const normalized = hostname.toLowerCase();
+    return normalized === 'localhost' ||
+        normalized === '127.0.0.1' ||
+        normalized === '[::1]' ||
+        normalized === '::1';
 }
 
 function isLegacyProfileUploadUrl(value: string) {

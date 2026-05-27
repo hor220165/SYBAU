@@ -355,16 +355,45 @@ class ApiService {
   static String? mediaUrl(String? path) {
     final trimmedPath = path?.trim();
     if (trimmedPath == null || trimmedPath.isEmpty) return null;
+    final normalizedMediaPath = _rewriteLoopbackMediaUrl(trimmedPath);
     if (RegExp(
       r'^(https?:|data:|blob:)',
       caseSensitive: false,
-    ).hasMatch(trimmedPath)) {
-      return trimmedPath;
+    ).hasMatch(normalizedMediaPath)) {
+      return normalizedMediaPath;
     }
-    final normalizedPath = trimmedPath.startsWith('/')
-        ? trimmedPath
-        : '/$trimmedPath';
+    final normalizedPath = normalizedMediaPath.startsWith('/')
+        ? normalizedMediaPath
+        : '/$normalizedMediaPath';
     return '$baseUrl$normalizedPath';
+  }
+
+  static String _rewriteLoopbackMediaUrl(String value) {
+    final uri = Uri.tryParse(value);
+    if (uri == null ||
+        !uri.hasScheme ||
+        (uri.scheme != 'http' && uri.scheme != 'https') ||
+        !_isLoopbackHost(uri.host)) {
+      return value;
+    }
+
+    final apiUri = Uri.tryParse(baseUrl);
+    if (apiUri == null || apiUri.host.isEmpty) return value;
+
+    return apiUri
+        .replace(
+          path: uri.path,
+          query: uri.hasQuery ? uri.query : null,
+          fragment: uri.hasFragment ? uri.fragment : null,
+        )
+        .toString();
+  }
+
+  static bool _isLoopbackHost(String host) {
+    final normalized = host.toLowerCase();
+    return normalized == 'localhost' ||
+        normalized == '127.0.0.1' ||
+        normalized == '::1';
   }
 
   static Future<Map<String, dynamic>?> login(
