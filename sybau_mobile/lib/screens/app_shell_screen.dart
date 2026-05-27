@@ -33,7 +33,7 @@ const String _appleHealthLogoAsset = 'assets/applehealth_logo.png';
 const int _achievementPageSize = 4;
 final BaseCacheManager _mediaImageCache = CacheManager(
   Config(
-    'sybau_media_images',
+    'sybau_media_images_v2',
     stalePeriod: const Duration(days: 365),
     maxNrOfCacheObjects: 600,
   ),

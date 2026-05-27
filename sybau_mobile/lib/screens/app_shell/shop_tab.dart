@@ -455,6 +455,71 @@ class _ShopTabState extends State<ShopTab> {
     );
   }
 
+  Widget _buildLocalShopAsset(
+    String assetPath, {
+    required double width,
+    required double height,
+  }) {
+    return Image.asset(
+      assetPath,
+      width: width,
+      height: height,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.none,
+      isAntiAlias: false,
+    );
+  }
+
+  Widget _buildShopFallbackVisual({
+    required String name,
+    required String icon,
+    required double width,
+    required double height,
+    String category = '',
+    double? iconSize,
+  }) {
+    final assetPath = _localShopAssetFor(name, category: category);
+    if (assetPath != null) {
+      return _buildLocalShopAsset(assetPath, width: width, height: height);
+    }
+
+    return Text(icon, style: TextStyle(fontSize: iconSize ?? (height * 0.48)));
+  }
+
+  String? _localShopAssetFor(String name, {String category = ''}) {
+    final normalizedName = name.toLowerCase();
+    final normalizedCategory = category.toLowerCase();
+    final search = '$normalizedCategory $normalizedName';
+
+    if (search.contains('prestige') || search.contains('premium')) {
+      return 'assets/Prestige_Chest.png';
+    }
+    if (search.contains('starter chest')) return 'assets/Starter_Chest.png';
+    if (search.contains('gold chest')) return 'assets/Gold_Chest.png';
+    if (search.contains('starter pack')) return 'assets/Starter_Pack.png';
+    if (search.contains('plus pack')) return 'assets/Plus_Pack.png';
+    if (search.contains('pro pack')) return 'assets/Pro_Pack.png';
+    if (search.contains('goldene hantel')) return 'assets/Goldene_Hantel.png';
+    if (search.contains('hantel')) return 'assets/Pixel_Hantel.png';
+    if (search.contains('soda')) return 'assets/Soda_Sprite.png';
+    if (search.contains('riegel')) return 'assets/Riegel_Sprite.png';
+    if (search.contains('flasche') || search.contains('wasser')) {
+      return 'assets/Wasserflasche.png';
+    }
+    if (search.contains('banan')) return 'assets/Banana.png';
+    if (search.contains('shaker') || search.contains('schaker')) {
+      if (search.contains('grau')) return 'assets/Shaker_Grey 19.38.15.png';
+      if (search.contains('blau')) return 'assets/Shaker_Blue.png';
+      if (search.contains('lila') || search.contains('purple')) {
+        return 'assets/Shaker_Purple.png';
+      }
+      if (search.contains('rot')) return 'assets/Shaker_Red.png';
+      if (search.contains('gold')) return 'assets/Shaker_Gold.png';
+    }
+
+    return null;
+  }
+
   Widget _buildEmojiPlaceholder(double size) {
     return Container(
       width: size,
@@ -480,6 +545,7 @@ class _ShopTabState extends State<ShopTab> {
     final canAfford = _currentCoins >= price;
     final isOpening = _openingChestId == _toInt(chest['id']);
     final imageUrl = _string(chest['imageUrl']);
+    final name = _string(chest['name']);
     final imageSize = compact ? 80.0 : 112.0;
     final imageHeight = compact ? 88.0 : 112.0;
 
@@ -526,13 +592,24 @@ class _ShopTabState extends State<ShopTab> {
                                 imageUrl,
                                 width: imageSize,
                                 height: imageSize,
-                                fallback: () => const Text(
-                                  '📦',
-                                  style: TextStyle(fontSize: 42),
+                                fallback: () => _buildShopFallbackVisual(
+                                  name: name,
+                                  category: 'chest',
+                                  icon: '📦',
+                                  width: imageSize,
+                                  height: imageSize,
+                                  iconSize: 42,
                                 ),
                               ),
                             )
-                          : const Text('📦', style: TextStyle(fontSize: 42)),
+                          : _buildShopFallbackVisual(
+                              name: name,
+                              category: 'chest',
+                              icon: '📦',
+                              width: imageSize,
+                              height: imageSize,
+                              iconSize: 42,
+                            ),
                     ),
                   ),
                   const SizedBox(height: 7),
@@ -800,14 +877,22 @@ class _ShopTabState extends State<ShopTab> {
                                   imageUrl,
                                   width: 92,
                                   height: 92,
-                                  fallback: () => Text(
-                                    icon,
-                                    style: const TextStyle(fontSize: 42),
+                                  fallback: () => _buildShopFallbackVisual(
+                                    name: _string(item['name']),
+                                    category: category,
+                                    icon: icon,
+                                    width: 92,
+                                    height: 92,
+                                    iconSize: 42,
                                   ),
                                 )
-                              : Text(
-                                  icon,
-                                  style: const TextStyle(fontSize: 42),
+                              : _buildShopFallbackVisual(
+                                  name: _string(item['name']),
+                                  category: category,
+                                  icon: icon,
+                                  width: 92,
+                                  height: 92,
+                                  iconSize: 42,
                                 ),
                         ],
                       ),
@@ -1025,12 +1110,23 @@ class _ShopTabState extends State<ShopTab> {
                               imageUrl,
                               width: 74,
                               height: 74,
-                              fallback: () => Text(
-                                icon,
-                                style: const TextStyle(fontSize: 40),
+                              fallback: () => _buildShopFallbackVisual(
+                                name: _string(item['name']),
+                                category: category,
+                                icon: icon,
+                                width: 74,
+                                height: 74,
+                                iconSize: 40,
                               ),
                             )
-                          : Text(icon, style: const TextStyle(fontSize: 40)),
+                          : _buildShopFallbackVisual(
+                              name: _string(item['name']),
+                              category: category,
+                              icon: icon,
+                              width: 74,
+                              height: 74,
+                              iconSize: 40,
+                            ),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -1568,22 +1664,29 @@ class _ShopTabState extends State<ShopTab> {
   }) {
     final imageUrl = _string(reward['imageUrl'] ?? reward['ImageUrl']);
     final rarity = _shopRarity(reward);
+    final icon = _rarityIcon(rarity);
     final size = compact ? 104.0 : 160.0;
     if (imageUrl.isNotEmpty) {
       return _buildShopImageFromUrl(
         imageUrl,
         width: size,
         height: size,
-        fallback: () => Text(
-          _rarityIcon(rarity),
-          style: TextStyle(fontSize: compact ? 58 : 86),
+        fallback: () => _buildShopFallbackVisual(
+          name: _string(reward['name'] ?? reward['Name']),
+          icon: icon,
+          width: size,
+          height: size,
+          iconSize: compact ? 58 : 86,
         ),
       );
     }
 
-    return Text(
-      _rarityIcon(rarity),
-      style: TextStyle(fontSize: compact ? 58 : 86),
+    return _buildShopFallbackVisual(
+      name: _string(reward['name'] ?? reward['Name']),
+      icon: icon,
+      width: size,
+      height: size,
+      iconSize: compact ? 58 : 86,
     );
   }
 
@@ -1669,9 +1772,13 @@ class _ShopTabState extends State<ShopTab> {
                                     closedImageUrl,
                                     width: 238,
                                     height: 238,
-                                    fallback: () => const Text(
-                                      '📦',
-                                      style: TextStyle(fontSize: 92),
+                                    fallback: () => _buildShopFallbackVisual(
+                                      name: chestName,
+                                      category: 'chest',
+                                      icon: '📦',
+                                      width: 238,
+                                      height: 238,
+                                      iconSize: 92,
                                     ),
                                   ),
                                 ),
