@@ -4,22 +4,30 @@ class ShopTab extends StatefulWidget {
   const ShopTab({
     required this.onRefreshHeader,
     required this.showSnack,
+    required this.initialCoins,
     super.key,
   });
 
   final Future<void> Function() onRefreshHeader;
   final void Function(String) showSnack;
+  final int initialCoins;
 
   @override
   State<ShopTab> createState() => _ShopTabState();
 }
 
 class _ShopTabState extends State<ShopTab> {
+  static const Duration _shopCatalogCacheTtl = Duration(minutes: 5);
+  static List<dynamic>? _cachedDailyItems;
+  static List<dynamic>? _cachedChests;
+  static DateTime? _cachedDailyShopExpiresAtUtc;
+  static DateTime? _cachedShopCatalogCachedAtUtc;
+  static Duration _cachedDailyShopServerOffset = Duration.zero;
+
   bool _loading = true;
   List<dynamic> _items = <dynamic>[];
   List<dynamic> _chests = <dynamic>[];
   List<dynamic> _ownedItems = <dynamic>[];
-  Map<String, dynamic> _profile = <String, dynamic>{};
   int _currentCoins = 0;
   Map<String, dynamic>? _pendingPurchase;
   bool _buying = false;
@@ -33,6 +41,7 @@ class _ShopTabState extends State<ShopTab> {
   Duration _dailyShopServerOffset = Duration.zero;
   Timer? _dailyShopTimer;
   String _dailyCountdown = '00:00:00';
+  final Set<String> _preloadedShopImageUrls = <String>{};
   final List<Map<String, String>> _coinPacks = const [
     {
       'name': 'Starter Pack',
@@ -57,11 +66,19 @@ class _ShopTabState extends State<ShopTab> {
   @override
   void initState() {
     super.initState();
+    _currentCoins = widget.initialCoins;
     _dailyShopTimer = Timer.periodic(
       const Duration(seconds: 1),
       (_) => _tickDailyCountdown(),
     );
     unawaited(_load());
+  }
+
+  @override
+  void didUpdateWidget(covariant ShopTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialCoins == widget.initialCoins) return;
+    setState(() => _currentCoins = widget.initialCoins);
   }
 
   @override
@@ -73,7 +90,23 @@ class _ShopTabState extends State<ShopTab> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final profile = await ApiService.getProfile();
+      if (_hasFreshShopCatalogCache()) {
+        setState(() {
+          _items = List<dynamic>.from(_cachedDailyItems!);
+          _chests = List<dynamic>.from(_cachedChests!);
+          _dailyShopExpiresAtUtc = _cachedDailyShopExpiresAtUtc;
+          _dailyShopServerOffset = _cachedDailyShopServerOffset;
+          _dailyCountdown = _formatCountdown(_remainingDailyShopTime());
+          _loading = false;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          unawaited(_precacheShopImages());
+        });
+        unawaited(_loadOwnedItemsOnly());
+        return;
+      }
+
       final results = await Future.wait<dynamic>([
         ApiService.getDailyShop().catchError((error) {
           debugPrint('Daily shop load error: $error');
@@ -96,20 +129,41 @@ class _ShopTabState extends State<ShopTab> {
       final expiresAt = _parseUtc(
         dailyShop['expiresAtUtc'] ?? dailyShop['ExpiresAtUtc'],
       );
-      setState(() {
-        _profile = _map(profile);
-        _currentCoins = _toInt(_profile['coins']);
-        _items =
-            (dailyShop['items'] ?? dailyShop['Items'] ?? <dynamic>[])
-                as List<dynamic>;
-        _chests = results[1] as List<dynamic>;
-        _ownedItems = results[2] as List<dynamic>;
-        _dailyShopExpiresAtUtc = expiresAt;
-        _dailyShopServerOffset = serverTime == null
+      final rawItems =
+          (dailyShop['items'] ?? dailyShop['Items'] ?? <dynamic>[])
+              as List<dynamic>;
+      final rawChests = results[1] as List<dynamic>;
+      final rawOwnedItems = results[2] as List<dynamic>;
+
+      _cacheShopCatalog(
+        items: rawItems,
+        chests: rawChests,
+        expiresAt: expiresAt,
+        serverOffset: serverTime == null
             ? Duration.zero
-            : serverTime.difference(DateTime.now().toUtc());
+            : serverTime.difference(DateTime.now().toUtc()),
+      );
+
+      await _precacheShopImages(
+        items: rawItems,
+        chests: rawChests,
+        limit: 8,
+        waitTimeout: const Duration(milliseconds: 450),
+      );
+      if (!mounted) return;
+
+      setState(() {
+        _items = rawItems;
+        _chests = rawChests;
+        _ownedItems = rawOwnedItems;
+        _dailyShopExpiresAtUtc = expiresAt;
+        _dailyShopServerOffset = _cachedDailyShopServerOffset;
         _dailyCountdown = _formatCountdown(_remainingDailyShopTime());
         _loading = false;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(_precacheShopImages());
       });
     } catch (e) {
       debugPrint('Shop load error: $e');
@@ -122,6 +176,118 @@ class _ShopTabState extends State<ShopTab> {
         ),
       );
     }
+  }
+
+  bool _hasFreshShopCatalogCache() {
+    final cachedAt = _cachedShopCatalogCachedAtUtc;
+    final expiresAt = _cachedDailyShopExpiresAtUtc;
+    if (_cachedDailyItems == null ||
+        _cachedChests == null ||
+        cachedAt == null ||
+        expiresAt == null) {
+      return false;
+    }
+
+    final serverNow = DateTime.now().toUtc().add(_cachedDailyShopServerOffset);
+    if (!expiresAt.isAfter(serverNow)) return false;
+    return DateTime.now().toUtc().difference(cachedAt) <= _shopCatalogCacheTtl;
+  }
+
+  void _cacheShopCatalog({
+    required List<dynamic> items,
+    required List<dynamic> chests,
+    required DateTime? expiresAt,
+    required Duration serverOffset,
+  }) {
+    _cachedDailyItems = List<dynamic>.from(items);
+    _cachedChests = List<dynamic>.from(chests);
+    _cachedDailyShopExpiresAtUtc = expiresAt;
+    _cachedDailyShopServerOffset = serverOffset;
+    _cachedShopCatalogCachedAtUtc = DateTime.now().toUtc();
+  }
+
+  Future<void> _loadOwnedItemsOnly() async {
+    try {
+      final ownedItems = await ApiService.getUserItems();
+      if (!mounted) return;
+      setState(() => _ownedItems = ownedItems);
+    } catch (error) {
+      debugPrint('Owned items refresh error: $error');
+    }
+  }
+
+  List<String> _collectShopImageUrls({
+    List<dynamic>? items,
+    List<dynamic>? chests,
+    Map<String, dynamic>? reward,
+  }) {
+    final urls = <String>{};
+
+    void add(dynamic value) {
+      final resolved = ApiService.mediaUrl(_string(value));
+      if (resolved == null || resolved.trim().isEmpty) return;
+      urls.add(resolved);
+    }
+
+    for (final rawItem in items ?? _items) {
+      final item = _map(rawItem);
+      add(item['imageUrl'] ?? item['ImageUrl']);
+    }
+
+    for (final rawChest in chests ?? _chests) {
+      final chest = _map(rawChest);
+      add(chest['imageUrl'] ?? chest['ImageUrl']);
+    }
+
+    if (reward != null) {
+      add(
+        reward['imageUrl'] ??
+            reward['ImageUrl'] ??
+            _map(reward['item'] ?? reward['Item'])['imageUrl'] ??
+            _map(reward['item'] ?? reward['Item'])['ImageUrl'],
+      );
+    }
+
+    return urls.toList(growable: false);
+  }
+
+  Future<void> _precacheShopImages({
+    List<dynamic>? items,
+    List<dynamic>? chests,
+    Map<String, dynamic>? reward,
+    int? limit,
+    Duration? waitTimeout,
+  }) async {
+    if (!mounted) return;
+
+    var urls = _collectShopImageUrls(
+      items: items,
+      chests: chests,
+      reward: reward,
+    );
+    if (limit != null && urls.length > limit) {
+      urls = urls.take(limit).toList(growable: false);
+    }
+
+    final futures = <Future<void>>[];
+    for (final url in urls) {
+      final optimizedUrl = _optimizedMediaImageUrl(
+        url,
+        width: 112,
+        height: 112,
+      );
+      if (!_preloadedShopImageUrls.add(optimizedUrl)) continue;
+      futures.add(_precacheMediaImage(context, url, width: 112, height: 112));
+    }
+
+    if (futures.isEmpty) return;
+    final warmup = Future.wait<void>(futures);
+    if (waitTimeout == null) {
+      unawaited(warmup);
+      return;
+    }
+
+    await warmup.timeout(waitTimeout, onTimeout: () => <void>[]);
   }
 
   DateTime? _parseUtc(dynamic value) {
@@ -239,6 +405,12 @@ class _ShopTabState extends State<ShopTab> {
     try {
       final result = await ApiService.openChest(chestId);
       final reward = _map(result['item'] ?? result['Item'] ?? result);
+      if (!mounted) return;
+      await _precacheShopImages(
+        reward: reward,
+        limit: 1,
+        waitTimeout: const Duration(milliseconds: 450),
+      );
       if (!mounted) return;
       setState(() {
         _openedReward = reward;
@@ -432,14 +604,28 @@ class _ShopTabState extends State<ShopTab> {
     double? width,
     double? height,
     BoxFit fit = BoxFit.contain,
+    String name = '',
+    String category = '',
+    double? visualScale,
     required Widget Function() fallback,
   }) {
-    return _buildMediaImageFromUrl(
+    final scale = visualScale ?? _shopImageVisualScale(name, category);
+    final visualWidth = width == null ? null : width * scale;
+    final visualHeight = height == null ? null : height * scale;
+    final image = _buildMediaImageFromUrl(
       imageUrl,
-      width: width,
-      height: height,
+      width: visualWidth,
+      height: visualHeight,
       fit: fit,
       fallback: fallback,
+    );
+
+    if (width == null && height == null) return image;
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Center(child: image),
     );
   }
 
@@ -480,10 +666,53 @@ class _ShopTabState extends State<ShopTab> {
   }) {
     final assetPath = _localShopAssetFor(name, category: category);
     if (assetPath != null) {
-      return _buildLocalShopAsset(assetPath, width: width, height: height);
+      final scale = _shopImageVisualScale(name, category);
+      return SizedBox(
+        width: width,
+        height: height,
+        child: Center(
+          child: _buildLocalShopAsset(
+            assetPath,
+            width: width * scale,
+            height: height * scale,
+          ),
+        ),
+      );
     }
 
-    return Text(icon, style: TextStyle(fontSize: iconSize ?? (height * 0.48)));
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Center(
+        child: Text(
+          icon,
+          style: TextStyle(fontSize: iconSize ?? (height * 0.48)),
+        ),
+      ),
+    );
+  }
+
+  double _shopImageVisualScale(String name, String category) {
+    final search = '${category.toLowerCase()} ${name.toLowerCase()}';
+    if (search.contains('chest')) return 0.94;
+    if (search.contains('starter pack') ||
+        search.contains('plus pack') ||
+        search.contains('pro pack')) {
+      return 0.88;
+    }
+    if (search.contains('hantel') ||
+        search.contains('riegel') ||
+        search.contains('banan')) {
+      return 0.74;
+    }
+    if (search.contains('shaker') ||
+        search.contains('schaker') ||
+        search.contains('flasche') ||
+        search.contains('wasser')) {
+      return 0.9;
+    }
+    if (search.contains('soda')) return 0.84;
+    return category.toLowerCase() == 'item' ? 0.84 : 0.9;
   }
 
   String? _localShopAssetFor(String name, {String category = ''}) {
@@ -592,6 +821,8 @@ class _ShopTabState extends State<ShopTab> {
                                 imageUrl,
                                 width: imageSize,
                                 height: imageSize,
+                                name: name,
+                                category: 'chest',
                                 fallback: () => _buildShopFallbackVisual(
                                   name: name,
                                   category: 'chest',
@@ -877,6 +1108,8 @@ class _ShopTabState extends State<ShopTab> {
                                   imageUrl,
                                   width: 92,
                                   height: 92,
+                                  name: _string(item['name']),
+                                  category: category,
                                   fallback: () => _buildShopFallbackVisual(
                                     name: _string(item['name']),
                                     category: category,
@@ -1110,6 +1343,8 @@ class _ShopTabState extends State<ShopTab> {
                               imageUrl,
                               width: 74,
                               height: 74,
+                              name: _string(item['name']),
+                              category: category,
                               fallback: () => _buildShopFallbackVisual(
                                 name: _string(item['name']),
                                 category: category,
@@ -1378,11 +1613,14 @@ class _ShopTabState extends State<ShopTab> {
           children: [
             SizedBox(
               height: 76,
-              child: Image.asset(
-                pack['image']!,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.none,
-                isAntiAlias: false,
+              child: Center(
+                child: _buildShopFallbackVisual(
+                  name: pack['name']!,
+                  category: 'item',
+                  icon: '',
+                  width: 76,
+                  height: 76,
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -1671,6 +1909,7 @@ class _ShopTabState extends State<ShopTab> {
         imageUrl,
         width: size,
         height: size,
+        name: _string(reward['name'] ?? reward['Name']),
         fallback: () => _buildShopFallbackVisual(
           name: _string(reward['name'] ?? reward['Name']),
           icon: icon,
@@ -1772,6 +2011,8 @@ class _ShopTabState extends State<ShopTab> {
                                     closedImageUrl,
                                     width: 238,
                                     height: 238,
+                                    name: chestName,
+                                    category: 'chest',
                                     fallback: () => _buildShopFallbackVisual(
                                       name: chestName,
                                       category: 'chest',

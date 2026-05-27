@@ -3,11 +3,9 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -31,13 +29,9 @@ part 'app_shell/shared_widgets.dart';
 const String _noProfilePictureAsset = 'assets/Nopfp.png';
 const String _appleHealthLogoAsset = 'assets/applehealth_logo.png';
 const int _achievementPageSize = 4;
-final BaseCacheManager _mediaImageCache = CacheManager(
-  Config(
-    'sybau_media_images_v2',
-    stalePeriod: const Duration(days: 365),
-    maxNrOfCacheObjects: 600,
-  ),
-);
+const Map<String, String> _mediaImageHeaders = <String, String>{
+  'Accept': 'image/png,image/jpeg,image/webp,image/*,*/*;q=0.8',
+};
 
 String _lt({required String de, required String en}) {
   return de;
@@ -72,6 +66,89 @@ Uint8List? _decodeDataImageUrl(String? value) {
   }
 }
 
+String _optimizedMediaImageUrl(String value, {double? width, double? height}) {
+  final trimmed = value.trim();
+  final uri = Uri.tryParse(trimmed);
+  if (uri == null ||
+      !uri.hasScheme ||
+      (uri.scheme != 'http' && uri.scheme != 'https')) {
+    return trimmed;
+  }
+
+  if (uri.host != 'res.cloudinary.com') return trimmed;
+
+  const marker = '/image/upload/';
+  final markerIndex = uri.path.indexOf(marker);
+  if (markerIndex < 0) return trimmed;
+
+  final tail = uri.path.substring(markerIndex + marker.length);
+  final alreadyTransformed =
+      tail.startsWith('f_') ||
+      tail.startsWith('q_') ||
+      tail.startsWith('c_') ||
+      tail.startsWith('w_') ||
+      tail.startsWith('h_');
+  if (alreadyTransformed) return trimmed;
+
+  final logicalSize = math.max(width ?? 128, height ?? 128);
+  final targetWidth = logicalSize <= 160
+      ? 384
+      : logicalSize <= 280
+      ? 768
+      : logicalSize <= 420
+      ? 1024
+      : 1280;
+  final transform = 'f_auto,q_auto:eco,c_limit,w_$targetWidth';
+  final optimizedPath =
+      '${uri.path.substring(0, markerIndex + marker.length)}$transform/$tail';
+  return uri.replace(path: optimizedPath).toString();
+}
+
+Widget _mediaImageErrorFallback(
+  String imageUrl,
+  Object error,
+  Widget Function() fallback,
+) {
+  debugPrint('SYBAU image load failed: $imageUrl ($error)');
+  return fallback();
+}
+
+Widget _buildMediaLoadingPlaceholder({double? width, double? height}) {
+  if (width == null && height == null) return const SizedBox.shrink();
+  return SizedBox(width: width, height: height);
+}
+
+int? _mediaDecodeDimension(double? value) {
+  if (value == null || value <= 0) return null;
+  return (value * 3).round().clamp(96, 1536);
+}
+
+Future<void> _precacheMediaImage(
+  BuildContext context,
+  String? imageUrl, {
+  double? width,
+  double? height,
+}) async {
+  final resolved = ApiService.mediaUrl(imageUrl);
+  final dataBytes = _decodeDataImageUrl(resolved);
+  if (dataBytes != null || resolved == null || resolved.trim().isEmpty) {
+    return;
+  }
+
+  final optimizedUrl = _optimizedMediaImageUrl(
+    resolved,
+    width: width,
+    height: height,
+  );
+  await precacheImage(
+    NetworkImage(optimizedUrl, headers: _mediaImageHeaders),
+    context,
+    onError: (error, _) {
+      debugPrint('SYBAU image preload failed: $optimizedUrl ($error)');
+    },
+  );
+}
+
 Widget _buildProfileImageFromUrl(
   String? imageUrl, {
   BoxFit fit = BoxFit.cover,
@@ -94,12 +171,15 @@ Widget _buildProfileImageFromUrl(
     return fallback();
   }
 
-  return Image(
-    image: CachedNetworkImageProvider(imageUrl, cacheManager: _mediaImageCache),
+  final optimizedUrl = _optimizedMediaImageUrl(imageUrl);
+  return Image.network(
+    optimizedUrl,
     key: key,
     fit: fit,
     gaplessPlayback: gaplessPlayback,
-    errorBuilder: (_, _, _) => fallback(),
+    headers: _mediaImageHeaders,
+    errorBuilder: (_, error, _) =>
+        _mediaImageErrorFallback(optimizedUrl, error, fallback),
   );
 }
 
@@ -131,15 +211,27 @@ Widget _buildMediaImageFromUrl(
     return fallback();
   }
 
-  return Image(
-    image: CachedNetworkImageProvider(resolved, cacheManager: _mediaImageCache),
+  final optimizedUrl = _optimizedMediaImageUrl(
+    resolved,
+    width: width,
+    height: height,
+  );
+  return Image.network(
+    optimizedUrl,
     width: width,
     height: height,
     fit: fit,
     filterQuality: filterQuality,
     isAntiAlias: isAntiAlias,
     gaplessPlayback: gaplessPlayback,
-    errorBuilder: (_, _, _) => fallback(),
+    headers: _mediaImageHeaders,
+    cacheWidth: _mediaDecodeDimension(width),
+    loadingBuilder: (_, child, loadingProgress) {
+      if (loadingProgress == null) return child;
+      return _buildMediaLoadingPlaceholder(width: width, height: height);
+    },
+    errorBuilder: (_, error, _) =>
+        _mediaImageErrorFallback(optimizedUrl, error, fallback),
   );
 }
 
@@ -723,6 +815,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
         return ShopTab(
           onRefreshHeader: () => _loadHeaderProfile(),
           showSnack: _showSnack,
+          initialCoins: _coins,
         );
       case AppTab.friends:
         return FriendsTab(
