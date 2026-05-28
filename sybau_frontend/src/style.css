@@ -1094,3 +1094,151 @@ html[data-theme="light"] body .dot.active {
     background: #ec4899 !important;
     box-shadow: 0 0 10px rgba(236, 72, 153, 0.35) !important;
 }
+
+html[data-theme="light"] body .health-label {
+    color: #475569 !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] body .health-card strong {
+    color: #0f172a !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] body .showcase-copy li {
+    color: #0f172a !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] body .showcase-copy li::before {
+    background: #0891b2 !important;
+    box-shadow: 0 0 12px rgba(8, 145, 178, 0.32) !important;
+}
+
+/* Web-only light mode fixes for workout timer and public user profile sheet */
+html[data-theme="light"] body .timer-overlay .ring-shell-inner {
+    background: #fff !important;
+    border: 1px solid rgba(15, 23, 42, 0.08) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+html[data-theme="light"] body .timer-overlay .idle-time-text,
+html[data-theme="light"] body .timer-overlay .ready-circle,
+html[data-theme="light"] body .timer-overlay .elapsed-time,
+html[data-theme="light"] body .timer-overlay .result-text {
+    color: #0f172a !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] body .timer-overlay .result-text.fail {
+    color: #b91c1c !important;
+}
+
+html[data-theme="light"] body .timer-overlay .result-detail {
+    color: #475569 !important;
+}
+
+html[data-theme="light"] body .sheet-backdrop {
+    background: rgba(248, 250, 252, 0.88) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+html[data-theme="light"] body .profile-sheet {
+    background: #fff !important;
+    border-color: rgba(15, 23, 42, 0.1) !important;
+    color: #0f172a !important;
+    box-shadow: 0 -24px 60px rgba(15, 23, 42, 0.12) !important;
+}
+
+html[data-theme="light"] body .profile-sheet .sheet-handle {
+    background: rgba(15, 23, 42, 0.16) !important;
+}
+
+html[data-theme="light"] body .profile-sheet .close-btn {
+    color: #475569 !important;
+}
+
+html[data-theme="light"] body .profile-sheet .profile-copy h2,
+html[data-theme="light"] body .profile-sheet .sheet-card h3,
+html[data-theme="light"] body .profile-sheet .stat-card strong,
+html[data-theme="light"] body .profile-sheet .achievement-card strong,
+html[data-theme="light"] body .profile-sheet .recent-list strong {
+    color: #0f172a !important;
+}
+
+html[data-theme="light"] body .profile-sheet .profile-copy p,
+html[data-theme="light"] body .profile-sheet .muted,
+html[data-theme="light"] body .profile-sheet .sheet-state,
+html[data-theme="light"] body .profile-sheet .stat-card span,
+html[data-theme="light"] body .profile-sheet .achievement-card span,
+html[data-theme="light"] body .profile-sheet .recent-list span,
+html[data-theme="light"] body .profile-sheet .heatmap-month,
+html[data-theme="light"] body .profile-sheet .heatmap-weekdays {
+    color: #64748b !important;
+}
+
+html[data-theme="light"] body .profile-sheet .private-profile-message {
+    color: #334155 !important;
+}
+
+html[data-theme="light"] body .profile-sheet .body-pill {
+    color: #334155 !important;
+    background: rgba(241, 245, 249, 0.9) !important;
+    border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+html[data-theme="light"] body .profile-sheet .sheet-card,
+html[data-theme="light"] body .profile-sheet .stat-card,
+html[data-theme="light"] body .profile-sheet .achievement-card {
+    background: rgba(248, 250, 252, 0.92) !important;
+    border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+html[data-theme="light"] body .profile-sheet .achievement-card.unlocked {
+    background: rgba(254, 243, 199, 0.9) !important;
+    border-color: rgba(217, 119, 6, 0.26) !important;
+}
+
+html[data-theme="light"] body .profile-sheet .pager-actions button {
+    color: #475569 !important;
+    background: #fff !important;
+    border-color: rgba(15, 23, 42, 0.12) !important;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06) !important;
+}
+
+html[data-theme="light"] body .profile-sheet .activity-mode-toggle {
+    background: rgba(226, 232, 240, 0.9) !important;
+}
+
+html[data-theme="light"] body .profile-sheet .activity-mode-toggle button {
+    color: #64748b !important;
+}
+
+html[data-theme="light"] body .profile-sheet .activity-mode-toggle button.active {
+    color: #be185d !important;
+    background: #fff !important;
+    box-shadow: 0 8px 18px rgba(236, 72, 153, 0.14) !important;
+}
+
+html[data-theme="light"] body .profile-sheet .activity-mode-toggle.mode-steps button.active {
+    color: #c2410c !important;
+    box-shadow: 0 8px 18px rgba(249, 115, 22, 0.12) !important;
+}
+
+html[data-theme="light"] body .profile-sheet .profile-heatmap {
+    background: #fff !important;
+    border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+html[data-theme="light"] body .profile-sheet .heatmap-cell {
+    background: rgba(226, 232, 240, 0.8) !important;
+    border-color: rgba(148, 163, 184, 0.22) !important;
+}
+
+html[data-theme="light"] body .profile-sheet .heatmap-cell.today {
+    outline-color: rgba(15, 23, 42, 0.64) !important;
+}
+
+html[data-theme="light"] body .profile-sheet .recent-list article {
+    border-bottom-color: rgba(15, 23, 42, 0.08) !important;
+}
