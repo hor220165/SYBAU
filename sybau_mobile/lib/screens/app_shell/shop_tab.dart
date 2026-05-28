@@ -18,6 +18,7 @@ class ShopTab extends StatefulWidget {
 
 class _ShopTabState extends State<ShopTab> {
   static const Duration _shopCatalogCacheTtl = Duration(minutes: 5);
+  static const Duration _chestRewardRevealDelay = Duration(milliseconds: 900);
   static List<dynamic>? _cachedDailyItems;
   static List<dynamic>? _cachedChests;
   static DateTime? _cachedDailyShopExpiresAtUtc;
@@ -403,14 +404,18 @@ class _ShopTabState extends State<ShopTab> {
       _chestRevealStarted = true;
     });
     try {
+      final revealDelay = Future<void>.delayed(_chestRewardRevealDelay);
       final result = await ApiService.openChest(chestId);
       final reward = _map(result['item'] ?? result['Item'] ?? result);
       if (!mounted) return;
-      await _precacheShopImages(
-        reward: reward,
-        limit: 1,
-        waitTimeout: const Duration(milliseconds: 450),
-      );
+      await Future.wait<void>([
+        revealDelay,
+        _precacheShopImages(
+          reward: reward,
+          limit: 1,
+          waitTimeout: const Duration(milliseconds: 450),
+        ),
+      ]);
       if (!mounted) return;
       setState(() {
         _openedReward = reward;

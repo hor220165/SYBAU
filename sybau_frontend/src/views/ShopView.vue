@@ -41,6 +41,8 @@ const { refreshUser } = useAuth();
 const { text, translate } = useLanguage();
 let dailyCountdownTimer: number | undefined;
 const preloadedImages = new Set<string>();
+const chestRewardRevealDelayMs = 900;
+const wait = (ms: number) => new Promise<void>(resolve => window.setTimeout(resolve, ms));
 
 const popupMessage = ref("");
 const popupType = ref<"success" | "error" | "info">("success");
@@ -354,8 +356,11 @@ const revealChest = async () => {
   chestRevealStarted.value = true;
 
   try {
+    const revealDelay = wait(chestRewardRevealDelayMs);
     const response = await itemService.openChest(chestOpening.value.id);
-    openedReward.value = response.data?.item ?? response.data?.Item ?? null;
+    const reward = response.data?.item ?? response.data?.Item ?? null;
+    await revealDelay;
+    openedReward.value = reward;
     const remainingCoins = response.data?.remainingCoins ?? response.data?.RemainingCoins;
     if (remainingCoins !== undefined) currentCoins.value = Number(remainingCoins);
     await loadProfile();
