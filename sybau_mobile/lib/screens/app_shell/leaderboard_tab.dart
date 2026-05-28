@@ -184,13 +184,14 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
   }
 
   Widget _buildHeroCard() {
+    final isLight = SybauThemeController.isLight;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           _lt(de: 'Globales Ranking', en: 'Global Ranking'),
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: isLight ? const Color(0xFF0F172A) : Colors.white,
             fontSize: 28,
             fontWeight: FontWeight.w800,
           ),
@@ -202,7 +203,9 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
             en: 'Climb through workouts and quests.',
           ),
           style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
+            color: isLight
+                ? const Color(0xFF475569)
+                : Colors.white.withOpacity(0.7),
             fontSize: 14,
             height: 1.35,
           ),
@@ -303,6 +306,7 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
     final rankColor = _rankColor(place);
     final rankHighlightColor = _rankHighlightColor(place);
     final rankShadowColor = _rankShadowColor(place);
+    final isLight = SybauThemeController.isLight;
     final avatarSize = isTablet
         ? (isFirst ? 72.0 : (place == 2 ? 58.0 : 48.0))
         : isCompact
@@ -328,8 +332,10 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
           colors: [
             rankHighlightColor.withOpacity(isFirst ? 0.12 : 0.08),
             rankColor.withOpacity(isFirst ? 0.18 : 0.14),
-            rankShadowColor.withOpacity(isFirst ? 0.42 : 0.34),
-            const Color(0xFF0B1220),
+            rankShadowColor.withOpacity(
+              isLight ? (isFirst ? 0.16 : 0.12) : (isFirst ? 0.42 : 0.34),
+            ),
+            isLight ? Colors.white.withOpacity(0.96) : const Color(0xFF0B1220),
           ],
           stops: const [0.0, 0.28, 0.72, 1.0],
         ),
@@ -406,7 +412,9 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: isLight
+                              ? const Color(0xFF0F172A)
+                              : Colors.white,
                           fontSize: nameFontSize,
                           fontWeight: FontWeight.w800,
                         ),
@@ -426,7 +434,9 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
                 Text(
                   'Level ${player['level']}',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
+                    color: isLight
+                        ? const Color(0xFF475569)
+                        : Colors.white.withOpacity(0.7),
                     fontSize: metaFontSize,
                   ),
                 ),
@@ -450,6 +460,7 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
   Widget _buildLeaderboardRow(Map<String, dynamic> player) {
     final rank = player['rank'] as int;
     final isCurrentUser = player['isCurrentUser'] == true;
+    final isLight = SybauThemeController.isLight;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
@@ -462,6 +473,8 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
           bottom: BorderSide(
             color: isCurrentUser
                 ? Color(0xFFEC4899).withOpacity(0.22)
+                : isLight
+                ? Colors.black.withOpacity(0.08)
                 : Colors.white.withOpacity(0.08),
           ),
         ),
@@ -476,6 +489,8 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
               style: TextStyle(
                 color: rank <= 3
                     ? _rankColor(rank)
+                    : isLight
+                    ? const Color(0xFF64748B)
                     : Colors.white.withOpacity(0.72),
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
@@ -496,8 +511,10 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
                           player['userName'] as String,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: isLight
+                                ? const Color(0xFF0F172A)
+                                : Colors.white,
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                           ),
@@ -518,7 +535,9 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
                 Text(
                   'lvl ${player['level']}',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.66),
+                    color: isLight
+                        ? const Color(0xFF64748B)
+                        : Colors.white.withOpacity(0.66),
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
@@ -533,8 +552,10 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
             children: [
               Text(
                 _formatCompactNumber(_toInt(player['totalXp'])),
-                style: const TextStyle(
-                  color: Color(0xFFE2E8F0),
+                style: TextStyle(
+                  color: isLight
+                      ? const Color(0xFF0F172A)
+                      : const Color(0xFFE2E8F0),
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -558,6 +579,7 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
+    final isLight = SybauThemeController.isLight;
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -582,7 +604,9 @@ class _LeaderboardTabState extends State<LeaderboardTab> {
                             en: 'No leaderboard data yet.',
                           ),
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.68),
+                            color: isLight
+                                ? const Color(0xFF64748B)
+                                : Colors.white.withOpacity(0.68),
                           ),
                         ),
                       ),

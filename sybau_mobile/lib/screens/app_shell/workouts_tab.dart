@@ -1245,29 +1245,45 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
     required String assetPath,
     required String label,
   }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Image.asset(
-          assetPath,
-          width: 16,
-          height: 16,
-          fit: BoxFit.contain,
-          filterQuality: FilterQuality.none,
-        ),
-        const SizedBox(width: 5),
-        Flexible(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.75),
-              fontWeight: FontWeight.w600,
+    final isLight = SybauThemeController.isLight;
+    final isCoin = assetPath.toLowerCase().contains('coin');
+    final accent = isCoin ? const Color(0xFFB45309) : const Color(0xFF1D4ED8);
+
+    return Container(
+      padding: isLight
+          ? const EdgeInsets.symmetric(horizontal: 8, vertical: 5)
+          : EdgeInsets.zero,
+      decoration: isLight
+          ? BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              color: accent.withOpacity(isCoin ? 0.1 : 0.08),
+              border: Border.all(color: accent.withOpacity(0.22)),
+            )
+          : null,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            assetPath,
+            width: 16,
+            height: 16,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.none,
+          ),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: isLight ? accent : Colors.white.withOpacity(0.75),
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1300,6 +1316,20 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
   }
 
   Color _categoryText(String category) {
+    if (SybauThemeController.isLight) {
+      switch (category) {
+        case 'Cardio':
+          return const Color(0xFFDC2626);
+        case 'Core':
+          return const Color(0xFFBE185D);
+        case 'Flexibility':
+          return const Color(0xFF15803D);
+        case 'Strength':
+        default:
+          return const Color(0xFF7E22CE);
+      }
+    }
+
     switch (category) {
       case 'Cardio':
         return Color(0xFFFCA5A5);
@@ -1314,6 +1344,18 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
   }
 
   Color _difficultyColor(String difficulty) {
+    if (SybauThemeController.isLight) {
+      switch (difficulty) {
+        case 'Easy':
+          return const Color(0xFF15803D);
+        case 'Hard':
+          return const Color(0xFFDC2626);
+        case 'Medium':
+        default:
+          return const Color(0xFFB45309);
+      }
+    }
+
     switch (difficulty) {
       case 'Easy':
         return Color(0xFF86EFAC);
@@ -1462,26 +1504,34 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
   }
 
   Widget _buildExerciseSearchField() {
+    final isLight = SybauThemeController.isLight;
+    final textColor = isLight ? const Color(0xFF0F172A) : Colors.white;
+    final mutedColor = isLight
+        ? const Color(0xFF64748B)
+        : Colors.white.withOpacity(0.52);
+    final borderColor = isLight
+        ? Colors.black.withOpacity(0.12)
+        : Colors.white.withOpacity(0.12);
+
     return SizedBox(
       height: 46,
       child: TextField(
         controller: _searchController,
         onChanged: (String value) => setState(() => _searchQuery = value),
         textInputAction: TextInputAction.search,
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: textColor,
           fontSize: 14,
           fontWeight: FontWeight.w600,
         ),
         decoration: InputDecoration(
           hintText: _lt(de: 'Übung suchen...', en: 'Search exercise...'),
-          hintStyle: TextStyle(
-            color: Colors.white.withOpacity(0.52),
-            fontWeight: FontWeight.w600,
-          ),
+          hintStyle: TextStyle(color: mutedColor, fontWeight: FontWeight.w600),
           prefixIcon: Icon(
             Icons.search_rounded,
-            color: Colors.white.withOpacity(0.68),
+            color: isLight
+                ? const Color(0xFF475569)
+                : Colors.white.withOpacity(0.68),
             size: 20,
           ),
           suffixIcon: _searchQuery.isEmpty
@@ -1494,20 +1544,22 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                   },
                   icon: Icon(
                     Icons.close_rounded,
-                    color: Colors.white.withOpacity(0.7),
+                    color: isLight
+                        ? const Color(0xFF475569)
+                        : Colors.white.withOpacity(0.7),
                     size: 18,
                   ),
                 ),
           filled: true,
-          fillColor: Colors.white.withOpacity(0.05),
+          fillColor: isLight ? Colors.white : Colors.white.withOpacity(0.05),
           contentPadding: const EdgeInsets.symmetric(horizontal: 12),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+            borderSide: BorderSide(color: borderColor),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+            borderSide: BorderSide(color: borderColor),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -1635,6 +1687,7 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
           _buildFilterControls(),
           const SizedBox(height: 16),
           ..._filteredExercises.map((dynamic e) {
+            final isLight = SybauThemeController.isLight;
             final m = _map(e);
             final exerciseId = _toInt(m['id']);
             final category = _categoryLabel(m['category'] ?? m['Category']);
@@ -1664,8 +1717,14 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  color: Colors.white.withOpacity(0.06),
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  color: isLight
+                      ? Colors.white.withOpacity(0.96)
+                      : Colors.white.withOpacity(0.06),
+                  border: Border.all(
+                    color: isLight
+                        ? Colors.black.withOpacity(0.08)
+                        : Colors.white.withOpacity(0.1),
+                  ),
                 ),
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -1698,9 +1757,11 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                           const Spacer(),
                           IconButton(
                             onPressed: () => _closeRepEditor(exerciseId),
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.close_rounded,
-                              color: Colors.white70,
+                              color: isLight
+                                  ? const Color(0xFF475569)
+                                  : Colors.white70,
                               size: 20,
                             ),
                             tooltip: 'Zurück',
@@ -1717,8 +1778,8 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                     const SizedBox(height: 10),
                     Text(
                       _td(_string(m['name'], fallback: 'Exercise')),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: isLight ? const Color(0xFF0F172A) : Colors.white,
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
                       ),
@@ -1727,7 +1788,9 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                     Text(
                       _td(desc),
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.62),
+                        color: isLight
+                            ? const Color(0xFF475569)
+                            : Colors.white.withOpacity(0.62),
                         height: 1.4,
                         fontSize: 14,
                       ),
@@ -1747,14 +1810,16 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                                 color: _difficultyColor(difficulty),
                                 fontWeight: FontWeight.w800,
                                 fontSize: 14,
-                                shadows: [
-                                  Shadow(
-                                    color: _difficultyColor(
-                                      difficulty,
-                                    ).withOpacity(0.55),
-                                    blurRadius: 10,
-                                  ),
-                                ],
+                                shadows: isLight
+                                    ? null
+                                    : [
+                                        Shadow(
+                                          color: _difficultyColor(
+                                            difficulty,
+                                          ).withOpacity(0.55),
+                                          blurRadius: 10,
+                                        ),
+                                      ],
                               ),
                             ),
                             Container(
@@ -1765,10 +1830,16 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(999),
                                 color: unit == 'Time'
-                                    ? Color(0xFFFBBF24).withOpacity(0.18)
+                                    ? Color(
+                                        0xFFFBBF24,
+                                      ).withOpacity(isLight ? 0.1 : 0.18)
                                     : unit == 'Distance'
-                                    ? Color(0xFF22C55E).withOpacity(0.18)
-                                    : Color(0xFF3B82F6).withOpacity(0.18),
+                                    ? Color(
+                                        0xFF22C55E,
+                                      ).withOpacity(isLight ? 0.1 : 0.18)
+                                    : Color(
+                                        0xFF3B82F6,
+                                      ).withOpacity(isLight ? 0.09 : 0.18),
                                 border: Border.all(
                                   color: unit == 'Time'
                                       ? Color(0xFFFBBF24).withOpacity(0.35)
@@ -1781,10 +1852,16 @@ class _WorkoutsTabState extends State<WorkoutsTab> {
                                 unit,
                                 style: TextStyle(
                                   color: unit == 'Time'
-                                      ? Color(0xFFFDE047)
+                                      ? (isLight
+                                            ? Color(0xFFB45309)
+                                            : Color(0xFFFDE047))
                                       : unit == 'Distance'
-                                      ? Color(0xFF86EFAC)
-                                      : Color(0xFF93C5FD),
+                                      ? (isLight
+                                            ? Color(0xFF15803D)
+                                            : Color(0xFF86EFAC))
+                                      : (isLight
+                                            ? Color(0xFF2563EB)
+                                            : Color(0xFF93C5FD)),
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                 ),

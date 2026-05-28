@@ -1246,15 +1246,30 @@ class _ProfileTabState extends State<ProfileTab> {
         );
         final canEditUsername = !_isUsernameChangeLocked;
         var settingsPage = 'main';
+        var selectedThemeMode = SybauThemeController.mode.value;
         return StatefulBuilder(
           builder: (ctx, modalSetState) {
+            final isLight = selectedThemeMode == SybauThemeMode.light;
+            final primaryText = isLight
+                ? const Color(0xFF0F172A)
+                : Colors.white;
+            final secondaryText = isLight
+                ? const Color(0xFF64748B)
+                : Colors.white.withOpacity(0.62);
+            final settingsSurface = isLight
+                ? Colors.white.withOpacity(0.96)
+                : const Color(0xFF050914);
+            final settingsBorder = isLight
+                ? Colors.black.withOpacity(0.08)
+                : Colors.white.withOpacity(0.07);
+
             Widget sectionTitle(String title) {
               return Padding(
                 padding: const EdgeInsets.only(top: 18, bottom: 10),
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.92),
+                    color: primaryText.withOpacity(0.92),
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                   ),
@@ -1270,7 +1285,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   sectionTitle(_tr(de: 'Sicherheit', en: 'Security')),
                   TextField(
                     controller: _oldPasswordController,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: primaryText),
                     obscureText: true,
                     decoration: _settingsInputDecoration(
                       _tr(de: 'Altes Passwort', en: 'Old password'),
@@ -1279,7 +1294,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   const SizedBox(height: 10),
                   TextField(
                     controller: _newPasswordController,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: primaryText),
                     obscureText: true,
                     decoration: _settingsInputDecoration(
                       _tr(de: 'Neues Passwort', en: 'New password'),
@@ -1312,7 +1327,9 @@ class _ProfileTabState extends State<ProfileTab> {
                     controller: _usernameController,
                     readOnly: !canEditUsername,
                     style: TextStyle(
-                      color: canEditUsername ? Colors.white : Colors.white54,
+                      color: canEditUsername
+                          ? primaryText
+                          : secondaryText.withOpacity(0.72),
                     ),
                     decoration: _settingsInputDecoration(
                       _tr(de: 'Benutzername', en: 'Username'),
@@ -1322,7 +1339,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   TextFormField(
                     enabled: false,
                     initialValue: email,
-                    style: const TextStyle(color: Colors.white38),
+                    style: TextStyle(color: secondaryText),
                     decoration: _disabledSettingsInputDecoration(
                       _tr(de: 'E-Mail', en: 'Email'),
                     ),
@@ -1356,13 +1373,59 @@ class _ProfileTabState extends State<ProfileTab> {
                       label: _tr(de: 'Speichern', en: 'Save'),
                     ),
                   ),
+                  sectionTitle(_tr(de: 'Darstellung', en: 'Appearance')),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      color: settingsSurface,
+                      border: Border.all(color: settingsBorder),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _ThemeModeButton(
+                            label: 'Darkmode',
+                            icon: Icons.dark_mode_rounded,
+                            selected: selectedThemeMode == SybauThemeMode.dark,
+                            onTap: () async {
+                              modalSetState(
+                                () => selectedThemeMode = SybauThemeMode.dark,
+                              );
+                              await SybauThemeController.setMode(
+                                SybauThemeMode.dark,
+                              );
+                              if (mounted) setState(() {});
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _ThemeModeButton(
+                            label: 'Whitemode',
+                            icon: Icons.light_mode_rounded,
+                            selected: selectedThemeMode == SybauThemeMode.light,
+                            onTap: () async {
+                              modalSetState(
+                                () => selectedThemeMode = SybauThemeMode.light,
+                              );
+                              await SybauThemeController.setMode(
+                                SybauThemeMode.light,
+                              );
+                              if (mounted) setState(() {});
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   sectionTitle(_tr(de: 'Fortschritt', en: 'Progress')),
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(14),
-                      color: const Color(0xFF050914),
-                      border: Border.all(color: Colors.white.withOpacity(0.07)),
+                      color: settingsSurface,
+                      border: Border.all(color: settingsBorder),
                     ),
                     child: Column(
                       children: [
@@ -1421,8 +1484,8 @@ class _ProfileTabState extends State<ProfileTab> {
                   Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      color: const Color(0xFF050914),
-                      border: Border.all(color: Colors.white.withOpacity(0.07)),
+                      color: settingsSurface,
+                      border: Border.all(color: settingsBorder),
                     ),
                     child: ListTile(
                       dense: true,
@@ -1432,10 +1495,10 @@ class _ProfileTabState extends State<ProfileTab> {
                         vertical: 2,
                       ),
                       leading: _buildSettingsImageIcon(_appleHealthLogoAsset),
-                      title: const Text(
+                      title: Text(
                         'Apple Health',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: primaryText,
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
@@ -1461,11 +1524,11 @@ class _ProfileTabState extends State<ProfileTab> {
                         _tr(de: 'Passwort ändern', en: 'Change password'),
                       ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
+                        foregroundColor: primaryText,
                         side: BorderSide(
                           color: const Color(0xFFF472B6).withOpacity(0.32),
                         ),
-                        backgroundColor: const Color(0xFF050914),
+                        backgroundColor: settingsSurface,
                         padding: const EdgeInsets.symmetric(vertical: 15),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -1477,8 +1540,8 @@ class _ProfileTabState extends State<ProfileTab> {
                   Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      color: const Color(0xFF050914),
-                      border: Border.all(color: Colors.white.withOpacity(0.07)),
+                      color: settingsSurface,
+                      border: Border.all(color: settingsBorder),
                     ),
                     child: Column(
                       children: [
@@ -1493,14 +1556,14 @@ class _ProfileTabState extends State<ProfileTab> {
                           ),
                           title: Text(
                             _tr(de: 'Abmelden', en: 'Log out'),
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: primaryText,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          trailing: const Icon(
+                          trailing: Icon(
                             Icons.chevron_right_rounded,
-                            color: Colors.white38,
+                            color: secondaryText.withOpacity(0.7),
                           ),
                           onTap: () async {
                             await ApiService.logout();
@@ -1513,10 +1576,7 @@ class _ProfileTabState extends State<ProfileTab> {
                             );
                           },
                         ),
-                        Divider(
-                          height: 1,
-                          color: Colors.white.withOpacity(0.08),
-                        ),
+                        Divider(height: 1, color: settingsBorder),
                         ListTile(
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -1528,14 +1588,14 @@ class _ProfileTabState extends State<ProfileTab> {
                           ),
                           title: Text(
                             _tr(de: 'Account löschen', en: 'Delete account'),
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: primaryText,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          trailing: const Icon(
+                          trailing: Icon(
                             Icons.chevron_right_rounded,
-                            color: Colors.white38,
+                            color: secondaryText.withOpacity(0.7),
                           ),
                           onTap: () async {
                             final confirm = await showDialog<bool>(
@@ -1588,15 +1648,21 @@ class _ProfileTabState extends State<ProfileTab> {
                 top: Radius.circular(26),
               ),
               child: DecoratedBox(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFF03050A),
-                      Color(0xFF050812),
-                      Color(0xFF020308),
-                    ],
+                    colors: isLight
+                        ? const [
+                            Color(0xFFFFFFFF),
+                            Color(0xFFF8FAFC),
+                            Color(0xFFEFF6FF),
+                          ]
+                        : const [
+                            Color(0xFF03050A),
+                            Color(0xFF050812),
+                            Color(0xFF020308),
+                          ],
                   ),
                 ),
                 child: Padding(
@@ -1619,9 +1685,9 @@ class _ProfileTabState extends State<ProfileTab> {
                                   children: [
                                     if (settingsPage == 'password') ...[
                                       IconButton(
-                                        icon: const Icon(
+                                        icon: Icon(
                                           Icons.arrow_back_rounded,
-                                          color: Colors.white,
+                                          color: primaryText,
                                         ),
                                         onPressed: () => modalSetState(
                                           () => settingsPage = 'main',
@@ -1640,10 +1706,10 @@ class _ProfileTabState extends State<ProfileTab> {
                                                 de: 'Einstellungen',
                                                 en: 'Settings',
                                               ),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.w800,
-                                          color: Colors.white,
+                                          color: primaryText,
                                         ),
                                       ),
                                     ),
@@ -1651,10 +1717,7 @@ class _ProfileTabState extends State<ProfileTab> {
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(
-                                  Icons.close,
-                                  color: Colors.white70,
-                                ),
+                                icon: Icon(Icons.close, color: secondaryText),
                                 onPressed: () => Navigator.of(ctx).pop(),
                               ),
                             ],
@@ -1716,11 +1779,18 @@ class _ProfileTabState extends State<ProfileTab> {
     VoidCallback? onTap,
   }) {
     final hasSubtitle = subtitle != null && subtitle.trim().isNotEmpty;
+    final isLight = SybauThemeController.isLight;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: const Color(0xFF050914),
-        border: Border.all(color: Colors.white.withOpacity(0.07)),
+        color: isLight
+            ? Colors.white.withOpacity(0.96)
+            : const Color(0xFF050914),
+        border: Border.all(
+          color: isLight
+              ? Colors.black.withOpacity(0.08)
+              : Colors.white.withOpacity(0.07),
+        ),
       ),
       child: ListTile(
         dense: true,
@@ -1732,8 +1802,8 @@ class _ProfileTabState extends State<ProfileTab> {
         leading: _buildSettingsIcon(icon, iconColor),
         title: Text(
           title,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: isLight ? const Color(0xFF0F172A) : Colors.white,
             fontWeight: FontWeight.w700,
             fontSize: 14,
           ),
@@ -1744,7 +1814,9 @@ class _ProfileTabState extends State<ProfileTab> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.54),
+                  color: isLight
+                      ? const Color(0xFF64748B)
+                      : Colors.white.withOpacity(0.54),
                   fontSize: 12,
                 ),
               )
@@ -1756,11 +1828,18 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Widget _buildReminderTimeTile(StateSetter modalSetState) {
+    final isLight = SybauThemeController.isLight;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: const Color(0xFF050914),
-        border: Border.all(color: Colors.white.withOpacity(0.07)),
+        color: isLight
+            ? Colors.white.withOpacity(0.96)
+            : const Color(0xFF050914),
+        border: Border.all(
+          color: isLight
+              ? Colors.black.withOpacity(0.08)
+              : Colors.white.withOpacity(0.07),
+        ),
       ),
       child: ListTile(
         dense: true,
@@ -1772,8 +1851,8 @@ class _ProfileTabState extends State<ProfileTab> {
         ),
         title: Text(
           _tr(de: 'Erinnerungszeit', en: 'Reminder time'),
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: isLight ? const Color(0xFF0F172A) : Colors.white,
             fontWeight: FontWeight.w700,
             fontSize: 14,
           ),
@@ -1784,7 +1863,12 @@ class _ProfileTabState extends State<ProfileTab> {
               : _tr(de: 'Inaktiv', en: 'Inactive'),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: Colors.white.withOpacity(0.54), fontSize: 12),
+          style: TextStyle(
+            color: isLight
+                ? const Color(0xFF64748B)
+                : Colors.white.withOpacity(0.54),
+            fontSize: 12,
+          ),
         ),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -1834,22 +1918,33 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   InputDecoration _settingsInputDecoration(String label) {
+    final isLight = SybauThemeController.isLight;
+    final borderColor = isLight
+        ? Colors.black.withOpacity(0.1)
+        : Colors.white.withOpacity(0.09);
+
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(color: Colors.white.withOpacity(0.72)),
+      labelStyle: TextStyle(
+        color: isLight
+            ? const Color(0xFF64748B)
+            : Colors.white.withOpacity(0.72),
+      ),
       helperStyle: TextStyle(
-        color: Colors.white.withOpacity(0.46),
+        color: isLight
+            ? const Color(0xFF94A3B8)
+            : Colors.white.withOpacity(0.46),
         fontSize: 11,
       ),
       filled: true,
-      fillColor: const Color(0xFF050914),
+      fillColor: isLight ? Colors.white : const Color(0xFF050914),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.09)),
+        borderSide: BorderSide(color: borderColor),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.09)),
+        borderSide: BorderSide(color: borderColor),
       ),
       focusedBorder: const OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -1859,18 +1954,28 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   InputDecoration _disabledSettingsInputDecoration(String label) {
+    final isLight = SybauThemeController.isLight;
     return _settingsInputDecoration(label).copyWith(
       filled: true,
-      fillColor: const Color(0xFF030611),
-      labelStyle: TextStyle(color: Colors.white.withOpacity(0.38)),
+      fillColor: isLight ? const Color(0xFFF8FAFC) : const Color(0xFF030611),
+      labelStyle: TextStyle(
+        color: isLight
+            ? const Color(0xFF94A3B8)
+            : Colors.white.withOpacity(0.38),
+      ),
       disabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.07)),
+        borderSide: BorderSide(
+          color: isLight
+              ? Colors.black.withOpacity(0.08)
+              : Colors.white.withOpacity(0.07),
+        ),
       ),
     );
   }
 
   Widget _buildProgressRow(String label, String value, {bool isLast = false}) {
+    final isLight = SybauThemeController.isLight;
     return Padding(
       padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
       child: Row(
@@ -1879,15 +1984,17 @@ class _ProfileTabState extends State<ProfileTab> {
             child: Text(
               label,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: isLight
+                    ? const Color(0xFF64748B)
+                    : Colors.white.withOpacity(0.7),
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: isLight ? const Color(0xFF0F172A) : Colors.white,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -1901,13 +2008,20 @@ class _ProfileTabState extends State<ProfileTab> {
     required String value,
     required Widget icon,
   }) {
+    final isLight = SybauThemeController.isLight;
     return Container(
       constraints: const BoxConstraints(minHeight: 72),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white.withOpacity(0.04),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        color: isLight
+            ? const Color(0xFFF8FAFC)
+            : Colors.white.withOpacity(0.04),
+        border: Border.all(
+          color: isLight
+              ? Colors.black.withOpacity(0.08)
+              : Colors.white.withOpacity(0.08),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -1924,7 +2038,9 @@ class _ProfileTabState extends State<ProfileTab> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.66),
+                    color: isLight
+                        ? const Color(0xFF64748B)
+                        : Colors.white.withOpacity(0.66),
                     fontSize: 11.5,
                   ),
                 ),
@@ -1933,8 +2049,8 @@ class _ProfileTabState extends State<ProfileTab> {
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: isLight ? const Color(0xFF0F172A) : Colors.white,
                     fontWeight: FontWeight.w900,
                     fontSize: 16,
                   ),
@@ -1948,11 +2064,16 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Widget _buildActivityHeatmap() {
+    final isLight = SybauThemeController.isLight;
     final weeks = _activityHeatmapWeeks;
     if (weeks.isEmpty) {
       return Text(
         'Noch keine Aktivität vorhanden.',
-        style: TextStyle(color: Colors.white.withValues(alpha: 0.68)),
+        style: TextStyle(
+          color: isLight
+              ? const Color(0xFF64748B)
+              : Colors.white.withValues(alpha: 0.68),
+        ),
       );
     }
 
@@ -2173,9 +2294,11 @@ class _ProfileTabState extends State<ProfileTab> {
                                     overflow: TextOverflow.visible,
                                     softWrap: false,
                                     style: TextStyle(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.66,
-                                      ),
+                                      color: isLight
+                                          ? const Color(0xFF64748B)
+                                          : Colors.white.withValues(
+                                              alpha: 0.66,
+                                            ),
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.w800,
                                     ),
@@ -2217,7 +2340,9 @@ class _ProfileTabState extends State<ProfileTab> {
             Text(
               'Weniger',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.56),
+                color: isLight
+                    ? const Color(0xFF64748B)
+                    : Colors.white.withValues(alpha: 0.56),
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
@@ -2232,7 +2357,9 @@ class _ProfileTabState extends State<ProfileTab> {
                   borderRadius: BorderRadius.circular(4),
                   color: _activityColor(_activityLegendValue(level)),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: isLight
+                        ? Colors.black.withValues(alpha: 0.08)
+                        : Colors.white.withValues(alpha: 0.06),
                   ),
                 ),
               ),
@@ -2240,7 +2367,9 @@ class _ProfileTabState extends State<ProfileTab> {
             Text(
               'Mehr',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.56),
+                color: isLight
+                    ? const Color(0xFF64748B)
+                    : Colors.white.withValues(alpha: 0.56),
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
@@ -2268,6 +2397,7 @@ class _ProfileTabState extends State<ProfileTab> {
     final unlockedCount = _achievements
         .where((dynamic item) => _map(item)['unlocked'] == true)
         .length;
+    final isLight = SybauThemeController.isLight;
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
@@ -2286,17 +2416,21 @@ class _ProfileTabState extends State<ProfileTab> {
                     children: [
                       Text(
                         userName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: isLight
+                              ? const Color(0xFF0F172A)
+                              : Colors.white,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         email,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.6),
+                          color: isLight
+                              ? const Color(0xFF64748B)
+                              : Colors.white.withOpacity(0.6),
                           fontSize: 13,
                         ),
                       ),
@@ -2304,9 +2438,9 @@ class _ProfileTabState extends State<ProfileTab> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.settings_rounded,
-                    color: Colors.white70,
+                    color: isLight ? const Color(0xFF475569) : Colors.white70,
                   ),
                   onPressed: _openSettings,
                   tooltip: _tr(de: 'Einstellungen', en: 'Settings'),
@@ -2387,7 +2521,9 @@ class _ProfileTabState extends State<ProfileTab> {
                     Text(
                       '$unlockedCount / ${_achievements.length} freigeschaltet',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.68),
+                        color: isLight
+                            ? const Color(0xFF64748B)
+                            : Colors.white.withOpacity(0.68),
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -2409,7 +2545,7 @@ class _ProfileTabState extends State<ProfileTab> {
                         Icons.arrow_back_ios_new_rounded,
                         size: 18,
                       ),
-                      color: Colors.white70,
+                      color: isLight ? const Color(0xFF475569) : Colors.white70,
                       visualDensity: VisualDensity.compact,
                     ),
                     IconButton(
@@ -2432,7 +2568,7 @@ class _ProfileTabState extends State<ProfileTab> {
                         Icons.arrow_forward_ios_rounded,
                         size: 18,
                       ),
-                      color: Colors.white70,
+                      color: isLight ? const Color(0xFF475569) : Colors.white70,
                       visualDensity: VisualDensity.compact,
                     ),
                   ],
@@ -2451,9 +2587,13 @@ class _ProfileTabState extends State<ProfileTab> {
                         : (constraints.maxWidth - spacing) / columns;
 
                     if (itemCount == 0) {
-                      return const Text(
+                      return Text(
                         'Noch keine Achievements vorhanden.',
-                        style: TextStyle(color: Colors.white70),
+                        style: TextStyle(
+                          color: isLight
+                              ? const Color(0xFF64748B)
+                              : Colors.white70,
+                        ),
                       );
                     }
 
@@ -2507,6 +2647,8 @@ class _ProfileTabState extends State<ProfileTab> {
                       bottom: BorderSide(
                         color: isLast
                             ? Colors.transparent
+                            : isLight
+                            ? Colors.black.withValues(alpha: 0.08)
                             : Colors.white.withValues(alpha: 0.08),
                       ),
                     ),
@@ -2538,8 +2680,10 @@ class _ProfileTabState extends State<ProfileTab> {
                               title,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: isLight
+                                    ? const Color(0xFF0F172A)
+                                    : Colors.white,
                                 fontSize: 12.2,
                                 height: 1.16,
                                 fontWeight: FontWeight.w800,
@@ -2551,7 +2695,9 @@ class _ProfileTabState extends State<ProfileTab> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.6),
+                                color: isLight
+                                    ? const Color(0xFF64748B)
+                                    : Colors.white.withOpacity(0.6),
                                 fontSize: 10.5,
                               ),
                             ),

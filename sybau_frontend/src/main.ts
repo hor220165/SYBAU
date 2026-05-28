@@ -2,7 +2,9 @@ import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
 import { router } from './router/router.ts'
+import { initializeTheme } from './composables/useTheme'
 
+initializeTheme();
 const app = createApp(App);
 
 // v-click-outside Directive

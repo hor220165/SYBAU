@@ -3,7 +3,7 @@
     line-height: 1.5;
     font-weight: 400;
 
-    color-scheme: light dark;
+    color-scheme: dark;
     color: rgba(255, 255, 255, 0.87);
     background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
 
@@ -34,6 +34,8 @@ html, body {
 
 body {
     min-width: 320px;
+    background: inherit;
+    color: inherit;
 }
 
 #app {
@@ -112,14 +114,983 @@ button:focus-visible {
 }
 
 @media (prefers-color-scheme: light) {
-    :root {
-        color: #213547;
-        background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-    }
     a:hover {
         color: #747bff;
     }
-    button {
-        background-color: #f9f9f9;
-    }
+}
+
+html[data-theme="light"] {
+    color-scheme: light;
+    --app-bg: linear-gradient(180deg, #ffffff 0%, #f8fafc 42%, #eef2f7 100%);
+    --surface: rgba(255, 255, 255, 0.84);
+    --surface-strong: rgba(255, 255, 255, 0.96);
+    --surface-muted: rgba(241, 245, 249, 0.86);
+    --surface-hover: rgba(248, 250, 252, 0.96);
+    --border-soft: rgba(15, 23, 42, 0.1);
+    --border-strong: rgba(15, 23, 42, 0.16);
+    --text-primary: #101827;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --shadow-soft: 0 16px 36px rgba(15, 23, 42, 0.08);
+    --shadow-card: 0 20px 48px rgba(15, 23, 42, 0.1);
+    color: var(--text-primary);
+    background: var(--app-bg);
+}
+
+html[data-theme="light"],
+html[data-theme="light"] body,
+html[data-theme="light"] #app {
+    min-height: 100vh;
+    background: var(--app-bg);
+    color: var(--text-primary);
+}
+
+html[data-theme="light"] a {
+    color: #be185d;
+}
+
+html[data-theme="light"] button {
+    color: inherit;
+}
+
+html[data-theme="light"] [data-tooltip]::after {
+    border-color: rgba(15, 23, 42, 0.12);
+    background: rgba(255, 255, 255, 0.98);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-soft);
+}
+
+html[data-theme="light"] .dashboard-container,
+html[data-theme="light"] .shop-page-shell,
+html[data-theme="light"] .leaderboard-page-shell,
+html[data-theme="light"] .friends-page-shell,
+html[data-theme="light"] .admin-container,
+html[data-theme="light"] .landing-page,
+html[data-theme="light"] .auth-page,
+html[data-theme="light"] .legal-page,
+html[data-theme="light"] .impressum-page {
+    background: var(--app-bg);
+    color: var(--text-primary);
+}
+
+html[data-theme="light"] .header,
+html[data-theme="light"] .navbar,
+html[data-theme="light"] .landing-header {
+    background: rgba(255, 255, 255, 0.74);
+    border-color: rgba(15, 23, 42, 0.1);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+html[data-theme="light"] .mobile-menu-btn {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid var(--border-soft);
+    color: var(--text-primary);
+}
+
+html[data-theme="light"] .logo-button,
+html[data-theme="light"] .nav-item,
+html[data-theme="light"] .notification-bell,
+html[data-theme="light"] .logout-btn,
+html[data-theme="light"] .back-button {
+    color: var(--text-secondary);
+}
+
+html[data-theme="light"] .nav-item:hover,
+html[data-theme="light"] .nav-item.active,
+html[data-theme="light"] .notification-bell:hover,
+html[data-theme="light"] .logo-button:hover,
+html[data-theme="light"] .back-button:hover {
+    color: var(--text-primary);
+}
+
+html[data-theme="light"] .nav-item:hover,
+html[data-theme="light"] .notification-bell:hover {
+    background: rgba(236, 72, 153, 0.08);
+}
+
+html[data-theme="light"] .stat-divider,
+html[data-theme="light"] .stats-bar-sep,
+html[data-theme="light"] .arc-meta-sep {
+    background: rgba(15, 23, 42, 0.12);
+}
+
+html[data-theme="light"] .section-card,
+html[data-theme="light"] .state-box,
+html[data-theme="light"] .empty-box,
+html[data-theme="light"] .profile-summary-card,
+html[data-theme="light"] .mobile-stats-panel,
+html[data-theme="light"] .stat-card,
+html[data-theme="light"] .quest-card,
+html[data-theme="light"] .workout-card,
+html[data-theme="light"] .workout-plan-card,
+html[data-theme="light"] .health-card,
+html[data-theme="light"] .tab-panel,
+html[data-theme="light"] .form-container,
+html[data-theme="light"] .card,
+html[data-theme="light"] .auth-card,
+html[data-theme="light"] .achievement-card,
+html[data-theme="light"] .friend-card,
+html[data-theme="light"] .request-card,
+html[data-theme="light"] .challenge-card,
+html[data-theme="light"] .coin-pack-card,
+html[data-theme="light"] .real-money-card,
+html[data-theme="light"] .shop-item-card,
+html[data-theme="light"] .feature-card,
+html[data-theme="light"] .chest-card,
+html[data-theme="light"] .settings-sidebar,
+html[data-theme="light"] .settings-section,
+html[data-theme="light"] .modal-card,
+html[data-theme="light"] .modal-content,
+html[data-theme="light"] .create-workout-modal,
+html[data-theme="light"] .confirm-dialog,
+html[data-theme="light"] .dropdown,
+html[data-theme="light"] .public-profile-card {
+    background: var(--surface-strong);
+    border-color: var(--border-soft);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-card);
+}
+
+html[data-theme="light"] .shop-hero-card,
+html[data-theme="light"] .hero-card {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+html[data-theme="light"] .section-card:hover,
+html[data-theme="light"] .stat-card:hover,
+html[data-theme="light"] .quest-card:hover,
+html[data-theme="light"] .workout-card:hover,
+html[data-theme="light"] .workout-plan-card:hover,
+html[data-theme="light"] .friend-card:hover,
+html[data-theme="light"] .request-card:hover,
+html[data-theme="light"] .card:hover {
+    background: var(--surface-hover);
+    border-color: rgba(236, 72, 153, 0.24);
+    box-shadow: var(--shadow-card);
+}
+
+html[data-theme="light"] .profile-title,
+html[data-theme="light"] .page-title,
+html[data-theme="light"] .hero-copy h1,
+html[data-theme="light"] .hero-title,
+html[data-theme="light"] .showcase-copy h3,
+html[data-theme="light"] .avatar-copy h3,
+html[data-theme="light"] .section-header h2,
+html[data-theme="light"] .section-title h2,
+html[data-theme="light"] .section-title,
+html[data-theme="light"] .section-heading h2,
+html[data-theme="light"] .title-with-icon h2,
+html[data-theme="light"] .mobile-section-title,
+html[data-theme="light"] .workout-title,
+html[data-theme="light"] .quest-title,
+html[data-theme="light"] .achievement-title,
+html[data-theme="light"] .friend-name,
+html[data-theme="light"] .challenge-header h3,
+html[data-theme="light"] .card-header h4,
+html[data-theme="light"] .admin-header h1,
+html[data-theme="light"] .form-container h3,
+html[data-theme="light"] .modal-content h3,
+html[data-theme="light"] .settings-header h2,
+html[data-theme="light"] .settings-section h3,
+html[data-theme="light"] .settings-toggle-row strong,
+html[data-theme="light"] .settings-nav-copy strong,
+html[data-theme="light"] .account-action-copy strong,
+html[data-theme="light"] .brand-name,
+html[data-theme="light"] .impressum-title,
+html[data-theme="light"] .impressum-section h2,
+html[data-theme="light"] .impressum-section h3,
+html[data-theme="light"] .legal-content h1,
+html[data-theme="light"] .legal-content h2,
+html[data-theme="light"] .dropdown-title,
+html[data-theme="light"] .notification-title,
+html[data-theme="light"] .chest-copy h3,
+html[data-theme="light"] .coin-pack-copy h3,
+html[data-theme="light"] .real-money-copy h3,
+html[data-theme="light"] .feature-title,
+html[data-theme="light"] .title-block h3,
+html[data-theme="light"] .settings-nav-row,
+html[data-theme="light"] .account-action-btn {
+    color: var(--text-primary);
+}
+
+html[data-theme="light"] .page-subtitle,
+html[data-theme="light"] .hero-copy p,
+html[data-theme="light"] .hero-subtitle,
+html[data-theme="light"] .showcase-copy p,
+html[data-theme="light"] .avatar-copy p,
+html[data-theme="light"] .section-heading p,
+html[data-theme="light"] .profile-email,
+html[data-theme="light"] .stat-label,
+html[data-theme="light"] .stat-card-label,
+html[data-theme="light"] .quest-description,
+html[data-theme="light"] .progress-text,
+html[data-theme="light"] .progress-percent,
+html[data-theme="light"] .workout-description,
+html[data-theme="light"] .workout-plan-desc,
+html[data-theme="light"] .workout-plan-meta,
+html[data-theme="light"] .exercise-meta-label,
+html[data-theme="light"] .challenge-desc,
+html[data-theme="light"] .challenge-meta,
+html[data-theme="light"] .challenge-from,
+html[data-theme="light"] .friend-meta,
+html[data-theme="light"] .description,
+html[data-theme="light"] .subtitle,
+html[data-theme="light"] .field label,
+html[data-theme="light"] .form-group label,
+html[data-theme="light"] .form-group-cw label,
+html[data-theme="light"] .brand-slogan,
+html[data-theme="light"] .landing-brand-tagline,
+html[data-theme="light"] .stat-card-trend,
+html[data-theme="light"] .activity-time,
+html[data-theme="light"] .intro,
+html[data-theme="light"] .legal-content p,
+html[data-theme="light"] .legal-content li,
+html[data-theme="light"] .impressum-section p,
+html[data-theme="light"] .member-role,
+html[data-theme="light"] .footer-tagline,
+html[data-theme="light"] .footer-copyright,
+html[data-theme="light"] .dropdown-empty,
+html[data-theme="light"] .notification-msg,
+html[data-theme="light"] .notification-time,
+html[data-theme="light"] .chest-copy p,
+html[data-theme="light"] .real-money-copy p,
+html[data-theme="light"] .inline-empty,
+html[data-theme="light"] .empty-activity-text {
+    color: var(--text-secondary);
+}
+
+html[data-theme="light"] .stat-value,
+html[data-theme="light"] .stat-card-value,
+html[data-theme="light"] .activity-title,
+html[data-theme="light"] .exercise-name-label,
+html[data-theme="light"] .arc-percent,
+html[data-theme="light"] .arc-meta-value,
+html[data-theme="light"] .stats-bar-value,
+html[data-theme="light"] .member-name,
+html[data-theme="light"] .team-member,
+html[data-theme="light"] .profile-summary-copy,
+html[data-theme="light"] .finish-title {
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .search-input,
+html[data-theme="light"] .search-bar,
+html[data-theme="light"] .search-bar input,
+html[data-theme="light"] .field input,
+html[data-theme="light"] .form input,
+html[data-theme="light"] .form-group input,
+html[data-theme="light"] .form-group textarea,
+html[data-theme="light"] .form-group select,
+html[data-theme="light"] .form-group-cw input,
+html[data-theme="light"] .form-group-cw select,
+html[data-theme="light"] .workout-exercise-row select,
+html[data-theme="light"] .workout-exercise-row .small-input,
+html[data-theme="light"] .exercise-row-cw select,
+html[data-theme="light"] .session-reps-input,
+html[data-theme="light"] .amount-input,
+html[data-theme="light"] .distance-entry select {
+    background: var(--surface-muted);
+    border-color: var(--border-soft);
+    color: var(--text-primary);
+}
+
+html[data-theme="light"] input::placeholder,
+html[data-theme="light"] textarea::placeholder {
+    color: #94a3b8;
+}
+
+html[data-theme="light"] .field input:read-only {
+    background: #eef2f7;
+    color: var(--text-muted);
+}
+
+html[data-theme="light"] .tab-btn,
+html[data-theme="light"] .filter-btn,
+html[data-theme="light"] .secondary-btn,
+html[data-theme="light"] .btn-secondary,
+html[data-theme="light"] .btn-icon,
+html[data-theme="light"] .carousel-btn,
+html[data-theme="light"] .settings-btn,
+html[data-theme="light"] .settings-back-btn,
+html[data-theme="light"] .settings-toggle-row,
+html[data-theme="light"] .settings-nav-row,
+html[data-theme="light"] .account-action-btn,
+html[data-theme="light"] .theme-choice-btn,
+html[data-theme="light"] .confirm-cancel,
+html[data-theme="light"] .btn-cancel-cw,
+html[data-theme="light"] .hide-btn,
+html[data-theme="light"] .sent-pill,
+html[data-theme="light"] .nav-btn {
+    background: rgba(241, 245, 249, 0.88);
+    border-color: var(--border-soft);
+    color: var(--text-secondary);
+}
+
+html[data-theme="light"] .tab-btn:hover,
+html[data-theme="light"] .filter-btn:hover,
+html[data-theme="light"] .secondary-btn:hover,
+html[data-theme="light"] .btn-secondary:hover,
+html[data-theme="light"] .btn-icon:hover,
+html[data-theme="light"] .carousel-btn:hover:not(:disabled),
+html[data-theme="light"] .settings-btn:hover,
+html[data-theme="light"] .settings-back-btn:hover,
+html[data-theme="light"] .settings-nav-row:hover,
+html[data-theme="light"] .account-action-btn:hover,
+html[data-theme="light"] .theme-choice-btn:hover {
+    background: rgba(236, 72, 153, 0.08);
+    border-color: rgba(236, 72, 153, 0.28);
+    color: var(--text-primary);
+}
+
+html[data-theme="light"] .tab-btn.active,
+html[data-theme="light"] .filter-btn.active,
+html[data-theme="light"] .theme-choice-btn.active {
+    background: rgba(236, 72, 153, 0.12);
+    border-color: rgba(236, 72, 153, 0.4);
+    color: #be185d;
+    box-shadow: none;
+}
+
+html[data-theme="light"] .settings-overlay,
+html[data-theme="light"] .modal-overlay,
+html[data-theme="light"] .workout-modal-overlay,
+html[data-theme="light"] .confirm-overlay {
+    background: rgba(15, 23, 42, 0.28);
+}
+
+html[data-theme="light"] .settings-sidebar {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border-left-color: var(--border-soft);
+}
+
+html[data-theme="light"] .close-btn,
+html[data-theme="light"] .close-btn-cw,
+html[data-theme="light"] .toggle-password {
+    color: var(--text-secondary);
+}
+
+html[data-theme="light"] .settings-content::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.08);
+}
+
+html[data-theme="light"] .settings-content::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.2);
+}
+
+html[data-theme="light"] .profile-avatar,
+html[data-theme="light"] .item-icon-shell,
+html[data-theme="light"] .feature-icon,
+html[data-theme="light"] .chest-image-shell,
+html[data-theme="light"] .coin-pack-image-shell,
+html[data-theme="light"] .real-money-image-shell,
+html[data-theme="light"] .chest-option-image,
+html[data-theme="light"] .image-preview,
+html[data-theme="light"] .shop-card-image,
+html[data-theme="light"] .equip-slot-inner.empty,
+html[data-theme="light"] .empty-inventory,
+html[data-theme="light"] .heatmap-cell,
+html[data-theme="light"] .activity-heatmap,
+html[data-theme="light"] .confirm-price,
+html[data-theme="light"] .reward-preview span,
+html[data-theme="light"] .card-stats span,
+html[data-theme="light"] .table-header,
+html[data-theme="light"] .table-row,
+html[data-theme="light"] .session-exercise-item,
+html[data-theme="light"] .session-summary,
+html[data-theme="light"] .finish-stat,
+html[data-theme="light"] .workout-exercise-item,
+html[data-theme="light"] .progress-bar-track,
+html[data-theme="light"] .progress-bar {
+    background: rgba(241, 245, 249, 0.9);
+    border-color: var(--border-soft);
+    color: var(--text-primary);
+}
+
+html[data-theme="light"] .item-image,
+html[data-theme="light"] .feature-image,
+html[data-theme="light"] .chest-image,
+html[data-theme="light"] .coin-pack-image,
+html[data-theme="light"] .real-money-image,
+html[data-theme="light"] .mockup-image,
+html[data-theme="light"] .phase-sprite,
+html[data-theme="light"] .avatar-sprite {
+    filter: drop-shadow(0 16px 24px rgba(15, 23, 42, 0.16));
+}
+
+html[data-theme="light"] .shop-item-card .card-background,
+html[data-theme="light"] .feature-card::before,
+html[data-theme="light"] .chest-bg {
+    opacity: 0.18;
+}
+
+html[data-theme="light"] .boost-row,
+html[data-theme="light"] .workout-exercises-list,
+html[data-theme="light"] .activity-item,
+html[data-theme="light"] .dropdown-header,
+html[data-theme="light"] .notification-item,
+html[data-theme="light"] .impressum-section,
+html[data-theme="light"] .legal-content section,
+html[data-theme="light"] .team-member,
+html[data-theme="light"] .footer-component {
+    border-color: var(--border-soft);
+}
+
+html[data-theme="light"] .activity-mode-toggle,
+html[data-theme="light"] .toggle {
+    background: rgba(226, 232, 240, 0.82);
+}
+
+html[data-theme="light"] .activity-mode-toggle button,
+html[data-theme="light"] .toggle button {
+    color: var(--text-secondary);
+}
+
+html[data-theme="light"] .activity-mode-toggle button.active,
+html[data-theme="light"] .toggle button.active {
+    color: #be185d;
+    background: rgba(236, 72, 153, 0.12);
+}
+
+html[data-theme="light"] .activity-tooltip,
+html[data-theme="light"] .rates-popover,
+html[data-theme="light"] .avatar-action-menu,
+html[data-theme="light"] .btn-icon::after {
+    background: rgba(255, 255, 255, 0.98);
+    border-color: rgba(236, 72, 153, 0.2);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-soft);
+}
+
+html[data-theme="light"] .activity-tooltip-date,
+html[data-theme="light"] .heatmap-month,
+html[data-theme="light"] .heatmap-weekdays,
+html[data-theme="light"] .heatmap-footer,
+html[data-theme="light"] .arc-next,
+html[data-theme="light"] .stats-bar-label,
+html[data-theme="light"] .arc-meta-label,
+html[data-theme="light"] .equip-empty,
+html[data-theme="light"] .empty-inventory p,
+html[data-theme="light"] .empty-inventory span {
+    color: var(--text-muted);
+}
+
+html[data-theme="light"] .activity-tooltip-value,
+html[data-theme="light"] .avatar-action-menu button {
+    color: var(--text-primary);
+}
+
+html[data-theme="light"] .avatar-action-menu button:hover {
+    background: rgba(236, 72, 153, 0.08);
+}
+
+html[data-theme="light"] .achievement-card.locked,
+html[data-theme="light"] .corner-button:disabled,
+html[data-theme="light"] .feature-buy-btn.disabled,
+html[data-theme="light"] .buy-button.disabled,
+html[data-theme="light"] .open-btn.disabled {
+    background: rgba(226, 232, 240, 0.72);
+    color: var(--text-muted);
+}
+
+html[data-theme="light"] .achievement-card.locked .achievement-title,
+html[data-theme="light"] .achievement-card.locked .achievement-description,
+html[data-theme="light"] .achievement-icon.grayscale {
+    color: var(--text-muted);
+}
+
+html[data-theme="light"] .admin-btn,
+html[data-theme="light"] .status-badge,
+html[data-theme="light"] .renewal-badge,
+html[data-theme="light"] .mini-pill,
+html[data-theme="light"] .daily-reset-timer,
+html[data-theme="light"] .achievement-count {
+    box-shadow: none;
+}
+
+html[data-theme="light"] .footer-component,
+html[data-theme="light"] .landing-footer,
+html[data-theme="light"] footer {
+    color: var(--text-secondary);
+    border-color: var(--border-soft);
+}
+
+html[data-theme="light"] .footer-brand,
+html[data-theme="light"] .landing-brand-name {
+    color: var(--text-primary);
+}
+
+html[data-theme="light"] .footer-link {
+    color: var(--text-secondary);
+}
+
+/* Light mode corrections for scoped game surfaces */
+html[data-theme="light"] body .landing-theme-toggle.landing-theme-toggle {
+    background: rgba(241, 245, 249, 0.9) !important;
+    border-color: var(--border-soft) !important;
+}
+
+html[data-theme="light"] body .landing-theme-toggle button {
+    color: var(--text-secondary) !important;
+}
+
+html[data-theme="light"] body .landing-theme-toggle button.active {
+    background: rgba(236, 72, 153, 0.13) !important;
+    color: #be185d !important;
+}
+
+html[data-theme="light"] body .logo-img,
+html[data-theme="light"] body .logo-image {
+    filter: invert(1) brightness(0.35) saturate(0.8);
+}
+
+html[data-theme="light"] body .boost-card.boost-card,
+html[data-theme="light"] body .booster-card-inner.booster-card-inner,
+html[data-theme="light"] body .achievements-section.achievements-section,
+html[data-theme="light"] body .activity-section.activity-section,
+html[data-theme="light"] body .recent-section.recent-section,
+html[data-theme="light"] body .podium-card.podium-card,
+html[data-theme="light"] body .leaderboard-row.leaderboard-row,
+html[data-theme="light"] body .friend-card.friend-card,
+html[data-theme="light"] body .request-card.request-card {
+    background: rgba(255, 255, 255, 0.94) !important;
+    border-color: rgba(15, 23, 42, 0.11) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08) !important;
+}
+
+html[data-theme="light"] body .boost-card.boost-card:hover,
+html[data-theme="light"] body .booster-card:hover .booster-card-inner,
+html[data-theme="light"] body .leaderboard-row.leaderboard-row:hover,
+html[data-theme="light"] body .friend-card.friend-card:hover,
+html[data-theme="light"] body .request-card.request-card:hover {
+    background: #fff !important;
+    border-color: rgba(236, 72, 153, 0.24) !important;
+}
+
+html[data-theme="light"] body .boost-label,
+html[data-theme="light"] body .username-clean,
+html[data-theme="light"] body .inventory-count,
+html[data-theme="light"] body .booster-qty-badge,
+html[data-theme="light"] body .booster-meta h3,
+html[data-theme="light"] body .section-title h2,
+html[data-theme="light"] body .activity-year-select,
+html[data-theme="light"] body .settings-section h3,
+html[data-theme="light"] body .validated-field label {
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] body .boost-label {
+    color: var(--text-muted) !important;
+}
+
+html[data-theme="light"] body .boost-value {
+    color: #64748b !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] body .boost-value.active {
+    color: #047857 !important;
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.18) !important;
+}
+
+html[data-theme="light"] body .inventory-count,
+html[data-theme="light"] body .booster-qty-badge {
+    color: #be185d !important;
+}
+
+html[data-theme="light"] body .booster-stat.xp,
+html[data-theme="light"] body .equip-badge.xp {
+    color: #1d4ed8 !important;
+}
+
+html[data-theme="light"] body .booster-stat.coin,
+html[data-theme="light"] body .equip-badge.coin {
+    color: #b45309 !important;
+}
+
+html[data-theme="light"] body .booster-stat.xp {
+    background: rgba(37, 99, 235, 0.09) !important;
+    border-color: rgba(37, 99, 235, 0.24) !important;
+}
+
+html[data-theme="light"] body .booster-stat.coin {
+    background: rgba(217, 119, 6, 0.1) !important;
+    border-color: rgba(217, 119, 6, 0.28) !important;
+}
+
+html[data-theme="light"] body .booster-card-footer.booster-card-footer,
+html[data-theme="light"] body .boost-bar-track.boost-bar-track {
+    border-color: rgba(15, 23, 42, 0.08) !important;
+    background: rgba(226, 232, 240, 0.7) !important;
+}
+
+html[data-theme="light"] body .equip-slot-inner.equipped {
+    background:
+        radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--rarity-color) 18%, transparent), transparent 62%),
+        rgba(255, 255, 255, 0.78) !important;
+}
+
+html[data-theme="light"] body .achievement-card.achievement-card {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-color: rgba(148, 163, 184, 0.22) !important;
+    color: var(--text-primary) !important;
+    opacity: 1 !important;
+}
+
+html[data-theme="light"] body .achievement-card.unlocked {
+    background: linear-gradient(180deg, rgba(255, 251, 235, 0.98), rgba(255, 255, 255, 0.95)) !important;
+    border-color: rgba(217, 119, 6, 0.34) !important;
+}
+
+html[data-theme="light"] body .achievement-card.locked {
+    background: rgba(241, 245, 249, 0.9) !important;
+    border-color: rgba(148, 163, 184, 0.22) !important;
+    opacity: 0.82 !important;
+}
+
+html[data-theme="light"] body .achievement-title,
+html[data-theme="light"] body .achievement-card.locked .achievement-title,
+html[data-theme="light"] body .activity-title,
+html[data-theme="light"] body .activity-tooltip-value {
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] body .achievement-description,
+html[data-theme="light"] body .achievement-card.locked .achievement-description,
+html[data-theme="light"] body .activity-time {
+    color: var(--text-secondary) !important;
+}
+
+html[data-theme="light"] body .activity-heatmap.activity-heatmap {
+    background: rgba(248, 250, 252, 0.96) !important;
+    border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+html[data-theme="light"] body .heatmap-cell {
+    background: rgba(226, 232, 240, 0.72) !important;
+    border-color: rgba(148, 163, 184, 0.22) !important;
+}
+
+html[data-theme="light"] body .heatmap-level-1 { background: rgba(244, 114, 182, 0.28) !important; }
+html[data-theme="light"] body .heatmap-level-2 { background: rgba(236, 72, 153, 0.42) !important; }
+html[data-theme="light"] body .heatmap-level-3 { background: rgba(219, 39, 119, 0.62) !important; }
+html[data-theme="light"] body .heatmap-level-4 { background: #db2777 !important; }
+
+html[data-theme="light"] body .mode-steps .heatmap-level-1 { background: rgba(251, 146, 60, 0.28) !important; }
+html[data-theme="light"] body .mode-steps .heatmap-level-2 { background: rgba(249, 115, 22, 0.42) !important; }
+html[data-theme="light"] body .mode-steps .heatmap-level-3 { background: rgba(234, 88, 12, 0.62) !important; }
+html[data-theme="light"] body .mode-steps .heatmap-level-4 { background: #ea580c !important; }
+
+html[data-theme="light"] body .podium-card.podium-card {
+    background:
+        radial-gradient(circle at 50% 0%, rgba(var(--podium-highlight-rgb), 0.5), transparent 50%),
+        linear-gradient(180deg, rgba(var(--podium-highlight-rgb), 0.42), rgba(var(--podium-accent-rgb), 0.18) 58%, rgba(255, 255, 255, 0.94)) !important;
+}
+
+html[data-theme="light"] body .podium-card .avatar-core {
+    background: #fff !important;
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] body .podium-card .player-name,
+html[data-theme="light"] body .podium-card .player-meta,
+html[data-theme="light"] body .podium-card .player-xp {
+    color: var(--text-primary) !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] body .podium-card .place-badge {
+    background: rgba(var(--podium-accent-rgb), 0.16) !important;
+    border-color: rgba(var(--podium-shadow-rgb), 0.22) !important;
+    color: rgb(var(--podium-shadow-rgb)) !important;
+}
+
+html[data-theme="light"] body .leaderboard-list.leaderboard-list {
+    background: transparent !important;
+}
+
+html[data-theme="light"] body .leaderboard-row.leaderboard-row {
+    box-shadow: none !important;
+    border-bottom-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+html[data-theme="light"] body .leaderboard-row.is-current-user {
+    background: linear-gradient(90deg, rgba(236, 72, 153, 0.08), rgba(255, 255, 255, 0.96)) !important;
+    border-color: rgba(236, 72, 153, 0.2) !important;
+}
+
+html[data-theme="light"] body .leaderboard-row .rank-box,
+html[data-theme="light"] body .leaderboard-row .player-title-row h4,
+html[data-theme="light"] body .leaderboard-row .player-level,
+html[data-theme="light"] body .leaderboard-row .xp-number {
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] body .leaderboard-row .avatar-pill {
+    background: rgba(226, 232, 240, 0.92) !important;
+    border: 1px solid rgba(15, 23, 42, 0.1) !important;
+}
+
+html[data-theme="light"] body .leaderboard-row .xp-unit {
+    color: #0284c7 !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] body .challenge-btn.challenge-btn,
+html[data-theme="light"] body .remove-btn.remove-btn,
+html[data-theme="light"] body .accept-btn.accept-btn,
+html[data-theme="light"] body .decline-btn.decline-btn,
+html[data-theme="light"] body .icon-action-btn.icon-action-btn {
+    border: 1px solid transparent !important;
+}
+
+html[data-theme="light"] body .challenge-btn.challenge-btn {
+    background: rgba(219, 39, 119, 0.14) !important;
+    border-color: rgba(219, 39, 119, 0.24) !important;
+    color: #be185d !important;
+}
+
+html[data-theme="light"] body .challenge-btn.challenge-btn:hover {
+    background: rgba(219, 39, 119, 0.22) !important;
+}
+
+html[data-theme="light"] body .remove-btn.remove-btn,
+html[data-theme="light"] body .decline-btn.decline-btn {
+    background: rgba(220, 38, 38, 0.12) !important;
+    border-color: rgba(220, 38, 38, 0.22) !important;
+    color: #b91c1c !important;
+}
+
+html[data-theme="light"] body .remove-btn.remove-btn:hover,
+html[data-theme="light"] body .decline-btn.decline-btn:hover {
+    background: rgba(220, 38, 38, 0.2) !important;
+}
+
+html[data-theme="light"] body .accept-btn.accept-btn {
+    background: rgba(22, 163, 74, 0.13) !important;
+    border-color: rgba(22, 163, 74, 0.24) !important;
+    color: #15803d !important;
+}
+
+html[data-theme="light"] body .password-input-wrapper input,
+html[data-theme="light"] body .validated-field input {
+    background: rgba(241, 245, 249, 0.95) !important;
+    border: 1px solid rgba(15, 23, 42, 0.1) !important;
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] body .password-input-wrapper input:focus,
+html[data-theme="light"] body .validated-field input:focus {
+    background: #fff !important;
+    box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.18) !important;
+}
+
+html[data-theme="light"] body .toggle-password {
+    color: var(--text-secondary) !important;
+}
+
+html[data-theme="light"] body .password-rules li {
+    color: var(--text-muted) !important;
+}
+
+html[data-theme="light"] body .password-rules li.valid {
+    color: #15803d !important;
+}
+
+html[data-theme="light"] body .equip-btn.disabled,
+html[data-theme="light"] body .equip-btn:disabled {
+    background: rgba(100, 116, 139, 0.18) !important;
+    border-color: rgba(100, 116, 139, 0.22) !important;
+    color: #64748b !important;
+}
+
+/* Light mode readability refinements */
+html[data-theme="light"] body .exercise-search.exercise-search,
+html[data-theme="light"] body .search-bar.search-bar,
+html[data-theme="light"] body .search-input.search-input {
+    background: #fff !important;
+    border-color: rgba(15, 23, 42, 0.14) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06) !important;
+}
+
+html[data-theme="light"] body .exercise-search input,
+html[data-theme="light"] body .search-bar input,
+html[data-theme="light"] body .search-input {
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] body .exercise-search input::placeholder,
+html[data-theme="light"] body .search-bar input::placeholder,
+html[data-theme="light"] body .search-input::placeholder {
+    color: #64748b !important;
+}
+
+html[data-theme="light"] body .exercise-search svg,
+html[data-theme="light"] body .search-bar svg {
+    color: #475569 !important;
+}
+
+html[data-theme="light"] body .reward-chip.reward-chip {
+    min-height: 26px !important;
+    padding: 4px 9px !important;
+    border-radius: 999px !important;
+    background: rgba(37, 99, 235, 0.08) !important;
+    border: 1px solid rgba(37, 99, 235, 0.2) !important;
+    color: #1d4ed8 !important;
+    font-weight: 800 !important;
+}
+
+html[data-theme="light"] body .reward-chip.coin-reward {
+    background: rgba(217, 119, 6, 0.1) !important;
+    border-color: rgba(217, 119, 6, 0.24) !important;
+    color: #b45309 !important;
+}
+
+html[data-theme="light"] body .difficulty {
+    padding: 3px 0 !important;
+    text-shadow: none !important;
+    font-weight: 900 !important;
+}
+
+html[data-theme="light"] body .difficulty-easy { color: #15803d !important; }
+html[data-theme="light"] body .difficulty-medium { color: #b45309 !important; }
+html[data-theme="light"] body .difficulty-hard { color: #dc2626 !important; }
+
+html[data-theme="light"] body .unit-badge.unit-badge {
+    background: #f8fafc !important;
+    border-color: rgba(15, 23, 42, 0.16) !important;
+    color: #1e293b !important;
+}
+
+html[data-theme="light"] body .unit-reps {
+    background: rgba(37, 99, 235, 0.09) !important;
+    border-color: rgba(37, 99, 235, 0.24) !important;
+    color: #2563eb !important;
+}
+
+html[data-theme="light"] body .unit-time {
+    background: rgba(217, 119, 6, 0.1) !important;
+    border-color: rgba(217, 119, 6, 0.24) !important;
+    color: #b45309 !important;
+}
+
+html[data-theme="light"] body .unit-distance {
+    background: rgba(22, 163, 74, 0.1) !important;
+    border-color: rgba(22, 163, 74, 0.24) !important;
+    color: #15803d !important;
+}
+
+html[data-theme="light"] body .category-cardio {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border-color: rgba(220, 38, 38, 0.3) !important;
+    color: #dc2626 !important;
+}
+
+html[data-theme="light"] body .category-strength {
+    background: rgba(168, 85, 247, 0.12) !important;
+    border-color: rgba(126, 34, 206, 0.28) !important;
+    color: #7e22ce !important;
+}
+
+html[data-theme="light"] body .category-core {
+    background: rgba(236, 72, 153, 0.11) !important;
+    border-color: rgba(219, 39, 119, 0.3) !important;
+    color: #be185d !important;
+}
+
+html[data-theme="light"] body .category-flexibility {
+    background: rgba(34, 197, 94, 0.11) !important;
+    border-color: rgba(22, 163, 74, 0.3) !important;
+    color: #15803d !important;
+}
+
+html[data-theme="light"] body .rarity-common .booster-card-inner {
+    background: linear-gradient(135deg, rgba(148, 163, 184, 0.18), rgba(255, 255, 255, 0.96) 58%) !important;
+    border-color: rgba(100, 116, 139, 0.22) !important;
+}
+
+html[data-theme="light"] body .rarity-rare .booster-card-inner {
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(255, 255, 255, 0.96) 58%) !important;
+    border-color: rgba(37, 99, 235, 0.28) !important;
+}
+
+html[data-theme="light"] body .rarity-epic .booster-card-inner {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(255, 255, 255, 0.96) 58%) !important;
+    border-color: rgba(126, 34, 206, 0.28) !important;
+}
+
+html[data-theme="light"] body .rarity-legendary .booster-card-inner {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(255, 255, 255, 0.96) 58%) !important;
+    border-color: rgba(217, 119, 6, 0.3) !important;
+}
+
+html[data-theme="light"] body .rarity-mythic .booster-card-inner {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(255, 255, 255, 0.96) 58%) !important;
+    border-color: rgba(219, 39, 119, 0.3) !important;
+}
+
+html[data-theme="light"] body .booster-card-footer.booster-card-footer {
+    background: transparent !important;
+    border-top-color: transparent !important;
+}
+
+html[data-theme="light"] body .booster-qty-badge,
+html[data-theme="light"] body .inventory-count {
+    color: #be185d !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] body .booster-stat.xp {
+    color: #1d4ed8 !important;
+    background: rgba(37, 99, 235, 0.09) !important;
+    border-color: rgba(37, 99, 235, 0.24) !important;
+}
+
+html[data-theme="light"] body .booster-stat.coin {
+    color: #b45309 !important;
+    background: rgba(217, 119, 6, 0.1) !important;
+    border-color: rgba(217, 119, 6, 0.26) !important;
+}
+
+html[data-theme="light"] body .podium-card.podium-card {
+    border-width: 2px !important;
+    box-shadow: 0 24px 58px rgba(15, 23, 42, 0.12) !important;
+}
+
+html[data-theme="light"] body .podium-card.is-first {
+    background: radial-gradient(circle at 50% 0%, rgba(250, 204, 21, 0.5), transparent 50%), linear-gradient(180deg, rgba(254, 240, 138, 0.72), rgba(255, 255, 255, 0.96)) !important;
+    border-color: rgba(202, 138, 4, 0.38) !important;
+}
+
+html[data-theme="light"] body .podium-card.is-second {
+    background: radial-gradient(circle at 50% 0%, rgba(148, 163, 184, 0.42), transparent 52%), linear-gradient(180deg, rgba(226, 232, 240, 0.86), rgba(255, 255, 255, 0.96)) !important;
+    border-color: rgba(100, 116, 139, 0.28) !important;
+}
+
+html[data-theme="light"] body .podium-card.is-third {
+    background: radial-gradient(circle at 50% 0%, rgba(217, 119, 6, 0.32), transparent 52%), linear-gradient(180deg, rgba(254, 215, 170, 0.72), rgba(255, 255, 255, 0.96)) !important;
+    border-color: rgba(180, 83, 9, 0.3) !important;
+}
+
+html[data-theme="light"] body .phase-item span {
+    color: var(--text-primary) !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] body .tech-title {
+    color: #64748b !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] body .dot {
+    background: rgba(100, 116, 139, 0.34) !important;
+    opacity: 1 !important;
+}
+
+html[data-theme="light"] body .dot.active {
+    background: #ec4899 !important;
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.35) !important;
 }

@@ -318,6 +318,32 @@
               </section>
 
               <section class="settings-section">
+                <h3>{{ settingsCopy.appearance }}</h3>
+                <div class="theme-choice" role="group" :aria-label="settingsCopy.appearance">
+                  <button
+                    type="button"
+                    class="theme-choice-btn"
+                    :class="{ active: theme === 'dark' }"
+                    :aria-pressed="theme === 'dark'"
+                    @click="setTheme('dark')"
+                  >
+                    <Moon :size="18" />
+                    <span>{{ settingsCopy.darkMode }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="theme-choice-btn"
+                    :class="{ active: theme === 'light' }"
+                    :aria-pressed="theme === 'light'"
+                    @click="setTheme('light')"
+                  >
+                    <Sun :size="18" />
+                    <span>{{ settingsCopy.whiteMode }}</span>
+                  </button>
+                </div>
+              </section>
+
+              <section class="settings-section">
                 <h3>{{ settingsCopy.progress }}</h3>
                 <div class="progress-stats">
                   <div class="stat-row">
@@ -423,14 +449,16 @@ import { userService, achievementService, resolveMediaUrl } from '@/services/api
 import FooterComponent from '@/components/FooterComponent.vue';
 import MessagePopup from '@/components/MessagePopup.vue';
 import ValidatedPasswordInput from '@/components/ValidatedPasswordInput.vue';
+import { useTheme } from '@/composables/useTheme';
 import type { Achievement, ProfileStats } from '@/models/Achievement';
 import noProfilePicture from '@/assets/Nopfp.png';
-import { ArrowLeft, ChevronRight, LockKeyhole, Pencil } from 'lucide-vue-next';
+import { ArrowLeft, ChevronRight, LockKeyhole, Moon, Pencil, Sun } from 'lucide-vue-next';
 
 const router = useRouter();
 const { user, logout, refreshProfile } = useAuth();
 const locale = 'de-DE';
 const { sortedLeaderboard, loadLeaderboard } = useLeaderboard();
+const { theme, setTheme } = useTheme();
 
 const longestStreak = ref(0);
 const currentStreak = ref(0);
@@ -449,6 +477,9 @@ const settingsCopy = computed(() => ({
     settings: 'Einstellungen',
     back: 'Zurück',
     profile: 'Profil',
+    appearance: 'Darstellung',
+    darkMode: 'Darkmode',
+    whiteMode: 'Whitemode',
     username: 'Benutzername',
     email: 'E-Mail',
     privateProfile: 'Privates Profil',
@@ -1876,6 +1907,42 @@ onMounted(async () => {
 .settings-toggle-row input:checked + i::after {
   transform: translateX(20px);
   background: white;
+}
+
+.theme-choice {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.theme-choice-btn {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color 0.22s ease, background 0.22s ease, color 0.22s ease, transform 0.22s ease;
+}
+
+.theme-choice-btn:hover {
+  border-color: rgba(236, 72, 153, 0.28);
+  background: rgba(236, 72, 153, 0.08);
+  color: #fff;
+}
+
+.theme-choice-btn.active {
+  border-color: rgba(236, 72, 153, 0.52);
+  background: rgba(236, 72, 153, 0.18);
+  color: #fff;
+  box-shadow: 0 0 0 1px rgba(236, 72, 153, 0.1);
 }
 
 .progress-stats { display: flex; flex-direction: column; gap: 8px; }

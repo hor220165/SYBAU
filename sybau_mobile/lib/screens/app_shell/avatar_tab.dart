@@ -629,6 +629,7 @@ class _AvatarTabState extends State<AvatarTab>
   }) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final isLight = SybauThemeController.isLight;
         final compact = constraints.maxWidth < 165;
         final iconBoxSize = compact ? 28.0 : 32.0;
         final horizontalPadding = compact ? 9.0 : 12.0;
@@ -636,8 +637,23 @@ class _AvatarTabState extends State<AvatarTab>
         return Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            color: Colors.white.withOpacity(0.05),
-            border: Border.all(color: Colors.white.withOpacity(0.09)),
+            color: isLight
+                ? Colors.white.withOpacity(0.96)
+                : Colors.white.withOpacity(0.05),
+            border: Border.all(
+              color: isLight
+                  ? Colors.black.withOpacity(0.08)
+                  : Colors.white.withOpacity(0.09),
+            ),
+            boxShadow: isLight
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 18,
+                      offset: const Offset(0, 10),
+                    ),
+                  ]
+                : null,
           ),
           padding: EdgeInsets.fromLTRB(
             horizontalPadding,
@@ -688,7 +704,9 @@ class _AvatarTabState extends State<AvatarTab>
                             label,
                             maxLines: 1,
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.55),
+                              color: isLight
+                                  ? const Color(0xFF64748B)
+                                  : Colors.white.withOpacity(0.55),
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
                             ),
@@ -703,6 +721,8 @@ class _AvatarTabState extends State<AvatarTab>
                             style: TextStyle(
                               color: value > 0
                                   ? Color(0xFF34D399)
+                                  : isLight
+                                  ? const Color(0xFF94A3B8)
                                   : Colors.white.withOpacity(0.32),
                               fontSize: compact ? 17 : 19,
                               fontWeight: FontWeight.w800,
@@ -722,7 +742,11 @@ class _AvatarTabState extends State<AvatarTab>
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Container(color: Colors.white.withOpacity(0.06)),
+                      Container(
+                        color: isLight
+                            ? const Color(0xFFE2E8F0)
+                            : Colors.white.withOpacity(0.06),
+                      ),
                       FractionallySizedBox(
                         widthFactor: (value / 100).clamp(0.0, 1.0),
                         alignment: Alignment.centerLeft,
@@ -744,6 +768,7 @@ class _AvatarTabState extends State<AvatarTab>
   }
 
   Widget _buildEquipSlot(int index, {double size = 82}) {
+    final isLight = SybauThemeController.isLight;
     final item = _slots[index];
     final isFilled = item != null;
     final rarity = item == null ? 'empty' : _rarityOf(item);
@@ -771,12 +796,16 @@ class _AvatarTabState extends State<AvatarTab>
                     accent.withValues(
                       alpha: _inventoryTintOpacity(rarity) * 0.44,
                     ),
-                    const Color(0xFF020617).withValues(alpha: 0.64),
+                    isLight
+                        ? Colors.white.withValues(alpha: 0.82)
+                        : const Color(0xFF020617).withValues(alpha: 0.64),
                   ],
                 )
               : null,
           color: isFilled
               ? null
+              : isLight
+              ? const Color(0xFFF8FAFC)
               : const Color(0xFF0F172A).withValues(alpha: 0.52),
           border: Border.all(
             color: isFilled
@@ -847,7 +876,9 @@ class _AvatarTabState extends State<AvatarTab>
                     : Text(
                         'Leer',
                         style: TextStyle(
-                          color: Colors.white24,
+                          color: isLight
+                              ? const Color(0xFF94A3B8)
+                              : Colors.white24,
                           fontSize: valueSize,
                           fontWeight: FontWeight.w700,
                         ),
@@ -877,6 +908,7 @@ class _AvatarTabState extends State<AvatarTab>
     final bodyStage = _normalizeBodyStage(
       _string(avatar['bodyStage'], fallback: 'Skinny'),
     );
+    final isLight = SybauThemeController.isLight;
 
     return Stack(
       children: [
@@ -921,7 +953,9 @@ class _AvatarTabState extends State<AvatarTab>
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.76),
+                        color: isLight
+                            ? const Color(0xFF0F172A)
+                            : Colors.white.withOpacity(0.76),
                         fontWeight: FontWeight.w700,
                         letterSpacing: 3.2,
                         fontSize: 15,
@@ -1117,7 +1151,9 @@ class _AvatarTabState extends State<AvatarTab>
                                 en: 'No boosters available. Buy boosters in the shop.',
                               ),
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.68),
+                                color: isLight
+                                    ? const Color(0xFF64748B)
+                                    : Colors.white.withOpacity(0.68),
                               ),
                             ),
                           ),
@@ -1144,13 +1180,24 @@ class _AvatarTabState extends State<AvatarTab>
                                           end: Alignment.bottomRight,
                                           colors: [
                                             accent.withOpacity(
-                                              _inventoryTintOpacity(rarity),
+                                              isLight
+                                                  ? _inventoryTintOpacity(
+                                                          rarity,
+                                                        ) *
+                                                        0.7
+                                                  : _inventoryTintOpacity(
+                                                      rarity,
+                                                    ),
                                             ),
                                             accent.withOpacity(
                                               _inventoryTintOpacity(rarity) *
-                                                  0.36,
+                                                  (isLight ? 0.22 : 0.36),
                                             ),
-                                            Colors.white.withOpacity(0.045),
+                                            isLight
+                                                ? Colors.white.withOpacity(0.94)
+                                                : Colors.white.withOpacity(
+                                                    0.045,
+                                                  ),
                                           ],
                                         ),
                                         border: Border.all(
@@ -1207,8 +1254,14 @@ class _AvatarTabState extends State<AvatarTab>
                                                       ],
                                                     ),
                                                     border: Border.all(
-                                                      color: Colors.white
-                                                          .withOpacity(0.08),
+                                                      color: isLight
+                                                          ? accent.withOpacity(
+                                                              0.22,
+                                                            )
+                                                          : Colors.white
+                                                                .withOpacity(
+                                                                  0.08,
+                                                                ),
                                                     ),
                                                   ),
                                                   child: Center(
@@ -1274,8 +1327,12 @@ class _AvatarTabState extends State<AvatarTab>
                                                   maxLines: 1,
                                                   overflow:
                                                       TextOverflow.ellipsis,
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
+                                                  style: TextStyle(
+                                                    color: isLight
+                                                        ? const Color(
+                                                            0xFF0F172A,
+                                                          )
+                                                        : Colors.white,
                                                     fontWeight: FontWeight.w900,
                                                     fontSize: 18,
                                                     height: 1.05,

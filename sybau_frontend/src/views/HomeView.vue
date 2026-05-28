@@ -11,6 +11,26 @@
         </button>
 
         <nav class="nav-buttons" aria-label="Landing Navigation">
+          <div class="landing-theme-toggle" role="group" aria-label="Darstellung">
+            <button
+              type="button"
+              :class="{ active: theme === 'dark' }"
+              :aria-pressed="theme === 'dark'"
+              @click="setTheme('dark')"
+            >
+              <Moon :size="16" />
+              <span>Dark</span>
+            </button>
+            <button
+              type="button"
+              :class="{ active: theme === 'light' }"
+              :aria-pressed="theme === 'light'"
+              @click="setTheme('light')"
+            >
+              <Sun :size="16" />
+              <span>White</span>
+            </button>
+          </div>
           <button class="nav-btn" type="button" @click="goToLogin">{{ copy.login }}</button>
           <button class="webplayer-btn" type="button" @click="startFree">{{ copy.startFree }}</button>
         </nav>
@@ -121,6 +141,8 @@
 import FooterComponent from '@/components/FooterComponent.vue';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { Moon, Sun } from 'lucide-vue-next';
+import { useTheme } from '@/composables/useTheme';
 import shortLogo from '@/assets/Sybau_logo_short.webp';
 import skinnySprite from '@/assets/Spritesheet_Skinny.png';
 import normalSprite from '@/assets/Spritesheet_Normal.png';
@@ -132,6 +154,7 @@ import shopMockup from '@/assets/mockups/Shop-Mockup.webp';
 import leaderboardMockup from '@/assets/mockups/Leaderboard-Mockup.webp';
 
 const router = useRouter();
+const { theme, setTheme } = useTheme();
 const statsBox = ref<HTMLElement | null>(null);
 let observer: IntersectionObserver | null = null;
 
@@ -373,6 +396,37 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.landing-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.landing-theme-toggle button {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.68);
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.landing-theme-toggle button.active {
+  color: #fff;
+  background: rgba(236, 72, 153, 0.28);
 }
 
 .nav-btn,
@@ -1038,6 +1092,19 @@ onUnmounted(() => {
   .nav-buttons {
     width: 100%;
     gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .landing-theme-toggle {
+    order: -1;
+    flex: 1 1 100%;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .landing-theme-toggle button {
+    flex: 1 1 0;
   }
 
   .nav-btn,

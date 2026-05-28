@@ -8,11 +8,27 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = SybauThemeController.isLight;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: isLight
+            ? Colors.white.withOpacity(0.96)
+            : Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(
+          color: isLight
+              ? Colors.black.withOpacity(0.08)
+              : Colors.white.withOpacity(0.08),
+        ),
+        boxShadow: isLight
+            ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 22,
+                  offset: const Offset(0, 12),
+                ),
+              ]
+            : null,
       ),
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -20,8 +36,8 @@ class _SectionCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: isLight ? const Color(0xFF0F172A) : Colors.white,
               fontWeight: FontWeight.w700,
               fontSize: 16,
             ),
@@ -187,16 +203,21 @@ class _AchievementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final unlocked = achievement['unlocked'] == true;
+    final isLight = SybauThemeController.isLight;
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: unlocked
             ? Color(0xFFFBBF24).withOpacity(0.14)
+            : isLight
+            ? const Color(0xFFF8FAFC)
             : Colors.white.withOpacity(0.03),
         border: Border.all(
           color: unlocked
               ? Color(0xFFFBBF24).withOpacity(0.42)
+              : isLight
+              ? Colors.black.withOpacity(0.08)
               : Colors.white.withOpacity(0.06),
         ),
       ),
@@ -211,8 +232,8 @@ class _AchievementCard extends StatelessWidget {
                   _string(achievement['title'], fallback: 'Achievement'),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: isLight ? const Color(0xFF0F172A) : Colors.white,
                     fontWeight: FontWeight.w800,
                     fontSize: 12.5,
                     height: 1.1,
@@ -222,7 +243,11 @@ class _AchievementCard extends StatelessWidget {
               const SizedBox(width: 6),
               Icon(
                 unlocked ? Icons.check_circle : Icons.lock,
-                color: unlocked ? Color(0xFFFBBF24) : Colors.white54,
+                color: unlocked
+                    ? Color(0xFFFBBF24)
+                    : isLight
+                    ? const Color(0xFF94A3B8)
+                    : Colors.white54,
                 size: 18,
               ),
             ],
@@ -234,7 +259,9 @@ class _AchievementCard extends StatelessWidget {
               maxLines: 3,
               overflow: TextOverflow.fade,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.72),
+                color: isLight
+                    ? const Color(0xFF64748B)
+                    : Colors.white.withOpacity(0.72),
                 height: 1.2,
                 fontSize: 11,
               ),
@@ -317,6 +344,70 @@ class _GradientActionButton extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeModeButton extends StatelessWidget {
+  const _ThemeModeButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLight = SybauThemeController.isLight;
+    final activeColor = isLight ? const Color(0xFFBE185D) : Colors.white;
+    final inactiveColor = isLight ? const Color(0xFF475569) : Colors.white70;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          color: selected
+              ? const Color(0xFFEC4899).withOpacity(isLight ? 0.12 : 0.22)
+              : isLight
+              ? const Color(0xFFF8FAFC)
+              : Colors.white.withOpacity(0.05),
+          border: Border.all(
+            color: selected
+                ? const Color(0xFFEC4899).withOpacity(0.42)
+                : isLight
+                ? Colors.black.withOpacity(0.08)
+                : Colors.white.withOpacity(0.09),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 17, color: selected ? activeColor : inactiveColor),
+            const SizedBox(width: 7),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: selected ? activeColor : inactiveColor,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/webp" href="/src/assets/Sybau_logo_short.webp" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f0c29" />
+    <script>
+      (() => {
+        try {
+          const storedTheme = localStorage.getItem('sybau-theme');
+          const theme = storedTheme === 'light' ? 'light' : 'dark';
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = theme;
+          document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#f8fafc' : '#0f0c29');
+        } catch {
+          document.documentElement.dataset.theme = 'dark';
+          document.documentElement.style.colorScheme = 'dark';
+        }
+      })();
+    </script>
     <title>SYBAU-Fitness</title>
   </head>
   <body>

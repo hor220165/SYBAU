@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../services/health_sync_service.dart';
 import '../services/notification_service.dart';
+import '../theme_controller.dart';
 import 'login_screen.dart';
 
 part 'app_shell/dashboard_tab.dart';
@@ -589,15 +590,22 @@ class _AppShellScreenState extends State<AppShellScreen> {
   }
 
   Widget _buildTopHeader() {
+    final isLight = SybauThemeController.isLight;
     final notificationCount = _notifications.length;
     return SafeArea(
       bottom: false,
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
         decoration: BoxDecoration(
-          color: Color(0xFF050A12).withOpacity(0.92),
+          color: isLight
+              ? Colors.white.withOpacity(0.94)
+              : Color(0xFF050A12).withOpacity(0.92),
           border: Border(
-            bottom: BorderSide(color: Colors.white.withOpacity(0.08)),
+            bottom: BorderSide(
+              color: isLight
+                  ? Colors.black.withOpacity(0.08)
+                  : Colors.white.withOpacity(0.08),
+            ),
           ),
         ),
         child: Row(
@@ -658,12 +666,18 @@ class _AppShellScreenState extends State<AppShellScreen> {
                     height: 40,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.06),
-                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                      color: isLight
+                          ? const Color(0xFFF8FAFC)
+                          : Colors.white.withOpacity(0.06),
+                      border: Border.all(
+                        color: isLight
+                            ? Colors.black.withOpacity(0.08)
+                            : Colors.white.withOpacity(0.08),
+                      ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.notifications_rounded,
-                      color: Colors.white,
+                      color: isLight ? const Color(0xFF0F172A) : Colors.white,
                       size: 20,
                     ),
                   ),
@@ -835,6 +849,9 @@ class _AppShellScreenState extends State<AppShellScreen> {
   }
 
   Widget _buildBottomNav() {
+    final isLight = SybauThemeController.isLight;
+    final activeColor = isLight ? const Color(0xFF0F172A) : Colors.white;
+    final inactiveColor = isLight ? const Color(0xFF475569) : Colors.white70;
     final entries = <_NavEntry>[
       _NavEntry(AppTab.dashboard, Icons.dashboard, 'Dashboard'),
       _NavEntry(
@@ -864,9 +881,15 @@ class _AppShellScreenState extends State<AppShellScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 7),
           decoration: BoxDecoration(
-            color: Color(0xFF03070D).withOpacity(0.78),
+            color: isLight
+                ? Colors.white.withOpacity(0.84)
+                : Color(0xFF03070D).withOpacity(0.78),
             border: Border(
-              bottom: BorderSide(color: Colors.white.withOpacity(0.08)),
+              bottom: BorderSide(
+                color: isLight
+                    ? Colors.black.withOpacity(0.08)
+                    : Colors.white.withOpacity(0.08),
+              ),
             ),
           ),
           child: SingleChildScrollView(
@@ -898,8 +921,8 @@ class _AppShellScreenState extends State<AppShellScreen> {
                                         entry.icon,
                                         size: 18,
                                         color: isActive
-                                            ? Colors.white
-                                            : Colors.white70,
+                                            ? activeColor
+                                            : inactiveColor,
                                       ),
                                       if (entry.tab == AppTab.quests &&
                                           _hasClaimableQuest)
@@ -913,9 +936,13 @@ class _AppShellScreenState extends State<AppShellScreen> {
                                               color: Color(0xFFEF4444),
                                               shape: BoxShape.circle,
                                               border: Border.all(
-                                                color: Color(
-                                                  0xFF03070D,
-                                                ).withOpacity(0.92),
+                                                color: isLight
+                                                    ? Colors.white.withOpacity(
+                                                        0.94,
+                                                      )
+                                                    : Color(
+                                                        0xFF03070D,
+                                                      ).withOpacity(0.92),
                                                 width: 1.5,
                                               ),
                                               boxShadow: [
@@ -936,8 +963,8 @@ class _AppShellScreenState extends State<AppShellScreen> {
                                     entry.label,
                                     style: TextStyle(
                                       color: isActive
-                                          ? Colors.white
-                                          : Colors.white70,
+                                          ? activeColor
+                                          : inactiveColor,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
                                     ),
@@ -978,22 +1005,33 @@ class _AppShellScreenState extends State<AppShellScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = SybauThemeController.isLight;
     return Scaffold(
+      backgroundColor: isLight
+          ? const Color(0xFFF8FAFC)
+          : const Color(0xFF01040A),
       body: Stack(
         children: [
-          const Positioned.fill(
+          Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFF01040A),
-                    Color(0xFF02060E),
-                    Color(0xFF06101E),
-                    Color(0xFF020408),
-                  ],
-                  stops: [0.0, 0.38, 0.74, 1.0],
+                  colors: isLight
+                      ? const [
+                          Color(0xFFFFFFFF),
+                          Color(0xFFF8FAFC),
+                          Color(0xFFEFF6FF),
+                          Color(0xFFFFFFFF),
+                        ]
+                      : const [
+                          Color(0xFF01040A),
+                          Color(0xFF02060E),
+                          Color(0xFF06101E),
+                          Color(0xFF020408),
+                        ],
+                  stops: const [0.0, 0.38, 0.74, 1.0],
                 ),
               ),
             ),
@@ -1007,7 +1045,8 @@ class _AppShellScreenState extends State<AppShellScreen> {
                     left: -90,
                     child: _BackgroundGlow(
                       size: 220,
-                      color: Color(0xFF2563EB).withOpacity(0.16),
+                      color: (isLight ? Color(0xFF93C5FD) : Color(0xFF2563EB))
+                          .withOpacity(isLight ? 0.18 : 0.16),
                     ),
                   ),
                   Positioned(
@@ -1015,7 +1054,8 @@ class _AppShellScreenState extends State<AppShellScreen> {
                     right: -90,
                     child: _BackgroundGlow(
                       size: 200,
-                      color: Color(0xFF0EA5E9).withOpacity(0.07),
+                      color: (isLight ? Color(0xFFF9A8D4) : Color(0xFF0EA5E9))
+                          .withOpacity(isLight ? 0.14 : 0.07),
                     ),
                   ),
                   Positioned(
@@ -1023,7 +1063,8 @@ class _AppShellScreenState extends State<AppShellScreen> {
                     left: -70,
                     child: _BackgroundGlow(
                       size: 240,
-                      color: Color(0xFF38BDF8).withOpacity(0.05),
+                      color: (isLight ? Color(0xFFBFDBFE) : Color(0xFF38BDF8))
+                          .withOpacity(isLight ? 0.16 : 0.05),
                     ),
                   ),
                 ],
@@ -1108,6 +1149,10 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = SybauThemeController.isLight;
+    final labelColor = isLight ? const Color(0xFF64748B) : Colors.white54;
+    final valueColor = isLight ? const Color(0xFF0F172A) : Colors.white;
+
     return Row(
       children: [
         assetPath != null
@@ -1122,14 +1167,11 @@ class _StatChip extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: const TextStyle(color: Colors.white54, fontSize: 9),
-            ),
+            Text(label, style: TextStyle(color: labelColor, fontSize: 9)),
             Text(
               value,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: valueColor,
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
               ),

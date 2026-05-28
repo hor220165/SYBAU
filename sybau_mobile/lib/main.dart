@@ -6,9 +6,11 @@ import 'screens/login_screen.dart';
 import 'screens/app_shell_screen.dart';
 import 'services/api_service.dart';
 import 'services/notification_service.dart';
+import 'theme_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SybauThemeController.initialize();
   unawaited(ApiService.initialize());
   unawaited(NotificationService.initialize());
   unawaited(NotificationService.syncScheduledReminder());
@@ -20,29 +22,43 @@ class SybauApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Sybau',
-      debugShowCheckedModeBanner: false,
-      locale: const Locale('de'),
-      supportedLocales: const [Locale('de')],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ],
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        textTheme: ThemeData.dark().textTheme,
-        primaryTextTheme: ThemeData.dark().primaryTextTheme,
-        scaffoldBackgroundColor: const Color(0xFF0f0c29),
-        colorScheme: ColorScheme.fromSeed(
-          brightness: Brightness.dark,
-          seedColor: const Color(0xFF00ffff),
-          surface: const Color(0xFF0f0c29),
-        ),
-        useMaterial3: true,
-      ),
-      home: const AuthCheck(),
+    return ValueListenableBuilder<SybauThemeMode>(
+      valueListenable: SybauThemeController.mode,
+      builder: (context, mode, _) {
+        final isLight = mode == SybauThemeMode.light;
+        return MaterialApp(
+          title: 'Sybau',
+          debugShowCheckedModeBanner: false,
+          locale: const Locale('de'),
+          supportedLocales: const [Locale('de')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+          theme: ThemeData(
+            brightness: isLight ? Brightness.light : Brightness.dark,
+            textTheme: isLight
+                ? ThemeData.light().textTheme
+                : ThemeData.dark().textTheme,
+            primaryTextTheme: isLight
+                ? ThemeData.light().primaryTextTheme
+                : ThemeData.dark().primaryTextTheme,
+            scaffoldBackgroundColor: isLight
+                ? const Color(0xFFF8FAFC)
+                : const Color(0xFF0f0c29),
+            colorScheme: ColorScheme.fromSeed(
+              brightness: isLight ? Brightness.light : Brightness.dark,
+              seedColor: const Color(0xFFEC4899),
+              surface: isLight
+                  ? const Color(0xFFFFFFFF)
+                  : const Color(0xFF0f0c29),
+            ),
+            useMaterial3: true,
+          ),
+          home: const AuthCheck(),
+        );
+      },
     );
   }
 }

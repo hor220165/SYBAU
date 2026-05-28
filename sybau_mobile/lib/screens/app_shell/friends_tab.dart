@@ -574,18 +574,27 @@ class _FriendsTabState extends State<FriendsTab> {
   }
 
   InputDecoration _friendSearchDecoration() {
+    final isLight = SybauThemeController.isLight;
+    final borderColor = isLight
+        ? Colors.black.withOpacity(0.12)
+        : Colors.white.withOpacity(0.14);
+
     return InputDecoration(
       hintText: _lt(de: 'Benutzername suchen...', en: 'Search username...'),
-      hintStyle: TextStyle(color: Colors.white.withOpacity(0.45)),
+      hintStyle: TextStyle(
+        color: isLight
+            ? const Color(0xFF64748B)
+            : Colors.white.withOpacity(0.45),
+      ),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.04),
+      fillColor: isLight ? Colors.white : Colors.white.withOpacity(0.04),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.14)),
+        borderSide: BorderSide(color: borderColor),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.14)),
+        borderSide: BorderSide(color: borderColor),
       ),
       focusedBorder: const OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(14)),
@@ -1650,7 +1659,11 @@ class _FriendsTabState extends State<FriendsTab> {
                   TextField(
                     controller: _requestController,
                     onChanged: (_) => setState(() {}),
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(
+                      color: SybauThemeController.isLight
+                          ? const Color(0xFF0F172A)
+                          : Colors.white,
+                    ),
                     decoration: _friendSearchDecoration(),
                   ),
                   const SizedBox(height: 10),
